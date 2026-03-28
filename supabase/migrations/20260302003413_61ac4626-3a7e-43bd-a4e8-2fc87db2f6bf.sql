@@ -1,0 +1,1 @@
+ALTER TABLE public.plans ADD COLUMN billing_type text NOT NULL DEFAULT 'monthly' CHECK (billing_type IN ('monthly', 'per_session'));

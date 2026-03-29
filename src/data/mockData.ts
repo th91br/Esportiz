@@ -19,6 +19,7 @@ export interface Student {
   active: boolean;
   planId?: string;
   paymentDueDay?: number;
+  paymentStartDate?: string;
   birthDate?: string;
 }
 

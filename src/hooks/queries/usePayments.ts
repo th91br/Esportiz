@@ -95,7 +95,7 @@ export function usePayments() {
             // 1. Alunos ativos com plano e dia de vencimento definidos
             const { data: students, error: studentsError } = await supabase
                 .from('students')
-                .select('id, plan_id, payment_due_day')
+                .select('id, plan_id, payment_due_day, payment_start_date')
                 .eq('user_id', userId)
                 .eq('active', true)
                 .not('plan_id', 'is', null)
@@ -130,6 +130,14 @@ export function usePayments() {
 
                 const plan = plansMap.get(student.plan_id);
                 if (!plan || plan.billing_type !== 'monthly') continue;
+
+                // Não gera pagamento para os meses ANTERIORES ao data do primeiro pagamento
+                if (student.payment_start_date) {
+                    const startMonthRef = student.payment_start_date.substring(0, 7); // Ex: "2024-04"
+                    if (monthRef < startMonthRef) {
+                        continue; // Mês anterior, ignora
+                    }
+                }
 
                 // Ajusta o dia de vencimento para não exceder o último dia do mês
                 const maxDay = new Date(year, month, 0).getDate();

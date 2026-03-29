@@ -27,6 +27,7 @@ export function useStudents() {
                 active: s.active,
                 planId: s.plan_id,
                 paymentDueDay: s.payment_due_day,
+                paymentStartDate: s.payment_start_date,
                 birthDate: s.birth_date,
             })) as Student[];
         },
@@ -52,6 +53,7 @@ export function useStudents() {
                 level: data.level,
                 plan_id: data.planId || null,
                 payment_due_day: data.paymentDueDay || null,
+                payment_start_date: data.paymentStartDate || null,
                 birth_date: data.birthDate || null,
             });
             if (error) throw error;
@@ -84,6 +86,7 @@ export function useStudents() {
             if (data.active !== undefined) updates.active = data.active;
             if ('planId' in data) updates.plan_id = data.planId || null;
             if ('paymentDueDay' in data) updates.payment_due_day = data.paymentDueDay || null;
+            if ('paymentStartDate' in data) updates.payment_start_date = data.paymentStartDate || null;
             if ('birthDate' in data) updates.birth_date = data.birthDate || null;
 
             const { error } = await supabase.from('students').update(updates).eq('id', id);

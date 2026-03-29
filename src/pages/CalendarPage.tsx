@@ -22,7 +22,7 @@ import {
 import {
   Tooltip, TooltipContent, TooltipProvider, TooltipTrigger,
 } from '@/components/ui/tooltip';
-import { Checkbox } from '@/components/ui/checkbox';
+
 import { toast } from '@/hooks/use-toast';
 import { useStudents } from '@/hooks/queries/useStudents';
 import { useTrainings } from '@/hooks/queries/useTrainings';
@@ -36,7 +36,7 @@ function TrainingFormDialog({
   open: boolean; onOpenChange: (o: boolean) => void; training?: Training; selectedDate: string; onSaved?: (date: string) => void;
 }) {
   const { students } = useStudents();
-  const { addTraining, updateTraining } = useTrainings();
+  const { trainings, addTraining, updateTraining } = useTrainings();
   const activeStudents = students.filter((s) => s.active).sort((a, b) => a.name.localeCompare(b.name, 'pt-BR'));
   const isEditing = !!training;
   const [saving, setSaving] = useState(false);
@@ -44,7 +44,7 @@ function TrainingFormDialog({
   const [formTime, setFormTime] = useState<string>(training?.time || '');
   const [formLocation, setFormLocation] = useState(training?.location || '');
   const [formStudentIds, setFormStudentIds] = useState<string[]>(training?.studentIds || []);
-  const [repeatMonth, setRepeatMonth] = useState(false);
+  const [recurrence, setRecurrence] = useState<'none' | 'month' | 'quarter'>('none');
   const [studentSearch, setStudentSearch] = useState('');
 
   const filteredStudents = activeStudents.filter((s) =>
@@ -55,20 +55,24 @@ function TrainingFormDialog({
     setFormStudentIds((prev) => prev.includes(id) ? prev.filter((s) => s !== id) : [...prev, id]);
   };
 
-  const getMonthDatesForDayOfWeek = (dateStr: string): string[] => {
+  const getFutureDatesForDayOfWeek = (dateStr: string, monthsAhead: number): string[] => {
     const date = new Date(dateStr + 'T12:00:00');
     const dayOfWeek = date.getDay();
-    const year = date.getFullYear();
-    const month = date.getMonth();
-    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    const startYear = date.getFullYear();
+    const startMonth = date.getMonth();
+    
+    const endDate = new Date(startYear, startMonth + monthsAhead + 1, 0); 
     const dates: string[] = [];
-    for (let d = 1; d <= daysInMonth; d++) {
-      const candidate = new Date(year, month, d);
-      if (candidate.getDay() === dayOfWeek) {
-        dates.push(candidate.toISOString().split('T')[0]);
+    
+    const currentIterDate = new Date(startYear, startMonth, 1);
+    while (currentIterDate <= endDate) {
+      if (currentIterDate.getDay() === dayOfWeek) {
+        dates.push(currentIterDate.toISOString().split('T')[0]);
       }
+      currentIterDate.setDate(currentIterDate.getDate() + 1);
     }
-    return dates;
+    
+    return dates.filter((d) => d >= dateStr);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -80,26 +84,50 @@ function TrainingFormDialog({
     setSaving(true);
     try {
       const baseData = { time: formTime as TimeSlot, studentIds: formStudentIds, location: formLocation };
+      
+      let datesToSchedule: string[] = [formDate];
+      if (recurrence === 'month') {
+        datesToSchedule = getFutureDatesForDayOfWeek(formDate, 0);
+      } else if (recurrence === 'quarter') {
+        datesToSchedule = getFutureDatesForDayOfWeek(formDate, 3);
+      }
+
       if (isEditing) {
+        // Atualiza a data atual do modal
         await updateTraining(training.id, { ...baseData, date: formDate });
-        if (repeatMonth) {
-          const dates = getMonthDatesForDayOfWeek(formDate).filter((d) => d !== formDate);
-          for (const date of dates) {
+        const extraDates = datesToSchedule.filter((d) => d !== formDate && d > formDate);
+        
+        for (const date of extraDates) {
+          // Anti-Ghosting: Busca colisões na agenda para sobrescrever em vez de duplicar
+          const existing = trainings.find((t) => t.date === date && t.time === formTime);
+          if (existing) {
+            await updateTraining(existing.id, { ...baseData, date });
+          } else {
             await addTraining({ ...baseData, date });
           }
-          toast({ title: `Treino atualizado e replicado!`, description: `${dates.length + 1} treinos no mês (todas as ${getDayName(formDate)}s)` });
+        }
+        
+        if (extraDates.length > 0) {
+          toast({ title: `Treino atualizado e replicado!`, description: `${extraDates.length + 1} treinos ajustados na agenda.` });
         } else {
           toast({ title: 'Treino atualizado!' });
         }
-      } else if (repeatMonth) {
-        const dates = getMonthDatesForDayOfWeek(formDate);
-        for (const date of dates) {
-          await addTraining({ ...baseData, date });
-        }
-        toast({ title: `${dates.length} treinos agendados!`, description: `Todas as ${getDayName(formDate)}s do mês` });
       } else {
-        await addTraining({ ...baseData, date: formDate });
-        toast({ title: 'Treino agendado!' });
+        for (const date of datesToSchedule) {
+          // O mesmo processo previne duplicatas ao se cadastrar em lote novo
+          const existing = trainings.find((t) => t.date === date && t.time === formTime);
+          if (existing) {
+            await updateTraining(existing.id, { ...baseData, date });
+          } else {
+            await addTraining({ ...baseData, date });
+          }
+        }
+        
+        if (datesToSchedule.length > 1) {
+          toast({ title: `${datesToSchedule.length} treinos processados!`, description: `Pauta atualizada usando a proteção de agenda.` });
+        } else {
+          toast({ title: 'Treino agendado!' });
+        }
       }
       onSaved?.(formDate);
       onOpenChange(false);
@@ -121,12 +149,21 @@ function TrainingFormDialog({
             <Input type="date" value={formDate} onChange={(e) => setFormDate(e.target.value)} />
           </div>
 
-          <div className="flex items-center gap-2 p-3 rounded-lg bg-muted/50 border border-border/50">
-            <Checkbox id="repeat-month" checked={repeatMonth} onCheckedChange={(v) => setRepeatMonth(v === true)} />
-            <Label htmlFor="repeat-month" className="cursor-pointer text-sm font-medium flex items-center gap-2">
-              <Repeat className="h-4 w-4 text-primary" />
-              Repetir em todas as {getDayName(formDate)}s do mês
-            </Label>
+          <div className="space-y-2">
+            <Label>Recorrência de Treino</Label>
+            <Select value={recurrence} onValueChange={(value: any) => setRecurrence(value)}>
+              <SelectTrigger className="bg-muted/50 border-border/50">
+                <div className="flex items-center gap-2">
+                  <Repeat className="h-4 w-4 text-primary" />
+                  <SelectValue placeholder="Selecione a recorrência" />
+                </div>
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">Somente nesta data ({formatDate(formDate)})</SelectItem>
+                <SelectItem value="month">Repetir até o fim do mês (Todas as {getDayName(formDate)}s)</SelectItem>
+                <SelectItem value="quarter">Repetir por 3 meses (Mensalidade Completa)</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
 
           <div className="space-y-2">
@@ -174,7 +211,9 @@ function TrainingFormDialog({
           <div className="flex gap-3 pt-4">
             <Button type="button" variant="outline" className="flex-1" onClick={() => onOpenChange(false)}>Cancelar</Button>
             <Button type="submit" className="flex-1 btn-primary-gradient" disabled={saving}>
-              {saving ? <div className="h-4 w-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : isEditing ? 'Salvar' : repeatMonth ? 'Agendar Mês' : 'Agendar'}
+              {saving ? <div className="h-4 w-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : 
+               isEditing ? 'Salvar' : 
+               recurrence !== 'none' ? 'Agendar em Lote' : 'Agendar'}
             </Button>
           </div>
         </form>

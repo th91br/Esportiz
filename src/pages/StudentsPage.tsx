@@ -70,9 +70,9 @@ export default function StudentsPage() {
         </div>
 
         {filteredStudents.length > 0 ? (
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5 md:gap-6">
             {filteredStudents.map((student, index) => (
-              <div key={student.id} className="animate-fade-up opacity-0" style={{ animationDelay: `${index * 0.05}s`, animationFillMode: 'forwards' }}>
+              <div key={student.id} className="animate-fade-up opacity-0 h-full" style={{ animationDelay: `${index * 0.05}s`, animationFillMode: 'forwards' }}>
                 <StudentCard student={student} />
               </div>
             ))}

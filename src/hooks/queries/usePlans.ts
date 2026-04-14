@@ -56,9 +56,16 @@ export function usePlans() {
 
       const { error } = await supabase.from('plans').update(updates).eq('id', id);
       if (error) throw error;
+
+      // Sync all unpaid payments for this plan in case the price or properties changed
+      const { error: syncError } = await supabase.rpc('sync_all_unpaid_payments_for_plan', {
+          p_plan_id: id,
+      });
+      if (syncError) throw syncError;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['plans'] });
+      queryClient.invalidateQueries({ queryKey: ['payments'] }); // invalidate payments too so the UI refreshes
     },
     onError: (error: Error) => {
       toast({ title: 'Erro ao atualizar plano', description: error.message, variant: 'destructive' });

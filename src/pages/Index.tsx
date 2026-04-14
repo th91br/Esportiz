@@ -1,9 +1,8 @@
-import { useState } from 'react';
 import { Users, Calendar, CheckCircle, DollarSign, Eye, EyeOff, Cake } from 'lucide-react';
 import { Header } from '@/components/Header';
 import { StatCard } from '@/components/StatCard';
-import { WeeklyCalendar } from '@/components/WeeklyCalendar';
-import { StudentCard } from '@/components/StudentCard';
+import { TodaySchedule } from '@/components/TodaySchedule';
+import { QuickActions } from '@/components/QuickActions';
 import { OverdueAlert } from '@/components/OverdueAlert';
 import { Button } from '@/components/ui/button';
 import { useStudents } from '@/hooks/queries/useStudents';
@@ -11,7 +10,9 @@ import { usePlans } from '@/hooks/queries/usePlans';
 import { useTrainings } from '@/hooks/queries/useTrainings';
 import { useAttendance } from '@/hooks/queries/useAttendance';
 import { usePayments } from '@/hooks/queries/usePayments';
+import { usePrivacyMode } from '@/hooks/usePrivacyMode';
 import { getActiveMonthlyStudents } from '@/lib/studentHelpers';
+import { formatCurrency } from '@/lib/formatCurrency';
 import { DashboardCharts } from '@/components/DashboardCharts';
 
 export default function Index() {
@@ -21,19 +22,31 @@ export default function Index() {
   const { attendance, loadingAttendance } = useAttendance();
   const { payments, loadingPayments } = usePayments();
   const loading = loadingStudents || loadingPlans || loadingTrainings || loadingAttendance || loadingPayments;
-  const [privacyMode, setPrivacyMode] = useState(() => localStorage.getItem('privacyMode') === 'true');
+  const [privacyMode, togglePrivacyMode] = usePrivacyMode();
+
+  const hour = new Date().getHours();
+  const greeting = hour < 12 ? 'Bom dia' : hour < 18 ? 'Boa tarde' : 'Boa noite';
 
   const activeMonthly = getActiveMonthlyStudents(students, plans);
   const activeStudents = activeMonthly.length;
-  const weeklyTrainings = trainings.length;
+  
+  const todayDateStr = new Date().toISOString().split('T')[0];
+  const todayTrainings = trainings.filter(t => t.date === todayDateStr).length;
+
   const attendanceRate = attendance.length > 0
     ? Math.round((attendance.filter((a) => a.present).length / attendance.length) * 100)
     : 0;
-  const monthlyRevenue = plans.reduce((sum, plan) => {
-    if (plan.billingType !== 'monthly') return sum;
-    const count = activeMonthly.filter((s) => s.planId === plan.id).length;
-    return sum + count * plan.price;
-  }, 0);
+    
+  const currentMonthStr = new Date().toISOString().slice(0, 7);
+  let expectedRevenue = 0;
+  let receivedRevenue = 0;
+  payments.forEach(p => {
+    if (p.monthRef === currentMonthStr) {
+      expectedRevenue += p.amount;
+      if (p.paid) receivedRevenue += p.amount;
+    }
+  });
+  const revenueProgress = expectedRevenue > 0 ? (receivedRevenue / expectedRevenue) * 100 : 0;
   
   const birthdaysToday = students.filter(student => {
     if (!student.active || !student.birthDate) return false;
@@ -52,14 +65,17 @@ export default function Index() {
           <div className="bg-gradient-hero rounded-2xl p-6 md:p-8 text-white">
             <div className="max-w-2xl">
               <p className="text-white/80 text-sm font-medium mb-2">
-                Bem-vindo de volta!
+                {greeting}, seja bem-vindo(a) de volta!
               </p>
               <h1 className="font-display text-2xl md:text-3xl lg:text-4xl font-extrabold mb-2">
                 Resenha's Escola de Futevôlei
               </h1>
-              <p className="text-white/80 text-sm md:text-base italic">
-                A sua evolução é nossa motivação.
-              </p>
+              <div className="flex flex-col sm:flex-row gap-3 mt-4 text-sm font-medium text-white/90">
+                <span className="bg-white/20 px-3 py-1.5 rounded-full inline-flex items-center gap-2 w-fit">
+                  <Calendar className="h-4 w-4" /> 
+                  {loadingTrainings ? '...' : todayTrainings > 0 ? `${todayTrainings} treino(s) agendado(s) para hoje` : 'Nenhum treino hoje'}
+                </span>
+              </div>
             </div>
           </div>
         </section>
@@ -99,11 +115,7 @@ export default function Index() {
               variant="ghost"
               size="icon"
               className="rounded-full h-8 w-8"
-              onClick={() => {
-                const next = !privacyMode;
-                setPrivacyMode(next);
-                localStorage.setItem('privacyMode', String(next));
-              }}
+              onClick={togglePrivacyMode}
               title={privacyMode ? 'Mostrar dados' : 'Ocultar dados'}
             >
               {privacyMode ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
@@ -111,9 +123,14 @@ export default function Index() {
           </div>
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
             <StatCard title="Alunos Ativos" value={loading ? '...' : privacyMode ? '••••' : activeStudents} icon={Users} description={privacyMode ? '' : `${activeStudents} com plano mensal`} />
-            <StatCard title="Treinos Semana" value={loading ? '...' : privacyMode ? '••••' : weeklyTrainings} icon={Calendar} variant="primary" />
+            <StatCard title="Treinos de Hoje" value={loading ? '...' : privacyMode ? '••••' : todayTrainings} icon={Calendar} variant="primary" />
             <StatCard title="Taxa de Presença" value={loading ? '...' : privacyMode ? '••••' : `${attendanceRate}%`} icon={CheckCircle} />
-            <StatCard title="Receita Mensal" value={loading ? '...' : privacyMode ? '••••' : `R$ ${monthlyRevenue.toLocaleString('pt-BR')}`} icon={DollarSign} />
+            <StatCard 
+               title="Recebido no Mês" 
+               value={loading ? '...' : privacyMode ? '••••' : formatCurrency(receivedRevenue)} 
+               icon={DollarSign} 
+               progress={privacyMode ? undefined : { value: revenueProgress, label: 'Meta Mensal' }}
+            />
           </div>
         </section>
 
@@ -129,21 +146,10 @@ export default function Index() {
         {/* Main Content Grid */}
         <div className="grid lg:grid-cols-3 gap-6 animate-fade-up" style={{ animationDelay: '0.2s' }}>
           <div className="lg:col-span-2">
-            <WeeklyCalendar />
+            <TodaySchedule />
           </div>
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <h2 className="section-title text-xl">Alunos Recentes</h2>
-              <a href="/alunos" className="text-sm text-primary font-medium hover:underline">Ver todos →</a>
-            </div>
-            <div className="space-y-3">
-              {students.filter((s) => s.active).slice(0, 3).map((student) => (
-                <StudentCard key={student.id} student={student} />
-              ))}
-              {students.length === 0 && !loading && (
-                <p className="text-sm text-muted-foreground text-center py-8">Nenhum aluno cadastrado ainda.</p>
-              )}
-            </div>
+          <div className="lg:col-span-1 border border-border/50 rounded-2xl bg-muted/5 flex flex-col pt-1 p-0.5">
+            <QuickActions />
           </div>
         </div>
       </main>

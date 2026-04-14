@@ -1,5 +1,5 @@
 import { useState, useMemo, useRef, useEffect, useCallback } from 'react';
-import { Bell, Clock, Users, MapPin, AlertTriangle, X, Check, Trash2, CheckCheck, Calendar } from 'lucide-react';
+import { Bell, Clock, Users, MapPin, AlertTriangle, X, Check, Trash2, CheckCheck, Calendar, Cake, CreditCard, Undo2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useQueryClient } from '@tanstack/react-query';
 import { useStudents } from '@/hooks/queries/useStudents';
@@ -8,12 +8,13 @@ import { usePayments } from '@/hooks/queries/usePayments';
 import { useAttendance } from '@/hooks/queries/useAttendance';
 import { getEndTime } from '@/data/mockData';
 import { Link } from 'react-router-dom';
-import { Button } from '@/components/ui/button';
 import { toast } from '@/hooks/use-toast';
 
+// ── localStorage dismiss (only for manual "X" dismiss, NOT for completed status) ──
 type DismissedNotifications = {
-  trainings: string[]; // dismissed training IDs
-  overduePayments: boolean; // whether overdue section is dismissed
+  trainings: string[];       // manually dismissed training IDs (X button)
+  overduePayments: boolean;  // whether overdue section is dismissed
+  dismissDate: string;       // the date these dismissals apply to (resets daily)
 };
 
 const STORAGE_KEY = 'resenhas-dismissed-notifications';
@@ -21,26 +22,27 @@ const STORAGE_KEY = 'resenhas-dismissed-notifications';
 function getDismissed(): DismissedNotifications {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) return JSON.parse(raw);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      const today = new Date().toISOString().split('T')[0];
+      // Reset dismissals if they're from a different day
+      if (parsed.dismissDate !== today) {
+        return { trainings: [], overduePayments: false, dismissDate: today };
+      }
+      return { ...parsed, dismissDate: today };
+    }
   } catch {}
-  return { trainings: [], overduePayments: false };
+  return { trainings: [], overduePayments: false, dismissDate: new Date().toISOString().split('T')[0] };
 }
 
 function saveDismissed(d: DismissedNotifications) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(d));
 }
 
-// Clean old dismissed trainings daily
-function cleanDismissedTrainings(dismissed: DismissedNotifications, validIds: string[]): DismissedNotifications {
-  const validSet = new Set(validIds);
-  const cleaned = dismissed.trainings.filter(id => validSet.has(id));
-  return { ...dismissed, trainings: cleaned };
-}
-
 export function NotificationBell() {
   const queryClient = useQueryClient();
   const { students } = useStudents();
-  const { trainings, deleteTraining } = useTrainings();
+  const { trainings, deleteTraining, markTrainingComplete, unmarkTrainingComplete } = useTrainings();
   const { payments } = usePayments();
   const { attendance, toggleAttendance } = useAttendance();
 
@@ -49,20 +51,31 @@ export function NotificationBell() {
   };
   const [open, setOpen] = useState(false);
   const [dismissed, setDismissed] = useState<DismissedNotifications>(getDismissed);
-  const [tab, setTab] = useState<'all' | 'trainings' | 'payments'>('all');
+  const [tab, setTab] = useState<'all' | 'trainings' | 'payments' | 'birthdays'>('all');
   const ref = useRef<HTMLDivElement>(null);
 
   const today = new Date().toISOString().split('T')[0];
   const now = new Date();
-  const currentHour = now.getHours();
+  const currentMinutes = now.getHours() * 60 + now.getMinutes();
 
-  // Today's trainings
+  // ── Today's trainings ──
   const todayTrainings = useMemo(
     () => trainings.filter((t) => t.date === today).sort((a, b) => a.time.localeCompare(b.time)),
     [trainings, today]
   );
 
-  // Overdue payments
+  // Trainings split by status
+  const pendingTrainings = useMemo(
+    () => todayTrainings.filter(t => !t.completed && !dismissed.trainings.includes(t.id)),
+    [todayTrainings, dismissed]
+  );
+
+  const completedTrainings = useMemo(
+    () => todayTrainings.filter(t => t.completed),
+    [todayTrainings]
+  );
+
+  // ── Overdue payments ──
   const overduePayments = useMemo(
     () => payments.filter((p) => !p.paid && p.dueDate < today),
     [payments, today]
@@ -73,24 +86,40 @@ export function NotificationBell() {
     [overduePayments]
   );
 
-  // Active (non-dismissed) notifications
-  const activeTrainings = useMemo(
-    () => todayTrainings.filter(t => !dismissed.trainings.includes(t.id)),
-    [todayTrainings, dismissed]
+  // ── Payments due today or tomorrow ──
+  const tomorrow = useMemo(() => {
+    const d = new Date();
+    d.setDate(d.getDate() + 1);
+    return d.toISOString().split('T')[0];
+  }, []);
+
+  const upcomingPayments = useMemo(
+    () => payments.filter((p) => !p.paid && (p.dueDate === today || p.dueDate === tomorrow)),
+    [payments, today, tomorrow]
   );
 
+  // ── Birthdays today ──
+  const todayBirthdays = useMemo(() => {
+    const monthDay = today.slice(5); // "MM-DD"
+    return students.filter(s => s.active && s.birthDate && s.birthDate.slice(5) === monthDay);
+  }, [students, today]);
+
   const showOverdue = overduePayments.length > 0 && !dismissed.overduePayments;
+  const showUpcoming = upcomingPayments.length > 0;
 
-  const totalActive = activeTrainings.length + (showOverdue ? 1 : 0);
+  // Count only truly actionable items for the badge
+  const totalActive = pendingTrainings.length
+    + (showOverdue ? 1 : 0)
+    + (showUpcoming ? 1 : 0)
+    + todayBirthdays.length;
 
-  // Clean dismissed on mount
+  // ── Reset dismissals when the day changes (via dismissDate field) ──
   useEffect(() => {
-    const cleaned = cleanDismissedTrainings(dismissed, todayTrainings.map(t => t.id));
-    if (cleaned.trainings.length !== dismissed.trainings.length) {
-      // Also reset overdue dismiss daily
-      const updated = { ...cleaned, overduePayments: false };
-      setDismissed(updated);
-      saveDismissed(updated);
+    const currentDate = new Date().toISOString().split('T')[0];
+    if (dismissed.dismissDate !== currentDate) {
+      const reset: DismissedNotifications = { trainings: [], overduePayments: false, dismissDate: currentDate };
+      setDismissed(reset);
+      saveDismissed(reset);
     }
   }, [todayTrainings]);
 
@@ -116,13 +145,14 @@ export function NotificationBell() {
   }, [dismissed]);
 
   const dismissAll = useCallback(() => {
-    const updated = {
-      trainings: todayTrainings.map(t => t.id),
+    const updated: DismissedNotifications = {
+      trainings: todayTrainings.filter(t => !t.completed).map(t => t.id),
       overduePayments: overduePayments.length > 0,
+      dismissDate: today,
     };
     setDismissed(updated);
     saveDismissed(updated);
-  }, [todayTrainings, overduePayments]);
+  }, [todayTrainings, overduePayments, today]);
 
   const handleMarkComplete = useCallback(async (trainingId: string) => {
     const training = trainings.find(t => t.id === trainingId);
@@ -136,10 +166,17 @@ export function NotificationBell() {
       }
     }
 
-    dismissTraining(trainingId);
+    // Persist completed status in the DATABASE (not localStorage!)
+    await markTrainingComplete(trainingId);
     await refreshData();
     toast({ title: '✅ Treino concluído', description: 'Todos os alunos foram marcados como presentes.' });
-  }, [trainings, attendance, toggleAttendance, dismissTraining, refreshData]);
+  }, [trainings, attendance, toggleAttendance, markTrainingComplete, refreshData]);
+
+  const handleUndoComplete = useCallback(async (trainingId: string) => {
+    await unmarkTrainingComplete(trainingId);
+    await refreshData();
+    toast({ title: '↩️ Treino reaberto', description: 'O treino voltou para pendente.' });
+  }, [unmarkTrainingComplete, refreshData]);
 
   const handleDeleteTraining = useCallback(async (trainingId: string) => {
     await deleteTraining(trainingId);
@@ -150,14 +187,25 @@ export function NotificationBell() {
 
   const getTrainingStatus = (time: string): 'upcoming' | 'now' | 'past' => {
     const hour = parseInt(time.split(':')[0]);
-    if (hour === currentHour) return 'now';
-    if (hour > currentHour) return 'upcoming';
+    const trainingStart = hour * 60;
+    const trainingEnd = trainingStart + 60; // each session = 1h
+    if (currentMinutes >= trainingStart && currentMinutes < trainingEnd) return 'now';
+    if (currentMinutes < trainingStart) return 'upcoming';
     return 'past';
   };
 
   // Filter by tab
   const showTrainings = tab === 'all' || tab === 'trainings';
   const showPayments = tab === 'all' || tab === 'payments';
+  const showBirthdays = tab === 'all' || tab === 'birthdays';
+
+  // Tab counts
+  const tabCounts = {
+    all: totalActive,
+    trainings: pendingTrainings.length,
+    payments: (showOverdue ? 1 : 0) + (showUpcoming ? 1 : 0),
+    birthdays: todayBirthdays.length,
+  };
 
   return (
     <div className="relative" ref={ref}>
@@ -209,13 +257,8 @@ export function NotificationBell() {
 
           {/* Tabs */}
           <div className="flex border-b border-border/50 bg-muted/10">
-            {(['all', 'trainings', 'payments'] as const).map((t) => {
-              const labels = { all: 'Todas', trainings: 'Treinos', payments: 'Pagamentos' };
-              const counts = {
-                all: totalActive,
-                trainings: activeTrainings.length,
-                payments: showOverdue ? 1 : 0,
-              };
+            {(['all', 'trainings', 'payments', 'birthdays'] as const).map((t) => {
+              const labels = { all: 'Todas', trainings: 'Treinos', payments: 'Pagamentos', birthdays: '🎂' };
               return (
                 <button
                   key={t}
@@ -228,12 +271,12 @@ export function NotificationBell() {
                   )}
                 >
                   {labels[t]}
-                  {counts[t] > 0 && (
+                  {tabCounts[t] > 0 && (
                     <span className={cn(
                       "ml-1 px-1 py-0.5 rounded text-[9px] font-bold",
                       tab === t ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"
                     )}>
-                      {counts[t]}
+                      {tabCounts[t]}
                     </span>
                   )}
                   {tab === t && (
@@ -247,16 +290,78 @@ export function NotificationBell() {
           {/* Content */}
           <div className="max-h-[400px] overflow-y-auto">
             {/* Empty State */}
-            {((showTrainings && activeTrainings.length === 0 && showPayments && !showOverdue) ||
-              (tab === 'trainings' && activeTrainings.length === 0) ||
-              (tab === 'payments' && !showOverdue)) &&
-              !(tab === 'all' && (activeTrainings.length > 0 || showOverdue)) && (
+            {totalActive === 0 && completedTrainings.length === 0 && (
               <div className="p-8 text-center">
                 <div className="flex h-12 w-12 mx-auto items-center justify-center rounded-full bg-primary/5 mb-3">
                   <CheckCheck className="h-5 w-5 text-primary/50" />
                 </div>
                 <p className="text-sm font-medium text-muted-foreground">Tudo em dia!</p>
                 <p className="text-xs text-muted-foreground/70 mt-0.5">Nenhuma notificação pendente.</p>
+              </div>
+            )}
+
+            {/* Birthdays */}
+            {showBirthdays && todayBirthdays.length > 0 && (
+              <div className="p-3 border-b border-border/30">
+                <div className="rounded-lg bg-pink-500/5 border border-pink-500/10 p-3">
+                  <div className="flex items-start gap-3">
+                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-pink-500/10 text-pink-500">
+                      <Cake className="h-4 w-4" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold text-pink-600 dark:text-pink-400">
+                        🎂 Aniversariante{todayBirthdays.length !== 1 ? 's' : ''} do Dia!
+                      </p>
+                      <div className="flex flex-wrap gap-1 mt-2">
+                        {todayBirthdays.map((s) => (
+                          <span key={s.id} className="px-2 py-0.5 rounded-full bg-pink-500/10 text-pink-600 dark:text-pink-400 text-[10px] font-medium">
+                            {s.name.split(' ')[0]}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Upcoming Payments (due today/tomorrow) */}
+            {showPayments && showUpcoming && (
+              <div className="p-3 border-b border-border/30">
+                <div className="rounded-lg bg-amber-500/5 border border-amber-500/10 p-3">
+                  <div className="flex items-start gap-3">
+                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-amber-500/10 text-amber-500">
+                      <CreditCard className="h-4 w-4" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold text-amber-600 dark:text-amber-400">
+                        Pagamentos Próximos
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        {upcomingPayments.filter(p => p.dueDate === today).length > 0 && (
+                          <span className="font-semibold text-amber-600 dark:text-amber-400">
+                            {upcomingPayments.filter(p => p.dueDate === today).length} vence{upcomingPayments.filter(p => p.dueDate === today).length !== 1 ? 'm' : ''} hoje
+                          </span>
+                        )}
+                        {upcomingPayments.filter(p => p.dueDate === today).length > 0 && upcomingPayments.filter(p => p.dueDate === tomorrow).length > 0 && ' · '}
+                        {upcomingPayments.filter(p => p.dueDate === tomorrow).length > 0 && (
+                          <span>
+                            {upcomingPayments.filter(p => p.dueDate === tomorrow).length} vence{upcomingPayments.filter(p => p.dueDate === tomorrow).length !== 1 ? 'm' : ''} amanhã
+                          </span>
+                        )}
+                      </p>
+                      <div className="flex items-center gap-2 mt-2">
+                        <Link
+                          to="/pagamentos"
+                          onClick={() => setOpen(false)}
+                          className="text-[10px] text-primary font-semibold hover:underline"
+                        >
+                          Ver pagamentos →
+                        </Link>
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </div>
             )}
 
@@ -314,17 +419,17 @@ export function NotificationBell() {
               </div>
             )}
 
-            {/* Today's Trainings */}
-            {showTrainings && activeTrainings.length > 0 && (
+            {/* Today's Trainings — Pending */}
+            {showTrainings && pendingTrainings.length > 0 && (
               <div className="p-3">
                 <div className="flex items-center gap-2 mb-2 px-1">
                   <Calendar className="h-3 w-3 text-primary" />
                   <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
-                    Treinos de Hoje — {todayTrainings.length} total
+                    Treinos Pendentes — {pendingTrainings.length}
                   </span>
                 </div>
                 <div className="space-y-2">
-                  {activeTrainings.map((t) => {
+                  {pendingTrainings.map((t) => {
                     const trainingStudents = students.filter((s) => t.studentIds.includes(s.id));
                     const status = getTrainingStatus(t.time);
                     
@@ -417,6 +522,75 @@ export function NotificationBell() {
                     );
                   })}
                 </div>
+              </div>
+            )}
+
+            {/* Today's Trainings — Completed (always visible, distinct style) */}
+            {showTrainings && completedTrainings.length > 0 && (
+              <div className="p-3 border-t border-border/30">
+                <div className="flex items-center gap-2 mb-2 px-1">
+                  <CheckCheck className="h-3 w-3 text-emerald-500" />
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">
+                    Executados Hoje — {completedTrainings.length}
+                  </span>
+                </div>
+                <div className="space-y-2">
+                  {completedTrainings.map((t) => {
+                    const trainingStudents = students.filter((s) => t.studentIds.includes(s.id));
+                    
+                    return (
+                      <div
+                        key={t.id}
+                        className="rounded-lg border border-emerald-500/20 bg-emerald-500/5 p-3 transition-all"
+                      >
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="flex items-start gap-2.5 flex-1 min-w-0">
+                            {/* Time badge — completed style */}
+                            <div className="flex flex-col items-center rounded-lg px-2 py-1.5 min-w-[52px] bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+                              <span className="text-xs font-bold leading-none">{t.time}</span>
+                              <span className="text-[9px] leading-none mt-0.5">{getEndTime(t.time)}</span>
+                            </div>
+
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-1.5">
+                                <Check className="h-3 w-3 text-emerald-500" />
+                                <span className="text-xs font-semibold text-emerald-600 dark:text-emerald-400">Executado</span>
+                                {t.completedAt && (
+                                  <span className="text-[9px] text-muted-foreground">
+                                    às {new Date(t.completedAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                                  </span>
+                                )}
+                              </div>
+                              <div className="flex items-center gap-2 mt-1 text-[11px] text-muted-foreground">
+                                <span className="flex items-center gap-0.5">
+                                  <MapPin className="h-3 w-3" />{t.location || 'Local'}
+                                </span>
+                                <span className="flex items-center gap-0.5">
+                                  <Users className="h-3 w-3" />{trainingStudents.length} aluno{trainingStudents.length !== 1 ? 's' : ''}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Undo action */}
+                          <button
+                            onClick={() => handleUndoComplete(t.id)}
+                            className="p-1.5 rounded-md hover:bg-muted text-muted-foreground hover:text-foreground transition-colors shrink-0"
+                            title="Desfazer conclusão"
+                          >
+                            <Undo2 className="h-3.5 w-3.5" />
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* Calendar link */}
+            {showTrainings && (pendingTrainings.length > 0 || completedTrainings.length > 0) && (
+              <div className="px-3 pb-3">
                 <Link
                   to="/calendario"
                   onClick={() => setOpen(false)}
@@ -432,7 +606,10 @@ export function NotificationBell() {
           {/* Footer */}
           <div className="px-4 py-2 border-t border-border/50 bg-muted/20">
             <p className="text-[10px] text-muted-foreground text-center">
-              {todayTrainings.length} treino{todayTrainings.length !== 1 ? 's' : ''} hoje · {overduePayments.length} pagamento{overduePayments.length !== 1 ? 's' : ''} atrasado{overduePayments.length !== 1 ? 's' : ''}
+              {todayTrainings.length} treino{todayTrainings.length !== 1 ? 's' : ''} hoje
+              {completedTrainings.length > 0 && ` · ${completedTrainings.length} executado${completedTrainings.length !== 1 ? 's' : ''}`}
+              {' '}· {overduePayments.length} atrasado{overduePayments.length !== 1 ? 's' : ''}
+              {todayBirthdays.length > 0 && ` · ${todayBirthdays.length} 🎂`}
             </p>
           </div>
         </div>

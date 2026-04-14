@@ -26,13 +26,15 @@ export function useTrainings() {
                 studentIds: (t.training_students || []).map((ts: any) => ts.student_id),
                 location: t.location,
                 notes: t.notes,
+                completed: t.completed ?? false,
+                completedAt: t.completed_at ?? undefined,
             })) as Training[];
         },
         enabled: !!user,
     });
 
     const addTrainingMutation = useMutation({
-        mutationFn: async (data: Omit<Training, 'id'>) => {
+        mutationFn: async (data: Omit<Training, 'id' | 'completed' | 'completedAt'>) => {
             if (!user) throw new Error('Usuário não autenticado');
 
             const { data: training, error } = await supabase.from('trainings').insert({
@@ -107,11 +109,45 @@ export function useTrainings() {
         }
     });
 
+    const markCompleteMutation = useMutation({
+        mutationFn: async (id: string) => {
+            const { error } = await supabase
+                .from('trainings')
+                .update({ completed: true, completed_at: new Date().toISOString() } as any)
+                .eq('id', id);
+            if (error) throw error;
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['trainings'] });
+        },
+        onError: (error: Error) => {
+            toast({ title: 'Erro ao marcar treino', description: error.message, variant: 'destructive' });
+        }
+    });
+
+    const unmarkCompleteMutation = useMutation({
+        mutationFn: async (id: string) => {
+            const { error } = await supabase
+                .from('trainings')
+                .update({ completed: false, completed_at: null } as any)
+                .eq('id', id);
+            if (error) throw error;
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['trainings'] });
+        },
+        onError: (error: Error) => {
+            toast({ title: 'Erro ao desmarcar treino', description: error.message, variant: 'destructive' });
+        }
+    });
+
     return {
         trainings,
         loadingTrainings,
-        addTraining: async (training: Omit<Training, 'id'>) => addTrainingMutation.mutateAsync(training),
+        addTraining: async (training: Omit<Training, 'id' | 'completed' | 'completedAt'>) => addTrainingMutation.mutateAsync(training),
         updateTraining: async (id: string, data: Partial<Training>) => updateTrainingMutation.mutateAsync({ id, data }),
         deleteTraining: async (id: string) => deleteTrainingMutation.mutateAsync(id),
+        markTrainingComplete: async (id: string) => markCompleteMutation.mutateAsync(id),
+        unmarkTrainingComplete: async (id: string) => unmarkCompleteMutation.mutateAsync(id),
     };
 }

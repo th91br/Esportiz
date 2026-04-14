@@ -2,6 +2,7 @@ import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip, Area, AreaCh
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import type { Payment, Attendance } from '@/data/mockData';
 import { useTheme } from 'next-themes';
+import { formatCurrency } from '@/lib/formatCurrency';
 
 interface DashboardChartsProps {
     payments: Payment[];
@@ -52,7 +53,7 @@ export function DashboardCharts({ payments, attendance, privacyMode }: Dashboard
 
     const tooltipFormatter = (value: number) => {
         if (privacyMode) return ['••••', ''];
-        return [value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }), ''];
+        return [formatCurrency(value), ''];
     };
 
     const attendanceTooltipFormatter = (value: number) => {
@@ -80,7 +81,7 @@ export function DashboardCharts({ payments, attendance, privacyMode }: Dashboard
                                     fontSize={12}
                                     tickLine={false}
                                     axisLine={false}
-                                    tickFormatter={(val) => privacyMode ? '•••' : `R$ ${val}`}
+                                    tickFormatter={(val) => privacyMode ? '•••' : formatCurrency(val)}
                                 />
                                 <Tooltip
                                     cursor={{ fill: theme === 'dark' ? '#1e293b' : '#f1f5f9' }}

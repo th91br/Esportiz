@@ -17,7 +17,7 @@ export function useApp() {
   const queryClient = useQueryClient();
   const { students, loadingStudents, addStudent, updateStudent, deleteStudent } = useStudents();
   const { plans, loadingPlans, addPlan, updatePlan, deletePlan } = usePlans();
-  const { trainings, loadingTrainings, addTraining, updateTraining, deleteTraining } = useTrainings();
+  const { trainings, loadingTrainings, addTraining, updateTraining, deleteTraining, markTrainingComplete, unmarkTrainingComplete } = useTrainings();
   const { attendance, loadingAttendance, toggleAttendance, getAttendanceStatus } = useAttendance();
   const { payments, loadingPayments, generateMonthlyPayments, markAsPaid, markAsUnpaid, deletePayment } = usePayments();
 
@@ -48,6 +48,8 @@ export function useApp() {
     addTraining,
     updateTraining,
     deleteTraining,
+    markTrainingComplete,
+    unmarkTrainingComplete,
     toggleAttendance,
     getAttendanceStatus,
     addPlan,

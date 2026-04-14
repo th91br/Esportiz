@@ -10,6 +10,10 @@ interface StatCardProps {
     value: number;
     isPositive: boolean;
   };
+  progress?: {
+    value: number;
+    label?: string;
+  };
   variant?: 'default' | 'primary' | 'success' | 'warning';
 }
 
@@ -19,6 +23,7 @@ export function StatCard({
   icon: Icon,
   description,
   trend,
+  progress,
   variant = 'default',
 }: StatCardProps) {
   const variants = {
@@ -44,7 +49,7 @@ export function StatCard({
       )}
     >
       <div className="flex items-start justify-between">
-        <div className="space-y-2">
+        <div className="space-y-2 w-full">
           <p
             className={cn(
               'text-sm font-medium',
@@ -54,7 +59,7 @@ export function StatCard({
             {title}
           </p>
           <p className="stat-value">{value}</p>
-          {description && (
+          {description && !progress && (
             <p
               className={cn(
                 'text-sm',
@@ -77,10 +82,24 @@ export function StatCard({
               <span className="opacity-70">vs semana anterior</span>
             </div>
           )}
+          {progress && (
+            <div className="mt-4 pt-2">
+              <div className="flex justify-between items-center text-xs mb-1.5">
+                <span className={cn(variant === 'default' ? 'text-muted-foreground' : 'opacity-80')}>{progress.label || 'Progresso'}</span>
+                <span className="font-semibold">{Math.round(progress.value)}%</span>
+              </div>
+              <div className="h-1.5 w-full bg-muted/30 rounded-full overflow-hidden">
+                <div 
+                  className={cn("h-full rounded-full transition-all duration-500", variant === 'default' ? 'bg-primary' : 'bg-white')} 
+                  style={{ width: `${Math.min(100, Math.max(0, progress.value))}%` }}
+                />
+              </div>
+            </div>
+          )}
         </div>
         <div
           className={cn(
-            'flex h-12 w-12 items-center justify-center rounded-xl',
+            'flex h-12 w-12 shrink-0 ml-4 items-center justify-center rounded-xl',
             iconVariants[variant]
           )}
         >

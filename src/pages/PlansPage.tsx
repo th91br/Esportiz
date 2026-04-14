@@ -17,6 +17,9 @@ import {
 import { toast } from '@/hooks/use-toast';
 import { usePlans } from '@/hooks/queries/usePlans';
 import { useStudents } from '@/hooks/queries/useStudents';
+import { usePrivacyMode } from '@/hooks/usePrivacyMode';
+import { formatCurrency } from '@/lib/formatCurrency';
+import { getActiveMonthlyStudents } from '@/lib/studentHelpers';
 import type { Plan } from '@/data/mockData';
 
 export default function PlansPage() {
@@ -29,7 +32,7 @@ export default function PlansPage() {
   const [formPrice, setFormPrice] = useState('');
   const [formBillingType, setFormBillingType] = useState<'monthly' | 'per_session'>('monthly');
   const [saving, setSaving] = useState(false);
-  const [privacyMode, setPrivacyMode] = useState(() => localStorage.getItem('privacyMode') === 'true');
+  const [privacyMode, togglePrivacyMode] = usePrivacyMode();
 
   const openNew = () => { setEditingPlan(undefined); setFormName(''); setFormSessions(''); setFormPrice(''); setFormBillingType('monthly'); setDialogOpen(true); };
   const openEdit = (plan: Plan) => { setEditingPlan(plan); setFormName(plan.name); setFormSessions(plan.sessionsPerWeek.toString()); setFormPrice(plan.price.toString()); setFormBillingType(plan.billingType); setDialogOpen(true); };
@@ -57,9 +60,10 @@ export default function PlansPage() {
   };
 
   const getStudentsOnPlan = (planId: string) => students.filter((s) => s.planId === planId && s.active);
+  const activeMonthly = getActiveMonthlyStudents(students, plans);
   const totalRevenue = plans.reduce((sum, plan) => {
-    if (plan.billingType === 'per_session') return sum; // avulso não conta como receita fixa mensal
-    return sum + getStudentsOnPlan(plan.id).length * plan.price;
+    if (plan.billingType === 'per_session') return sum;
+    return sum + activeMonthly.filter(s => s.planId === plan.id).length * plan.price;
   }, 0);
 
   return (
@@ -72,7 +76,7 @@ export default function PlansPage() {
             <p className="text-muted-foreground mt-1">Gerencie os planos de treino e valores</p>
           </div>
           <div className="flex items-center gap-2">
-            <Button variant="ghost" size="icon" className="rounded-full h-8 w-8" onClick={() => { const next = !privacyMode; setPrivacyMode(next); localStorage.setItem('privacyMode', String(next)); }} title={privacyMode ? 'Mostrar dados' : 'Ocultar dados'}>
+            <Button variant="ghost" size="icon" className="rounded-full h-8 w-8" onClick={togglePrivacyMode} title={privacyMode ? 'Mostrar dados' : 'Ocultar dados'}>
               {privacyMode ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
             </Button>
             <Button className="btn-primary-gradient" onClick={openNew}><Plus className="h-4 w-4 mr-2" />Novo Plano</Button>
@@ -81,8 +85,8 @@ export default function PlansPage() {
 
         <div className="card-elevated p-6 bg-gradient-hero text-white">
           <div className="flex items-center gap-3 mb-2"><DollarSign className="h-6 w-6" /><h2 className="font-display font-bold text-xl">Receita Mensal Estimada</h2></div>
-          <p className="font-display text-4xl font-extrabold">{privacyMode ? '••••' : `R$ ${totalRevenue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`}</p>
-          <p className="text-white/70 text-sm mt-1">Baseado em {students.filter((s) => s.active && s.planId).length} aluno(s) com plano ativo (excluindo avulsos e experimentais)</p>
+          <p className="font-display text-4xl font-extrabold">{privacyMode ? '••••' : formatCurrency(totalRevenue)}</p>
+          <p className="text-white/70 text-sm mt-1">Projeção baseada em {activeMonthly.length} aluno(s) mensalista(s) ativo(s)</p>
         </div>
 
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -118,7 +122,7 @@ export default function PlansPage() {
                   </div>
                 </div>
                 <div className="text-3xl font-display font-extrabold text-primary mb-4">
-                  R$ {plan.price.toFixed(2)}
+                  {formatCurrency(plan.price)}
                   <span className="text-sm font-normal text-muted-foreground">{isPerSession ? '/treino' : '/mês'}</span>
                 </div>
                 <div className="mt-auto pt-4 border-t border-border/50">

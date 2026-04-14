@@ -60,6 +60,8 @@ export interface Training {
   studentIds: string[];
   location: string;
   notes?: string;
+  completed: boolean;
+  completedAt?: string;
 }
 
 export interface Attendance {

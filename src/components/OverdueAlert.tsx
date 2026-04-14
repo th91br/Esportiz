@@ -3,6 +3,7 @@ import { AlertTriangle, DollarSign, ArrowRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { usePayments } from '@/hooks/queries/usePayments';
 import { useStudents } from '@/hooks/queries/useStudents';
+import { formatCurrency } from '@/lib/formatCurrency';
 
 export function OverdueAlert() {
   const { payments } = usePayments();
@@ -48,7 +49,7 @@ export function OverdueAlert() {
           <div className="flex items-center gap-4 mt-3">
             <div className="flex items-center gap-1.5 text-destructive font-semibold">
               <DollarSign className="h-4 w-4" />
-              R$ {totalOverdue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+              {formatCurrency(totalOverdue)}
             </div>
             <div className="flex flex-wrap gap-1">
               {Array.from(overdueStudentIds).slice(0, 5).map((sid) => {

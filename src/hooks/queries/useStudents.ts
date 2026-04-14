@@ -92,56 +92,38 @@ export function useStudents() {
             const { error } = await supabase.from('students').update(updates).eq('id', id);
             if (error) throw error;
 
-            // Sync unpaid payments when due day or plan changes
+            // When deactivating: clean up future trainings atomically
+            if (data.active === false) {
+                const { error: cleanupError } = await supabase.rpc('cleanup_student_future_trainings', {
+                    p_student_id: id,
+                } as any);
+                if (cleanupError) throw cleanupError;
+            }
+
+            // Sync unpaid payments when due day or plan changes using our new RPC
             if ('paymentDueDay' in data || 'planId' in data) {
-                // Fetch fresh data for student, old payments and plans to ensure exact calc
-                const { data: studentRecords } = await supabase.from('students').select('*').eq('id', id).single();
-                const { data: plansRes } = await supabase.from('plans').select('*');
-                const { data: paymentsRes } = await supabase.from('payments').select('*').eq('student_id', id).eq('paid', false);
+                const student = students.find(s => s.id === id);
+                const oldPlanId = student?.planId;
+                const newPlanId = 'planId' in data ? data.planId : oldPlanId;
+                const newDueDay = 'paymentDueDay' in data ? data.paymentDueDay : student?.paymentDueDay;
+                
+                const planChanged = 'planId' in data && newPlanId !== oldPlanId;
 
-                if (studentRecords && plansRes && paymentsRes) {
-                    const student = students.find(s => s.id === id) || {
-                        planId: studentRecords.plan_id,
-                        paymentDueDay: studentRecords.payment_due_day
-                    };
-                    const oldPlanId = student.planId;
-                    const newPlanId = 'planId' in data ? data.planId : oldPlanId;
-                    const newDueDay = 'paymentDueDay' in data ? data.paymentDueDay : student.paymentDueDay;
-                    const newPlan = newPlanId ? plansRes.find((p: any) => p.id === newPlanId) : undefined;
+                const { error: syncError } = await supabase.rpc('sync_student_unpaid_payments', {
+                    p_student_id: id,
+                    p_plan_changed: planChanged,
+                    p_new_plan_id: newPlanId || null,
+                    p_new_due_day: newDueDay || null
+                });
 
-                    if ('planId' in data && newPlanId !== oldPlanId) {
-                        // Plan changed, delete all unpaid payments
-                        for (const payment of paymentsRes) {
-                            await supabase.from('payments').delete().eq('id', payment.id);
-                        }
-                    } else {
-                        // Same plan, just update due day or amount
-                        for (const payment of paymentsRes) {
-                            const [year, month] = payment.month_ref.split('-').map(Number);
-                            const paymentUpdates: any = {};
-
-                            if (newPlan) {
-                                paymentUpdates.amount = Number(newPlan.price);
-                                paymentUpdates.plan_id = newPlan.id;
-                            }
-
-                            if (newDueDay) {
-                                const maxDay = new Date(year, month, 0).getDate();
-                                const day = Math.min(newDueDay, maxDay);
-                                paymentUpdates.due_date = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-                            }
-
-                            if (Object.keys(paymentUpdates).length > 0) {
-                                await supabase.from('payments').update(paymentUpdates).eq('id', payment.id);
-                            }
-                        }
-                    }
-                }
+                if (syncError) throw syncError;
             }
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['students'] });
             queryClient.invalidateQueries({ queryKey: ['payments'] });
+            queryClient.invalidateQueries({ queryKey: ['trainings'] });
+            queryClient.invalidateQueries({ queryKey: ['attendance'] });
         },
         onError: (error: Error) => {
             toast({ title: 'Erro ao atualizar aluno', description: error.message, variant: 'destructive' });
@@ -150,6 +132,11 @@ export function useStudents() {
 
     const deleteStudentMutation = useMutation({
         mutationFn: async (id: string) => {
+            // Clean up orphan trainings BEFORE cascade delete removes junction rows
+            await supabase.rpc('cleanup_student_future_trainings', {
+                p_student_id: id,
+            } as any);
+
             const { error } = await supabase.from('students').delete().eq('id', id);
             if (error) throw error;
         },

@@ -1,0 +1,880 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Esportiz — Gestão que joga junto.</title>
+<meta name="description" content="Plataforma completa para escolas esportivas, professores e arenas. Alunos, presença, pagamentos e relatórios — tudo em um só lugar."/>
+<meta property="og:title" content="Esportiz — Gestão que joga junto."/>
+<meta property="og:description" content="Plataforma de gestão esportiva inteligente para escolas, professores e arenas."/>
+<meta property="og:type" content="website"/>
+<meta property="og:url" content="https://esportiz.com.br"/>
+<meta name="twitter:card" content="summary_large_image"/>
+<meta name="theme-color" content="#0A1628"/>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
+<!-- PWA Meta Tags -->
+<link rel="manifest" href="/manifest.webmanifest"/>
+<link rel="icon" href="/favicon.png" type="image/png"/>
+<link rel="apple-touch-icon" href="/apple-touch-icon-180x180.png"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="default"/>
+<style>
+:root{--night:#0A1628;--night2:#0D1F3C;--green:#1DB874;--green-dark:#0D8A4E;--blue:#378ADD;--blue-light:#5BA3F5;}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html{scroll-behavior:smooth;}
+body{background:var(--night);color:#fff;font-family:'DM Sans',sans-serif;font-weight:400;overflow-x:hidden;min-height:100vh;}
+body::before{content:'';position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");pointer-events:none;z-index:9999;opacity:.35;}
+h1,h2,h3{font-family:'Syne',sans-serif;}
+a{text-decoration:none;color:inherit;}
+img{max-width:100%;}
+.container{max-width:1200px;margin:0 auto;padding:0 24px;}
+.grad{background:linear-gradient(135deg,var(--green),var(--blue-light));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+/* Typography improvements */
+p{font-size:16px;line-height:1.7;color:rgba(255,255,255,0.72);}
+strong{font-weight:500;}
+.badge{display:inline-flex;align-items:center;gap:8px;padding:6px 14px;border-radius:100px;background:rgba(29,184,116,.1);border:1px solid rgba(29,184,116,.3);font-size:13px;font-weight:500;color:var(--green);margin-bottom:20px;}
+.badge .dot{width:7px;height:7px;border-radius:50%;background:var(--green);animation:pulse 2s infinite;}
+@keyframes pulse{0%,100%{transform:scale(1);opacity:1;}50%{transform:scale(1.6);opacity:.5;}}
+.btn{display:inline-flex;align-items:center;gap:8px;padding:14px 28px;border-radius:10px;font-family:'DM Sans',sans-serif;font-weight:500;font-size:16px;cursor:pointer;border:none;transition:all .35s cubic-bezier(.4,0,.2,1);}
+.btn-primary{background:var(--green);color:#fff;}
+.btn-primary:hover{background:var(--green-dark);transform:translateY(-2px);box-shadow:0 20px 40px rgba(29,184,116,.35);}
+.btn-outline{background:transparent;color:#fff;border:1.5px solid rgba(255,255,255,.2);}
+.btn-outline:hover{border-color:var(--green);color:var(--green);transform:translateY(-2px);}
+.card{background:rgba(13,31,60,.6);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border:1px solid rgba(255,255,255,.06);border-radius:16px;position:relative;overflow:hidden;transition:all .35s cubic-bezier(.4,0,.2,1);}
+.card::before{content:'';position:absolute;top:0;left:20%;right:20%;height:1px;background:linear-gradient(90deg,transparent,var(--green),transparent);opacity:0;transition:opacity .4s;}
+.card:hover{transform:translateY(-6px);border-color:rgba(29,184,116,.4);}
+.card:hover::before{opacity:1;}
+.section{padding:100px 0;}
+.section-header{text-align:center;margin-bottom:64px;}
+.section-header h2{font-size:clamp(28px,4vw,44px);font-weight:800;line-height:1.2;margin-bottom:16px;}
+.section-header p{font-size:18px;font-weight:300;color:rgba(255,255,255,.6);max-width:560px;margin:0 auto;}
+.reveal{opacity:0;transform:translateY(24px);transition:opacity .8s ease,transform .8s ease;}
+.reveal.visible{opacity:1;transform:none;}
+
+/* NAV */
+nav{position:fixed;top:0;left:0;right:0;z-index:1000;padding:0 24px;transition:background .3s,border-bottom .3s;background:rgba(10,22,40,0.85);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-bottom:1px solid rgba(255,255,255,0.05);}
+.nav-inner{max-width:1200px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;height:68px;}
+.nav-logo{display:flex;align-items:center;gap:10px;}
+.nav-logo svg{width:36px;height:36px;}
+.nav-wordmark{font-family:'Syne',sans-serif;font-weight:800;font-size:20px;color:#fff;letter-spacing:-.3px;}
+.nav-wordmark span{color:var(--green);}
+.nav-links{display:flex;gap:36px;list-style:none;}
+.nav-links a{font-size:15px;font-weight:500;color:rgba(255,255,255,.65);transition:color .2s;letter-spacing:.01em;}
+.nav-links a:hover{color:#fff;}
+.nav-actions{display:flex;align-items:center;gap:12px;}
+.nav-actions .btn-ghost{background:transparent;color:rgba(255,255,255,.8);border:none;padding:10px 18px;font-size:15px;cursor:pointer;font-family:'DM Sans',sans-serif;transition:color .2s;}
+.nav-actions .btn-ghost:hover{color:#fff;}
+.nav-actions .btn-nav{padding:10px 20px;font-size:15px;}
+.hamburger{display:none;flex-direction:column;gap:5px;cursor:pointer;padding:8px;background:none;border:none;}
+.hamburger span{display:block;width:24px;height:2px;background:#fff;transition:all .3s;}
+.hamburger.open span:nth-child(1){transform:translateY(7px) rotate(45deg);}
+.hamburger.open span:nth-child(2){opacity:0;}
+.hamburger.open span:nth-child(3){transform:translateY(-7px) rotate(-45deg);}
+.mobile-menu{display:none;position:fixed;inset:0;background:rgba(10,22,40,.96);backdrop-filter:blur(24px);z-index:999;flex-direction:column;align-items:center;justify-content:center;gap:32px;}
+.mobile-menu.open{display:flex;}
+.mobile-menu a{font-family:'Syne',sans-serif;font-size:28px;font-weight:700;color:#fff;}
+.mobile-menu a:hover{color:var(--green);}
+
+/* HERO */
+.hero{min-height:100vh;display:flex;align-items:center;position:relative;overflow:hidden;padding:120px 24px 80px;}
+.hero-bg{position:absolute;inset:0;pointer-events:none;}
+.blob{position:absolute;border-radius:50%;will-change:transform;}
+.blob-1{width:600px;height:600px;background:rgba(29,184,116,.15);filter:blur(120px);top:-100px;right:-100px;animation:aurora1 20s ease-in-out infinite;}
+.blob-2{width:700px;height:700px;background:rgba(55,138,221,.12);filter:blur(140px);bottom:-200px;left:-150px;animation:aurora2 25s ease-in-out infinite;}
+.blob-3{width:400px;height:400px;background:rgba(91,163,245,.08);filter:blur(100px);top:50%;left:40%;animation:aurora3 18s ease-in-out infinite;}
+@keyframes aurora1{0%,100%{transform:translate(0,0);}33%{transform:translate(-60px,40px);}66%{transform:translate(40px,-30px);}}
+@keyframes aurora2{0%,100%{transform:translate(0,0);}33%{transform:translate(80px,-50px);}66%{transform:translate(-40px,60px);}}
+@keyframes aurora3{0%,100%{transform:translate(0,0);}50%{transform:translate(-80px,50px);}}
+.hero-grid{position:absolute;inset:0;background-image:linear-gradient(rgba(29,184,116,.04) 1px,transparent 1px),linear-gradient(90deg,rgba(29,184,116,.04) 1px,transparent 1px);background-size:60px 60px;-webkit-mask-image:radial-gradient(ellipse at center,black 30%,transparent 70%);mask-image:radial-gradient(ellipse at center,black 30%,transparent 70%);}
+.hero-content{max-width:1200px;margin:0 auto;display:grid;grid-template-columns:1fr 1fr;gap:80px;align-items:center;width:100%;}
+.hero-text .btn-group{display:flex;gap:16px;flex-wrap:wrap;margin:32px 0;}
+.hero-text h1{font-size:clamp(40px,6vw,76px);font-weight:800;line-height:1.05;letter-spacing:-2.5px;}
+.hero-text p{font-size:18px;font-weight:400;color:rgba(255,255,255,.68);line-height:1.75;margin-top:24px;max-width:480px;}
+.social-proof{display:flex;align-items:center;gap:14px;margin-top:8px;}
+.avatars{display:flex;}
+.avatar{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;border:2px solid var(--night);margin-left:-10px;font-family:'Syne',sans-serif;}
+.avatar:first-child{margin-left:0;}
+.social-proof p{font-size:14px;font-weight:400;color:rgba(255,255,255,.55);}
+
+/* MOCKUP — Réplica fiel do Dashboard Esportiz */
+.mockup-wrap{position:relative;}
+@keyframes float{0%,100%{transform:translateY(0);}50%{transform:translateY(-14px);}}
+.mockup{background:linear-gradient(180deg,rgba(10,22,40,.95) 0%,rgba(13,26,48,.98) 100%);border:1px solid rgba(255,255,255,.08);border-radius:20px;padding:0;overflow:hidden;box-shadow:0 40px 80px rgba(0,0,0,.55),0 0 0 1px rgba(255,255,255,.04),inset 0 1px 0 rgba(255,255,255,.04);animation:float 6s ease-in-out infinite;will-change:transform;}
+/* Window bar */
+.mockup-bar{background:rgba(255,255,255,.03);padding:14px 18px;display:flex;align-items:center;gap:8px;border-bottom:1px solid rgba(255,255,255,.06);}
+.dot-r{width:12px;height:12px;border-radius:50%;background:#FF5F57;}
+.dot-y{width:12px;height:12px;border-radius:50%;background:#FEBC2E;}
+.dot-g{width:12px;height:12px;border-radius:50%;background:#28C840;}
+/* Welcome hero */
+.mockup-welcome{padding:20px;background:linear-gradient(135deg,rgba(29,184,116,.12) 0%,rgba(55,138,221,.08) 100%);border-bottom:1px solid rgba(255,255,255,.05);}
+.mockup-welcome-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;}
+.mockup-welcome-greeting{font-size:10px;color:rgba(255,255,255,.5);}
+.mockup-welcome-date{font-size:10px;color:rgba(255,255,255,.4);font-weight:500;}
+.mockup-welcome h3{font-family:'Syne',sans-serif;font-weight:800;font-size:16px;color:#fff;letter-spacing:-.3px;}
+.mockup-welcome-pill{display:inline-flex;align-items:center;gap:4px;margin-top:8px;padding:4px 10px;border-radius:100px;background:rgba(255,255,255,.1);font-size:9px;color:rgba(255,255,255,.7);font-weight:500;}
+.mockup-welcome-pill svg{width:10px;height:10px;opacity:.7;}
+/* Stat cards */
+.mockup-body{padding:16px 20px 20px;}
+.stat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:16px;}
+.stat-card{background:rgba(255,255,255,.03);border-radius:12px;padding:12px;border:1px solid rgba(255,255,255,.05);transition:border-color .2s;}
+.stat-card:hover{border-color:rgba(29,184,116,.2);}
+.stat-top{display:flex;align-items:flex-start;justify-content:space-between;}
+.stat-top-label{font-size:9px;color:rgba(255,255,255,.45);font-weight:500;letter-spacing:.02em;}
+.stat-icon{width:24px;height:24px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:11px;flex-shrink:0;}
+.stat-icon.g-bg{background:rgba(29,184,116,.12);color:var(--green);}
+.stat-icon.b-bg{background:rgba(55,138,221,.12);color:var(--blue-light);}
+.stat-icon.o-bg{background:rgba(249,115,22,.12);color:#f97316;}
+.stat-val{font-family:'Syne',sans-serif;font-weight:800;font-size:20px;line-height:1;margin-top:6px;}
+.stat-val.green{color:var(--green);}
+.stat-val.blue{color:var(--blue-light);}
+.stat-sub{font-size:8px;color:rgba(255,255,255,.35);margin-top:3px;}
+/* Progress bars */
+.progress-section{margin-bottom:14px;}
+.progress-label{display:flex;justify-content:space-between;font-size:11px;color:rgba(255,255,255,.6);margin-bottom:5px;font-weight:500;}
+.progress-bar{height:5px;background:rgba(255,255,255,.06);border-radius:3px;overflow:hidden;}
+.progress-fill{height:100%;border-radius:3px;transition:width 1.5s ease;}
+.progress-fill.green{background:linear-gradient(90deg,#1DB874,#16a365);}
+.progress-fill.blue{background:linear-gradient(90deg,#378ADD,#5ba0e8);}
+/* Student rows */
+.student-list{display:flex;flex-direction:column;gap:6px;margin-top:4px;}
+.student-item{display:flex;align-items:center;gap:10px;padding:10px 14px;background:rgba(255,255,255,.025);border-radius:10px;border:1px solid rgba(255,255,255,.04);transition:background .2s;}
+.student-item:hover{background:rgba(255,255,255,.05);}
+.s-avatar{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0;font-family:'Syne',sans-serif;}
+.s-info{flex:1;min-width:0;}
+.s-name{font-size:12px;font-weight:600;color:#fff;letter-spacing:-.01em;}
+.s-plan{font-size:10px;color:rgba(255,255,255,.4);margin-top:1px;}
+.s-badge{font-size:10px;font-weight:600;padding:3px 10px;border-radius:100px;letter-spacing:.01em;}
+.s-badge.pago{background:rgba(29,184,116,.12);color:var(--green);border:1px solid rgba(29,184,116,.2);}
+.s-badge.pend{background:rgba(254,188,46,.12);color:#FEBC2E;border:1px solid rgba(254,188,46,.2);}
+
+/* CREDIBILIDADE */
+.cred-bar{background:rgba(255,255,255,.02);border-top:1px solid rgba(255,255,255,.05);border-bottom:1px solid rgba(255,255,255,.05);padding:20px 0;overflow:hidden;}
+.cred-track{display:flex;gap:0;width:max-content;animation:marquee 30s linear infinite;}
+.cred-track:hover{animation-play-state:paused;}
+.cred-item{display:flex;align-items:center;gap:10px;padding:0 48px;white-space:nowrap;font-size:15px;font-weight:400;color:rgba(255,255,255,.7);}
+.cred-item strong{color:#fff;font-weight:500;}
+.cred-sep{color:rgba(255,255,255,.15);}
+@keyframes marquee{0%{transform:translateX(0);}100%{transform:translateX(-50%);}}
+
+/* COMO FUNCIONA */
+.steps-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:24px;}
+.step-card{padding:36px;position:relative;}
+.step-num{position:absolute;top:16px;right:20px;font-family:'Syne',sans-serif;font-weight:800;font-size:100px;color:rgba(255,255,255,.03);line-height:1;pointer-events:none;user-select:none;}
+.step-icon{width:48px;height:48px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:22px;margin-bottom:20px;}
+.step-icon.green{background:rgba(29,184,116,.15);}
+.step-icon.blue{background:rgba(55,138,221,.15);}
+.step-card h3{font-family:'Syne',sans-serif;font-weight:700;font-size:19px;margin-bottom:10px;color:#fff;}
+.step-card p{font-size:15px;font-weight:400;color:rgba(255,255,255,.62);line-height:1.75;}
+
+/* FUNCIONALIDADES */
+.feat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;}
+.feat-card{padding:32px;}
+.feat-icon{font-size:32px;margin-bottom:18px;display:block;}
+.feat-card h3{font-family:'Syne',sans-serif;font-weight:700;font-size:18px;margin-bottom:8px;color:#fff;}
+.feat-card p{font-size:14px;font-weight:400;color:rgba(255,255,255,.60);line-height:1.7;}
+
+/* PARA QUEM */
+.who-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:20px;}
+.who-card{padding:36px 24px;text-align:center;transition:all .35s cubic-bezier(.4,0,.2,1);}
+.who-card:hover{transform:translateY(-6px);border-color:rgba(29,184,116,.4);background:rgba(29,184,116,.04);}
+.who-emoji{font-size:48px;display:block;margin-bottom:18px;}
+.who-card h3{font-family:'Syne',sans-serif;font-weight:700;font-size:17px;margin-bottom:10px;color:#fff;}
+.who-card p{font-size:14px;font-weight:400;color:rgba(255,255,255,.58);line-height:1.7;}
+
+/* NUMEROS */
+.nums-section{padding:80px 0;background:rgba(29,184,116,.03);border-top:1px solid rgba(255,255,255,.04);border-bottom:1px solid rgba(255,255,255,.04);}
+.nums-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:20px;text-align:center;}
+.num-val{font-family:'Syne',sans-serif;font-weight:800;font-size:clamp(36px,5vw,54px);color:#fff;line-height:1;}
+.num-val span{color:var(--green);}
+.num-label{font-size:15px;font-weight:300;color:rgba(255,255,255,.55);margin-top:8px;}
+
+/* DEPOIMENTOS */
+.testi-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:24px;}
+.testi-card{padding:36px;}
+.stars{color:var(--green);font-size:16px;margin-bottom:18px;letter-spacing:2px;}
+.testi-card blockquote{font-size:15px;font-weight:400;font-style:italic;color:rgba(255,255,255,.78);line-height:1.8;margin-bottom:24px;}
+.testi-divider{height:1px;background:rgba(255,255,255,.06);margin-bottom:20px;}
+.testi-author{display:flex;align-items:center;gap:12px;}
+.t-avatar{width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;flex-shrink:0;font-family:'Syne',sans-serif;}
+.t-name{font-weight:500;font-size:14px;}
+.t-role{font-size:13px;color:rgba(255,255,255,.45);}
+
+/* FAQ */
+.faq-list{max-width:720px;margin:0 auto;display:flex;flex-direction:column;gap:12px;}
+details{background:rgba(13,31,60,.6);backdrop-filter:blur(16px);border:1px solid rgba(255,255,255,.06);border-radius:14px;overflow:hidden;transition:border-color .3s;}
+details[open]{border-color:rgba(29,184,116,.3);}
+summary{padding:22px 28px;cursor:pointer;list-style:none;display:flex;align-items:center;justify-content:space-between;font-family:'Syne',sans-serif;font-weight:700;font-size:16px;color:#fff;user-select:none;}
+summary::-webkit-details-marker{display:none;}
+summary::after{content:'+';font-size:22px;color:var(--green);font-weight:300;transition:transform .3s;flex-shrink:0;}
+details[open] summary::after{transform:rotate(45deg);}
+.faq-body{padding:0 28px 22px;font-size:15px;font-weight:300;color:rgba(255,255,255,.65);line-height:1.7;}
+
+/* CTA FINAL */
+.cta-section{padding:120px 0;text-align:center;position:relative;overflow:hidden;}
+.cta-glow{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:800px;height:400px;background:radial-gradient(ellipse at center,rgba(29,184,116,.15),transparent 70%);pointer-events:none;}
+.cta-section h2{font-size:clamp(28px,4.5vw,50px);font-weight:800;margin-bottom:16px;letter-spacing:-1px;}
+.cta-section p{font-size:18px;font-weight:400;color:rgba(255,255,255,.62);margin-bottom:36px;}
+.cta-buttons{display:flex;gap:16px;justify-content:center;flex-wrap:wrap;}
+.cta-note{margin-top:20px;font-size:14px;color:rgba(255,255,255,.35);}
+
+/* FOOTER */
+footer{padding:28px 0;border-top:1px solid rgba(255,255,255,.06);}
+.footer-inner{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px;}
+.footer-logo{font-family:'Syne',sans-serif;font-weight:800;font-size:18px;color:rgba(255,255,255,.5);}
+.footer-logo span{color:var(--green);}
+.footer-links{display:flex;gap:28px;}
+.footer-links a{font-size:14px;color:rgba(255,255,255,.4);transition:color .2s;}
+.footer-links a:hover{color:#fff;}
+.footer-copy{font-size:13px;color:rgba(255,255,255,.3);}
+
+/* ═══════════════════════════════════════════════════════════════
+   RESPONSIVE — 4 breakpoints: 1024 / 768 / 480 / 360
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ── TABLET LANDSCAPE (≤1024px) ─────────────────────────────── */
+@media(max-width:1024px){
+  .hero-content{grid-template-columns:1fr;gap:48px;text-align:center;}
+  .hero-text p{margin:20px auto 0;}
+  .hero-text .btn-group{justify-content:center;}
+  .social-proof{justify-content:center;}
+  .mockup-wrap{max-width:520px;margin:0 auto;}
+  .who-grid{grid-template-columns:repeat(2,1fr);}
+  .nums-grid{grid-template-columns:repeat(2,1fr);}
+  .testi-grid{grid-template-columns:1fr;max-width:560px;margin:0 auto;}
+  .feat-grid{grid-template-columns:repeat(2,1fr);}
+}
+
+/* ── TABLET / MOBILE (≤768px) ───────────────────────────────── */
+@media(max-width:768px){
+  /* Nav */
+  .nav-links,.nav-actions{display:none;}
+  .hamburger{display:flex;}
+  .nav-inner{height:56px;}
+
+  /* Hero */
+  .hero{padding:90px 20px 48px;}
+  .hero-content{gap:36px;}
+  .hero-text h1{font-size:clamp(32px,9vw,52px);letter-spacing:-1.5px;}
+  .hero-text p{font-size:16px;line-height:1.65;}
+  .hero-text .btn-group{flex-direction:column;align-items:center;gap:12px;}
+  .hero-text .btn-group .btn{width:100%;max-width:320px;text-align:center;justify-content:center;}
+  .social-proof{flex-direction:column;gap:8px;}
+
+  /* Mockup */
+  .mockup-wrap{max-width:100%;}
+  .stat-grid{grid-template-columns:repeat(2,1fr);}
+  .stat-val{font-size:18px;}
+  .mockup-welcome h3{font-size:14px;}
+
+  /* Sections general */
+  .section{padding:60px 0;}
+  .section-header h2{font-size:clamp(22px,6vw,34px);}
+  .container{padding:0 20px;}
+
+  /* Steps / Features */
+  .steps-grid,.feat-grid{grid-template-columns:1fr;}
+
+  /* For Whom */
+  .who-grid{grid-template-columns:1fr;}
+
+  /* Numbers */
+  .nums-grid{grid-template-columns:repeat(2,1fr);}
+  .num-val{font-size:clamp(28px,8vw,40px);}
+
+  /* FAQ */
+  summary{padding:18px 20px;font-size:15px;}
+  .faq-body{padding:0 20px 18px;font-size:14px;}
+
+  /* CTA Final */
+  .cta-section{padding:80px 0;}
+  .cta-section h2{font-size:clamp(24px,6vw,36px);}
+  .cta-section p{font-size:16px;}
+  .cta-buttons{flex-direction:column;align-items:center;}
+  .cta-buttons .btn{width:100%;max-width:320px;text-align:center;justify-content:center;}
+
+  /* Footer */
+  .footer-inner{flex-direction:column;text-align:center;gap:14px;}
+  .footer-links{justify-content:center;gap:20px;flex-wrap:wrap;}
+  .footer-copy{font-size:12px;}
+}
+
+/* ── SMALL PHONE (≤480px) ───────────────────────────────────── */
+@media(max-width:480px){
+  .hero{padding:80px 16px 40px;}
+  .hero-text h1{font-size:clamp(28px,10vw,40px);}
+  .hero-text p{font-size:15px;}
+
+  /* Mockup inner adjustments */
+  .mockup-bar{padding:10px 14px;}
+  .dot-r,.dot-y,.dot-g{width:10px;height:10px;}
+  .mockup-welcome{padding:14px 16px;}
+  .mockup-welcome-greeting,.mockup-welcome-date{font-size:9px;}
+  .mockup-welcome h3{font-size:13px;}
+  .mockup-welcome-pill{font-size:8px;padding:3px 8px;}
+  .mockup-body{padding:12px 14px 16px;}
+  .stat-grid{gap:6px;}
+  .stat-card{padding:10px;}
+  .stat-top-label{font-size:8px;}
+  .stat-icon{width:20px;height:20px;border-radius:6px;}
+  .stat-icon svg{width:10px;height:10px;}
+  .stat-val{font-size:16px;margin-top:4px;}
+  .stat-sub{font-size:7px;}
+  .progress-label{font-size:10px;}
+  .student-item{padding:8px 10px;gap:8px;}
+  .s-avatar{width:28px;height:28px;font-size:10px;}
+  .s-name{font-size:11px;}
+  .s-plan{font-size:9px;}
+  .s-badge{font-size:9px;padding:2px 8px;}
+
+  /* Cards */
+  .card{padding:24px 20px;}
+  .step-num{font-size:64px;right:16px;top:12px;}
+  .step-card h3{font-size:17px;}
+  .feat-card h3{font-size:16px;}
+  .who-card{padding:28px 20px;}
+  .who-emoji{font-size:40px;}
+
+  /* Numbers */
+  .nums-grid{gap:16px;}
+  .num-val{font-size:clamp(24px,7vw,36px);}
+
+  /* Testimonials */
+  .testi-card{padding:24px 20px;}
+  .stars{font-size:14px;}
+  .testi-card blockquote{font-size:14px;}
+
+  /* CTA */
+  .cta-section{padding:64px 0;}
+  .cta-glow{width:400px;height:200px;}
+  .cta-note{font-size:12px;}
+
+  /* Buttons */
+  .btn{font-size:14px;padding:12px 24px;}
+  .btn-primary.btn-nav{font-size:13px;padding:8px 16px;}
+
+  /* Credibility bar */
+  .cred-item{font-size:13px;}
+}
+
+/* ── VERY SMALL PHONE (≤360px) ──────────────────────────────── */
+@media(max-width:360px){
+  .hero{padding:76px 12px 36px;}
+  .hero-text h1{font-size:28px;}
+  .container{padding:0 14px;}
+  .stat-grid{grid-template-columns:1fr 1fr;}
+  .stat-val{font-size:14px;}
+  .section-header h2{font-size:22px;}
+  .num-val{font-size:24px;}
+  summary{font-size:14px;padding:14px 16px;}
+  .faq-body{padding:0 16px 14px;font-size:13px;}
+}
+
+/* ZEBRA LAYOUT CSS */
+.zebra-section { padding: 80px 0; }
+.zebra-row { display: flex; align-items: center; gap: 60px; margin-bottom: 100px; }
+.zebra-row:nth-child(even) { flex-direction: row-reverse; }
+.zebra-text { flex: 1; }
+.zebra-img-wrap { flex: 1.2; position: relative; }
+.zebra-title { font-family: 'Syne', sans-serif; font-size: 32px; font-weight: 800; margin-bottom: 16px; letter-spacing: -0.5px; }
+.zebra-desc { font-size: 16px; color: rgba(255,255,255,0.7); line-height: 1.6; margin-bottom: 24px; }
+.zebra-list { list-style: none; padding: 0; margin: 0; }
+.zebra-list li { display: flex; align-items: flex-start; gap: 12px; margin-bottom: 12px; font-size: 15px; color: rgba(255,255,255,0.85); }
+.zebra-icon { color: #1DB874; flex-shrink: 0; margin-top: 2px; }
+.zebra-mockup { background: linear-gradient(180deg, rgba(10,22,40,0.95) 0%, rgba(13,26,48,0.98) 100%); border: 1px solid rgba(255,255,255,0.08); border-radius: 20px; overflow: hidden; box-shadow: 0 40px 80px rgba(0,0,0,0.55), 0 0 0 1px rgba(255,255,255,0.04); }
+.zebra-mockup-bar { background: rgba(255,255,255,0.03); padding: 14px 18px; display: flex; align-items: center; gap: 8px; border-bottom: 1px solid rgba(255,255,255,0.06); }
+@media(max-width: 992px) { .zebra-row { flex-direction: column !important; gap: 40px; margin-bottom: 80px; } .zebra-title { font-size: 28px; } }
+
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav id="nav">
+  <div class="nav-inner">
+    <a href="#" class="nav-logo" aria-label="Esportiz home">
+      <svg viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect width="64" height="64" rx="14" fill="#0D1F3C"/>
+        <path d="M42 18 L22 18" stroke="#1DB874" stroke-width="3.8" stroke-linecap="round"/>
+        <path d="M22 18 L22 46" stroke="#1DB874" stroke-width="3.8" stroke-linecap="round"/>
+        <path d="M22 46 L42 46" stroke="#1DB874" stroke-width="3.8" stroke-linecap="round"/>
+        <path d="M22 32 L38 32" stroke="#1DB874" stroke-width="3.8" stroke-linecap="round"/>
+        <circle cx="44" cy="32" r="4.2" fill="#378ADD"/>
+      </svg>
+      <span class="nav-wordmark">esport<span>iz</span></span>
+    </a>
+    <div class="nav-links" role="list" aria-label="Menu principal">
+      <a href="#funcionalidades">Funcionalidades</a>
+      <a href="#para-quem">Para quem</a>
+      <a href="#faq">Contato</a>
+    </div>
+    <div class="nav-actions">
+      <button class="btn-ghost" onclick="window.location.href='/login'">Entrar</button>
+      <a href="/login" class="btn btn-primary btn-nav">Começar grátis →</a>
+    </div>
+    <button class="hamburger" id="hamburger" aria-label="Abrir menu">
+      <span></span><span></span><span></span>
+    </button>
+  </div>
+</nav>
+
+<!-- MOBILE MENU -->
+<div class="mobile-menu" id="mobileMenu" aria-hidden="true">
+  <a href="#funcionalidades" class="mob-link">Funcionalidades</a>
+  <a href="#para-quem" class="mob-link">Para quem</a>
+  <a href="#faq" class="mob-link">FAQ</a>
+  <a href="/login" class="btn btn-primary" style="margin-top:16px;">Começar grátis →</a>
+</div>
+
+<!-- HERO -->
+<section class="hero" id="hero">
+  <div class="hero-bg">
+    <div class="blob blob-1"></div>
+    <div class="blob blob-2"></div>
+    <div class="blob blob-3"></div>
+    <div class="hero-grid"></div>
+  </div>
+  <div class="hero-content">
+    <div class="hero-text">
+      <div class="badge reveal"><span class="dot"></span> Novo · Esportiz 1.0</div>
+      <h1 class="reveal">Gestão que<br><span class="grad">joga junto.</span></h1>
+      <p class="reveal">Plataforma completa para escolas esportivas, professores e arenas. Alunos, presença, pagamentos e relatórios — tudo em um só lugar.</p>
+      <div class="btn-group reveal">
+        <a href="/login" class="btn btn-primary" id="hero-cta">Começar 30 dias grátis →</a>
+        <a href="#como-funciona" class="btn btn-outline">Ver como funciona</a>
+      </div>
+      <div class="social-proof reveal">
+        <div class="avatars">
+          <img class="avatar" src="https://images.unsplash.com/photo-1599566150163-29194dcaad36?w=100&auto=format&fit=crop&q=80" alt="Professor" style="object-fit:cover;">
+          <img class="avatar" src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&auto=format&fit=crop&q=80" alt="Professora" style="object-fit:cover;">
+          <img class="avatar" src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&auto=format&fit=crop&q=80" alt="Professor" style="object-fit:cover;">
+          <img class="avatar" src="https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=100&auto=format&fit=crop&q=80" alt="Professora" style="object-fit:cover;">
+        </div>
+        <p>Professores e escolas já usam o Esportiz</p>
+      </div>
+    </div>
+    <div class="mockup-wrap reveal">
+      <div class="mockup">
+        <!-- Window bar -->
+        <div class="mockup-bar">
+          <span class="dot-r"></span><span class="dot-y"></span><span class="dot-g"></span>
+        </div>
+        <!-- Welcome hero — igual ao dashboard real -->
+        <img src="/screens/dashboard.png" alt="Esportiz Dashboard Real" style="width: 100%; display: block; border-bottom-left-radius: 20px; border-bottom-right-radius: 20px;" />
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CREDIBILIDADE -->
+<div class="cred-bar">
+  <div class="cred-track" id="credTrack">
+    <div class="cred-item">🏐 <strong>Qualquer esporte</strong> — areia ou quadra</div>
+    <div class="cred-item"><span class="cred-sep">·</span></div>
+    <div class="cred-item">📱 <strong>PWA</strong> — funciona no celular sem instalar</div>
+    <div class="cred-item"><span class="cred-sep">·</span></div>
+    <div class="cred-item">💳 <strong>Pagamento recorrente</strong> — zero inadimplência</div>
+    <div class="cred-item"><span class="cred-sep">·</span></div>
+    <div class="cred-item">🔒 <strong>Dados seguros</strong> — backup automático</div>
+    <div class="cred-item"><span class="cred-sep">·</span></div>
+    <div class="cred-item">⚡ <strong>30 dias grátis</strong> — sem cartão</div>
+    <div class="cred-item"><span class="cred-sep">·</span></div>
+    <div class="cred-item">🏐 <strong>Qualquer esporte</strong> — areia ou quadra</div>
+    <div class="cred-item"><span class="cred-sep">·</span></div>
+    <div class="cred-item">📱 <strong>PWA</strong> — funciona no celular sem instalar</div>
+    <div class="cred-item"><span class="cred-sep">·</span></div>
+    <div class="cred-item">💳 <strong>Pagamento recorrente</strong> — zero inadimplência</div>
+    <div class="cred-item"><span class="cred-sep">·</span></div>
+    <div class="cred-item">🔒 <strong>Dados seguros</strong> — backup automático</div>
+    <div class="cred-item"><span class="cred-sep">·</span></div>
+    <div class="cred-item">⚡ <strong>30 dias grátis</strong> — sem cartão</div>
+    <div class="cred-item"><span class="cred-sep">·</span></div>
+  </div>
+</div>
+
+
+<!-- FUNCIONALIDADES ZEBRA -->
+<section class="section zebra-section" id="funcionalidades">
+  <div class="container">
+    <div class="section-header" style="margin-bottom: 80px;">
+      <div class="badge reveal">Produto Real</div>
+      <h2 class="reveal">Conheça o sistema <span class="grad">por dentro.</span></h2>
+    </div>
+
+    
+    <div class="zebra-row reveal">
+      <div class="zebra-text">
+        <h3 class="zebra-title">Dashboard Inteligente</h3>
+        <p class="zebra-desc">Tenha a visão completa do seu Centro de Treinamento em uma única tela, com métricas que importam atualizadas em tempo real.</p>
+        <ul class="zebra-list">
+          <li><svg class="zebra-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Acompanhe alunos ativos e taxas de presença.</li><li><svg class="zebra-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Monitore a receita mensal e pagamentos pendentes.</li><li><svg class="zebra-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Visualize treinos do dia e aniversariantes.</li>
+        </ul>
+      </div>
+      <div class="zebra-img-wrap">
+        <div class="zebra-mockup">
+          <div class="zebra-mockup-bar">
+            <span class="dot-r"></span><span class="dot-y"></span><span class="dot-g"></span>
+          </div>
+          <img src="/screens/dashboard.png" alt="Dashboard Inteligente" style="width: 100%; display: block;" loading="lazy" />
+        </div>
+      </div>
+    </div>
+
+    
+    
+    <div class="zebra-row reveal">
+      <div class="zebra-text">
+        <h3 class="zebra-title">Agenda Esportiva</h3>
+        <p class="zebra-desc">Nunca mais perca o controle das suas turmas. Um calendário visual e intuitivo feito sob medida para escolas esportivas.</p>
+        <ul class="zebra-list">
+          <li><svg class="zebra-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Visualização flexível: dia, semana ou mês.</li><li><svg class="zebra-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Gerencie modalidades, turmas e horários facilmente.</li><li><svg class="zebra-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Limites de vagas e acompanhamento de lotação.</li>
+        </ul>
+      </div>
+      <div class="zebra-img-wrap">
+        <div class="zebra-mockup">
+          <div class="zebra-mockup-bar">
+            <span class="dot-r"></span><span class="dot-y"></span><span class="dot-g"></span>
+          </div>
+          <img src="/screens/calendario.png" alt="Agenda Esportiva" style="width: 100%; display: block;" loading="lazy" />
+        </div>
+      </div>
+    </div>
+
+    
+    
+    <div class="zebra-row reveal">
+      <div class="zebra-text">
+        <h3 class="zebra-title">Gestão de Alunos</h3>
+        <p class="zebra-desc">Todos os dados dos seus alunos organizados, acessíveis e seguros. Fim das fichas de papel e planilhas confusas.</p>
+        <ul class="zebra-list">
+          <li><svg class="zebra-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Perfil completo com foto, nível e dados de contato.</li><li><svg class="zebra-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Vínculo fácil com planos e datas de vencimento.</li><li><svg class="zebra-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Histórico detalhado de presença e pagamentos.</li>
+        </ul>
+      </div>
+      <div class="zebra-img-wrap">
+        <div class="zebra-mockup">
+          <div class="zebra-mockup-bar">
+            <span class="dot-r"></span><span class="dot-y"></span><span class="dot-g"></span>
+          </div>
+          <img src="/screens/alunos.png" alt="Gestão de Alunos" style="width: 100%; display: block;" loading="lazy" />
+        </div>
+      </div>
+    </div>
+
+    
+    
+    <div class="zebra-row reveal">
+      <div class="zebra-text">
+        <h3 class="zebra-title">Chamada Rápida</h3>
+        <p class="zebra-desc">Registre a presença dos alunos diretamente pelo celular ou tablet, na quadra ou na areia, em poucos segundos.</p>
+        <ul class="zebra-list">
+          <li><svg class="zebra-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Lista de alunos por treino gerada automaticamente.</li><li><svg class="zebra-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Marcação de presença com apenas um toque.</li><li><svg class="zebra-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Estatísticas precisas de assiduidade.</li>
+        </ul>
+      </div>
+      <div class="zebra-img-wrap">
+        <div class="zebra-mockup">
+          <div class="zebra-mockup-bar">
+            <span class="dot-r"></span><span class="dot-y"></span><span class="dot-g"></span>
+          </div>
+          <img src="/screens/presenca.png" alt="Chamada Rápida" style="width: 100%; display: block;" loading="lazy" />
+        </div>
+      </div>
+    </div>
+
+    
+    
+    <div class="zebra-row reveal">
+      <div class="zebra-text">
+        <h3 class="zebra-title">Planos e Pagamentos</h3>
+        <p class="zebra-desc">Controle financeiro automatizado para acabar com a inadimplência e o constrangimento das cobranças manuais.</p>
+        <ul class="zebra-list">
+          <li><svg class="zebra-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Crie planos mensais, trimestrais ou avulsos.</li><li><svg class="zebra-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Acompanhe quem pagou, atrasados e pendentes.</li><li><svg class="zebra-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Renovação e faturamento automatizados.</li>
+        </ul>
+      </div>
+      <div class="zebra-img-wrap">
+        <div class="zebra-mockup">
+          <div class="zebra-mockup-bar">
+            <span class="dot-r"></span><span class="dot-y"></span><span class="dot-g"></span>
+          </div>
+          <img src="/screens/pagamentos.png" alt="Planos e Pagamentos" style="width: 100%; display: block;" loading="lazy" />
+        </div>
+      </div>
+    </div>
+
+    
+    
+    <div class="zebra-row reveal">
+      <div class="zebra-text">
+        <h3 class="zebra-title">Relatórios Analíticos</h3>
+        <p class="zebra-desc">Dados claros e objetivos que transformam a gestão da sua escola e ajudam nas decisões de negócio.</p>
+        <ul class="zebra-list">
+          <li><svg class="zebra-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Métricas de faturamento e engajamento.</li><li><svg class="zebra-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Comparativo de receitas e assiduidade.</li><li><svg class="zebra-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Filtros rápidos: hoje, semana, mês e ano.</li>
+        </ul>
+      </div>
+      <div class="zebra-img-wrap">
+        <div class="zebra-mockup">
+          <div class="zebra-mockup-bar">
+            <span class="dot-r"></span><span class="dot-y"></span><span class="dot-g"></span>
+          </div>
+          <img src="/screens/relatorios.png" alt="Relatórios Analíticos" style="width: 100%; display: block;" loading="lazy" />
+        </div>
+      </div>
+    </div>
+
+
+  </div>
+</section>
+
+
+<!-- PARA QUEM -->
+<section class="section" id="para-quem">
+  <div class="container">
+    <div class="section-header">
+      <div class="badge reveal">Para quem</div>
+      <h2 class="reveal">Feito para quem <span class="grad">vive</span> o esporte.</h2>
+    </div>
+    <div class="who-grid">
+      <div class="card who-card reveal">
+        <span class="who-emoji">🏐</span>
+        <h3>Escolas de Futevôlei</h3>
+        <p>Turmas de areia, presenças e mensalidades. Do iniciante ao avançado.</p>
+      </div>
+      <div class="card who-card reveal">
+        <span class="who-emoji">🎾</span>
+        <h3>Beach Tennis e Vôlei</h3>
+        <p>Organize sua escola com agilidade. Foco no treino, não na planilha.</p>
+      </div>
+      <div class="card who-card reveal">
+        <span class="who-emoji">🏫</span>
+        <h3>Escolas Esportivas</h3>
+        <p>Múltiplas modalidades, múltiplas turmas. Tudo centralizado.</p>
+      </div>
+      <div class="card who-card reveal">
+        <span class="who-emoji">👨‍🏫</span>
+        <h3>Professores e Personais</h3>
+        <p>Gerencie seus alunos de forma profissional, sem sistemas caros.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- NUMEROS -->
+<section class="nums-section">
+  <div class="container">
+    <div class="section-header" style="margin-bottom:48px;">
+      <div class="badge reveal">Resultados</div>
+      <h2 class="reveal">Números que falam por si.</h2>
+    </div>
+    <div class="nums-grid">
+      <div class="reveal" style="text-align:center;">
+        <div class="num-val" data-target="500" data-suffix="+">0+</div>
+        <div class="num-label">Alunos gerenciados</div>
+      </div>
+      <div class="reveal" style="text-align:center;">
+        <div class="num-val" data-target="98" data-suffix="%">0%</div>
+        <div class="num-label">Presença registrada</div>
+      </div>
+      <div class="reveal" style="text-align:center;">
+        <div class="num-val" data-target="30" data-suffix="s">0s</div>
+        <div class="num-label">Para marcar chamada</div>
+      </div>
+      <div class="reveal" style="text-align:center;">
+        <div class="num-val" data-target="0" data-suffix="" data-prefix=""><span>Zero</span></div>
+        <div class="num-label">Planilhas necessárias</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- DEPOIMENTOS -->
+<section class="section" id="depoimentos">
+  <div class="container">
+    <div class="section-header">
+      <div class="badge reveal">Depoimentos</div>
+      <h2 class="reveal">Quem usa, <span class="grad">não volta</span> para planilha nunca mais.</h2>
+    </div>
+    <div class="testi-grid">
+      <div class="card testi-card reveal">
+        <div class="stars">★★★★★</div>
+        <blockquote>"Antes eu passava horas no WhatsApp cobrando mensalidade. Agora o sistema avisa automaticamente. Recuperei meu fim de semana."</blockquote>
+        <div class="testi-divider"></div>
+        <div class="testi-author">
+          <img class="t-avatar" src="https://images.unsplash.com/photo-1599566150163-29194dcaad36?w=150&auto=format&fit=crop&q=80" alt="Rodrigo Almeida" style="object-fit:cover; border:none; padding:0;">
+          <div><div class="t-name">Rodrigo Almeida</div><div class="t-role">Professor de Futevôlei · Porto Alegre</div></div>
+        </div>
+      </div>
+      <div class="card testi-card reveal">
+        <div class="stars">★★★★★</div>
+        <blockquote>"Finalmente um sistema que entende de esporte. Fácil de usar no celular mesmo na beira da quadra, sem complicação."</blockquote>
+        <div class="testi-divider"></div>
+        <div class="testi-author">
+          <img class="t-avatar" src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&auto=format&fit=crop&q=80" alt="Fernanda Duarte" style="object-fit:cover; border:none; padding:0;">
+          <div><div class="t-name">Fernanda Duarte</div><div class="t-role">Escola de Beach Tennis · Florianópolis</div></div>
+        </div>
+      </div>
+      <div class="card testi-card reveal">
+        <div class="stars">★★★★★</div>
+        <blockquote>"Os relatórios me ajudaram a ver que duas turmas eram deficitárias. Reorganizei e aumentei o faturamento em 30%."</blockquote>
+        <div class="testi-divider"></div>
+        <div class="testi-author">
+          <img class="t-avatar" src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80" alt="Marcos Oliveira" style="object-fit:cover; border:none; padding:0;">
+          <div><div class="t-name">Marcos Oliveira</div><div class="t-role">CT Esportivo · São Paulo</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FAQ -->
+<section class="section" id="faq">
+  <div class="container">
+    <div class="section-header">
+      <div class="badge reveal">Dúvidas</div>
+      <h2 class="reveal">Perguntas frequentes</h2>
+    </div>
+    <div class="faq-list">
+      <details class="reveal">
+        <summary>O Esportiz funciona para qualquer esporte?</summary>
+        <div class="faq-body">Sim. Futevôlei, beach tennis, vôlei, futebol, natação — qualquer modalidade com turmas e alunos funciona perfeitamente.</div>
+      </details>
+      <details class="reveal">
+        <summary>Preciso instalar algum aplicativo?</summary>
+        <div class="faq-body">Não. O Esportiz é um PWA — funciona direto no navegador do celular como se fosse um app nativo. Sem App Store, sem Play Store.</div>
+      </details>
+      <details class="reveal">
+        <summary>Como funciona o período de teste?</summary>
+        <div class="faq-body">São 30 dias grátis com acesso completo a todas as funcionalidades. Sem cartão de crédito, sem compromisso. Cancele quando quiser.</div>
+      </details>
+      <details class="reveal">
+        <summary>Meus dados ficam seguros?</summary>
+        <div class="faq-body">Sim. Usamos infraestrutura Supabase com criptografia em repouso e em trânsito, além de backups automáticos diários.</div>
+      </details>
+      <details class="reveal">
+        <summary>Consigo migrar de planilha para o Esportiz?</summary>
+        <div class="faq-body">Sim. Nossa equipe te ajuda na migração gratuitamente. Você não perde nenhum dado histórico.</div>
+      </details>
+    </div>
+  </div>
+</section>
+
+<!-- CTA FINAL -->
+<section class="cta-section" id="cta">
+  <div class="cta-glow"></div>
+  <div class="container" style="position:relative;z-index:1;">
+    <div class="badge reveal" style="margin:0 auto 20px;">Comece agora</div>
+    <h2 class="reveal">Seu esporte merece<br><span style="color:var(--green);">gestão profissional.</span></h2>
+    <p class="reveal">30 dias grátis. Sem cartão de crédito. Sem complicação.</p>
+    <div class="cta-buttons reveal">
+      <a href="/login" class="btn btn-primary" id="cta-main">Criar conta gratuita →</a>
+      <a href="/login" class="btn btn-outline">Ver demonstração</a>
+    </div>
+    <p class="cta-note reveal">Já usa planilha ou outro sistema? A gente te ajuda a migrar de graça.</p>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="container">
+    <div class="footer-inner">
+      <span class="footer-logo">esport<span>iz</span></span>
+      <div class="footer-links" role="list">
+        <a href="#" role="listitem">Termos de uso</a>
+        <a href="#" role="listitem">Privacidade</a>
+        <a href="mailto:contato@esportiz.com.br" role="listitem">Contato</a>
+      </div>
+      <span class="footer-copy">© 2026 Esportiz. Feito com ❤️ para o esporte brasileiro.</span>
+    </div>
+  </div>
+</footer>
+
+<script>
+// NAV scroll opacity
+const nav = document.getElementById('nav');
+window.addEventListener('scroll', () => {
+  const s = Math.min(window.scrollY / 200, 1);
+  const alpha = 0.85 + s * 0.12;
+  nav.style.background = `rgba(10,22,40,${alpha})`;
+  nav.style.borderBottom = `1px solid rgba(255,255,255,${0.05 + s * 0.04})`;
+}, { passive: true });
+
+// Hamburger menu
+const hamburger = document.getElementById('hamburger');
+const mobileMenu = document.getElementById('mobileMenu');
+hamburger.addEventListener('click', () => {
+  hamburger.classList.toggle('open');
+  mobileMenu.classList.toggle('open');
+  mobileMenu.setAttribute('aria-hidden', !mobileMenu.classList.contains('open'));
+});
+document.querySelectorAll('.mob-link, .mobile-menu .btn').forEach(el => {
+  el.addEventListener('click', () => {
+    hamburger.classList.remove('open');
+    mobileMenu.classList.remove('open');
+    mobileMenu.setAttribute('aria-hidden', 'true');
+  });
+});
+
+// Scroll reveal
+const reveals = document.querySelectorAll('.reveal');
+const revealObs = new IntersectionObserver((entries) => {
+  entries.forEach((e, i) => {
+    if (e.isIntersecting) {
+      const delay = Array.from(e.target.parentElement.children).indexOf(e.target) * 80;
+      setTimeout(() => { e.target.classList.add('visible'); }, delay);
+      revealObs.unobserve(e.target);
+    }
+  });
+}, { threshold: 0.12 });
+reveals.forEach(el => revealObs.observe(el));
+
+// Hero staggered entry
+document.querySelectorAll('.hero-text .reveal').forEach((el, i) => {
+  el.style.transitionDelay = `${i * 150}ms`;
+  setTimeout(() => el.classList.add('visible'), i * 150 + 100);
+});
+setTimeout(() => {
+  document.querySelector('.mockup-wrap').classList.add('visible');
+}, 500);
+
+// Counter animation
+function animateCounter(el, target, suffix, prefix) {
+  const dur = 2000;
+  const start = performance.now();
+  const update = (now) => {
+    const p = Math.min((now - start) / dur, 1);
+    const ease = 1 - Math.pow(1 - p, 3);
+    const val = Math.round(ease * target);
+    el.innerHTML = (prefix || '') + val + (suffix || '');
+    if (p < 1) requestAnimationFrame(update);
+  };
+  requestAnimationFrame(update);
+}
+
+const counters = document.querySelectorAll('[data-target]');
+const counterObs = new IntersectionObserver((entries) => {
+  entries.forEach(e => {
+    if (e.isIntersecting) {
+      const el = e.target;
+      const target = parseInt(el.dataset.target);
+      const suffix = el.dataset.suffix || '';
+      const prefix = el.dataset.prefix || '';
+      if (target > 0) animateCounter(el, target, suffix, prefix);
+      counterObs.unobserve(el);
+    }
+  });
+}, { threshold: 0.5 });
+counters.forEach(el => counterObs.observe(el));
+
+// Smooth scroll for nav links
+document.querySelectorAll('a[href^="#"]').forEach(a => {
+  a.addEventListener('click', e => {
+    const id = a.getAttribute('href').slice(1);
+    const el = document.getElementById(id);
+    if (el) {
+      e.preventDefault();
+      el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  });
+});
+</script>
+</body>
+</html>

@@ -62,6 +62,7 @@ export interface Training {
   notes?: string;
   completed: boolean;
   completedAt?: string;
+  googleEventId?: string;
 }
 
 export interface Attendance {

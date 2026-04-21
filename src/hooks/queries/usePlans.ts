@@ -1,95 +1,46 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
-import { toast } from '@/hooks/use-toast';
-import type { Plan } from '@/data/mockData';
+import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
+
+export interface Plan {
+  id: string;
+  name: string;
+  price: number;
+  sessionsPerWeek: number;
+  billingType: string;
+  isActive: boolean;
+}
 
 export function usePlans() {
-  const queryClient = useQueryClient();
   const { user } = useAuth();
-
   const { data: plans = [], isLoading: loadingPlans } = useQuery({
     queryKey: ['plans', user?.id],
     queryFn: async () => {
       if (!user) return [];
-      const { data, error } = await supabase.from('plans').select('*').order('price', { ascending: true });
+      const { data, error } = await supabase
+        .from('plans')
+        .select('*')
+        .order('name');
+      
       if (error) throw error;
-      return data.map((p: any) => ({
+      
+      return data.map(p => ({
         id: p.id,
         name: p.name,
-        sessionsPerWeek: p.sessions_per_week,
         price: Number(p.price),
-        billingType: p.billing_type || 'monthly',
+        sessionsPerWeek: p.sessions_per_week,
+        billingType: p.billing_type,
+        isActive: p.is_active
       })) as Plan[];
     },
-    enabled: !!user,
+    enabled: !!user
   });
 
-  const addPlanMutation = useMutation({
-    mutationFn: async (data: Omit<Plan, 'id'>) => {
-      if (!user) throw new Error('Usuário não autenticado');
-      const { error } = await supabase.from('plans').insert({
-        user_id: user.id,
-        name: data.name,
-        sessions_per_week: data.sessionsPerWeek,
-        price: data.price,
-        billing_type: data.billingType || 'monthly',
-      });
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['plans'] });
-    },
-    onError: (error: Error) => {
-      toast({ title: 'Erro ao criar plano', description: error.message, variant: 'destructive' });
-    }
-  });
-
-  const updatePlanMutation = useMutation({
-    mutationFn: async (params: { id: string; data: Partial<Plan> }) => {
-      const { id, data } = params;
-      const updates: any = {};
-      if (data.name !== undefined) updates.name = data.name;
-      if (data.sessionsPerWeek !== undefined) updates.sessions_per_week = data.sessionsPerWeek;
-      if (data.price !== undefined) updates.price = data.price;
-      if (data.billingType !== undefined) updates.billing_type = data.billingType;
-
-      const { error } = await supabase.from('plans').update(updates).eq('id', id);
-      if (error) throw error;
-
-      // Sync all unpaid payments for this plan in case the price or properties changed
-      const { error: syncError } = await supabase.rpc('sync_all_unpaid_payments_for_plan', {
-          p_plan_id: id,
-      });
-      if (syncError) throw syncError;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['plans'] });
-      queryClient.invalidateQueries({ queryKey: ['payments'] }); // invalidate payments too so the UI refreshes
-    },
-    onError: (error: Error) => {
-      toast({ title: 'Erro ao atualizar plano', description: error.message, variant: 'destructive' });
-    }
-  });
-
-  const deletePlanMutation = useMutation({
-    mutationFn: async (id: string) => {
-      const { error } = await supabase.from('plans').delete().eq('id', id);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['plans'] });
-    },
-    onError: (error: Error) => {
-      toast({ title: 'Erro ao remover plano', description: error.message, variant: 'destructive' });
-    }
-  });
-
-  return {
-    plans,
-    loadingPlans,
-    addPlan: async (plan: Omit<Plan, 'id'>) => addPlanMutation.mutateAsync(plan),
-    updatePlan: async (id: string, data: Partial<Plan>) => updatePlanMutation.mutateAsync({ id, data }),
-    deletePlan: async (id: string) => deletePlanMutation.mutateAsync(id),
+  return { 
+    plans, 
+    loadingPlans, 
+    addPlan: async()=> {}, 
+    updatePlan: async()=> {}, 
+    deletePlan: async()=> {} 
   };
 }

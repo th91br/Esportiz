@@ -28,6 +28,7 @@ export function useTrainings() {
                 notes: t.notes,
                 completed: t.completed ?? false,
                 completedAt: t.completed_at ?? undefined,
+                googleEventId: t.google_event_id,
             })) as Training[];
         },
         enabled: !!user,

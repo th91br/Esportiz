@@ -162,6 +162,7 @@ export default function ReportsPage() {
 
   const financialData = [{
     name: filterLabels[period],
+    Total: expectedRevenue,
     Recebido: receivedRevenue,
     Pendente: pendingRevenue > 0 ? pendingRevenue : 0,
     Atrasado: overdueRevenue
@@ -222,7 +223,7 @@ export default function ReportsPage() {
         </div>
 
         {/* KPIs Premium */}
-        <section className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-5 animate-fade-in">
+        <section className="grid grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-3 md:gap-5 animate-fade-in">
           <StatCard 
             title="Alunos Base" 
             value={privacyMode ? '••••' : totalActive} 
@@ -244,9 +245,15 @@ export default function ReportsPage() {
             progress={privacyMode ? undefined : { value: attendanceRate, label: "Assiduidade" }}
           />
           <StatCard 
+            title="Faturamento Total" 
+            value={privacyMode ? '••••' : formatCurrency(expectedRevenue)} 
+            icon={DollarSign} 
+            description={privacyMode ? '' : 'Total bruto faturado'}
+          />
+          <StatCard 
             title="Caixa (Recebido)" 
             value={privacyMode ? '••••' : formatCurrency(receivedRevenue)} 
-            icon={DollarSign} 
+            icon={CheckCircle} 
             variant="primary"
             progress={privacyMode ? undefined : { value: revenueProgress, label: "Meta vs Esperado" }}
           />
@@ -273,10 +280,11 @@ export default function ReportsPage() {
                     <XAxis dataKey="name" tick={{ fontSize: 13, fill: 'hsl(var(--muted-foreground))' }} axisLine={false} tickLine={false} />
                     <YAxis tick={{ fontSize: 13, fill: 'hsl(var(--muted-foreground))' }} axisLine={false} tickLine={false} tickFormatter={(v) => `R$${v}`} />
                     <Tooltip contentStyle={customTooltipStyle} cursor={{ fill: 'hsl(var(--muted)/0.4)' }} formatter={(value: number) => [formatCurrency(value), '']} />
+                    <Bar dataKey="Total" name="Faturamento Total" fill="hsl(var(--muted-foreground)/0.3)" radius={[4, 4, 0, 0]} />
                     <Bar dataKey="Recebido" stackId="a" name="Recebido" fill={COLORS.success} radius={pendingRevenue === 0 && overdueRevenue === 0 ? [4, 4, 0, 0] : [0, 0, 4, 4]} />
                     <Bar dataKey="Pendente" stackId="a" name="Pendente (À vencer)" fill={COLORS.slate} radius={overdueRevenue === 0 ? [4, 4, 0, 0] : [0, 0, 0, 0]} />
                     <Bar dataKey="Atrasado" stackId="a" name="Atrasado" fill={COLORS.destructive} radius={[4, 4, 0, 0]} />
-                    <Legend wrapperStyle={{ paddingTop: '20px', fontSize: '13px' }} iconType="circle" />
+                    <Legend wrapperStyle={{ paddingTop: '20px', fontSize: '12px' }} iconType="circle" />
                   </BarChart>
                 </ResponsiveContainer>
               ) : (

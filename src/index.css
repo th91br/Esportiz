@@ -6,33 +6,34 @@
 
 @layer base {
   :root {
-    /* Beach Volleyball Premium Theme */
-    --background: 210 20% 98%;
-    --foreground: 222 47% 11%;
+    /* Esportiz Official Theme */
+    --background: 216 33% 96%;
+    --foreground: 216 60% 10%;
 
     --card: 0 0% 100%;
-    --card-foreground: 222 47% 11%;
+    --card-foreground: 216 60% 10%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 222 47% 11%;
+    --popover-foreground: 216 60% 10%;
 
-    /* Coral/Orange - Energetic Sports */
-    --primary: 24 95% 53%;
+    /* CTA/Buttons - Gramado */
+    --primary: 151 83% 30%;
     --primary-foreground: 0 0% 100%;
 
     /* Deep Navy - Trust & Professionalism */
-    --secondary: 222 47% 20%;
-    --secondary-foreground: 210 40% 98%;
+    --secondary: 216 60% 10%;
+    --secondary-foreground: 216 33% 96%;
 
     /* Sand/Cream tones */
-    --muted: 40 30% 94%;
-    --muted-foreground: 222 20% 45%;
+    --muted: 216 20% 92%;
+    --muted-foreground: 216 20% 45%;
 
-    --accent: 40 60% 90%;
-    --accent-foreground: 222 47% 11%;
+    /* Campo/Destaque */
+    --accent: 154 73% 42%;
+    --accent-foreground: 0 0% 100%;
 
     /* Success - Green for attendance */
-    --success: 142 76% 36%;
+    --success: 154 73% 42%;
     --success-foreground: 0 0% 100%;
 
     /* Warning - Amber */
@@ -42,24 +43,24 @@
     --destructive: 0 84% 60%;
     --destructive-foreground: 210 40% 98%;
 
-    --border: 214 20% 90%;
-    --input: 214 20% 90%;
-    --ring: 24 95% 53%;
+    --border: 216 20% 85%;
+    --input: 216 20% 85%;
+    --ring: 154 73% 42%;
 
     --radius: 0.75rem;
 
     /* Custom gradients */
-    --gradient-primary: linear-gradient(135deg, hsl(24, 95%, 53%) 0%, hsl(32, 98%, 50%) 100%);
-    --gradient-hero: linear-gradient(135deg, hsl(222, 47%, 20%) 0%, hsl(222, 47%, 35%) 100%);
-    --gradient-card: linear-gradient(180deg, hsl(0, 0%, 100%) 0%, hsl(40, 30%, 98%) 100%);
-    --gradient-beach: linear-gradient(135deg, hsl(40, 60%, 95%) 0%, hsl(24, 40%, 92%) 100%);
+    --gradient-primary: linear-gradient(135deg, hsl(151, 83%, 30%) 0%, hsl(154, 73%, 42%) 100%);
+    --gradient-hero: linear-gradient(135deg, hsl(216, 60%, 10%) 0%, hsl(216, 60%, 20%) 100%);
+    --gradient-card: linear-gradient(180deg, hsl(0, 0%, 100%) 0%, hsl(216, 33%, 98%) 100%);
+    --gradient-beach: linear-gradient(135deg, hsl(216, 20%, 96%) 0%, hsl(210, 71%, 95%) 100%);
 
     /* Shadows */
-    --shadow-sm: 0 1px 2px 0 hsl(222 47% 11% / 0.05);
-    --shadow-md: 0 4px 6px -1px hsl(222 47% 11% / 0.1), 0 2px 4px -2px hsl(222 47% 11% / 0.1);
-    --shadow-lg: 0 10px 15px -3px hsl(222 47% 11% / 0.1), 0 4px 6px -4px hsl(222 47% 11% / 0.1);
-    --shadow-xl: 0 20px 25px -5px hsl(222 47% 11% / 0.1), 0 8px 10px -6px hsl(222 47% 11% / 0.1);
-    --shadow-glow: 0 0 20px hsl(24 95% 53% / 0.3);
+    --shadow-sm: 0 1px 2px 0 hsl(216 60% 10% / 0.05);
+    --shadow-md: 0 4px 6px -1px hsl(216 60% 10% / 0.1), 0 2px 4px -2px hsl(216 60% 10% / 0.1);
+    --shadow-lg: 0 10px 15px -3px hsl(216 60% 10% / 0.1), 0 4px 6px -4px hsl(216 60% 10% / 0.1);
+    --shadow-xl: 0 20px 25px -5px hsl(216 60% 10% / 0.1), 0 8px 10px -6px hsl(216 60% 10% / 0.1);
+    --shadow-glow: 0 0 20px hsl(154 73% 42% / 0.3);
 
     --sidebar-background: 0 0% 98%;
     --sidebar-foreground: 240 5.3% 26.1%;
@@ -72,28 +73,28 @@
   }
 
   .dark {
-    --background: 222 47% 8%;
-    --foreground: 210 40% 98%;
+    --background: 216 60% 10%;
+    --foreground: 216 33% 96%;
 
-    --card: 222 47% 12%;
-    --card-foreground: 210 40% 98%;
+    --card: 216 60% 14%;
+    --card-foreground: 216 33% 96%;
 
-    --popover: 222 47% 12%;
-    --popover-foreground: 210 40% 98%;
+    --popover: 216 60% 14%;
+    --popover-foreground: 216 33% 96%;
 
-    --primary: 24 95% 58%;
+    --primary: 154 73% 42%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 217 32% 25%;
-    --secondary-foreground: 210 40% 98%;
+    --secondary: 216 40% 20%;
+    --secondary-foreground: 216 33% 96%;
 
-    --muted: 217 32% 17%;
-    --muted-foreground: 215 20% 65%;
+    --muted: 216 40% 16%;
+    --muted-foreground: 216 20% 65%;
 
-    --accent: 217 32% 20%;
-    --accent-foreground: 210 40% 98%;
+    --accent: 216 40% 20%;
+    --accent-foreground: 216 33% 96%;
 
-    --success: 142 76% 42%;
+    --success: 154 73% 42%;
     --success-foreground: 0 0% 100%;
 
     --warning: 38 92% 55%;
@@ -102,14 +103,14 @@
     --destructive: 0 62% 50%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 217 32% 22%;
-    --input: 217 32% 22%;
-    --ring: 24 95% 58%;
+    --border: 216 40% 20%;
+    --input: 216 40% 20%;
+    --ring: 154 73% 42%;
 
-    --gradient-primary: linear-gradient(135deg, hsl(24, 95%, 58%) 0%, hsl(32, 98%, 55%) 100%);
-    --gradient-hero: linear-gradient(135deg, hsl(222, 47%, 16%) 0%, hsl(222, 47%, 28%) 100%);
-    --gradient-card: linear-gradient(180deg, hsl(222, 47%, 12%) 0%, hsl(222, 47%, 10%) 100%);
-    --gradient-beach: linear-gradient(135deg, hsl(222, 30%, 14%) 0%, hsl(222, 30%, 12%) 100%);
+    --gradient-primary: linear-gradient(135deg, hsl(154, 73%, 42%) 0%, hsl(154, 73%, 35%) 100%);
+    --gradient-hero: linear-gradient(135deg, hsl(216, 60%, 12%) 0%, hsl(216, 60%, 18%) 100%);
+    --gradient-card: linear-gradient(180deg, hsl(216, 60%, 14%) 0%, hsl(216, 60%, 10%) 100%);
+    --gradient-beach: linear-gradient(135deg, hsl(216, 40%, 16%) 0%, hsl(216, 40%, 12%) 100%);
   }
 }
 
@@ -163,7 +164,6 @@
 
   .stat-value {
     font-family: 'Montserrat', sans-serif;
-    @apply text-3xl md:text-4xl font-extrabold;
   }
 
   .badge-period {

@@ -17,7 +17,7 @@ type DismissedNotifications = {
   dismissDate: string;       // the date these dismissals apply to (resets daily)
 };
 
-const STORAGE_KEY = 'resenhas-dismissed-notifications';
+const STORAGE_KEY = 'esportiz-dismissed-notifications';
 
 function getDismissed(): DismissedNotifications {
   try {

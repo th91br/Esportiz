@@ -193,7 +193,7 @@ export function StudentForm({ student, trigger }: StudentFormProps) {
             await addTraining({
               date,
               time: schedule.time as any,
-              location: "Resenha's FTV",
+              location: "Esportiz",
               studentIds: [schedulePromptData.studentId]
             });
           }

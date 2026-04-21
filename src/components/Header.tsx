@@ -1,14 +1,17 @@
 import { Menu, X, LogOut, Moon, Sun } from 'lucide-react';
 import { NotificationBell } from '@/components/NotificationBell';
+import { InstallPWAButton } from '@/components/InstallPWAButton';
 import { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
-import logo from '@/assets/logo-resenhas.png';
+import { useProfile } from '@/hooks/queries/useProfile';
+import { Logo } from '@/components/Logo';
+import { Settings } from 'lucide-react';
 
 const navItems = [
-  { label: 'Dashboard', path: '/' },
+  { label: 'Dashboard', path: '/dashboard' },
   { label: 'Calendário', path: '/calendario' },
   { label: 'Alunos', path: '/alunos' },
   { label: 'Presença', path: '/presenca' },
@@ -23,6 +26,7 @@ export function Header() {
   const [isDark, setIsDark] = useState(() => document.documentElement.classList.contains('dark'));
   const location = useLocation();
   const { signOut, user } = useAuth();
+  const { profile } = useProfile();
 
   useEffect(() => {
     if (isDark) {
@@ -38,26 +42,29 @@ export function Header() {
     <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container flex h-16 items-center justify-between">
         {/* Logo */}
-        <Link to="/" className="flex items-center gap-2">
-          <img src={logo} alt="Resenha's Escola de Futevôlei" className="h-10 w-10 rounded-xl object-cover" />
-          <div className="hidden sm:block">
-            <h1 className="font-display text-lg font-bold leading-none text-foreground">
-              Resenha's
-            </h1>
-            <p className="text-xs font-medium text-primary">Escola de Futevôlei</p>
-          </div>
+        <Link to="/dashboard" className="flex items-center gap-2 transition-transform hover:scale-105 active:scale-95">
+          {profile?.logo_url ? (
+            <img src={profile.logo_url} alt={profile.ct_name || 'CT'} className="h-8 w-8 object-contain rounded-md" />
+          ) : (
+            <Logo size="sm" />
+          )}
+          {profile?.ct_name && (
+            <span className="font-display font-bold text-lg hidden sm:inline-block">
+              {profile.ct_name}
+            </span>
+          )}
         </Link>
 
         {/* Desktop Navigation */}
-        <nav className="hidden md:flex items-center gap-1">
+        <nav className="hidden md:flex items-center gap-1 ml-6">
           {navItems.map((item) => (
             <Link
               key={item.path}
               to={item.path}
               className={cn(
-                'px-4 py-2 rounded-lg text-sm font-medium transition-colors',
+                'px-3 py-2 rounded-lg text-sm font-medium transition-colors',
                 location.pathname === item.path
-                  ? 'bg-primary text-primary-foreground'
+                  ? 'text-primary bg-primary/10 font-semibold'
                   : 'text-muted-foreground hover:text-foreground hover:bg-muted'
               )}
             >
@@ -70,7 +77,13 @@ export function Header() {
         <div className="flex items-center gap-2">
           <div className="hidden md:flex items-center gap-1">
             <span className="text-xs text-muted-foreground truncate max-w-[150px]">{user?.email}</span>
+            <InstallPWAButton />
             <NotificationBell />
+            <Link to="/configuracoes">
+              <Button variant="ghost" size="icon" className="rounded-full" title="Configurações">
+                <Settings className="h-4 w-4" />
+              </Button>
+            </Link>
             <Button variant="ghost" size="icon" className="rounded-full" onClick={() => setIsDark(!isDark)} title={isDark ? 'Modo claro' : 'Modo escuro'}>
               {isDark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
             </Button>
@@ -102,13 +115,25 @@ export function Header() {
                 className={cn(
                   'block px-4 py-3 rounded-lg text-sm font-medium transition-colors',
                   location.pathname === item.path
-                    ? 'bg-primary text-primary-foreground'
+                    ? 'text-primary bg-primary/10 font-semibold'
                     : 'text-muted-foreground hover:text-foreground hover:bg-muted'
                 )}
               >
                 {item.label}
               </Link>
             ))}
+            <Link
+              to="/configuracoes"
+              onClick={() => setIsMenuOpen(false)}
+              className={cn(
+                'block px-4 py-3 rounded-lg text-sm font-medium transition-colors',
+                location.pathname === '/configuracoes'
+                  ? 'text-primary bg-primary/10 font-semibold'
+                  : 'text-muted-foreground hover:text-foreground hover:bg-muted'
+              )}
+            >
+              Configurações
+            </Link>
             <button
               onClick={() => { setIsDark(!isDark); setIsMenuOpen(false); }}
               className="w-full text-left px-4 py-3 rounded-lg text-sm font-medium text-muted-foreground hover:bg-muted transition-colors"
@@ -122,6 +147,9 @@ export function Header() {
             >
               <LogOut className="h-4 w-4 inline mr-2" />Sair
             </button>
+            <div className="pt-2 flex justify-center border-t border-border mt-2">
+              <InstallPWAButton />
+            </div>
           </div>
         </nav>
       )}

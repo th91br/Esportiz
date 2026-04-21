@@ -22,3 +22,24 @@ export function isActiveMonthlyStudent(student: Student, plans: Plan[]): boolean
 export function getActiveMonthlyStudents(students: Student[], plans: Plan[]): Student[] {
   return students.filter(s => isActiveMonthlyStudent(s, plans));
 }
+
+/**
+ * Returns the total number of students.
+ */
+export function getTotalStudents(students: Student[]): number {
+  return students.length;
+}
+
+/**
+ * Returns students who are inactive.
+ */
+export function getInactiveStudents(students: Student[]): Student[] {
+  return students.filter(s => !s.active);
+}
+
+/**
+ * Returns active students who don't have a plan assigned.
+ */
+export function getStudentsWithoutPlan(students: Student[]): Student[] {
+  return students.filter(s => s.active && !s.planId);
+}

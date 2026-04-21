@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import { Search, Users } from 'lucide-react';
+import { Search, Users, UserCheck, UserMinus, UserX } from 'lucide-react';
 import { Header } from '@/components/Header';
+import { StatCard } from '@/components/StatCard';
 import { StudentCard } from '@/components/StudentCard';
 import { StudentForm } from '@/components/StudentForm';
 import { Input } from '@/components/ui/input';
@@ -9,12 +10,23 @@ import {
 } from '@/components/ui/select';
 import { useStudents } from '@/hooks/queries/useStudents';
 import { usePlans } from '@/hooks/queries/usePlans';
-import { getActiveMonthlyStudents } from '@/lib/studentHelpers';
+import { 
+  getActiveMonthlyStudents, 
+  getTotalStudents, 
+  getInactiveStudents, 
+  getStudentsWithoutPlan 
+} from '@/lib/studentHelpers';
 
 export default function StudentsPage() {
-  const { students } = useStudents();
-  const { plans } = usePlans();
+  const { students, loadingStudents } = useStudents();
+  const { plans, loadingPlans } = usePlans();
+  
+  const loading = loadingStudents || loadingPlans;
+  
+  const totalStudents = getTotalStudents(students);
   const activeMonthlyCount = getActiveMonthlyStudents(students, plans).length;
+  const inactiveCount = getInactiveStudents(students).length;
+  const withoutPlanCount = getStudentsWithoutPlan(students).length;
   const [searchQuery, setSearchQuery] = useState('');
   const [levelFilter, setLevelFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
@@ -35,10 +47,39 @@ export default function StudentsPage() {
           <div>
             <h1 className="section-title text-2xl md:text-3xl">Meus Alunos</h1>
             <p className="text-muted-foreground mt-1">
-              {activeMonthlyCount} alunos ativos com plano mensal
+              Gerencie sua base de alunos e acompanhe o status de cada um
             </p>
           </div>
           <StudentForm />
+        </div>
+
+        {/* Summary Stats */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4 animate-fade-up">
+          <StatCard 
+            title="Total de Alunos" 
+            value={loading ? '...' : totalStudents} 
+            icon={Users} 
+            description="Cadastrados no sistema"
+          />
+          <StatCard 
+            title="Ativos (Mensal)" 
+            value={loading ? '...' : activeMonthlyCount} 
+            icon={UserCheck} 
+            variant="primary"
+            description="Com plano mensal ativo"
+          />
+          <StatCard 
+            title="Sem Plano" 
+            value={loading ? '...' : withoutPlanCount} 
+            icon={UserMinus} 
+            description="Ativos sem plano definido"
+          />
+          <StatCard 
+            title="Inativos" 
+            value={loading ? '...' : inactiveCount} 
+            icon={UserX} 
+            description="Alunos desativados"
+          />
         </div>
 
         <div className="card-elevated p-4">

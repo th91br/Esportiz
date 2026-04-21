@@ -29,7 +29,7 @@ export function DashboardCharts({ payments, attendance, privacyMode }: Dashboard
         .slice(-6) // Last 6 months
         .map(month => ({
             name: month.split('-').reverse().join('/'),
-            Esperado: revenueMap[month].expected,
+            'Faturamento Total': revenueMap[month].expected,
             Recebido: revenueMap[month].paid,
         }));
 
@@ -88,7 +88,7 @@ export function DashboardCharts({ payments, attendance, privacyMode }: Dashboard
                                     contentStyle={{ backgroundColor: theme === 'dark' ? '#020817' : '#ffffff', borderRadius: '8px' }}
                                     formatter={tooltipFormatter}
                                 />
-                                <Bar dataKey="Esperado" fill={chartColorSecondary} radius={[4, 4, 0, 0]} />
+                                <Bar dataKey="Faturamento Total" fill={chartColorSecondary} radius={[4, 4, 0, 0]} />
                                 <Bar dataKey="Recebido" fill={chartColorPrimary} radius={[4, 4, 0, 0]} />
                             </BarChart>
                         </ResponsiveContainer>

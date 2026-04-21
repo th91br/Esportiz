@@ -6,8 +6,8 @@ import { Label } from '@/components/ui/label';
 import { toast } from '@/hooks/use-toast';
 import { Eye, EyeOff, KeyRound } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import logo from '@/assets/logo-resenhas.png';
 import loginBg from '@/assets/login-bg.jpg';
+import { Logo } from '@/components/Logo';
 
 export default function ResetPasswordPage() {
   const navigate = useNavigate();
@@ -62,8 +62,8 @@ export default function ResetPasswordPage() {
         <div className="absolute inset-0 bg-cover bg-center bg-no-repeat" style={{ backgroundImage: `url(${loginBg})` }} />
         <div className="absolute inset-0 bg-gradient-to-br from-[hsl(222,47%,11%,0.85)] via-[hsl(222,47%,15%,0.75)] to-[hsl(24,95%,20%,0.6)]" />
         <div className="relative z-10 w-full max-w-md mx-4">
-          <div className="bg-card/95 backdrop-blur-xl rounded-2xl border border-border/30 shadow-2xl p-8 text-center">
-            <img src={logo} alt="Resenha's FTV" className="h-20 w-20 rounded-2xl object-cover mx-auto mb-4 shadow-lg" />
+          <div className="bg-card/95 backdrop-blur-xl rounded-2xl border border-border/30 shadow-2xl p-8 text-center flex flex-col items-center">
+            <div className="mb-6"><Logo size="md" /></div>
             <h1 className="font-display text-xl font-bold text-foreground mb-2">Link inválido</h1>
             <p className="text-muted-foreground text-sm mb-6">Este link de recuperação é inválido ou expirou.</p>
             <Button onClick={() => navigate('/login')} className="btn-primary-gradient">Voltar ao Login</Button>
@@ -80,7 +80,7 @@ export default function ResetPasswordPage() {
       <div className="relative z-10 w-full max-w-md mx-4">
         <div className="bg-card/95 backdrop-blur-xl rounded-2xl border border-border/30 shadow-2xl p-8">
           <div className="flex flex-col items-center mb-8">
-            <img src={logo} alt="Resenha's FTV" className="h-20 w-20 rounded-2xl object-cover mb-4 shadow-lg" />
+            <div className="mb-6"><Logo size="md" /></div>
             <h1 className="font-display text-2xl font-extrabold text-foreground">Nova Senha</h1>
             <p className="text-muted-foreground text-sm mt-1">Digite sua nova senha abaixo</p>
           </div>

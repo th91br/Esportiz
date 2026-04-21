@@ -152,6 +152,44 @@ export type Database = {
         }
         Relationships: []
       }
+      profiles: {
+        Row: {
+          id: string
+          user_id: string
+          ct_name: string | null
+          logo_url: string | null
+          onboarding_completed: boolean | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          ct_name?: string | null
+          logo_url?: string | null
+          onboarding_completed?: boolean | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          ct_name?: string | null
+          logo_url?: string | null
+          onboarding_completed?: boolean | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "profiles_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
       students: {
         Row: {
           active: boolean

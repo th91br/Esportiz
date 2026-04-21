@@ -11,9 +11,11 @@ import { useTrainings } from '@/hooks/queries/useTrainings';
 import { useAttendance } from '@/hooks/queries/useAttendance';
 import { usePayments } from '@/hooks/queries/usePayments';
 import { usePrivacyMode } from '@/hooks/usePrivacyMode';
-import { getActiveMonthlyStudents } from '@/lib/studentHelpers';
+import { getActiveMonthlyStudents, getTotalStudents } from '@/lib/studentHelpers';
 import { formatCurrency } from '@/lib/formatCurrency';
 import { DashboardCharts } from '@/components/DashboardCharts';
+import { useProfile } from '@/hooks/queries/useProfile';
+import { Logo } from '@/components/Logo';
 
 export default function Index() {
   const { students, loadingStudents } = useStudents();
@@ -23,12 +25,14 @@ export default function Index() {
   const { payments, loadingPayments } = usePayments();
   const loading = loadingStudents || loadingPlans || loadingTrainings || loadingAttendance || loadingPayments;
   const [privacyMode, togglePrivacyMode] = usePrivacyMode();
+  const { profile } = useProfile();
 
   const hour = new Date().getHours();
   const greeting = hour < 12 ? 'Bom dia' : hour < 18 ? 'Boa tarde' : 'Boa noite';
 
   const activeMonthly = getActiveMonthlyStudents(students, plans);
   const activeStudents = activeMonthly.length;
+  const totalStudents = getTotalStudents(students);
   
   const todayDateStr = new Date().toISOString().split('T')[0];
   const todayTrainings = trainings.filter(t => t.date === todayDateStr).length;
@@ -67,9 +71,18 @@ export default function Index() {
               <p className="text-white/80 text-sm font-medium mb-2">
                 {greeting}, seja bem-vindo(a) de volta!
               </p>
-              <h1 className="font-display text-2xl md:text-3xl lg:text-4xl font-extrabold mb-2">
-                Resenha's Escola de Futevôlei
-              </h1>
+              <div className="flex items-center gap-3 mb-2">
+                {profile?.logo_url ? (
+                  <img src={profile.logo_url} alt={profile.ct_name || "CT"} className="h-10 w-10 md:h-12 md:w-12 object-contain rounded-xl bg-white/10 p-1" />
+                ) : (
+                  <div className="bg-white/10 p-2 rounded-xl">
+                    <Logo size="sm" variant="white" />
+                  </div>
+                )}
+                <h1 className="font-display text-2xl md:text-3xl lg:text-4xl font-extrabold">
+                  {profile?.ct_name || "Esportiz"}
+                </h1>
+              </div>
               <div className="flex flex-col sm:flex-row gap-3 mt-4 text-sm font-medium text-white/90">
                 <span className="bg-white/20 px-3 py-1.5 rounded-full inline-flex items-center gap-2 w-fit">
                   <Calendar className="h-4 w-4" /> 
@@ -81,7 +94,7 @@ export default function Index() {
         </section>
 
         {/* Overdue Payments Alert */}
-        <OverdueAlert />
+        <OverdueAlert privacyMode={privacyMode} />
         
         {/* Birthday Alert */}
         {birthdaysToday.length > 0 && (
@@ -121,14 +134,26 @@ export default function Index() {
               {privacyMode ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
             </Button>
           </div>
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
-            <StatCard title="Alunos Ativos" value={loading ? '...' : privacyMode ? '••••' : activeStudents} icon={Users} description={privacyMode ? '' : `${activeStudents} com plano mensal`} />
+          <div className="grid grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-3 md:gap-4">
+            <StatCard 
+              title="Alunos Ativos" 
+              value={loading ? '...' : privacyMode ? '••••' : activeStudents} 
+              icon={Users} 
+              description={privacyMode ? '' : `${activeStudents} ativos de ${totalStudents} total`} 
+            />
             <StatCard title="Treinos de Hoje" value={loading ? '...' : privacyMode ? '••••' : todayTrainings} icon={Calendar} variant="primary" />
             <StatCard title="Taxa de Presença" value={loading ? '...' : privacyMode ? '••••' : `${attendanceRate}%`} icon={CheckCircle} />
             <StatCard 
+               title="Faturamento Total" 
+               value={loading ? '...' : privacyMode ? '••••' : formatCurrency(expectedRevenue)} 
+               icon={DollarSign} 
+               description={privacyMode ? '' : 'Total bruto esperado'}
+            />
+            <StatCard 
                title="Recebido no Mês" 
                value={loading ? '...' : privacyMode ? '••••' : formatCurrency(receivedRevenue)} 
-               icon={DollarSign} 
+               icon={CheckCircle} 
+               variant="primary"
                progress={privacyMode ? undefined : { value: revenueProgress, label: 'Meta Mensal' }}
             />
           </div>

@@ -1,6 +1,6 @@
-# Resenha's - Escola de Futevôlei
+# Esportiz
 
-Sistema de gestão profissional para a **Escola de Futevôlei Resenha's**. Desenvolvido para facilitar o controle de alunos, frequências, pagamentos e datas importantes como aniversários.
+Sistema de gestão profissional para a **Gestão Esportiva Inteligente**. Desenvolvido para facilitar o controle de alunos, frequências, pagamentos e datas importantes como aniversários.
 
 ## 🚀 Funcionalidades
 
@@ -23,7 +23,7 @@ Sistema de gestão profissional para a **Escola de Futevôlei Resenha's**. Desen
 
 Para hospedar este projeto na Vercel, siga estes passos:
 
-1.  **Conecte seu Repositório**: Importe o repositório `resenha-s-ftv-main` no painel da Vercel.
+1.  **Conecte seu Repositório**: Importe o repositório `esportiz-app` no painel da Vercel.
 2.  **Variáveis de Ambiente**: Configure as seguintes chaves no painel da Vercel (Environment Variables):
     *   `VITE_SUPABASE_URL`
     *   `VITE_SUPABASE_ANON_KEY`
@@ -45,4 +45,4 @@ npm run build
 ```
 
 ---
-Desenvolvido por **Resenha's Escola de Futevôlei**
+Desenvolvido por **Esportiz**

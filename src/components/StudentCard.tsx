@@ -12,6 +12,8 @@ import {
 } from '@/components/ui/alert-dialog';
 import { toast } from '@/hooks/use-toast';
 import type { Student } from '@/data/mockData';
+import { formatCurrency } from '@/lib/formatCurrency';
+import { supabase } from '@/integrations/supabase/client';
 
 interface StudentCardProps {
   student: Student;
@@ -49,50 +51,29 @@ export function StudentCard({ student, onClick }: StudentCardProps) {
     [trainings, student.id, today]
   );
 
-  // Pro-rata calculation based on remaining weeks in the month
-  // Rule: if first training was in the last week of previous month OR first week (days 1-7)
-  // of current month → full price. Pro-rata only applies after week 1.
+  // Pro-rata visual calculation based on remaining days in the month
   const getProRataInfo = () => {
-    if (!plan || plan.billingType !== 'monthly') return null;
+    if (!plan || plan.billingType !== 'monthly' || !student.paymentStartDate) return null;
     
-    const refDate = firstTraining?.date || student.joinDate;
-    const startDate = new Date(refDate + 'T12:00:00');
+    const startDate = new Date(student.paymentStartDate + 'T12:00:00');
     const startDay = startDate.getDate();
     const startMonth = startDate.getMonth();
     const startYear = startDate.getFullYear();
     
-    // Check if the first training was in the last week of the previous month
-    const daysInPrevMonth = new Date(startYear, startMonth, 0).getDate();
-    const prevMonthLastWeekStart = daysInPrevMonth - 6; // last 7 days
-    
-    // If experimental was end of previous month, first paid month = next month = full price
-    // We detect this by checking: if the student has no plan yet during that training, skip
-    // For display purposes: if start is in first week (1-7), pay full
-    if (startDay <= 7) return null;
-    
-    // Calculate weeks remaining in the month
-    const daysInMonth = new Date(startYear, startMonth + 1, 0).getDate();
-    const totalWeeks = Math.ceil(daysInMonth / 7);
-    
-    // Which week of the month is the start? (1-indexed)
-    const startWeek = Math.ceil(startDay / 7);
-    const remainingWeeks = totalWeeks - startWeek + 1;
-    
-    // Weekly rate based on plan price
-    const weeklyRate = plan.price / totalWeeks;
-    const proRataAmount = Math.round(weeklyRate * remainingWeeks * 100) / 100;
-    
-    return {
-      startDay,
-      daysInMonth,
-      totalWeeks,
-      remainingWeeks,
-      proRataAmount,
-      weeklyRate: Math.round(weeklyRate * 100) / 100,
-      refDate,
-      planPrice: plan.price,
-      sessionsPerWeek: plan.sessionsPerWeek,
-    };
+    // Check if start date is in the current month
+    const now = new Date();
+    if (startYear === now.getFullYear() && startMonth === now.getMonth() && startDay > 1) {
+      const daysInMonth = new Date(startYear, startMonth + 1, 0).getDate();
+      const remainingDays = daysInMonth - startDay + 1;
+      const proRataAmount = Math.round(plan.price * (remainingDays / daysInMonth) * 100) / 100;
+      
+      return {
+        remainingDays,
+        daysInMonth,
+        proRataAmount,
+      };
+    }
+    return null;
   };
   const proRata = getProRataInfo();
 
@@ -104,11 +85,17 @@ export function StudentCard({ student, onClick }: StudentCardProps) {
     .toUpperCase();
 
   const handleDelete = async () => {
+    // Clean up future trainings before deleting
+    await supabase.rpc('cleanup_student_future_trainings', { p_student_id: student.id });
+    
     await deleteStudent(student.id);
     toast({ title: 'Aluno removido', description: `${student.name} foi removido com sucesso.` });
   };
 
   const handleDeactivate = async () => {
+    // Clean up future trainings
+    await supabase.rpc('cleanup_student_future_trainings', { p_student_id: student.id });
+    
     await updateStudent(student.id, { active: false });
     toast({
       title: 'Aluno desativado',
@@ -198,8 +185,8 @@ export function StudentCard({ student, onClick }: StudentCardProps) {
           {proRata && (
             <div className="mt-1 bg-primary/5 rounded-lg px-3 py-2.5 border border-primary/10 flex flex-col gap-1">
               <div className="flex items-center justify-between gap-2">
-                 <span className="font-medium text-primary">Pro-rata ({proRata.remainingWeeks}/{proRata.totalWeeks} sem.)</span>
-                 <span className="font-bold text-primary">R$ {proRata.proRataAmount.toFixed(2)}</span>
+                 <span className="font-medium text-primary">1º Mês Pro-rata ({proRata.remainingDays}/{proRata.daysInMonth} dias)</span>
+                 <span className="font-bold text-primary">{formatCurrency(proRata.proRataAmount)}</span>
               </div>
             </div>
           )}

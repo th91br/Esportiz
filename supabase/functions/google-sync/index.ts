@@ -20,7 +20,17 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     )
 
-    // 1. Get tokens from profile
+    // 1. Verify the caller is the owner of the user_id
+    const authHeader = req.headers.get('Authorization')
+    if (!authHeader) throw new Error('No authorization header')
+    
+    const token = authHeader.replace('Bearer ', '')
+    const { data: { user }, error: authError } = await supabaseClient.auth.getUser(token)
+    
+    if (authError || !user) throw new Error('Invalid token')
+    if (user.id !== user_id) throw new Error('Unauthorized: user_id mismatch')
+
+    // 2. Get tokens from profile
     const { data: profile, error: profileError } = await supabaseClient
       .from('profiles')
       .select('google_access_token, google_refresh_token')

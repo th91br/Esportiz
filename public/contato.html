@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Contato — Esportiz</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
+<style>
+:root{--night:#0A1628;--night-light:#0D1F3C;--green:#1DB874;--blue:#378ADD;--glass:rgba(255,255,255,0.03);--glass-border:rgba(255,255,255,0.08);}
+body{background:var(--night);color:#fff;font-family:'DM Sans',sans-serif;margin:0;overflow-x:hidden;min-height:100vh;display:flex;flex-direction:column;}
+.bg-glow{position:fixed;inset:0;z-index:-1;overflow:hidden;pointer-events:none;}
+.blob{position:absolute;width:600px;height:600px;background:rgba(29,184,116,0.1);filter:blur(120px);border-radius:50%;}
+.blob-1{top:-200px;right:-100px;animation:float 20s infinite alternate;}
+.blob-2{bottom:-200px;left:-100px;background:rgba(55,138,221,0.08);animation:float 25s infinite alternate-reverse;}
+@keyframes float{from{transform:translate(0,0);}to{transform:translate(100px,50px);}}
+
+.container{max-width:1200px;margin:0 auto;padding:0 24px;width:100%;box-sizing:border-box;}
+nav{padding:24px 0;border-bottom:1px solid var(--glass-border);background:rgba(10,22,40,0.8);backdrop-filter:blur(20px);}
+.nav-inner{display:flex;align-items:center;justify-content:space-between;}
+.logo{font-family:'Syne',sans-serif;font-weight:800;font-size:22px;text-decoration:none;color:#fff;}
+.logo span{color:var(--green);}
+.back-btn{color:rgba(255,255,255,0.6);text-decoration:none;font-size:14px;font-weight:500;transition:color 0.3s;}
+.back-btn:hover{color:var(--green);}
+
+main{flex:1;display:flex;align-items:center;justify-content:center;padding:80px 24px;}
+.contact-card{background:var(--night-light);border:1px solid var(--glass-border);border-radius:32px;padding:60px 40px;max-width:600px;width:100%;text-align:center;position:relative;overflow:hidden;backdrop-filter:blur(10px);box-shadow:0 40px 100px rgba(0,0,0,0.5);}
+.contact-card::before{content:'';position:absolute;top:0;left:0;right:0;height:4px;background:linear-gradient(90deg,var(--green),var(--blue));}
+
+h1{font-family:'Syne',sans-serif;font-size:48px;font-weight:800;margin-bottom:16px;letter-spacing:-1.5px;}
+p.subtitle{font-size:18px;color:rgba(255,255,255,0.6);margin-bottom:48px;}
+
+.email-box{background:rgba(0,0,0,0.2);border:1px solid var(--glass-border);border-radius:16px;padding:24px;display:flex;flex-direction:column;align-items:center;gap:16px;margin-bottom:32px;transition:all 0.3s;}
+.email-box:hover{border-color:var(--green);background:rgba(29,184,116,0.02);}
+.email-label{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var(--green);font-weight:700;}
+.email-address{font-family:'Syne',sans-serif;font-size:24px;font-weight:700;color:#fff;word-break:break-all;}
+
+.actions{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;}
+.btn{padding:14px 28px;border-radius:12px;font-weight:600;font-size:16px;cursor:pointer;transition:all 0.3s;border:none;display:flex;align-items:center;gap:8px;text-decoration:none;}
+.btn-primary{background:var(--green);color:#fff;}
+.btn-primary:hover{transform:translateY(-2px);box-shadow:0 10px 25px rgba(29,184,116,0.3);filter:brightness(1.1);}
+.btn-outline{background:transparent;color:#fff;border:1.5px solid rgba(255,255,255,0.15);}
+.btn-outline:hover{border-color:var(--green);color:var(--green);transform:translateY(-2px);}
+
+.success-msg{position:fixed;bottom:30px;left:50%;transform:translateX(-50%) translateY(100px);background:var(--green);color:#fff;padding:12px 24px;border-radius:100px;font-weight:600;transition:transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);z-index:1000;display:flex;align-items:center;gap:8px;}
+.success-msg.show{transform:translateX(-50%) translateY(0);}
+
+footer{padding:40px 0;text-align:center;color:rgba(255,255,255,0.3);font-size:14px;border-top:1px solid var(--glass-border);}
+
+@media(max-width:480px){
+  h1{font-size:36px;}
+  .contact-card{padding:40px 24px;}
+  .email-address{font-size:18px;}
+}
+</style>
+</head>
+<body>
+<div class="bg-glow">
+  <div class="blob blob-1"></div>
+  <div class="blob blob-2"></div>
+</div>
+
+<nav>
+  <div class="container nav-inner">
+    <a href="/" class="logo">esport<span>iz</span></a>
+    <a href="/" class="back-btn">← Voltar para a Home</a>
+  </div>
+</nav>
+
+<main>
+  <div class="container" style="display:flex; justify-content:center;">
+    <div class="contact-card">
+      <h1>Fale com a gente.</h1>
+      <p class="subtitle">Estamos prontos para ajudar você a profissionalizar sua escola esportiva.</p>
+      
+      <div class="email-box">
+        <span class="email-label">E-mail Oficial</span>
+        <span class="email-address" id="email">esportiz@outlook.com.br</span>
+      </div>
+
+      <div class="actions">
+        <button class="btn btn-primary" onclick="copyEmail()">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+          Copiar E-mail
+        </button>
+        <a href="mailto:esportiz@outlook.com.br" class="btn btn-outline">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>
+          Escrever Agora
+        </a>
+      </div>
+      
+      <p style="margin-top:40px; font-size:14px; color:rgba(255,255,255,0.4);">
+        Respondemos a todas as solicitações em até 24 horas úteis.
+      </p>
+    </div>
+  </div>
+</main>
+
+<div id="successMsg" class="success-msg">
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+  E-mail copiado com sucesso!
+</div>
+
+<footer>
+  <div class="container">
+    © 2026 Esportiz — Gestão que joga junto.
+  </div>
+</footer>
+
+<script>
+function copyEmail() {
+  const email = document.getElementById('email').innerText;
+  navigator.clipboard.writeText(email).then(() => {
+    const msg = document.getElementById('successMsg');
+    msg.classList.add('show');
+    setTimeout(() => {
+      msg.classList.remove('show');
+    }, 3000);
+  });
+}
+</script>
+</body>
+</html>

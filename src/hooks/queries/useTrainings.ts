@@ -50,7 +50,11 @@ export function useTrainings() {
 
             if (data.studentIds && data.studentIds.length > 0) {
                 const { error: tsError } = await supabase.from('training_students').insert(
-                    data.studentIds.map((sid) => ({ training_id: training.id, student_id: sid }))
+                    data.studentIds.map((sid) => ({ 
+                        training_id: training.id, 
+                        student_id: sid,
+                        user_id: user.id 
+                    }))
                 );
                 if (tsError) throw tsError;
             }
@@ -82,7 +86,11 @@ export function useTrainings() {
                 await supabase.from('training_students').delete().eq('training_id', id);
                 if (data.studentIds.length > 0) {
                     const { error: tsError } = await supabase.from('training_students').insert(
-                        data.studentIds.map((sid) => ({ training_id: id, student_id: sid }))
+                        data.studentIds.map((sid) => ({ 
+                            training_id: id, 
+                            student_id: sid,
+                            user_id: user.id
+                        }))
                     );
                     if (tsError) throw tsError;
                 }

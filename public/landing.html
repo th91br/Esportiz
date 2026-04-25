@@ -205,28 +205,24 @@ nav{position:fixed;top:0;left:0;right:0;z-index:1000;padding:0 24px;transition:b
 
 /* INTEGRATIONS SECTION */
 .integrations-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:24px;margin-top:48px;}
-.int-card{background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:24px;padding:40px;transition:all 0.4s cubic-bezier(0.4,0,0.2,1);position:relative;overflow:hidden;}
-.int-card:hover{transform:translateY(-5px);border-color:rgba(29,184,116,0.3);background:rgba(255,255,255,0.05);}
-.int-card::after{content:'';position:absolute;top:0;left:0;width:100%;height:3px;background:var(--accent-color, var(--green));opacity:0.6;}
+.int-card{background:rgba(13,31,60,0.4);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,0.08);border-radius:28px;padding:48px;transition:all 0.5s cubic-bezier(0.4,0,0.2,1);position:relative;overflow:hidden;display:flex;flex-direction:column;min-height:540px;}
+.int-card:hover{transform:translateY(-8px) scale(1.01);border-color:rgba(29,184,116,0.4);background:rgba(13,31,60,0.6);box-shadow:0 32px 64px rgba(0,0,0,0.4);}
+.int-card::after{content:'';position:absolute;top:0;left:0;width:100%;height:4px;background:var(--accent-color, var(--green));opacity:0.8;box-shadow:0 0 20px var(--accent-color, var(--green));}
 .int-card.google{--accent-color:#4285F4;}
-.int-card.excel{--accent-color:#217346;}
-.int-badge{display:inline-flex;padding:4px 10px;background:rgba(29,184,116,0.15);color:var(--green);border-radius:100px;font-size:11px;font-weight:600;margin-bottom:16px;}
-.int-card h3{font-family:'Syne',sans-serif;font-size:24px;font-weight:800;margin-bottom:14px;}
-.int-card p{font-size:15px;color:rgba(255,255,255,0.6);margin-bottom:24px;line-height:1.6;}
-.int-list{list-style:none;margin-bottom:32px;}
-.int-list li{display:flex;align-items:center;gap:10px;font-size:14px;color:rgba(255,255,255,0.8);margin-bottom:10px;}
-.int-list li svg{color:var(--green);width:16px;height:16px;}
-.int-illus{height:140px;background:rgba(0,0,0,0.2);border-radius:16px;margin-top:auto;border:1px solid rgba(255,255,255,0.05);padding:16px;overflow:hidden;}
-/* Google Agenda Illus */
-.illus-calendar{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;height:100%;opacity:0.6;}
-.cal-day{background:rgba(255,255,255,0.03);border-radius:4px;}
-.cal-event{background:#4285F4;border-radius:2px;height:12px;margin:2px;}
-/* Excel Illus */
-.illus-excel{display:grid;grid-template-rows:repeat(4,1fr);gap:4px;height:100%;opacity:0.6;}
-.excel-row{display:grid;grid-template-columns:1fr 2fr 1fr;gap:4px;}
-.excel-cell{background:rgba(255,255,255,0.03);border-radius:2px;}
-.excel-cell.green{background:#217346;opacity:0.4;}
-.int-note{text-align:center;font-size:13px;color:rgba(255,255,255,0.25);margin-top:32px;}
+.int-card.excel{--accent-color:#1DB874;}
+.int-badge{display:inline-flex;padding:6px 14px;background:rgba(29,184,116,0.1);border:1px solid rgba(29,184,116,0.2);color:var(--green);border-radius:100px;font-size:12px;font-weight:600;margin-bottom:20px;}
+.int-card h3{font-family:'Syne',sans-serif;font-size:28px;font-weight:800;margin-bottom:16px;letter-spacing:-0.5px;}
+.int-card p{font-size:16px;color:rgba(255,255,255,0.65);margin-bottom:28px;line-height:1.65;}
+.int-list{list-style:none;margin-bottom:40px;}
+.int-list li{display:flex;align-items:center;gap:12px;font-size:15px;color:rgba(255,255,255,0.85);margin-bottom:14px;}
+.int-list li svg{color:var(--green);width:18px;height:18px;flex-shrink:0;}
+.int-illus-new{position:relative;margin-top:auto;width:100%;aspect-ratio:16/9;border-radius:20px;overflow:hidden;border:1px solid rgba(255,255,255,0.1);background:rgba(0,0,0,0.3);box-shadow:inset 0 0 20px rgba(0,0,0,0.4);}
+.int-img{width:100%;height:100%;object-fit:cover;transition:transform 0.8s ease;}
+.int-card:hover .int-img{transform:scale(1.08);}
+.int-glow{position:absolute;inset:0;pointer-events:none;opacity:0.4;mix-blend-mode:screen;}
+.int-glow.blue{background:radial-gradient(circle at center, rgba(66,133,244,0.3), transparent 70%);}
+.int-glow.green{background:radial-gradient(circle at center, rgba(29,184,116,0.3), transparent 70%);}
+.int-note{text-align:center;font-size:14px;color:rgba(255,255,255,0.3);margin-top:40px;font-weight:500;}
 
 @media(max-width:768px){
   .integrations-grid{grid-template-columns:1fr;}
@@ -304,14 +300,20 @@ details[open] summary::after{transform:rotate(45deg);}
 .cta-note{margin-top:20px;font-size:14px;color:rgba(255,255,255,.35);}
 
 /* FOOTER */
-footer{padding:28px 0;border-top:1px solid rgba(255,255,255,.06);}
-.footer-inner{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px;}
-.footer-logo{font-family:'Syne',sans-serif;font-weight:800;font-size:18px;color:rgba(255,255,255,.5);}
+footer{padding:60px 0 30px;border-top:1px solid rgba(255,255,255,.06);background:rgba(0,0,0,0.1);}
+.footer-inner{display:flex;flex-direction:column;align-items:center;text-align:center;gap:24px;}
+.footer-logo{font-family:'Syne',sans-serif;font-weight:800;font-size:22px;color:rgba(255,255,255,.8);letter-spacing:-0.5px;}
 .footer-logo span{color:var(--green);}
-.footer-links{display:flex;gap:28px;}
-.footer-links a{font-size:14px;color:rgba(255,255,255,.4);transition:color .2s;}
-.footer-links a:hover{color:#fff;}
-.footer-copy{font-size:13px;color:rgba(255,255,255,.3);}
+.footer-links{display:flex;gap:32px;flex-wrap:wrap;justify-content:center;}
+.footer-links a{font-size:15px;color:rgba(255,255,255,.5);transition:color .2s;font-weight:400;}
+.footer-links a:hover{color:var(--green);}
+.nav-contact-link{background:rgba(29,184,116,0.1);padding:6px 16px;border-radius:100px;color:var(--green) !important;border:1px solid rgba(29,184,116,0.3);transition:all 0.3s;margin-left:8px;}
+.nav-contact-link:hover{background:var(--green);color:#fff !important;transform:translateY(-2px);box-shadow:0 10px 20px rgba(29,184,116,0.2);}
+.footer-social{display:flex;align-items:center;gap:20px;margin:8px 0;}
+.social-icon-link{display:flex;align-items:center;gap:8px;font-size:15px;color:rgba(255,255,255,0.7);transition:all 0.3s;font-weight:500;background:rgba(255,255,255,0.03);padding:8px 16px;border-radius:12px;border:1px solid rgba(255,255,255,0.05);}
+.social-icon-link:hover{color:var(--green);border-color:rgba(29,184,116,0.3);background:rgba(29,184,116,0.05);transform:translateY(-2px);}
+.social-icon-link svg{transition:transform 0.3s;}
+.footer-copy{font-size:13px;color:rgba(255,255,255,0.25);width:100%;text-align:center;margin-top:20px;border-top:1px solid rgba(255,255,255,0.03);padding-top:20px;}
 
 /* ═══════════════════════════════════════════════════════════════
    RESPONSIVE — 4 breakpoints: 1024 / 768 / 480 / 360
@@ -491,7 +493,8 @@ footer{padding:28px 0;border-top:1px solid rgba(255,255,255,.06);}
     <div class="nav-links" role="list" aria-label="Menu principal">
       <a href="#funcionalidades">Funcionalidades</a>
       <a href="#para-quem">Para quem</a>
-      <a href="#faq">Contato</a>
+      <a href="#faq">Perguntas</a>
+      <a href="/contato.html" class="nav-contact-link">Contato</a>
     </div>
     <div class="nav-actions">
       <a href="/login" class="btn-ghost">Entrar</a>
@@ -507,7 +510,8 @@ footer{padding:28px 0;border-top:1px solid rgba(255,255,255,.06);}
 <div class="mobile-menu" id="mobileMenu" aria-hidden="true">
   <a href="#funcionalidades" class="mob-link">Funcionalidades</a>
   <a href="#para-quem" class="mob-link">Para quem</a>
-  <a href="#faq" class="mob-link">FAQ</a>
+  <a href="#faq" class="mob-link">Perguntas</a>
+  <a href="/contato.html" class="mob-link">Contato</a>
   <a href="/login" class="btn btn-primary" style="margin-top:16px;">Começar grátis →</a>
 </div>
 
@@ -956,16 +960,9 @@ footer{padding:28px 0;border-top:1px solid rgba(255,255,255,.06);}
           <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg> Adicione alunos pelo e-mail da agenda</li>
           <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg> Notificações automáticas de treinos</li>
         </ul>
-        <div class="int-illus">
-          <div class="illus-calendar">
-            <div class="cal-day"></div>
-            <div class="cal-day"><div class="cal-event"></div></div>
-            <div class="cal-day"></div>
-            <div class="cal-day"><div class="cal-event"></div></div>
-            <div class="cal-day"><div class="cal-event"></div></div>
-            <div class="cal-day"></div>
-            <div class="cal-day"></div>
-          </div>
+        <div class="int-illus-new">
+          <img src="/assets/integrations/calendar.png" alt="Integração Google Agenda" class="int-img" loading="lazy" />
+          <div class="int-glow blue"></div>
         </div>
       </div>
 
@@ -979,13 +976,9 @@ footer{padding:28px 0;border-top:1px solid rgba(255,255,255,.06);}
           <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg> Sincronização via Google Sheets</li>
           <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg> Histórico financeiro completo</li>
         </ul>
-        <div class="int-illus">
-          <div class="illus-excel">
-            <div class="excel-row"><div class="excel-cell green"></div><div class="excel-cell"></div><div class="excel-cell"></div></div>
-            <div class="excel-row"><div class="excel-cell"></div><div class="excel-cell"></div><div class="excel-cell green"></div></div>
-            <div class="excel-row"><div class="excel-cell green"></div><div class="excel-cell"></div><div class="excel-cell"></div></div>
-            <div class="excel-row"><div class="excel-cell"></div><div class="excel-cell green"></div><div class="excel-cell"></div></div>
-          </div>
+        <div class="int-illus-new">
+          <img src="/assets/integrations/sheets.png" alt="Integração Excel e Google Sheets" class="int-img" loading="lazy" />
+          <div class="int-glow green"></div>
         </div>
       </div>
     </div>
@@ -1015,9 +1008,15 @@ footer{padding:28px 0;border-top:1px solid rgba(255,255,255,.06);}
     <div class="footer-inner">
       <span class="footer-logo">esport<span>iz</span></span>
       <div class="footer-links" role="list">
-        <a href="#" role="listitem">Termos de uso</a>
-        <a href="#" role="listitem">Privacidade</a>
-        <a href="mailto:contato@esportiz.com.br" role="listitem">Contato</a>
+        <a href="/termos.html" role="listitem">Termos de uso</a>
+        <a href="/privacidade.html" role="listitem">Privacidade</a>
+        <a href="/contato.html" role="listitem">Contato</a>
+      </div>
+      <div class="footer-social">
+        <a href="https://instagram.com/useesportiz" target="_blank" rel="noopener noreferrer" class="social-icon-link" aria-label="Instagram">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line></svg>
+          @useesportiz
+        </a>
       </div>
       <span class="footer-copy">© 2026 Esportiz. Feito com ❤️ para o esporte brasileiro.</span>
     </div>

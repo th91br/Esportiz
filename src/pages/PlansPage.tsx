@@ -15,12 +15,11 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { toast } from '@/hooks/use-toast';
-import { usePlans } from '@/hooks/queries/usePlans';
+import { usePlans, type Plan } from '@/hooks/queries/usePlans';
 import { useStudents } from '@/hooks/queries/useStudents';
 import { usePrivacyMode } from '@/hooks/usePrivacyMode';
 import { formatCurrency } from '@/lib/formatCurrency';
 import { getActiveMonthlyStudents } from '@/lib/studentHelpers';
-import type { Plan } from '@/data/mockData';
 
 export default function PlansPage() {
   const { plans, addPlan, updatePlan, deletePlan } = usePlans();

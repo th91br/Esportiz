@@ -13,9 +13,24 @@ serve(async (req) => {
 
   try {
     const { code, user_id } = await req.json()
-
     if (!code) throw new Error('No code provided')
     if (!user_id) throw new Error('No user_id provided')
+
+    // Initialize Supabase Client with service role for admin tasks
+    const supabaseClient = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+    )
+
+    // 1. Get the JWT from the Authorization header
+    const authHeader = req.headers.get('Authorization')
+    if (!authHeader) throw new Error('No authorization header')
+    
+    const token = authHeader.replace('Bearer ', '')
+    const { data: { user }, error: authError } = await supabaseClient.auth.getUser(token)
+    
+    if (authError || !user) throw new Error('Invalid token')
+    if (user.id !== user_id) throw new Error('Unauthorized: user_id mismatch')
 
     const client_id = Deno.env.get('GOOGLE_CLIENT_ID')
     const client_secret = Deno.env.get('GOOGLE_CLIENT_SECRET')

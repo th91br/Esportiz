@@ -59,6 +59,13 @@ export default function Index() {
     return today.getMonth() + 1 === month && today.getDate() === day;
   });
 
+  const birthdaysMonth = students.filter(student => {
+    if (!student.active || !student.birthDate) return false;
+    const today = new Date();
+    const [_, month] = student.birthDate.split('-').map(Number);
+    return today.getMonth() + 1 === month;
+  });
+
   return (
     <div className="min-h-screen bg-background">
       <Header />
@@ -134,7 +141,7 @@ export default function Index() {
               {privacyMode ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
             </Button>
           </div>
-          <div className="grid grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-3 md:gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-6 gap-3 md:gap-4">
             <StatCard 
               title="Alunos Ativos" 
               value={loading ? '...' : privacyMode ? '••••' : activeStudents} 
@@ -143,6 +150,12 @@ export default function Index() {
             />
             <StatCard title="Treinos de Hoje" value={loading ? '...' : privacyMode ? '••••' : todayTrainings} icon={Calendar} variant="primary" />
             <StatCard title="Taxa de Presença" value={loading ? '...' : privacyMode ? '••••' : `${attendanceRate}%`} icon={CheckCircle} />
+            <StatCard 
+               title="Aniversários (Mês)" 
+               value={loading ? '...' : privacyMode ? '••••' : birthdaysMonth.length} 
+               icon={Cake}
+               description={privacyMode ? '' : 'Alunos celebrando este mês'}
+            />
             <StatCard 
                title="Faturamento Total" 
                value={loading ? '...' : privacyMode ? '••••' : formatCurrency(expectedRevenue)} 

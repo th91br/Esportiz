@@ -53,9 +53,14 @@ export function InstallPWAButton() {
     }
 
     if (!deferredPrompt) {
-      toast.info("Instruções de Instalação", {
-        description: "Acesse as configurações do seu navegador e procure por 'Adicionar à Tela Inicial' ou 'Instalar Aplicativo'.",
-        duration: 8000,
+      toast("Aplicativo instalado", {
+        description: "O Esportiz já está instalado no seu dispositivo. Procure pelo ícone na sua área de trabalho. 🟢",
+        duration: 5000,
+        style: {
+          background: '#0D1F3C',
+          color: 'white',
+          border: '1px solid #1DB874',
+        }
       });
       return;
     }

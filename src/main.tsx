@@ -10,11 +10,6 @@ if (savedTheme === 'dark') {
 
 createRoot(document.getElementById("root")!).render(<App />);
 
-// Register Service Worker for PWA
-if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/sw.js').catch(error => {
-      console.log('SW registration failed: ', error);
-    });
-  });
-}
+// The registration is handled automatically by vite-plugin-pwa via injectRegister: 'auto'
+// or by importing the virtual module if you want more control.
+// We'll let Vite PWA handle it to ensure the service worker name and path are correct.

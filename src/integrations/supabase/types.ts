@@ -205,6 +205,15 @@ export type Database = {
           plan_id: string | null
           updated_at: string
           user_id: string
+          cpf: string | null
+          rg: string | null
+          address: string | null
+          city: string | null
+          state: string | null
+          zip_code: string | null
+          is_trial: boolean
+          trial_started_at: string | null
+          trial_converted_at: string | null
         }
         Insert: {
           active?: boolean
@@ -220,6 +229,15 @@ export type Database = {
           plan_id?: string | null
           updated_at?: string
           user_id: string
+          cpf?: string | null
+          rg?: string | null
+          address?: string | null
+          city?: string | null
+          state?: string | null
+          zip_code?: string | null
+          is_trial?: boolean
+          trial_started_at?: string | null
+          trial_converted_at?: string | null
         }
         Update: {
           active?: boolean
@@ -235,6 +253,15 @@ export type Database = {
           plan_id?: string | null
           updated_at?: string
           user_id?: string
+          cpf?: string | null
+          rg?: string | null
+          address?: string | null
+          city?: string | null
+          state?: string | null
+          zip_code?: string | null
+          is_trial?: boolean
+          trial_started_at?: string | null
+          trial_converted_at?: string | null
         }
         Relationships: [
           {
@@ -289,6 +316,7 @@ export type Database = {
           time: string
           updated_at: string
           user_id: string
+          duration_minutes: number
         }
         Insert: {
           created_at?: string
@@ -299,6 +327,7 @@ export type Database = {
           time: string
           updated_at?: string
           user_id: string
+          duration_minutes?: number
         }
         Update: {
           created_at?: string
@@ -309,6 +338,7 @@ export type Database = {
           time?: string
           updated_at?: string
           user_id?: string
+          duration_minutes?: number
         }
         Relationships: []
       }

@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
-import { UserPlus } from 'lucide-react';
+import { UserPlus, UploadCloud, MapPin, FileText, Beaker, UsersRound, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { cn } from '@/lib/utils';
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
@@ -14,11 +15,14 @@ import {
 import { toast } from '@/hooks/use-toast';
 import { useStudents } from '@/hooks/queries/useStudents';
 import { usePlans } from '@/hooks/queries/usePlans';
+import { useModalities } from '@/hooks/queries/useModalities';
+import { useGroups } from '@/hooks/queries/useGroups';
 import type { Student } from '@/data/mockData';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import * as z from 'zod';
 import { useTrainings } from '@/hooks/queries/useTrainings';
+import { useAuth } from '@/contexts/AuthContext';
 import { getDayName } from '@/data/mockData';
 
 const studentSchema = z.object({
@@ -29,7 +33,13 @@ const studentSchema = z.object({
   birthDate: z.string().optional(),
   planId: z.string().optional(),
   paymentDueDay: z.string().optional(),
-  paymentStartDate: z.string().optional(),
+  modalityId: z.string().optional(),
+  cpf: z.string().optional(),
+  rg: z.string().optional(),
+  address: z.string().optional(),
+  city: z.string().optional(),
+  state: z.string().optional(),
+  zipCode: z.string().optional(),
 });
 
 type StudentFormValues = z.infer<typeof studentSchema>;
@@ -42,10 +52,17 @@ interface StudentFormProps {
 export function StudentForm({ student, trigger }: StudentFormProps) {
   const { addStudent, updateStudent } = useStudents();
   const { plans } = usePlans();
+  const { modalities } = useModalities();
   const { trainings, addTraining, updateTraining } = useTrainings();
+  const { user } = useAuth();
   const isEditing = !!student;
   const [open, setOpen] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [photoFile, setPhotoFile] = useState<File | null>(null);
+  const [photoPreview, setPhotoPreview] = useState<string | null>(student?.photo || null);
+  const [isTrial, setIsTrial] = useState(student?.isTrial ?? false);
+  const { groups } = useGroups();
+  const [selectedGroups, setSelectedGroups] = useState<string[]>(student?.groupIds || []);
 
   // Freq adjustment state
   const [schedulePromptOpen, setSchedulePromptOpen] = useState(false);
@@ -62,8 +79,14 @@ export function StudentForm({ student, trigger }: StudentFormProps) {
       level: student?.level || '',
       planId: student?.planId || 'none',
       paymentDueDay: student?.paymentDueDay ? String(student.paymentDueDay) : '',
-      paymentStartDate: student?.paymentStartDate || '',
       birthDate: student?.birthDate || '',
+      modalityId: student?.modalityId || 'none',
+      cpf: student?.cpf || '',
+      rg: student?.rg || '',
+      address: student?.address || '',
+      city: student?.city || '',
+      state: student?.state || '',
+      zipCode: student?.zipCode || '',
     },
   });
 
@@ -77,14 +100,28 @@ export function StudentForm({ student, trigger }: StudentFormProps) {
           level: student.level,
           planId: student.planId || 'none',
           paymentDueDay: student.paymentDueDay ? String(student.paymentDueDay) : '',
-          paymentStartDate: student.paymentStartDate || '',
           birthDate: student.birthDate || '',
+          modalityId: student.modalityId || 'none',
+          cpf: student.cpf || '',
+          rg: student.rg || '',
+          address: student.address || '',
+          city: student.city || '',
+          state: student.state || '',
+          zipCode: student.zipCode || '',
         });
+        setPhotoPreview(student.photo || null);
+        setIsTrial(student.isTrial ?? false);
+        setSelectedGroups(student.groupIds || []);
       } else {
         form.reset({
-          name: '', phone: '', email: '', level: '', planId: 'none', paymentDueDay: '', paymentStartDate: '', birthDate: ''
+          name: '', phone: '', email: '', level: '', planId: 'none', paymentDueDay: '', birthDate: '', modalityId: 'none',
+          cpf: '', rg: '', address: '', city: '', state: '', zipCode: ''
         });
+        setPhotoPreview(null);
+        setIsTrial(false);
+        setSelectedGroups([]);
       }
+      setPhotoFile(null);
     }
   }, [open, student, form]);
 
@@ -96,16 +133,21 @@ export function StudentForm({ student, trigger }: StudentFormProps) {
     setSaving(true);
     try {
       let derivedDueDay = formData.paymentDueDay ? Number(formData.paymentDueDay) : undefined;
-      let safeStartDate = formData.paymentStartDate || undefined;
 
-      if (isMonthly && formData.paymentStartDate) {
-        const [year, month, day] = formData.paymentStartDate.split('-');
-        derivedDueDay = Number(day);
-      } else if (isMonthly && formData.paymentDueDay && !formData.paymentStartDate) {
-        derivedDueDay = Number(formData.paymentDueDay);
-      } else if (!isMonthly) {
+      if (!isMonthly) {
         derivedDueDay = undefined;
-        safeStartDate = undefined;
+      }
+
+      // Handle photo upload
+      let photoUrl = student?.photo || undefined;
+      if (photoFile) {
+        const { supabase } = await import('@/integrations/supabase/client');
+        const fileExt = photoFile.name.split('.').pop();
+        const fileName = `${user?.id || 'anon'}/${Date.now()}.${fileExt}`;
+        const { error: uploadError } = await supabase.storage.from('student-photos').upload(fileName, photoFile, { upsert: true });
+        if (uploadError) throw new Error('Erro no upload da foto: ' + uploadError.message);
+        const { data: urlData } = supabase.storage.from('student-photos').getPublicUrl(fileName);
+        photoUrl = urlData.publicUrl;
       }
 
       const data = {
@@ -115,8 +157,19 @@ export function StudentForm({ student, trigger }: StudentFormProps) {
         level: formData.level as Student['level'],
         planId: formData.planId && formData.planId !== 'none' && formData.planId !== 'no_plan' ? formData.planId : undefined,
         paymentDueDay: derivedDueDay,
-        paymentStartDate: safeStartDate,
         birthDate: formData.birthDate || undefined,
+        modalityId: formData.modalityId && formData.modalityId !== 'none' ? formData.modalityId : undefined,
+        photo: photoUrl,
+        cpf: formData.cpf || undefined,
+        rg: formData.rg || undefined,
+        address: formData.address || undefined,
+        city: formData.city || undefined,
+        state: formData.state || undefined,
+        zipCode: formData.zipCode || undefined,
+        isTrial,
+        trialStartedAt: isTrial && !student?.trialStartedAt ? new Date().toISOString() : student?.trialStartedAt || undefined,
+        trialConvertedAt: !isTrial && student?.isTrial ? new Date().toISOString() : student?.trialConvertedAt || undefined,
+        groupIds: selectedGroups,
       };
 
       if (isEditing) {
@@ -230,6 +283,31 @@ export function StudentForm({ student, trigger }: StudentFormProps) {
 
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 mt-4">
+            {/* Trial Student Toggle */}
+            <button type="button" onClick={() => setIsTrial(!isTrial)}
+              className={cn(
+                "w-full flex items-center gap-3 px-4 py-3 rounded-xl border-2 transition-all text-left",
+                isTrial 
+                  ? "border-amber-500/50 bg-amber-500/10 text-amber-700 dark:text-amber-300" 
+                  : "border-border/50 bg-muted/20 text-muted-foreground hover:border-border"
+              )}>
+              <Beaker className="h-5 w-5 shrink-0" />
+              <div className="flex-1 min-w-0">
+                <span className="text-sm font-semibold block">Aula Experimental</span>
+                <span className="text-[11px] opacity-70">
+                  {isTrial ? 'Este aluno está em período de teste' : 'Marcar como aluno experimental'}
+                </span>
+              </div>
+              <div className={cn(
+                "h-6 w-11 rounded-full transition-colors relative shrink-0",
+                isTrial ? "bg-amber-500" : "bg-border"
+              )}>
+                <div className={cn(
+                  "absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform",
+                  isTrial ? "translate-x-5" : "translate-x-0.5"
+                )} />
+              </div>
+            </button>
             <FormField
               control={form.control}
               name="name"
@@ -286,6 +364,101 @@ export function StudentForm({ student, trigger }: StudentFormProps) {
               )}
             />
 
+            {/* Foto do Aluno */}
+            <div className="space-y-2">
+              <FormLabel>Foto do Aluno</FormLabel>
+              <div className="flex items-center gap-3">
+                <div className="h-16 w-16 rounded-xl border-2 border-dashed border-border overflow-hidden flex items-center justify-center bg-muted/30 shrink-0">
+                  {photoPreview ? (
+                    <img src={photoPreview} alt="Preview" className="h-full w-full object-cover" />
+                  ) : (
+                    <UploadCloud className="h-5 w-5 text-muted-foreground/40" />
+                  )}
+                </div>
+                <div className="flex-1 space-y-1">
+                  <label className="inline-flex items-center gap-2 px-3 py-1.5 text-xs font-medium border rounded-lg cursor-pointer hover:bg-muted transition-colors">
+                    <UploadCloud className="h-3.5 w-3.5" />
+                    {photoPreview ? 'Trocar foto' : 'Escolher foto'}
+                    <input type="file" accept="image/*" className="hidden" onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) {
+                        if (file.size > 2 * 1024 * 1024) {
+                          toast({ title: 'Foto muito grande', description: 'O limite é 2MB.', variant: 'destructive' });
+                          return;
+                        }
+                        setPhotoFile(file);
+                        setPhotoPreview(URL.createObjectURL(file));
+                      }
+                    }} />
+                  </label>
+                  <p className="text-[10px] text-muted-foreground">JPG, PNG ou WebP. Máx 2MB.</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Seção: Documentos */}
+            <div className="pt-2 border-t border-border/50">
+              <div className="flex items-center gap-2 mb-3">
+                <FileText className="h-4 w-4 text-primary" />
+                <span className="text-sm font-semibold text-foreground">Documentos</span>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <FormField control={form.control} name="cpf" render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>CPF</FormLabel>
+                    <FormControl><Input placeholder="000.000.000-00" {...field} /></FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )} />
+                <FormField control={form.control} name="rg" render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>RG</FormLabel>
+                    <FormControl><Input placeholder="00.000.000-0" {...field} /></FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )} />
+              </div>
+            </div>
+
+            {/* Seção: Endereço */}
+            <div className="pt-2 border-t border-border/50">
+              <div className="flex items-center gap-2 mb-3">
+                <MapPin className="h-4 w-4 text-primary" />
+                <span className="text-sm font-semibold text-foreground">Endereço</span>
+              </div>
+              <div className="space-y-3">
+                <FormField control={form.control} name="address" render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Endereço</FormLabel>
+                    <FormControl><Input placeholder="Rua, número, complemento" {...field} /></FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )} />
+                <div className="grid grid-cols-2 gap-3">
+                  <FormField control={form.control} name="city" render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Cidade</FormLabel>
+                      <FormControl><Input placeholder="Ex: São Paulo" {...field} /></FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )} />
+                  <FormField control={form.control} name="state" render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Estado</FormLabel>
+                      <FormControl><Input placeholder="Ex: SP" maxLength={2} {...field} /></FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )} />
+                </div>
+                <FormField control={form.control} name="zipCode" render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>CEP</FormLabel>
+                    <FormControl><Input placeholder="00000-000" {...field} /></FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )} />
+              </div>
+            </div>
             <FormField
               control={form.control}
               name="level"
@@ -331,19 +504,82 @@ export function StudentForm({ student, trigger }: StudentFormProps) {
                 </FormItem>
               )}
             />
+            
+            <FormField
+              control={form.control}
+              name="modalityId"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Modalidade</FormLabel>
+                  <Select onValueChange={field.onChange} value={field.value || 'none'}>
+                    <FormControl>
+                      <SelectTrigger><SelectValue placeholder="Selecione a modalidade" /></SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectItem value="none">Sem modalidade</SelectItem>
+                      {modalities.map((mod) => (
+                        <SelectItem key={mod.id} value={mod.id}>
+                          {mod.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <div className="space-y-3 pt-2">
+              <FormLabel className="flex items-center gap-2 text-foreground">
+                <UsersRound className="h-4 w-4 text-primary" />
+                Turmas / Grupos (Opcional)
+              </FormLabel>
+              {groups.length === 0 ? (
+                <div className="text-sm text-muted-foreground bg-muted/20 p-3 rounded-lg border border-dashed text-center">
+                  Nenhuma turma cadastrada. Você pode criar turmas no menu "Turmas".
+                </div>
+              ) : (
+                <div className="flex flex-wrap gap-2">
+                  {groups.map(group => {
+                    const isSelected = selectedGroups.includes(group.id);
+                    return (
+                      <button
+                        key={group.id}
+                        type="button"
+                        onClick={() => {
+                          setSelectedGroups(prev => 
+                            isSelected ? prev.filter(id => id !== group.id) : [...prev, group.id]
+                          );
+                        }}
+                        className={cn(
+                          "flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold transition-all border",
+                          isSelected 
+                            ? "bg-primary/10 border-primary text-primary" 
+                            : "bg-background border-border text-muted-foreground hover:border-primary/50"
+                        )}
+                      >
+                        <div className="h-2 w-2 rounded-full shrink-0" style={{ backgroundColor: group.color }} />
+                        {group.name}
+                        {isSelected && <Check className="h-3 w-3 shrink-0" />}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
 
             {isMonthly && (
               <FormField
                 control={form.control}
-                name="paymentStartDate"
+                name="paymentDueDay"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Data do Primeiro Pagamento</FormLabel>
+                    <FormLabel>Dia de Vencimento</FormLabel>
                     <FormControl>
-                      <Input type="date" {...field} />
+                      <Input type="number" min="1" max="31" placeholder="Ex: 10" {...field} />
                     </FormControl>
                     <FormDescription>
-                      O dia selecionado será o vencimento de todos os meses.
+                      Dia do mês em que a mensalidade vencerá.
                     </FormDescription>
                     <FormMessage />
                   </FormItem>

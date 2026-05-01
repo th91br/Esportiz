@@ -1,4 +1,4 @@
-import { Users, Calendar, CheckCircle, DollarSign, Eye, EyeOff, Cake } from 'lucide-react';
+import { Users, Calendar, CheckCircle, DollarSign, Eye, EyeOff, Cake, Tag } from 'lucide-react';
 import { Header } from '@/components/Header';
 import { StatCard } from '@/components/StatCard';
 import { TodaySchedule } from '@/components/TodaySchedule';
@@ -15,6 +15,7 @@ import { getActiveMonthlyStudents, getTotalStudents } from '@/lib/studentHelpers
 import { formatCurrency } from '@/lib/formatCurrency';
 import { DashboardCharts } from '@/components/DashboardCharts';
 import { useProfile } from '@/hooks/queries/useProfile';
+import { useModalities } from '@/hooks/queries/useModalities';
 import { Logo } from '@/components/Logo';
 
 export default function Index() {
@@ -26,6 +27,7 @@ export default function Index() {
   const loading = loadingStudents || loadingPlans || loadingTrainings || loadingAttendance || loadingPayments;
   const [privacyMode, togglePrivacyMode] = usePrivacyMode();
   const { profile } = useProfile();
+  const { modalities } = useModalities();
 
   const hour = new Date().getHours();
   const greeting = hour < 12 ? 'Bom dia' : hour < 18 ? 'Boa tarde' : 'Boa noite';
@@ -65,6 +67,11 @@ export default function Index() {
     const [_, month] = student.birthDate.split('-').map(Number);
     return today.getMonth() + 1 === month;
   });
+
+  const modalityStats = modalities.map(mod => ({
+    ...mod,
+    studentCount: students.filter(s => s.active && s.modalityId === mod.id).length
+  })).sort((a, b) => b.studentCount - a.studentCount);
 
   return (
     <div className="min-h-screen bg-background">
@@ -171,6 +178,33 @@ export default function Index() {
             />
           </div>
         </section>
+
+        {/* Modalities Quick Overview */}
+        {modalities.length > 0 && (
+          <section className="animate-fade-up" style={{ animationDelay: '0.05s' }}>
+            <div className="flex items-center gap-2 mb-4 px-1">
+              <Tag className="h-4 w-4 text-primary" />
+              <h2 className="font-display font-bold text-lg">Suas Modalidades</h2>
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
+              {modalityStats.map((mod) => (
+                <div 
+                  key={mod.id} 
+                  className="card-interactive p-3 flex items-center gap-3 border-primary/5 hover:border-primary/20 transition-all cursor-pointer"
+                  onClick={() => window.location.href = '/modalidades'}
+                >
+                  <div className="w-2.5 h-2.5 rounded-full shadow-sm" style={{ backgroundColor: mod.color }} />
+                  <div className="min-w-0">
+                    <p className="text-sm font-bold truncate">{mod.name}</p>
+                    <p className="text-[10px] text-muted-foreground uppercase font-bold tracking-tight">
+                      {mod.studentCount} Alunos
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
 
         {/* Dashboard Charts */}
         <section className="animate-fade-up" style={{ animationDelay: '0.1s' }}>

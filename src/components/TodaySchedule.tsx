@@ -57,7 +57,7 @@ export function TodaySchedule() {
                       </div>
                       <div className="flex items-center gap-1.5 text-base font-bold text-foreground">
                         <Clock className="h-4 w-4 text-primary" />
-                        {training.time} - {getEndTime(training.time)}
+                        {training.time} - {getEndTime(training.time, training.durationMinutes)}
                       </div>
                     </div>
                     <div className="flex items-center gap-3 text-sm text-muted-foreground">

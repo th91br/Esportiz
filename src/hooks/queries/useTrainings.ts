@@ -29,6 +29,8 @@ export function useTrainings() {
                 completed: t.completed ?? false,
                 completedAt: t.completed_at ?? undefined,
                 googleEventId: t.google_event_id,
+                modalityId: t.modality_id,
+                durationMinutes: t.duration_minutes ?? 60,
             })) as Training[];
         },
         enabled: !!user,
@@ -44,6 +46,8 @@ export function useTrainings() {
                 time: data.time,
                 location: data.location,
                 notes: data.notes,
+                modality_id: data.modalityId,
+                duration_minutes: data.durationMinutes ?? 60,
             }).select().single();
 
             if (error || !training) throw error || new Error('Treino não criado');
@@ -76,6 +80,8 @@ export function useTrainings() {
             if (data.time !== undefined) updates.time = data.time;
             if (data.location !== undefined) updates.location = data.location;
             if (data.notes !== undefined) updates.notes = data.notes;
+            if (data.modalityId !== undefined) updates.modality_id = data.modalityId;
+            if (data.durationMinutes !== undefined) updates.duration_minutes = data.durationMinutes;
 
             if (Object.keys(updates).length > 0) {
                 const { error } = await supabase.from('trainings').update(updates).eq('id', id);

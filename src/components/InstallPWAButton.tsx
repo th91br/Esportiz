@@ -53,9 +53,9 @@ export function InstallPWAButton() {
     }
 
     if (!deferredPrompt) {
-      toast("Aplicativo instalado", {
-        description: "O Esportiz já está instalado no seu dispositivo. Procure pelo ícone na sua área de trabalho. 🟢",
-        duration: 5000,
+      toast("Instalação do Aplicativo", {
+        description: "Seu navegador ainda não liberou a instalação automática, ou o app já está instalado. Para instalar manualmente:\n\nChrome/Edge: Clique no ícone de App (+) no lado direito da barra de endereço no topo.",
+        duration: 8000,
         style: {
           background: '#0D1F3C',
           color: 'white',
@@ -79,11 +79,11 @@ export function InstallPWAButton() {
     setDeferredPrompt(null);
   };
 
-  // If we are not installable and it's not iOS, don't show the button.
-  // Wait, actually let's ALWAYS show it if we are not standalone, just so users can click it and get instructions.
-  // Many browsers block beforeinstallprompt until certain heuristics are met.
-  const isStandalone = window.matchMedia('(display-mode: standalone)').matches;
-  if (isStandalone) return null;
+  // If we are not standalone AND we don't have a deferred prompt, it's likely already installed or not supported
+  // So we hide it to save space on the header.
+  const isStandalone = window.matchMedia('(display-mode: standalone)').matches || 
+                       ('standalone' in window.navigator && (window.navigator as any).standalone);
+  if (isStandalone || !deferredPrompt) return null;
 
   return (
     <Button 

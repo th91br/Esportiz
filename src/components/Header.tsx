@@ -1,4 +1,4 @@
-import { Menu, X, LogOut, Moon, Sun } from 'lucide-react';
+import { Menu, X, LogOut, Moon, Sun, UserCircle } from 'lucide-react';
 import { NotificationBell } from '@/components/NotificationBell';
 import { InstallPWAButton } from '@/components/InstallPWAButton';
 import { useState, useEffect } from 'react';
@@ -14,11 +14,14 @@ const navItems = [
   { label: 'Dashboard', path: '/dashboard' },
   { label: 'Calendário', path: '/calendario' },
   { label: 'Alunos', path: '/alunos' },
+  { label: 'Modalidades', path: '/modalidades' },
+  { label: 'Turmas', path: '/turmas' },
   { label: 'Presença', path: '/presenca' },
   { label: 'Planos', path: '/planos' },
   { label: 'Pagamentos', path: '/pagamentos' },
   { label: 'Aniversários', path: '/aniversariantes' },
   { label: 'Relatórios', path: '/relatorios' },
+  { label: 'Comunicação', path: '/comunicacao' },
 ];
 
 export function Header() {
@@ -42,27 +45,27 @@ export function Header() {
     <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container flex h-16 items-center justify-between">
         {/* Logo */}
-        <Link to="/dashboard" className="flex items-center gap-2 transition-transform hover:scale-105 active:scale-95">
+        <Link to="/dashboard" className="flex items-center gap-2 shrink-0 transition-transform hover:scale-105 active:scale-95">
           {profile?.logo_url ? (
-            <img src={profile.logo_url} alt={profile.ct_name || 'CT'} className="h-8 w-8 object-contain rounded-md" />
+            <img src={profile.logo_url} alt={profile.ct_name || 'CT'} className="h-8 w-8 object-contain rounded-md shrink-0" />
           ) : (
             <Logo size="sm" />
           )}
           {profile?.ct_name && (
-            <span className="font-display font-bold text-lg hidden sm:inline-block">
+            <span className="font-display font-bold text-sm lg:text-base hidden sm:inline-block truncate max-w-[150px] lg:max-w-[250px] xl:max-w-[350px] whitespace-nowrap">
               {profile.ct_name}
             </span>
           )}
         </Link>
 
         {/* Desktop Navigation */}
-        <nav className="hidden md:flex items-center gap-1 ml-6">
+        <nav className="hidden md:flex items-center gap-0.5 lg:gap-1 ml-2 mr-2 flex-1 justify-start min-w-0 overflow-x-auto no-scrollbar mask-edges">
           {navItems.map((item) => (
             <Link
               key={item.path}
               to={item.path}
               className={cn(
-                'px-3 py-2 rounded-lg text-sm font-medium transition-colors',
+                'px-2 py-1.5 rounded-lg text-[13px] font-medium transition-colors whitespace-nowrap',
                 location.pathname === item.path
                   ? 'text-primary bg-primary/10 font-semibold'
                   : 'text-muted-foreground hover:text-foreground hover:bg-muted'
@@ -74,9 +77,11 @@ export function Header() {
         </nav>
 
         {/* Profile & Mobile Menu */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5 shrink-0">
           <div className="hidden md:flex items-center gap-1">
-            <span className="text-xs text-muted-foreground truncate max-w-[150px]">{user?.email}</span>
+            <Button variant="ghost" size="icon" className="rounded-full hidden md:flex" title={`Logado como: ${user?.email}`}>
+              <UserCircle className="h-4 w-4 text-muted-foreground" />
+            </Button>
             <InstallPWAButton />
             <NotificationBell />
             <Link to="/configuracoes">

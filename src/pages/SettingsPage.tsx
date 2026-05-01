@@ -17,8 +17,9 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { toast } from 'sonner';
-import { UploadCloud, Save, Building, Trash2, Calendar, FileSpreadsheet, CheckCircle2, AlertCircle, Loader2 } from 'lucide-react';
+import { UploadCloud, Save, Building, Trash2, Calendar, FileSpreadsheet, CheckCircle2, AlertCircle, Loader2, Tag } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
+import { ModalityManager } from '@/components/ModalityManager';
 import { supabase } from '@/integrations/supabase/client';
 
 const GOOGLE_CLIENT_ID = '101916210739-8dd7avpijkt4oc5t053fg7tqtahfakdr.apps.googleusercontent.com';
@@ -334,6 +335,15 @@ export default function SettingsPage() {
           </div>
 
           <div className="md:col-span-2 space-y-6">
+            <div className="flex items-center gap-3 mb-2">
+              <div className="p-2 rounded-lg bg-primary/10">
+                <Tag className="h-5 w-5 text-primary" />
+              </div>
+              <h2 className="text-xl font-display font-bold">Organização e Modalidades</h2>
+            </div>
+            
+            <ModalityManager />
+
             {/* Google Calendar Card */}
             <Card className="overflow-hidden border-primary/10 shadow-sm hover:shadow-md transition-shadow">
               <div className="h-1 bg-gradient-to-r from-[#4285F4] via-[#EA4335] to-[#FBBC05]" />

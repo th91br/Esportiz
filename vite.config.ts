@@ -16,7 +16,7 @@ export default defineConfig(({ mode }) => ({
     react(),
     VitePWA({
       injectRegister: 'auto',
-      registerType: 'autoUpdate',
+      registerType: 'prompt',
       includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'icon-192x192.png', 'icon-512x512.png'],
       manifest: {
         id: 'com.esportiz.app',
@@ -32,19 +32,19 @@ export default defineConfig(({ mode }) => ({
         lang: 'pt-BR',
         icons: [
           {
-            src: '/icon-192x192.png',
+            src: '/icon-192x192.png?v=3',
             sizes: '192x192',
             type: 'image/png',
             purpose: 'any'
           },
           {
-            src: '/icon-512x512.png',
+            src: '/icon-512x512.png?v=3',
             sizes: '512x512',
             type: 'image/png',
             purpose: 'any'
           },
           {
-            src: '/maskable-icon-512x512.png',
+            src: '/maskable-icon-512x512.png?v=3',
             sizes: '512x512',
             type: 'image/png',
             purpose: 'maskable'
@@ -71,29 +71,27 @@ export default defineConfig(({ mode }) => ({
             short_name: 'Calendário',
             description: 'Ver treinos agendados para hoje',
             url: '/calendario',
-            icons: [{ src: '/icon-192x192.png', sizes: '192x192' }]
+            icons: [{ src: '/icon-192x192.png?v=3', sizes: '192x192' }]
           },
           {
             name: 'Gestão de Alunos',
             short_name: 'Alunos',
             description: 'Lista de alunos e matrículas',
             url: '/alunos',
-            icons: [{ src: '/icon-192x192.png', sizes: '192x192' }]
+            icons: [{ src: '/icon-192x192.png?v=3', sizes: '192x192' }]
           },
           {
             name: 'Financeiro',
             short_name: 'Financeiro',
             description: 'Controle de pagamentos e mensalidades',
             url: '/pagamentos',
-            icons: [{ src: '/icon-192x192.png', sizes: '192x192' }]
+            icons: [{ src: '/icon-192x192.png?v=3', sizes: '192x192' }]
           }
         ]
       },
       workbox: {
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
-        cleanupOutdatedCaches: true,
-        skipWaiting: true,
-        clientsClaim: true
+        cleanupOutdatedCaches: true
       }
     })
   ],

@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { Eye, EyeOff, Users, Calendar, CheckCircle, DollarSign, TrendingUp } from 'lucide-react';
+import { Eye, EyeOff, Users, Calendar, CheckCircle, DollarSign, TrendingUp, Activity, UserMinus } from 'lucide-react';
 import { Header } from '@/components/Header';
 import { Button } from '@/components/ui/button';
 import { StatCard } from '@/components/StatCard';
@@ -13,7 +13,7 @@ import { formatCurrency } from '@/lib/formatCurrency';
 import { cn } from '@/lib/utils';
 import { getActiveMonthlyStudents } from '@/lib/studentHelpers';
 import {
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
+  BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell, Legend
 } from 'recharts';
 
@@ -121,13 +121,13 @@ export default function ReportsPage() {
     return trainings.filter((t) => t.date >= range.start && t.date <= range.end);
   }, [trainings, range]);
 
-  // CORREÇÃO: Filtra pagamentos por monthRef (consistente com Dashboard)
-  // ao invés de dueDate, garantindo que os mesmos pagamentos apareçam
-  // no Dashboard "Recebido no Mês" e no Relatório "Caixa (Recebido)"
   const filteredPayments = useMemo(() => {
-    if (!monthRefs) return payments;
-    return payments.filter((p) => monthRefs.includes(p.monthRef));
-  }, [payments, monthRefs]);
+    if (!range) return payments;
+    return payments.filter((p) => {
+      const dateToCheck = p.paid && p.paymentDate ? p.paymentDate : p.dueDate;
+      return dateToCheck >= range.start && dateToCheck <= range.end;
+    });
+  }, [payments, range]);
 
   // KPIs Calculations
   const presentCount = filteredAttendance.filter((a) => a.present).length;
@@ -157,8 +157,37 @@ export default function ReportsPage() {
   const pendingRevenue = expectedRevenue - receivedRevenue - overdueRevenue;
   const revenueProgress = expectedRevenue > 0 ? (receivedRevenue / expectedRevenue) * 100 : 0;
 
-  // Chart Data
-  const attendanceData = [{ name: filterLabels[period], presentes: presentCount, faltas: absentCount }];
+  // Chart Data - Dynamic Evolution for Attendance
+  const evolutionAttendanceData = useMemo(() => {
+    if (period === 'year' || period === 'all') {
+      const yearToUse = period === 'year' ? new Date().getFullYear() : new Date().getFullYear();
+      const months = Array.from({ length: 12 }, (_, i) => ({ year: yearToUse, month: i + 1 }));
+      return months.map(({ year, month }) => {
+        const monthStr = `${year}-${String(month).padStart(2, '0')}`;
+        const attInMonth = attendance.filter(a => a.date.startsWith(monthStr));
+        const p = attInMonth.filter(a => a.present).length;
+        const f = attInMonth.filter(a => !a.present).length;
+        const label = new Date(year, month - 1).toLocaleString('pt-BR', { month: 'short' });
+        return { name: label.charAt(0).toUpperCase() + label.slice(1), presentes: p, faltas: f };
+      });
+    } else {
+      if (!range) return [];
+      const days = [];
+      const start = new Date(range.start);
+      const end = new Date(range.end);
+      for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+        days.push(new Date(d));
+      }
+      return days.map(d => {
+        const dateStr = d.toISOString().split('T')[0];
+        const attInDay = attendance.filter(a => a.date === dateStr);
+        const p = attInDay.filter(a => a.present).length;
+        const f = attInDay.filter(a => !a.present).length;
+        const name = d.getDate().toString().padStart(2, '0') + '/' + (d.getMonth() + 1).toString().padStart(2, '0');
+        return { name, presentes: p, faltas: f };
+      });
+    }
+  }, [attendance, period, range]);
 
   const financialData = [{
     name: filterLabels[period],
@@ -178,6 +207,60 @@ export default function ReportsPage() {
     name: plan.name,
     alunos: activeMonthly.filter((s) => s.planId === plan.id).length,
   })).sort((a, b) => b.alunos - a.alunos);
+
+  // Historical Financial Data - Dynamic Evolution based on period
+  const historicalFinancialData = useMemo(() => {
+    if (period === 'year' || period === 'all') {
+      const yearToUse = period === 'year' ? new Date().getFullYear() : new Date().getFullYear();
+      const months = Array.from({ length: 12 }, (_, i) => ({ year: yearToUse, month: i + 1 }));
+      return months.map(({ year, month }) => {
+        const monthRef = `${year}-${String(month).padStart(2, '0')}`;
+        const monthPayments = payments.filter(p => p.monthRef === monthRef);
+        const expected = monthPayments.reduce((acc, curr) => acc + curr.amount, 0);
+        const received = monthPayments.filter(p => p.paid).reduce((acc, curr) => acc + curr.amount, 0);
+        const label = new Date(year, month - 1).toLocaleString('pt-BR', { month: 'short' });
+        return { name: label.charAt(0).toUpperCase() + label.slice(1), Total: expected, Recebido: received };
+      });
+    } else {
+      if (!range) return [];
+      const days = [];
+      const start = new Date(range.start);
+      const end = new Date(range.end);
+      for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+        days.push(new Date(d));
+      }
+      return days.map(d => {
+        const dateStr = d.toISOString().split('T')[0];
+        const dayPayments = payments.filter(p => {
+          const dateToCheck = p.paid && p.paymentDate ? p.paymentDate : p.dueDate;
+          return dateToCheck === dateStr;
+        });
+        const expected = dayPayments.reduce((acc, curr) => acc + curr.amount, 0);
+        const received = dayPayments.filter(p => p.paid).reduce((acc, curr) => acc + curr.amount, 0);
+        const name = d.getDate().toString().padStart(2, '0') + '/' + (d.getMonth() + 1).toString().padStart(2, '0');
+        return { name, Total: expected, Recebido: received };
+      });
+    }
+  }, [payments, period, range]);
+
+  // Retention Data (Funnel)
+  const retentionData = useMemo(() => {
+    const ativos = students.filter(s => s.active && !s.isTrial).length;
+    const experimentais = students.filter(s => s.active && s.isTrial).length;
+    const inativos = students.filter(s => !s.active).length;
+    return [
+      { name: 'Alunos Ativos', value: ativos, color: COLORS.emerald },
+      { name: 'Aulas Experimentais', value: experimentais, color: COLORS.warning },
+      { name: 'Inativos (Churn)', value: inativos, color: COLORS.destructive },
+    ];
+  }, [students]);
+
+  const churnRate = useMemo(() => {
+    const total = students.length;
+    const inativos = students.filter(s => !s.active).length;
+    if (total === 0) return 0;
+    return Math.round((inativos / total) * 100);
+  }, [students]);
 
   const customTooltipStyle = {
     backgroundColor: 'hsl(var(--background))',
@@ -302,7 +385,7 @@ export default function ReportsPage() {
             <p className="text-sm text-muted-foreground mb-6">Controle de engajamento dos alunos nas aulas registradas</p>
             <div className="h-[280px] w-full">
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={attendanceData} barGap={4} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                <BarChart data={evolutionAttendanceData} barGap={4} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--border))" />
                   <XAxis dataKey="name" tick={{ fontSize: 13, fill: 'hsl(var(--muted-foreground))' }} axisLine={false} tickLine={false} />
                   <YAxis tick={{ fontSize: 13, fill: 'hsl(var(--muted-foreground))' }} axisLine={false} tickLine={false} />
@@ -348,6 +431,71 @@ export default function ReportsPage() {
                     {
                       planDistributionData.map((entry, index) => (
                         <Cell key={`cell-${index}`} fill={index === 0 ? COLORS.primary : 'hsl(var(--primary)/0.6)'} />
+                      ))
+                    }
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+
+          {/* Histórico Financeiro Mensal */}
+          <div className="card-interactive p-4 md:p-6 lg:col-span-2 mt-4 border-primary/20 bg-gradient-to-br from-background to-muted/20">
+            <div className="flex items-start justify-between mb-6">
+              <div>
+                <h3 className="font-display font-bold text-lg md:text-xl text-foreground flex items-center gap-2">
+                  <Activity className="h-5 w-5 text-primary" /> Evolução de Faturamento
+                </h3>
+                <p className="text-sm text-muted-foreground mt-1">Comparativo de receita prevista vs realizada ({filterLabels[period]})</p>
+              </div>
+            </div>
+            <div className="h-[320px] w-full">
+              {!privacyMode ? (
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={historicalFinancialData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--border))" />
+                    <XAxis dataKey="name" tick={{ fontSize: 13, fill: 'hsl(var(--muted-foreground))' }} axisLine={false} tickLine={false} />
+                    <YAxis tick={{ fontSize: 13, fill: 'hsl(var(--muted-foreground))' }} axisLine={false} tickLine={false} tickFormatter={(v) => `R$${v}`} />
+                    <Tooltip contentStyle={customTooltipStyle} cursor={{ stroke: 'hsl(var(--muted))', strokeWidth: 2 }} formatter={(value: number) => [formatCurrency(value), '']} />
+                    <Line type="monotone" dataKey="Total" name="Previsto (Total)" stroke={COLORS.slate} strokeWidth={3} dot={{ r: 4 }} activeDot={{ r: 6 }} />
+                    <Line type="monotone" dataKey="Recebido" name="Realizado (Caixa)" stroke={COLORS.emerald} strokeWidth={3} dot={{ r: 4 }} activeDot={{ r: 6 }} />
+                    <Legend wrapperStyle={{ paddingTop: '20px', fontSize: '13px' }} iconType="circle" />
+                  </LineChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="w-full h-full flex flex-col items-center justify-center bg-muted/10 rounded-xl border border-dashed border-border/50">
+                  <EyeOff className="h-6 w-6 text-muted-foreground/50 mb-2"/>
+                  <p className="text-muted-foreground font-medium text-sm">Dados Históricos Ocultos</p>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Métricas de Retenção e Churn */}
+          <div className="card-interactive p-4 md:p-6 lg:col-span-2 border-destructive/10 mt-4">
+            <div className="flex items-start justify-between mb-6">
+              <div>
+                <h3 className="font-display font-bold text-lg md:text-xl text-foreground flex items-center gap-2">
+                  <UserMinus className="h-5 w-5 text-destructive" /> Retenção e Churn
+                </h3>
+                <p className="text-sm text-muted-foreground mt-1">Visão geral do funil de retenção e perda de alunos na base inteira</p>
+              </div>
+              <div className="bg-destructive/10 border border-destructive/20 px-4 py-2 rounded-lg text-center shrink-0">
+                <p className="text-xs font-bold text-destructive uppercase tracking-wider mb-0.5">Taxa de Churn</p>
+                <p className="text-2xl font-display font-bold text-destructive">{privacyMode ? '••%' : `${churnRate}%`}</p>
+              </div>
+            </div>
+            <div className="h-[280px] w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={retentionData} layout="vertical" margin={{ top: 0, right: 30, left: 0, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} stroke="hsl(var(--border))" />
+                  <XAxis type="number" hide />
+                  <YAxis type="category" dataKey="name" tick={{ fontSize: 13, fill: 'hsl(var(--foreground))', fontWeight: 500 }} axisLine={false} tickLine={false} width={150} />
+                  <Tooltip contentStyle={customTooltipStyle} cursor={{ fill: 'hsl(var(--muted)/0.3)' }} formatter={(value: number) => [privacyMode ? '••••' : `${value} aluno(s)`, 'Quantidade']} />
+                  <Bar dataKey="value" radius={[0, 4, 4, 0]} barSize={32}>
+                    {
+                      retentionData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.color} />
                       ))
                     }
                   </Bar>

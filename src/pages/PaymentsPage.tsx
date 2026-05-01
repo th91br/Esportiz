@@ -8,8 +8,9 @@ import { formatCurrency } from '@/lib/formatCurrency';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Check, X, DollarSign, AlertTriangle, Clock, TrendingUp, Eye, EyeOff, Percent, Trash2 } from 'lucide-react';
+import { Check, X, DollarSign, AlertTriangle, Clock, TrendingUp, Eye, EyeOff, Percent, Trash2, Download } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { exportToCSV } from '@/lib/exportUtils';
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
@@ -63,6 +64,27 @@ export default function PaymentsPage() {
             <p className="text-sm text-muted-foreground">Controle de pagamentos mensais dos alunos</p>
           </div>
           <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              className="gap-2"
+              onClick={() => {
+                const exportData = monthPayments.map(p => {
+                  const student = students.find(s => s.id === p.userId);
+                  return {
+                    'Aluno': student?.name || 'Aluno Desconhecido',
+                    'Status': getStatus(p) === 'paid' ? 'Pago' : getStatus(p) === 'overdue' ? 'Atrasado' : 'Pendente',
+                    'Valor (R$)': p.amount.toFixed(2).replace('.', ','),
+                    'Referência': p.monthRef,
+                    'Vencimento': new Date(p.dueDate + 'T12:00:00').toLocaleDateString('pt-BR'),
+                    'Data de Pagamento': p.paymentDate ? new Date(p.paymentDate).toLocaleDateString('pt-BR') : '',
+                  };
+                });
+                exportToCSV(exportData, `Pagamentos_${monthRef}`);
+              }}
+              disabled={loadingPayments || monthPayments.length === 0}
+            >
+              <Download className="h-4 w-4" /> Exportar
+            </Button>
             <Button
               variant="ghost"
               size="icon"

@@ -26,6 +26,7 @@ import {
 import { toast } from '@/hooks/use-toast';
 import { useStudents } from '@/hooks/queries/useStudents';
 import { useTrainings } from '@/hooks/queries/useTrainings';
+import { useModalities } from '@/hooks/queries/useModalities';
 
 const periodIcons = { manhã: Sun, tarde: Sunset, noite: Moon };
 const periodStyles = { manhã: 'bg-amber-500', tarde: 'bg-orange-500', noite: 'bg-indigo-500' };
@@ -43,8 +44,11 @@ function TrainingFormDialog({
   const [formDate, setFormDate] = useState(training?.date || selectedDate);
   const [formTime, setFormTime] = useState<string>(training?.time || '');
   const [formLocation, setFormLocation] = useState(training?.location || '');
+  const [formModalityId, setFormModalityId] = useState(training?.modalityId || 'none');
   const [formStudentIds, setFormStudentIds] = useState<string[]>(training?.studentIds || []);
   const [recurrence, setRecurrence] = useState<'none' | 'month' | 'quarter'>('none');
+  const [formDuration, setFormDuration] = useState(training?.durationMinutes?.toString() || '60');
+  const { modalities } = useModalities();
   const [studentSearch, setStudentSearch] = useState('');
 
   const filteredStudents = activeStudents.filter((s) =>
@@ -83,7 +87,13 @@ function TrainingFormDialog({
     }
     setSaving(true);
     try {
-      const baseData = { time: formTime as TimeSlot, studentIds: formStudentIds, location: formLocation };
+      const baseData = { 
+        time: formTime as TimeSlot, 
+        studentIds: formStudentIds, 
+        location: formLocation,
+        modalityId: formModalityId && formModalityId !== 'none' ? formModalityId : undefined,
+        durationMinutes: parseInt(formDuration) || 60,
+      };
       
       let datesToSchedule: string[] = [formDate];
       if (recurrence === 'month') {
@@ -172,7 +182,7 @@ function TrainingFormDialog({
               <SelectTrigger><SelectValue placeholder="Selecione o horário" /></SelectTrigger>
               <SelectContent className="max-h-60">
                 {timeSlots.map((time) => (
-                  <SelectItem key={time} value={time}>{time} - {getEndTime(time)}</SelectItem>
+                  <SelectItem key={time} value={time}>{time} - {getEndTime(time, parseInt(formDuration) || 60)}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
@@ -181,6 +191,41 @@ function TrainingFormDialog({
             <Label>Local</Label>
             <Input placeholder="Ex: Praia de Copacabana" value={formLocation} onChange={(e) => setFormLocation(e.target.value)} />
           </div>
+
+          <div className="space-y-2">
+            <Label>Duração (minutos)</Label>
+            <Select value={formDuration} onValueChange={setFormDuration}>
+              <SelectTrigger><SelectValue placeholder="Duração" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="30">30 min</SelectItem>
+                <SelectItem value="45">45 min</SelectItem>
+                <SelectItem value="60">1 hora</SelectItem>
+                <SelectItem value="90">1h30</SelectItem>
+                <SelectItem value="120">2 horas</SelectItem>
+                <SelectItem value="150">2h30</SelectItem>
+                <SelectItem value="180">3 horas</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-2">
+            <Label>Modalidade</Label>
+            <Select value={formModalityId} onValueChange={setFormModalityId}>
+              <SelectTrigger><SelectValue placeholder="Selecione a modalidade" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">Sem modalidade</SelectItem>
+                {modalities.map((mod) => (
+                  <SelectItem key={mod.id} value={mod.id}>
+                    <div className="flex items-center gap-2">
+                      <div className="h-2 w-2 rounded-full" style={{ backgroundColor: mod.color }} />
+                      {mod.name}
+                    </div>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
           <div className="space-y-2">
             <Label>Alunos ({formStudentIds.length} selecionado{formStudentIds.length !== 1 ? 's' : ''})</Label>
             <Input
@@ -320,6 +365,8 @@ export default function CalendarPage() {
   const [newTrainingOpen, setNewTrainingOpen] = useState(false);
   const [editingTraining, setEditingTraining] = useState<Training | undefined>();
   const [editOpen, setEditOpen] = useState(false);
+  const [modalityFilter, setModalityFilter] = useState('all');
+  const { modalities } = useModalities();
 
   const weekDates = useMemo(() => getWeekDatesArray(weekOffset), [weekOffset]);
   const weekStart = weekDates[0];
@@ -328,7 +375,18 @@ export default function CalendarPage() {
   const weekLabel = `${getMonthName(weekStartDate.getMonth())} ${weekStartDate.getFullYear()}`;
   const weekNum = getWeekNumber(weekStart);
 
-  const selectedTrainings = trainings.filter((t) => t.date === selectedDate);
+  const filteredTrainings = trainings.filter(t => {
+    if (modalityFilter === 'all') return true;
+    if (t.modalityId === modalityFilter) return true;
+    
+    // Fallback inteligente: se o treino não tem essa modalidade explicitamente,
+    // verificamos se algum dos alunos agendados neste treino pertence à modalidade filtrada.
+    // Isso garante que alterações feitas nos alunos reflitam imediatamente no calendário.
+    const trainingStudents = students.filter(s => t.studentIds.includes(s.id));
+    return trainingStudents.some(s => s.modalityId === modalityFilter);
+  });
+
+  const selectedTrainings = filteredTrainings.filter((t) => t.date === selectedDate);
 
   const goToToday = () => {
     setWeekOffset(0);
@@ -365,8 +423,8 @@ export default function CalendarPage() {
             <h1 className="section-title text-2xl md:text-3xl">Calendário de Treinos</h1>
             <p className="text-muted-foreground mt-1">Gerencie a agenda de aulas</p>
           </div>
-          <div className="flex items-center gap-2">
-            <div className="flex rounded-lg border border-border overflow-hidden">
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="flex rounded-lg border border-border overflow-hidden shrink-0">
               <button onClick={() => setViewMode('week')}
                 className={cn('px-3 py-1.5 text-sm font-medium transition-colors flex items-center gap-1.5', viewMode === 'week' ? 'bg-primary text-primary-foreground' : 'hover:bg-muted')}>
                 <CalendarRange className="h-3.5 w-3.5" />Semana
@@ -376,8 +434,17 @@ export default function CalendarPage() {
                 <CalendarDays className="h-3.5 w-3.5" />Anual
               </button>
             </div>
-            <Button className="btn-primary-gradient" onClick={() => setNewTrainingOpen(true)}>
-              <Plus className="h-4 w-4 mr-2" />Novo Treino
+            <Select value={modalityFilter} onValueChange={setModalityFilter}>
+              <SelectTrigger className="w-auto flex-1 min-w-[130px] max-w-[180px] h-9 shrink-0"><SelectValue placeholder="Modalidade" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todas as aulas</SelectItem>
+                {modalities.map(mod => (
+                  <SelectItem key={mod.id} value={mod.id}>{mod.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Button className="btn-primary-gradient shrink-0" onClick={() => setNewTrainingOpen(true)}>
+              <Plus className="h-4 w-4 sm:mr-2" /><span className="hidden sm:inline">Novo Treino</span>
             </Button>
           </div>
         </div>
@@ -467,10 +534,20 @@ export default function CalendarPage() {
                             <div>
                               <div className="flex items-center gap-2">
                                 <Clock className="h-4 w-4 text-muted-foreground" />
-                                <p className="font-semibold">{training.time} - {getEndTime(training.time)}</p>
+                                <p className="font-semibold">{training.time} - {getEndTime(training.time, training.durationMinutes)}</p>
                               </div>
                               <p className="text-sm text-muted-foreground capitalize">{timePeriod}</p>
                             </div>
+                          </div>
+                          <div className="flex-1 flex flex-col items-center sm:items-start px-4">
+                            {training.modalityId && (
+                              <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-primary/5 border border-primary/10 w-fit">
+                                <div className="h-2 w-2 rounded-full" style={{ backgroundColor: modalities.find(m => m.id === training.modalityId)?.color }} />
+                                <span className="text-[10px] font-bold uppercase tracking-wider text-primary">
+                                  {modalities.find(m => m.id === training.modalityId)?.name}
+                                </span>
+                              </div>
+                            )}
                           </div>
                           <div className="flex items-center gap-2">
                             <div className="flex flex-col sm:items-end gap-1 text-sm mr-2">

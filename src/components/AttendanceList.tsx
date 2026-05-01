@@ -48,7 +48,7 @@ export function AttendanceList({ selectedDate }: AttendanceListProps) {
                 <div>
                   <div className="flex items-center gap-2 mb-1">
                     <span className={cn('badge-period', periodStyles[timePeriod])}>{timePeriod}</span>
-                    <span className="text-sm font-medium">{training.time} - {getEndTime(training.time)}</span>
+                    <span className="text-sm font-medium">{training.time} - {getEndTime(training.time, training.durationMinutes)}</span>
                   </div>
                   <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
                     <MapPin className="h-3.5 w-3.5" />{training.location}
@@ -78,12 +78,12 @@ export function AttendanceList({ selectedDate }: AttendanceListProps) {
                     </div>
                     <div className="flex items-center gap-2">
                       <Button variant="outline" size="sm"
-                        onClick={() => toggleAttendance(training.id, student.id, activeDate)}
+                        onClick={() => toggleAttendance(training.id, student.id, activeDate, true)}
                         className={cn('transition-all', isPresent === true && 'bg-success text-success-foreground border-success hover:bg-success/90')}>
                         <Check className="h-4 w-4" />
                       </Button>
                       <Button variant="outline" size="sm"
-                        onClick={() => toggleAttendance(training.id, student.id, activeDate)}
+                        onClick={() => toggleAttendance(training.id, student.id, activeDate, false)}
                         className={cn('transition-all', isPresent === false && 'bg-destructive text-destructive-foreground border-destructive hover:bg-destructive/90')}>
                         <X className="h-4 w-4" />
                       </Button>

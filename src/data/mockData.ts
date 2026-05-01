@@ -21,6 +21,16 @@ export interface Student {
   paymentDueDay?: number;
   paymentStartDate?: string;
   birthDate?: string;
+  modalityId?: string;
+  cpf?: string;
+  rg?: string;
+  address?: string;
+  city?: string;
+  state?: string;
+  zipCode?: string;
+  isTrial?: boolean;
+  trialStartedAt?: string;
+  trialConvertedAt?: string;
 }
 
 export interface Payment {
@@ -63,6 +73,8 @@ export interface Training {
   completed: boolean;
   completedAt?: string;
   googleEventId?: string;
+  modalityId?: string;
+  durationMinutes: number;
 }
 
 export interface Attendance {
@@ -84,10 +96,12 @@ export const formatDate = (dateString: string): string => {
   return date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
 };
 
-export const getEndTime = (startTime: TimeSlot): string => {
-  const hour = parseInt(startTime.split(':')[0]);
-  const nextHour = hour === 23 ? 0 : hour + 1;
-  return `${nextHour.toString().padStart(2, '0')}:00`;
+export const getEndTime = (startTime: TimeSlot | string, durationMinutes: number = 60): string => {
+  const [hours, minutes] = startTime.split(':').map(Number);
+  const totalMinutes = hours * 60 + minutes + durationMinutes;
+  const endHour = Math.floor(totalMinutes / 60) % 24;
+  const endMin = totalMinutes % 60;
+  return `${endHour.toString().padStart(2, '0')}:${endMin.toString().padStart(2, '0')}`;
 };
 
 export const getWeekDatesArray = (weekOffset = 0) => {

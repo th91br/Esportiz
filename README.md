@@ -1,7 +1,7 @@
 # 🚀 Esportiz - Gestão Esportiva Inteligente
 
 ![Esportiz Banner](https://img.shields.io/badge/Esportiz-SaaS-blueviolet?style=for-the-badge&logo=react)
-![Status](https://img.shields.io/badge/Status-Em%20Desenvolvimento-orange?style=for-the-badge)
+![Status](https://img.shields.io/badge/Status-Beta%20Ativo-green?style=for-the-badge)
 ![License](https://img.shields.io/badge/License-Proprietary-red?style=for-the-badge)
 
 O **Esportiz** é uma plataforma SaaS (Software as a Service) de alta performance, desenvolvida para transformar a gestão de escolas e arenas de esportes de areia (Beach Tennis, Futevôlei, Vôlei de Praia). Unindo design premium e funcionalidades robustas, o sistema centraliza o controle operacional e financeiro em uma única interface PWA.

@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { Search, Users, UserCheck, UserMinus, UserX } from 'lucide-react';
+import { Search, Users, UserCheck, UserMinus, UserX, Download } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import { Header } from '@/components/Header';
 import { StatCard } from '@/components/StatCard';
 import { StudentCard } from '@/components/StudentCard';
@@ -10,6 +11,9 @@ import {
 } from '@/components/ui/select';
 import { useStudents } from '@/hooks/queries/useStudents';
 import { usePlans } from '@/hooks/queries/usePlans';
+import { useModalities } from '@/hooks/queries/useModalities';
+import { useGroups } from '@/hooks/queries/useGroups';
+import { exportToCSV } from '@/lib/exportUtils';
 import { 
   getActiveMonthlyStudents, 
   getTotalStudents, 
@@ -20,6 +24,8 @@ import {
 export default function StudentsPage() {
   const { students, loadingStudents } = useStudents();
   const { plans, loadingPlans } = usePlans();
+  const { modalities } = useModalities();
+  const { groups } = useGroups();
   
   const loading = loadingStudents || loadingPlans;
   
@@ -30,12 +36,17 @@ export default function StudentsPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [levelFilter, setLevelFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
+  const [modalityFilter, setModalityFilter] = useState('all');
 
   const filteredStudents = students.filter((student) => {
     const matchesSearch = student.name.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesLevel = levelFilter === 'all' || student.level === levelFilter;
-    const matchesStatus = statusFilter === 'all' || (statusFilter === 'active' && student.active) || (statusFilter === 'inactive' && !student.active);
-    return matchesSearch && matchesLevel && matchesStatus;
+    const matchesStatus = statusFilter === 'all' || 
+      (statusFilter === 'active' && student.active) || 
+      (statusFilter === 'inactive' && !student.active) ||
+      (statusFilter === 'trial' && student.isTrial);
+    const matchesModality = modalityFilter === 'all' || student.modalityId === modalityFilter;
+    return matchesSearch && matchesLevel && matchesStatus && matchesModality;
   }).sort((a, b) => a.name.localeCompare(b.name, 'pt-BR'));
 
   return (
@@ -50,7 +61,33 @@ export default function StudentsPage() {
               Gerencie sua base de alunos e acompanhe o status de cada um
             </p>
           </div>
-          <StudentForm />
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+            <Button variant="outline" className="gap-2 bg-background hover:bg-muted" onClick={() => {
+              const exportData = students.map(s => {
+                const plan = plans.find(p => p.id === s.planId);
+                const modality = modalities.find(m => m.id === s.modalityId);
+                const studentGroups = groups.filter(g => s.groupIds?.includes(g.id)).map(g => g.name).join('; ');
+                return {
+                  'Nome': s.name,
+                  'CPF': s.cpf || '',
+                  'Status': s.active ? 'Ativo' : 'Inativo',
+                  'Experimental': s.isTrial ? 'Sim' : 'Não',
+                  'Telefone': s.phone || '',
+                  'Email': s.email || '',
+                  'Plano': plan?.name || 'Sem plano',
+                  'Modalidade': modality?.name || '',
+                  'Nível': s.level || '',
+                  'Turmas': studentGroups,
+                  'Dia Vencimento': s.paymentDueDay || '',
+                  'Data de Entrada': s.joinDate ? new Date(s.joinDate).toLocaleDateString('pt-BR') : '',
+                };
+              });
+              exportToCSV(exportData, 'Alunos_Esportiz');
+            }} disabled={loading || students.length === 0}>
+              <Download className="h-4 w-4" /> Exportar (CSV)
+            </Button>
+            <StudentForm />
+          </div>
         </div>
 
         {/* Summary Stats */}
@@ -104,6 +141,16 @@ export default function StudentsPage() {
                   <SelectItem value="all">Todos</SelectItem>
                   <SelectItem value="active">Ativos</SelectItem>
                   <SelectItem value="inactive">Inativos</SelectItem>
+                  <SelectItem value="trial">Experimentais</SelectItem>
+                </SelectContent>
+              </Select>
+              <Select value={modalityFilter} onValueChange={setModalityFilter}>
+                <SelectTrigger className="w-[140px]"><SelectValue placeholder="Modalidade" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todas as modalidades</SelectItem>
+                  {modalities.map((mod) => (
+                    <SelectItem key={mod.id} value={mod.id}>{mod.name}</SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>

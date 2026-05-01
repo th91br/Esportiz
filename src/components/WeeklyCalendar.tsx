@@ -102,7 +102,7 @@ export function WeeklyCalendar() {
                           </div>
                           <div className="flex items-center gap-1.5 text-sm font-medium">
                             <Clock className="h-3.5 w-3.5 text-muted-foreground" />
-                            {training.time} - {getEndTime(training.time)}
+                            {training.time} - {getEndTime(training.time, training.durationMinutes)}
                           </div>
                         </div>
                         <div className="flex items-center gap-4 text-sm">

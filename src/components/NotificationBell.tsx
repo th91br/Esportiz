@@ -44,7 +44,7 @@ export function NotificationBell() {
   const { students } = useStudents();
   const { trainings, deleteTraining, markTrainingComplete, unmarkTrainingComplete } = useTrainings();
   const { payments } = usePayments();
-  const { attendance, toggleAttendance } = useAttendance();
+  const { attendance } = useAttendance();
 
   const refreshData = async () => {
     await queryClient.invalidateQueries();
@@ -158,19 +158,17 @@ export function NotificationBell() {
     const training = trainings.find(t => t.id === trainingId);
     if (!training) return;
     
-    // Mark all students as present
-    for (const studentId of training.studentIds) {
-      const existing = attendance.find(a => a.trainingId === trainingId && a.studentId === studentId);
-      if (!existing || !existing.present) {
-        await toggleAttendance(trainingId, studentId, training.date);
-      }
-    }
-
+    // As per user request: "se em notificações sinalar como executada, não é para dar presença para os alunos, ai deixa manual"
+    // We only mark the training itself as complete/executed.
+    
     // Persist completed status in the DATABASE (not localStorage!)
     await markTrainingComplete(trainingId);
     await refreshData();
-    toast({ title: '✅ Treino concluído', description: 'Todos os alunos foram marcados como presentes.' });
-  }, [trainings, attendance, toggleAttendance, markTrainingComplete, refreshData]);
+    toast({ 
+      title: '✅ Treino concluído', 
+      description: 'O treino foi marcado como executado. A presença dos alunos deve ser conferida manualmente na lista.' 
+    });
+  }, [trainings, markTrainingComplete, refreshData]);
 
   const handleUndoComplete = useCallback(async (trainingId: string) => {
     await unmarkTrainingComplete(trainingId);
@@ -185,10 +183,10 @@ export function NotificationBell() {
     toast({ title: '🗑️ Treino excluído', description: 'O treino foi removido com sucesso.' });
   }, [deleteTraining, dismissTraining, refreshData]);
 
-  const getTrainingStatus = (time: string): 'upcoming' | 'now' | 'past' => {
+  const getTrainingStatus = (time: string, durationMinutes: number = 60): 'upcoming' | 'now' | 'past' => {
     const hour = parseInt(time.split(':')[0]);
     const trainingStart = hour * 60;
-    const trainingEnd = trainingStart + 60; // each session = 1h
+    const trainingEnd = trainingStart + durationMinutes;
     if (currentMinutes >= trainingStart && currentMinutes < trainingEnd) return 'now';
     if (currentMinutes < trainingStart) return 'upcoming';
     return 'past';
@@ -431,7 +429,7 @@ export function NotificationBell() {
                 <div className="space-y-2">
                   {pendingTrainings.map((t) => {
                     const trainingStudents = students.filter((s) => t.studentIds.includes(s.id));
-                    const status = getTrainingStatus(t.time);
+                    const status = getTrainingStatus(t.time, t.durationMinutes);
                     
                     return (
                       <div
@@ -453,7 +451,7 @@ export function NotificationBell() {
                               status === 'past' && "bg-muted text-muted-foreground"
                             )}>
                               <span className="text-xs font-bold leading-none">{t.time}</span>
-                              <span className="text-[9px] leading-none mt-0.5">{getEndTime(t.time)}</span>
+                              <span className="text-[9px] leading-none mt-0.5">{getEndTime(t.time, t.durationMinutes)}</span>
                             </div>
 
                             <div className="flex-1 min-w-0">
@@ -548,7 +546,7 @@ export function NotificationBell() {
                             {/* Time badge — completed style */}
                             <div className="flex flex-col items-center rounded-lg px-2 py-1.5 min-w-[52px] bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
                               <span className="text-xs font-bold leading-none">{t.time}</span>
-                              <span className="text-[9px] leading-none mt-0.5">{getEndTime(t.time)}</span>
+                              <span className="text-[9px] leading-none mt-0.5">{getEndTime(t.time, t.durationMinutes)}</span>
                             </div>
 
                             <div className="flex-1 min-w-0">

@@ -12,7 +12,8 @@ interface OverdueAlertProps {
 export function OverdueAlert({ privacyMode = false }: OverdueAlertProps) {
   const { payments } = usePayments();
   const { students } = useStudents();
-  const today = new Date().toISOString().split('T')[0];
+  const today = new Date().toLocaleDateString('en-CA');
+  const monthNames = ['', 'Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
 
   const overduePayments = useMemo(
     () => payments.filter((p) => !p.paid && p.dueDate < today),
@@ -57,17 +58,18 @@ export function OverdueAlert({ privacyMode = false }: OverdueAlertProps) {
             </div>
             {!privacyMode && (
               <div className="flex flex-wrap gap-1">
-                {Array.from(overdueStudentIds).slice(0, 5).map((sid) => {
-                  const student = students.find((s) => s.id === sid);
+                {overduePayments.slice(0, 5).map((p) => {
+                  const student = students.find((s) => s.id === p.studentId);
+                  const [year, month] = p.monthRef.split('-');
                   return student ? (
-                    <span key={sid} className="px-2 py-0.5 rounded-full bg-destructive/10 text-destructive text-[10px] font-medium">
-                      {student.name.split(' ')[0]}
+                    <span key={p.id} className="px-2 py-0.5 rounded-full bg-destructive/10 text-destructive text-[10px] font-medium border border-destructive/20 shadow-sm">
+                      {student.name.split(' ')[0]} • {monthNames[parseInt(month)]}/{year.slice(2)}
                     </span>
                   ) : null;
                 })}
-                {overdueStudentIds.size > 5 && (
+                {overduePayments.length > 5 && (
                   <span className="px-2 py-0.5 rounded-full bg-muted text-muted-foreground text-[10px] font-medium">
-                    +{overdueStudentIds.size - 5}
+                    +{overduePayments.length - 5}
                   </span>
                 )}
               </div>

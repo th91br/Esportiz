@@ -8,6 +8,8 @@ export interface Profile {
   user_id: string;
   ct_name: string | null;
   logo_url: string | null;
+  primary_color: string | null;
+  secondary_color: string | null;
   onboarding_completed: boolean;
   google_access_token?: string | null;
   google_refresh_token?: string | null;

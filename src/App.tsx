@@ -26,8 +26,9 @@ import CommunicationPage from "./pages/CommunicationPage";
 import NotFound from "./pages/NotFound";
 import { useProfile } from "./hooks/queries/useProfile";
 
-const queryClient = new QueryClient();
+import { BrandStyles } from "./components/BrandStyles";
 
+const queryClient = new QueryClient();
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, loading: authLoading } = useAuth();
   const { profile, loadingProfile } = useProfile();
@@ -100,6 +101,7 @@ const App = () => (
     <TooltipProvider>
       <AuthProvider>
         <AppProvider>
+          <BrandStyles />
           <Toaster />
           <Sonner />
           <PWABadge />

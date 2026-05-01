@@ -158,6 +158,8 @@ export type Database = {
           user_id: string
           ct_name: string | null
           logo_url: string | null
+          primary_color: string | null
+          secondary_color: string | null
           onboarding_completed: boolean | null
           created_at: string
           updated_at: string
@@ -167,6 +169,8 @@ export type Database = {
           user_id: string
           ct_name?: string | null
           logo_url?: string | null
+          primary_color?: string | null
+          secondary_color?: string | null
           onboarding_completed?: boolean | null
           created_at?: string
           updated_at?: string
@@ -176,6 +180,8 @@ export type Database = {
           user_id?: string
           ct_name?: string | null
           logo_url?: string | null
+          primary_color?: string | null
+          secondary_color?: string | null
           onboarding_completed?: boolean | null
           created_at?: string
           updated_at?: string

@@ -15,6 +15,8 @@ export default function OnboardingPage() {
   
   const [step, setStep] = useState(1);
   const [ctName, setCtName] = useState('');
+  const [primaryColor, setPrimaryColor] = useState('#1DB874');
+  const [secondaryColor, setSecondaryColor] = useState('#0A1628');
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
 
@@ -25,6 +27,8 @@ export default function OnboardingPage() {
         return;
       }
       setStep(2);
+    } else if (step === 2) {
+      setStep(3);
     }
   };
 
@@ -46,6 +50,8 @@ export default function OnboardingPage() {
       await updateProfile({
         ct_name: ctName,
         logo_url: logoUrl,
+        primary_color: primaryColor,
+        secondary_color: secondaryColor,
         onboarding_completed: true,
       });
 
@@ -66,20 +72,23 @@ export default function OnboardingPage() {
       <Card className="w-full max-w-md animate-fade-up shadow-xl border-primary/10">
         <CardHeader className="space-y-3">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-sm font-medium text-muted-foreground">Etapa {step} de 2</span>
+            <span className="text-sm font-medium text-muted-foreground">Etapa {step} de 3</span>
             <div className="flex gap-1">
               <div className={`h-1.5 w-6 rounded-full ${step >= 1 ? 'bg-primary' : 'bg-muted'}`} />
               <div className={`h-1.5 w-6 rounded-full ${step >= 2 ? 'bg-primary' : 'bg-muted'}`} />
+              <div className={`h-1.5 w-6 rounded-full ${step >= 3 ? 'bg-primary' : 'bg-muted'}`} />
             </div>
           </div>
           
           <CardTitle className="text-2xl font-display">
-            {step === 1 ? 'Bem-vindo ao Esportiz!' : 'Adicione sua logo'}
+            {step === 1 ? 'Bem-vindo ao Esportiz!' : step === 2 ? 'Adicione sua logo' : 'Escolha suas cores'}
           </CardTitle>
           <CardDescription className="text-base">
             {step === 1 
               ? 'Para começarmos, qual é o nome do seu Centro de Treinamento?' 
-              : 'Personalize o sistema com a marca do seu CT (opcional)'}
+              : step === 2
+                ? 'Personalize o sistema com a marca do seu CT (opcional)'
+                : 'Defina as cores que representam sua marca'}
           </CardDescription>
         </CardHeader>
 
@@ -99,7 +108,7 @@ export default function OnboardingPage() {
                 />
               </div>
             </div>
-          ) : (
+          ) : step === 2 ? (
             <div className="space-y-6">
               <div className="flex flex-col items-center justify-center border-2 border-dashed border-muted-foreground/25 rounded-xl p-8 transition-colors hover:border-primary/50 bg-muted/10">
                 {logoPreview ? (
@@ -124,19 +133,63 @@ export default function OnboardingPage() {
                 )}
               </div>
             </div>
+          ) : (
+            <div className="space-y-6">
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>Cor Primária</Label>
+                    <div className="flex items-center gap-2">
+                      <div className="h-8 w-8 rounded border shadow-sm" style={{ backgroundColor: primaryColor }} />
+                      <Input 
+                        type="color" 
+                        value={primaryColor} 
+                        onChange={(e) => setPrimaryColor(e.target.value)} 
+                        className="h-10 cursor-pointer"
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Cor Secundária</Label>
+                    <div className="flex items-center gap-2">
+                      <div className="h-8 w-8 rounded border shadow-sm" style={{ backgroundColor: secondaryColor }} />
+                      <Input 
+                        type="color" 
+                        value={secondaryColor} 
+                        onChange={(e) => setSecondaryColor(e.target.value)} 
+                        className="h-10 cursor-pointer"
+                      />
+                    </div>
+                  </div>
+                </div>
+                <div className="p-4 rounded-lg border bg-primary/5 border-primary/20">
+                  <p className="text-sm text-center font-medium">
+                    Veja como ficará o seu sistema!
+                  </p>
+                  <div className="mt-3 flex justify-center gap-2">
+                    <div className="h-8 w-20 rounded shadow-sm flex items-center justify-center text-[10px] text-white font-bold" style={{ backgroundColor: primaryColor }}>
+                      BOTAO
+                    </div>
+                    <div className="h-8 w-20 rounded shadow-sm flex items-center justify-center text-[10px] text-white font-bold" style={{ backgroundColor: secondaryColor }}>
+                      MENU
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
           )}
         </CardContent>
 
         <CardFooter className="pt-2 flex justify-between">
-          {step === 2 && (
-            <Button variant="ghost" onClick={() => setStep(1)} disabled={isUpdatingProfile || isUploadingLogo}>
+          {step > 1 && (
+            <Button variant="ghost" onClick={() => setStep(step - 1)} disabled={isUpdatingProfile || isUploadingLogo}>
               Voltar
             </Button>
           )}
           
           <div className={`flex gap-3 ${step === 1 ? 'w-full' : 'ml-auto'}`}>
-            {step === 1 ? (
-              <Button onClick={handleNextStep} className="w-full h-11 text-base btn-primary-gradient" disabled={!ctName.trim()}>
+            {step < 3 ? (
+              <Button onClick={handleNextStep} className="w-full h-11 text-base btn-primary-gradient" disabled={step === 1 && !ctName.trim()}>
                 Continuar
                 <ArrowRight className="ml-2 h-4 w-4" />
               </Button>

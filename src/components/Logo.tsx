@@ -15,11 +15,11 @@ export const Logo = ({ size = "md", showTagline = false }: LogoProps) => {
       <EsportizIcon size={iconSize} />
       <div>
         <span className={`font-medium tracking-tight ${textSize}`}>
-          esport<span style={{ color: "#1DB874" }}>iz</span>
+          esport<span className="text-primary">iz</span>
         </span>
         {showTagline && (
-          <p className="text-xs tracking-widest text-muted-foreground mt-1 font-medium">
-            gestão esportiva inteligente
+          <p className="text-xs tracking-widest text-muted-foreground mt-1 font-medium uppercase">
+            gestão que joga junto
           </p>
         )}
       </div>
@@ -29,12 +29,14 @@ export const Logo = ({ size = "md", showTagline = false }: LogoProps) => {
 
 export const EsportizIcon = ({ size = 40 }) => (
   <svg width={size} height={size} viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <rect width="64" height="64" rx="16" fill="#0D1F3C"/>
+    <rect width="64" height="64" rx="16" fill="currentColor" className="text-secondary"/>
     <path d="M42 18 L22 18 L22 46 L42 46"
-      stroke="#1DB874" strokeWidth="4"
+      stroke="currentColor" strokeWidth="4"
+      className="text-primary"
       strokeLinecap="round" strokeLinejoin="round"/>
     <path d="M22 32 L38 32"
-      stroke="#1DB874" strokeWidth="4"
+      stroke="currentColor" strokeWidth="4"
+      className="text-primary"
       strokeLinecap="round"/>
     <circle cx="44" cy="32" r="4.5" fill="#378ADD"/>
   </svg>

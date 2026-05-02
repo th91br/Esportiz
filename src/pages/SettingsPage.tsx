@@ -31,18 +31,14 @@ export default function SettingsPage() {
   const { user } = useAuth();
 
   const [ctName, setCtName] = useState('');
-  const [primaryColor, setPrimaryColor] = useState('#1DB874');
-  const [secondaryColor, setSecondaryColor] = useState('#0A1628');
-  const [logoFile, setLogoFile] = useState<File | null>(null);
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
+  const [logoFile, setLogoFile] = useState<File | null>(null);
   const [isDeletingLogo, setIsDeletingLogo] = useState(false);
   const [isConnectingGoogle, setIsConnectingGoogle] = useState(false);
 
   useEffect(() => {
     if (profile) {
       setCtName(profile.ct_name || '');
-      setPrimaryColor(profile.primary_color || '#1DB874');
-      setSecondaryColor(profile.secondary_color || '#0A1628');
       setLogoPreview(profile.logo_url || null);
     }
   }, [profile]);
@@ -154,8 +150,6 @@ export default function SettingsPage() {
       await updateProfile({
         ct_name: ctName,
         logo_url: logoUrl,
-        primary_color: primaryColor,
-        secondary_color: secondaryColor,
       });
 
       setLogoFile(null);
@@ -312,52 +306,6 @@ export default function SettingsPage() {
                     )}
                   </div>
                 </div>
-              </div>
-
-              {/* Colors Section */}
-              <div className="pt-4 border-t space-y-4">
-                <Label className="text-base font-semibold flex items-center gap-2">
-                  <Tag className="h-4 w-4 text-primary" />
-                  Cores da Identidade Visual
-                </Label>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="space-y-3">
-                    <Label htmlFor="primary-color" className="text-xs text-muted-foreground uppercase tracking-wider">Cor Primária (Destaques)</Label>
-                    <div className="flex items-center gap-3">
-                      <div 
-                        className="h-10 w-10 rounded-lg border shadow-sm shrink-0" 
-                        style={{ backgroundColor: primaryColor }}
-                      />
-                      <Input
-                        id="primary-color"
-                        type="color"
-                        value={primaryColor}
-                        onChange={(e) => setPrimaryColor(e.target.value)}
-                        className="h-10 w-full cursor-pointer p-1"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="space-y-3">
-                    <Label htmlFor="secondary-color" className="text-xs text-muted-foreground uppercase tracking-wider">Cor Secundária (Fundo/Menu)</Label>
-                    <div className="flex items-center gap-3">
-                      <div 
-                        className="h-10 w-10 rounded-lg border shadow-sm shrink-0" 
-                        style={{ backgroundColor: secondaryColor }}
-                      />
-                      <Input
-                        id="secondary-color"
-                        type="color"
-                        value={secondaryColor}
-                        onChange={(e) => setSecondaryColor(e.target.value)}
-                        className="h-10 w-full cursor-pointer p-1"
-                      />
-                    </div>
-                  </div>
-                </div>
-                <p className="text-[11px] text-muted-foreground italic">
-                  * As cores serão aplicadas em todo o sistema para reforçar a identidade do seu {profile?.ct_name || 'CT'}.
-                </p>
               </div>
 
               <div className="pt-4 flex justify-end border-t">

@@ -26,7 +26,6 @@ import CommunicationPage from "./pages/CommunicationPage";
 import NotFound from "./pages/NotFound";
 import { useProfile } from "./hooks/queries/useProfile";
 
-import { BrandStyles } from "./components/BrandStyles";
 
 const queryClient = new QueryClient();
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -101,7 +100,6 @@ const App = () => (
     <TooltipProvider>
       <AuthProvider>
         <AppProvider>
-          <BrandStyles />
           <Toaster />
           <Sonner />
           <PWABadge />

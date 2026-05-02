@@ -188,7 +188,11 @@ export function NotificationBell() {
     const trainingStart = hour * 60;
     const trainingEnd = trainingStart + durationMinutes;
     if (currentMinutes >= trainingStart && currentMinutes < trainingEnd) return 'now';
-    if (currentMi  // Filter by tab
+    if (currentMinutes >= trainingEnd) return 'past';
+    return 'upcoming';
+  };
+
+  // Filter by tab
   const showTrainings = tab === 'all' || tab === 'trainings';
   const showPayments = tab === 'all' || tab === 'payments';
   const showBirthdays = tab === 'all' || tab === 'birthdays';
@@ -639,14 +643,6 @@ export function NotificationBell() {
                   </div>
                 </>
               )}
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
-            </span>
             </div>
           </div>
         </div>

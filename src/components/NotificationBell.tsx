@@ -188,11 +188,7 @@ export function NotificationBell() {
     const trainingStart = hour * 60;
     const trainingEnd = trainingStart + durationMinutes;
     if (currentMinutes >= trainingStart && currentMinutes < trainingEnd) return 'now';
-    if (currentMinutes < trainingStart) return 'upcoming';
-    return 'past';
-  };
-
-  // Filter by tab
+    if (currentMi  // Filter by tab
   const showTrainings = tab === 'all' || tab === 'trainings';
   const showPayments = tab === 'all' || tab === 'payments';
   const showBirthdays = tab === 'all' || tab === 'birthdays';
@@ -210,52 +206,55 @@ export function NotificationBell() {
       <button
         onClick={() => setOpen(!open)}
         className={cn(
-          'relative p-2 rounded-xl transition-all duration-300',
-          'hover:bg-primary/10 text-muted-foreground hover:text-primary',
-          open && 'bg-primary/15 text-primary shadow-sm'
+          'relative p-2.5 rounded-xl transition-all duration-300 active:scale-90',
+          'bg-muted/50 hover:bg-primary/10 text-muted-foreground hover:text-primary border border-transparent',
+          open && 'bg-primary/10 text-primary border-primary/20 shadow-inner'
         )}
         title="Notificações"
       >
         <Bell className={cn("h-5 w-5 transition-transform", totalActive > 0 && "animate-[wiggle_1s_ease-in-out]")} />
         {totalActive > 0 && (
-          <span className="absolute top-1 right-1 flex h-4.5 w-4.5 items-center justify-center rounded-full bg-destructive text-[10px] font-bold text-destructive-foreground ring-2 ring-background animate-in zoom-in duration-300">
+          <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-destructive text-[11px] font-black text-white ring-2 ring-background shadow-lg shadow-destructive/20 animate-in zoom-in duration-300">
             {totalActive}
           </span>
         )}
       </button>
 
       {open && (
-        <div className="absolute right-0 top-full mt-3 w-[350px] sm:w-[420px] rounded-2xl border border-border/50 bg-card/95 backdrop-blur-xl shadow-[0_20px_50px_rgba(0,0,0,0.15)] z-50 overflow-hidden animate-in fade-in slide-in-from-top-4 duration-300">
-          {/* Header */}
-          <div className="flex items-center justify-between px-5 py-4 bg-primary/5 border-b border-primary/10">
-            <div className="flex items-center gap-2.5">
-              <div className="p-1.5 rounded-lg bg-primary/10">
-                <Bell className="h-4 w-4 text-primary" />
+        <div className="absolute right-0 top-full mt-3 w-[360px] sm:w-[440px] rounded-2xl border border-border/60 bg-card shadow-[0_20px_60px_-15px_rgba(0,0,0,0.3)] z-50 overflow-hidden animate-in fade-in slide-in-from-top-4 duration-300 ring-1 ring-black/5 dark:ring-white/5">
+          {/* Header Section */}
+          <div className="flex items-center justify-between px-6 py-5 bg-gradient-to-r from-primary/10 via-primary/5 to-transparent border-b border-border/50">
+            <div className="flex items-center gap-3">
+              <div className="p-2.5 rounded-xl bg-primary/15 text-primary shadow-sm border border-primary/10">
+                <Bell className="h-4.5 w-4.5" />
               </div>
               <div>
-                <h3 className="font-display font-bold text-sm text-foreground">Notificações</h3>
-                <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-tight">Alertas do dia</p>
+                <h3 className="font-display font-bold text-base text-foreground leading-none">Notificações</h3>
+                <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-[0.1em] mt-1.5 opacity-80">Painel de Atividades</p>
               </div>
             </div>
             <div className="flex items-center gap-2">
               {totalActive > 0 && (
                 <button
                   onClick={dismissAll}
-                  className="flex items-center gap-1.5 text-[10px] font-bold text-primary hover:bg-primary/10 px-2.5 py-1.5 rounded-lg transition-all"
-                  title="Limpar todas"
+                  className="flex items-center gap-1.5 text-[10px] font-black text-primary hover:bg-primary/10 px-3 py-2 rounded-lg transition-all active:scale-95 border border-primary/10 uppercase tracking-wider"
+                  title="Limpar todas as notificações"
                 >
                   <CheckCheck className="h-3.5 w-3.5" />
-                  <span>LIMPAR</span>
+                  <span>Limpar</span>
                 </button>
               )}
-              <button onClick={() => setOpen(false)} className="text-muted-foreground hover:text-foreground p-1.5 rounded-lg hover:bg-muted transition-all">
-                <X className="h-4.5 w-4.5" />
+              <button 
+                onClick={() => setOpen(false)} 
+                className="text-muted-foreground hover:text-foreground p-2 rounded-lg hover:bg-muted transition-all active:scale-90"
+              >
+                <X className="h-5 w-5" />
               </button>
             </div>
           </div>
 
-          {/* Tabs */}
-          <div className="flex p-1 gap-1 bg-muted/30 border-b border-border/50">
+          {/* Premium Tab System */}
+          <div className="flex p-1.5 gap-1.5 bg-muted/30 border-b border-border/50">
             {(['all', 'trainings', 'payments', 'birthdays'] as const).map((t) => {
               const labels = { all: 'Todas', trainings: 'Treinos', payments: 'Pagos', birthdays: '🎂' };
               const isActive = tab === t;
@@ -264,17 +263,19 @@ export function NotificationBell() {
                   key={t}
                   onClick={() => setTab(t)}
                   className={cn(
-                    'flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-bold transition-all duration-200',
+                    'flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-xs font-bold transition-all duration-300',
                     isActive
-                      ? 'bg-background text-primary shadow-sm'
-                      : 'text-muted-foreground hover:text-foreground hover:bg-background/50'
+                      ? 'bg-background text-primary shadow-md shadow-black/5 border border-border/50 ring-1 ring-primary/5'
+                      : 'text-muted-foreground hover:text-foreground hover:bg-background/40'
                   )}
                 >
-                  {labels[t]}
+                  <span className={cn(isActive ? "opacity-100" : "opacity-70")}>{labels[t]}</span>
                   {tabCounts[t] > 0 && (
                     <span className={cn(
-                      "px-1.5 py-0.5 rounded-md text-[9px] font-black leading-none",
-                      isActive ? "bg-primary text-primary-foreground" : "bg-primary/10 text-primary"
+                      "px-2 py-0.5 rounded-lg text-[10px] font-black shadow-sm",
+                      isActive 
+                        ? "bg-primary text-primary-foreground" 
+                        : "bg-primary/15 text-primary border border-primary/10"
                     )}>
                       {tabCounts[t]}
                     </span>
@@ -284,34 +285,38 @@ export function NotificationBell() {
             })}
           </div>
 
-          {/* Content */}
-          <div className="max-h-[420px] overflow-y-auto scrollbar-thin scrollbar-thumb-muted">
+          {/* Notification List Container */}
+          <div className="max-h-[440px] overflow-y-auto scrollbar-thin scrollbar-thumb-muted-foreground/20 hover:scrollbar-thumb-muted-foreground/40 scrollbar-track-transparent">
             {/* Empty State */}
             {totalActive === 0 && completedTrainings.length === 0 && (
-              <div className="py-12 px-8 text-center animate-in fade-in zoom-in duration-500">
-                <div className="flex h-16 w-16 mx-auto items-center justify-center rounded-2xl bg-primary/5 mb-4 shadow-inner">
-                  <CheckCheck className="h-7 w-7 text-primary/30" />
+              <div className="py-20 px-10 text-center animate-in fade-in zoom-in-95 duration-500">
+                <div className="relative flex h-20 w-20 mx-auto items-center justify-center rounded-[2rem] bg-gradient-to-br from-primary/10 to-primary/5 mb-6 shadow-inner border border-primary/10">
+                  <CheckCheck className="h-10 w-10 text-primary/40" />
+                  <div className="absolute inset-0 rounded-[2rem] bg-primary/5 animate-pulse" />
                 </div>
-                <p className="text-base font-bold text-foreground">Você está em dia!</p>
-                <p className="text-xs text-muted-foreground mt-1 max-w-[200px] mx-auto">Não há notificações pendentes no momento. Bom trabalho!</p>
+                <h4 className="text-lg font-bold text-foreground">Sua agenda está limpa!</h4>
+                <p className="text-sm text-muted-foreground mt-2 max-w-[240px] mx-auto leading-relaxed">Você completou todas as tarefas e notificações por hoje. Ótimo trabalho!</p>
               </div>
             )}
 
-            {/* Birthdays */}
+            {/* Birthday Section */}
             {showBirthdays && todayBirthdays.length > 0 && (
-              <div className="p-4 border-b border-border/30 bg-pink-500/[0.02]">
-                <div className="rounded-xl bg-pink-500/5 border border-pink-500/10 p-4 shadow-sm">
-                  <div className="flex items-start gap-3.5">
-                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-pink-500/15 text-pink-500 shadow-sm">
-                      <Cake className="h-5 w-5" />
+              <div className="p-4 border-b border-border/30 bg-pink-500/[0.03]">
+                <div className="rounded-2xl bg-background dark:bg-pink-950/20 border border-pink-500/20 p-4 shadow-sm hover:shadow-md transition-shadow">
+                  <div className="flex items-start gap-4">
+                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-pink-500/20 text-pink-600 dark:text-pink-400 shadow-sm border border-pink-500/20">
+                      <Cake className="h-6 w-6" />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-bold text-pink-600 dark:text-pink-400">
-                        🎂 Aniversariante{todayBirthdays.length !== 1 ? 's' : ''} do Dia!
+                      <p className="text-sm font-black text-pink-700 dark:text-pink-300 uppercase tracking-tight">
+                        🎉 Festa de Aniversário!
                       </p>
-                      <div className="flex flex-wrap gap-1.5 mt-2.5">
+                      <p className="text-xs text-pink-600/80 dark:text-pink-400/80 font-medium mt-0.5">
+                        {todayBirthdays.length} aluno{todayBirthdays.length !== 1 ? 's fazem' : ' faz'} aniversário hoje!
+                      </p>
+                      <div className="flex flex-wrap gap-2 mt-3">
                         {todayBirthdays.map((s) => (
-                          <span key={s.id} className="px-2.5 py-1 rounded-lg bg-pink-500/10 text-pink-700 dark:text-pink-300 text-[10px] font-bold shadow-sm">
+                          <span key={s.id} className="px-3 py-1.5 rounded-lg bg-pink-500/10 dark:bg-pink-500/20 text-pink-700 dark:text-pink-300 text-xs font-bold shadow-sm border border-pink-500/10">
                             {s.name.split(' ')[0]}
                           </span>
                         ))}
@@ -322,36 +327,37 @@ export function NotificationBell() {
               </div>
             )}
 
-            {/* Upcoming Payments */}
+            {/* Upcoming Payments Section */}
             {showPayments && showUpcoming && (
-              <div className="p-4 border-b border-border/30 bg-amber-500/[0.02]">
-                <div className="rounded-xl bg-amber-500/5 border border-amber-500/10 p-4 shadow-sm">
-                  <div className="flex items-start gap-3.5">
-                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-500/15 text-amber-500 shadow-sm">
-                      <CreditCard className="h-5 w-5" />
+              <div className="p-4 border-b border-border/30 bg-amber-500/[0.03]">
+                <div className="rounded-2xl bg-background dark:bg-amber-950/20 border border-amber-500/20 p-4 shadow-sm hover:shadow-md transition-shadow">
+                  <div className="flex items-start gap-4">
+                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-amber-500/20 text-amber-600 dark:text-amber-400 shadow-sm border border-amber-500/20">
+                      <CreditCard className="h-6 w-6" />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-bold text-amber-700 dark:text-amber-400">
-                        Pagamentos Próximos
+                      <p className="text-sm font-black text-amber-700 dark:text-amber-300 uppercase tracking-tight">
+                        Pagamentos Pendentes
                       </p>
-                      <div className="flex items-center flex-wrap gap-2 mt-1.5">
+                      <div className="flex items-center flex-wrap gap-2 mt-2">
                         {upcomingPayments.filter(p => p.dueDate === today).length > 0 && (
-                          <span className="text-[11px] font-bold text-amber-700 dark:text-amber-500 bg-amber-500/10 px-2 py-0.5 rounded-md">
-                            {upcomingPayments.filter(p => p.dueDate === today).length} hoje
+                          <span className="text-xs font-black text-amber-700 dark:text-amber-400 bg-amber-500/15 px-3 py-1 rounded-lg border border-amber-500/20">
+                            {upcomingPayments.filter(p => p.dueDate === today).length} VENCE HOJE
                           </span>
                         )}
                         {upcomingPayments.filter(p => p.dueDate === tomorrow).length > 0 && (
-                          <span className="text-[11px] font-bold text-amber-600 dark:text-amber-400 bg-amber-500/5 px-2 py-0.5 rounded-md">
-                            {upcomingPayments.filter(p => p.dueDate === tomorrow).length} amanhã
+                          <span className="text-xs font-bold text-amber-600 dark:text-amber-500/70 bg-amber-500/5 px-3 py-1 rounded-lg border border-amber-500/10">
+                            {upcomingPayments.filter(p => p.dueDate === tomorrow).length} AMANHÃ
                           </span>
                         )}
                       </div>
                       <Link
                         to="/pagamentos"
                         onClick={() => setOpen(false)}
-                        className="inline-block mt-2.5 text-[10px] text-primary font-black uppercase tracking-wider hover:opacity-80 transition-opacity"
+                        className="inline-flex items-center gap-1.5 mt-3 text-[11px] text-primary font-black uppercase tracking-widest hover:opacity-80 transition-all group"
                       >
-                        Gerenciar pagamentos →
+                        Gerenciar pagamentos 
+                        <span className="group-hover:translate-x-1 transition-transform">→</span>
                       </Link>
                     </div>
                   </div>
@@ -359,33 +365,33 @@ export function NotificationBell() {
               </div>
             )}
 
-            {/* Overdue Payments */}
+            {/* Overdue Payments Section */}
             {showPayments && showOverdue && (
-              <div className="p-4 border-b border-border/30 bg-destructive/[0.02]">
-                <div className="rounded-xl bg-destructive/5 border border-destructive/10 p-4 shadow-sm">
+              <div className="p-4 border-b border-border/30 bg-destructive/[0.03]">
+                <div className="rounded-2xl bg-background dark:bg-destructive/10 border border-destructive/20 p-4 shadow-sm hover:shadow-md transition-shadow ring-1 ring-destructive/5">
                   <div className="flex items-start justify-between gap-3">
-                    <div className="flex items-start gap-3.5 flex-1 min-w-0">
-                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-destructive/15 text-destructive shadow-sm">
-                        <AlertTriangle className="h-5 w-5" />
+                    <div className="flex items-start gap-4 flex-1 min-w-0">
+                      <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-destructive/15 text-destructive shadow-sm border border-destructive/20">
+                        <AlertTriangle className="h-6 w-6" />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-bold text-destructive">
-                          Pagamentos Atrasados
+                        <p className="text-sm font-black text-destructive uppercase tracking-tight">
+                          URGENTE: Pagamentos Atrasados
                         </p>
-                        <p className="text-[11px] font-medium text-destructive/80 mt-1">
-                          {overdueStudentIds.size} aluno{overdueStudentIds.size !== 1 ? 's' : ''} · R$ {overduePayments.reduce((s, p) => s + p.amount, 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                        <p className="text-[12px] font-bold text-destructive/80 dark:text-destructive-foreground/70 mt-1">
+                          {overdueStudentIds.size} Aluno{overdueStudentIds.size !== 1 ? 's' : ''} • Total: <span className="font-black">R$ {overduePayments.reduce((s, p) => s + p.amount, 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
                         </p>
-                        <div className="flex flex-wrap gap-1.5 mt-2.5">
+                        <div className="flex flex-wrap gap-2 mt-3">
                           {Array.from(overdueStudentIds).slice(0, 5).map((sid) => {
                             const student = students.find((s) => s.id === sid);
                             return student ? (
-                              <span key={sid} className="px-2.5 py-1 rounded-lg bg-destructive/10 text-destructive text-[10px] font-bold shadow-sm">
+                              <span key={sid} className="px-3 py-1.5 rounded-lg bg-destructive/10 dark:bg-destructive/20 text-destructive text-xs font-bold shadow-sm border border-destructive/10">
                                 {student.name.split(' ')[0]}
                               </span>
                             ) : null;
                           })}
                           {overdueStudentIds.size > 5 && (
-                            <span className="px-2.5 py-1 rounded-lg bg-muted text-muted-foreground text-[10px] font-bold">
+                            <span className="px-3 py-1.5 rounded-lg bg-muted text-muted-foreground text-xs font-bold border border-border/50">
                               +{overdueStudentIds.size - 5}
                             </span>
                           )}
@@ -393,34 +399,38 @@ export function NotificationBell() {
                         <Link
                           to="/pagamentos"
                           onClick={() => setOpen(false)}
-                          className="inline-block mt-2.5 text-[10px] text-primary font-black uppercase tracking-wider hover:opacity-80 transition-opacity"
+                          className="inline-flex items-center gap-1.5 mt-4 text-[11px] text-primary font-black uppercase tracking-widest hover:opacity-80 transition-all group"
                         >
-                          Resolver agora →
+                          Resolver agora
+                          <span className="group-hover:translate-x-1 transition-transform">→</span>
                         </Link>
                       </div>
                     </div>
                     <button
                       onClick={dismissOverdue}
-                      className="p-1.5 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-all shrink-0"
+                      className="p-2 rounded-xl text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-all active:scale-90"
                       title="Dispensar"
                     >
-                      <X className="h-4 w-4" />
+                      <X className="h-5 w-5" />
                     </button>
                   </div>
                 </div>
               </div>
             )}
 
-            {/* Today's Trainings — Pending */}
+            {/* Today's Trainings — Pending Section */}
             {showTrainings && pendingTrainings.length > 0 && (
-              <div className="p-4 space-y-3">
-                <div className="flex items-center gap-2 px-1">
-                  <div className="w-1.5 h-3 rounded-full bg-primary/40" />
-                  <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/80">
-                    Treinos Pendentes ({pendingTrainings.length})
-                  </span>
+              <div className="p-4 space-y-4">
+                <div className="flex items-center justify-between px-1">
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-4 rounded-full bg-primary/40 shadow-sm" />
+                    <span className="text-[11px] font-black uppercase tracking-[0.15em] text-foreground/70">
+                      Agenda do Dia ({pendingTrainings.length})
+                    </span>
+                  </div>
+                  <Calendar className="h-3.5 w-3.5 text-primary/40" />
                 </div>
-                <div className="space-y-3">
+                <div className="space-y-4">
                   {pendingTrainings.map((t) => {
                     const trainingStudents = students.filter((s) => t.studentIds.includes(s.id));
                     const status = getTrainingStatus(t.time, t.durationMinutes);
@@ -429,54 +439,59 @@ export function NotificationBell() {
                       <div
                         key={t.id}
                         className={cn(
-                          "rounded-xl border p-4 transition-all duration-300",
-                          status === 'now' && "border-primary/40 bg-primary/[0.03] shadow-lg shadow-primary/5 ring-1 ring-primary/20",
-                          status === 'upcoming' && "border-border/50 bg-card hover:border-primary/30 hover:shadow-md",
-                          status === 'past' && "border-border/30 bg-muted/10"
+                          "group rounded-2xl border p-4.5 transition-all duration-300 relative overflow-hidden",
+                          status === 'now' && "border-primary/40 bg-primary/[0.04] shadow-xl shadow-primary/5 ring-1 ring-primary/20",
+                          status === 'upcoming' && "border-border/60 bg-background hover:border-primary/40 hover:shadow-lg",
+                          status === 'past' && "border-border/30 bg-muted/20 grayscale-[0.5]"
                         )}
                       >
-                        <div className="flex items-start justify-between gap-3">
-                          <div className="flex items-start gap-3.5 flex-1 min-w-0">
-                            {/* Time badge */}
+                        <div className="flex items-start justify-between gap-4 relative z-10">
+                          <div className="flex items-start gap-4 flex-1 min-w-0">
+                            {/* Premium Time Badge */}
                             <div className={cn(
-                              "flex flex-col items-center justify-center rounded-xl px-3 py-2 min-w-[60px] shadow-sm transition-colors",
-                              status === 'now' && "bg-primary text-primary-foreground",
-                              status === 'upcoming' && "bg-primary/10 text-primary",
-                              status === 'past' && "bg-muted text-muted-foreground"
+                              "flex flex-col items-center justify-center rounded-xl px-4 py-2.5 min-w-[70px] shadow-sm transition-all duration-300",
+                              status === 'now' && "bg-primary text-primary-foreground scale-110",
+                              status === 'upcoming' && "bg-primary/10 text-primary border border-primary/20",
+                              status === 'past' && "bg-muted text-muted-foreground border border-border/50"
                             )}>
-                              <span className="text-sm font-black leading-none">{t.time}</span>
-                              <span className="text-[10px] font-bold leading-none mt-1 opacity-80">{getEndTime(t.time, t.durationMinutes)}</span>
+                              <span className="text-base font-black leading-none">{t.time}</span>
+                              <span className="text-[10px] font-bold leading-none mt-1.5 opacity-80 uppercase tracking-tighter">
+                                FIM: {getEndTime(t.time, t.durationMinutes)}
+                              </span>
                             </div>
 
                             <div className="flex-1 min-w-0">
-                              <div className="flex items-center gap-2">
+                              <div className="flex items-center gap-2.5">
                                 {status === 'now' && (
-                                  <span className="flex h-2.5 w-2.5 rounded-full bg-primary animate-pulse" />
+                                  <span className="relative flex h-3 w-3">
+                                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
+                                    <span className="relative inline-flex rounded-full h-3 w-3 bg-primary"></span>
+                                  </span>
                                 )}
                                 <span className={cn(
-                                  "text-xs font-black uppercase tracking-wider",
-                                  status === 'now' ? "text-primary" : "text-foreground/80"
+                                  "text-[11px] font-black uppercase tracking-widest",
+                                  status === 'now' ? "text-primary" : "text-foreground"
                                 )}>
-                                  {status === 'now' ? 'Em aula agora' : status === 'upcoming' ? 'Próximo' : 'Encerrado'}
+                                  {status === 'now' ? 'EM AULA AGORA' : status === 'upcoming' ? 'PRÓXIMO' : 'ENCERRADO'}
                                 </span>
                               </div>
-                              <div className="flex items-center flex-wrap gap-x-3 gap-y-1 mt-1.5 text-[11px] text-muted-foreground font-medium">
-                                <span className="flex items-center gap-1">
-                                  <MapPin className="h-3.5 w-3.5 text-muted-foreground/60" />{t.location || 'Local'}
+                              <div className="flex items-center flex-wrap gap-x-4 gap-y-1.5 mt-2.5 text-[12px] text-muted-foreground font-bold">
+                                <span className="flex items-center gap-1.5">
+                                  <MapPin className="h-4 w-4 text-primary/60" />{t.location || 'Sem local'}
                                 </span>
-                                <span className="flex items-center gap-1">
-                                  <Users className="h-3.5 w-3.5 text-muted-foreground/60" />{trainingStudents.length} aluno{trainingStudents.length !== 1 ? 's' : ''}
+                                <span className="flex items-center gap-1.5">
+                                  <Users className="h-4 w-4 text-primary/60" />{trainingStudents.length} Aluno{trainingStudents.length !== 1 ? 's' : ''}
                                 </span>
                               </div>
                               {trainingStudents.length > 0 && (
-                                <div className="flex flex-wrap gap-1.5 mt-2.5">
+                                <div className="flex flex-wrap gap-2 mt-4">
                                   {trainingStudents.slice(0, 3).map(s => (
-                                    <span key={s.id} className="px-2 py-0.5 rounded-md bg-muted/60 text-[10px] font-bold text-foreground/70 border border-border/30">
+                                    <span key={s.id} className="px-2.5 py-1 rounded-lg bg-muted text-[10px] font-black text-foreground/80 border border-border/60 shadow-sm">
                                       {s.name.split(' ')[0]}
                                     </span>
                                   ))}
                                   {trainingStudents.length > 3 && (
-                                    <span className="px-2 py-0.5 rounded-md bg-primary/5 text-[10px] font-black text-primary">
+                                    <span className="px-2.5 py-1 rounded-lg bg-primary/10 text-[10px] font-black text-primary border border-primary/20 shadow-sm">
                                       +{trainingStudents.length - 3}
                                     </span>
                                   )}
@@ -485,31 +500,34 @@ export function NotificationBell() {
                             </div>
                           </div>
 
-                          {/* Actions */}
-                          <div className="flex flex-col gap-1.5 shrink-0">
+                          {/* Quick Actions Panel */}
+                          <div className="flex flex-col gap-2 shrink-0">
                             <button
                               onClick={() => handleMarkComplete(t.id)}
-                              className="p-2 rounded-xl bg-primary text-primary-foreground hover:opacity-90 shadow-sm transition-all active:scale-95"
+                              className="p-2.5 rounded-xl bg-primary text-primary-foreground hover:opacity-90 shadow-md shadow-primary/20 transition-all active:scale-90"
                               title="Marcar como concluído"
                             >
-                              <Check className="h-4 w-4" />
+                              <Check className="h-4.5 w-4.5 stroke-[3]" />
                             </button>
                             <button
                               onClick={() => handleDeleteTraining(t.id)}
-                              className="p-2 rounded-xl bg-destructive/10 text-destructive hover:bg-destructive hover:text-destructive-foreground transition-all active:scale-95"
+                              className="p-2.5 rounded-xl bg-destructive/15 text-destructive hover:bg-destructive hover:text-white transition-all active:scale-90 border border-destructive/10"
                               title="Excluir treino"
                             >
-                              <Trash2 className="h-4 w-4" />
+                              <Trash2 className="h-4.5 w-4.5" />
                             </button>
                             <button
                               onClick={() => dismissTraining(t.id)}
-                              className="p-2 rounded-xl bg-muted text-muted-foreground hover:bg-foreground hover:text-background transition-all active:scale-95"
+                              className="p-2.5 rounded-xl bg-muted text-muted-foreground hover:bg-foreground hover:text-background transition-all active:scale-90 border border-border/50"
                               title="Dispensar"
                             >
-                              <X className="h-4 w-4" />
+                              <X className="h-4.5 w-4.5" />
                             </button>
                           </div>
                         </div>
+                        {status === 'now' && (
+                          <div className="absolute top-0 left-0 h-full w-1.5 bg-primary shadow-[2px_0_10px_rgba(var(--primary),0.3)]" />
+                        )}
                       </div>
                     );
                   })}
@@ -517,49 +535,54 @@ export function NotificationBell() {
               </div>
             )}
 
-            {/* Today's Trainings — Completed */}
+            {/* Today's Trainings — Completed Section */}
             {showTrainings && completedTrainings.length > 0 && (
-              <div className="p-4 border-t border-border/30 bg-emerald-500/[0.01]">
-                <div className="flex items-center gap-2 mb-3 px-1">
-                  <div className="w-1.5 h-3 rounded-full bg-emerald-500/40" />
-                  <span className="text-[10px] font-black uppercase tracking-widest text-emerald-600 dark:text-emerald-400">
-                    Executados Hoje ({completedTrainings.length})
-                  </span>
+              <div className="p-4 border-t border-border/30 bg-emerald-500/[0.02]">
+                <div className="flex items-center justify-between px-1 mb-4">
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-4 rounded-full bg-emerald-500/40 shadow-sm" />
+                    <span className="text-[11px] font-black uppercase tracking-[0.15em] text-emerald-600 dark:text-emerald-400">
+                      Executados Hoje ({completedTrainings.length})
+                    </span>
+                  </div>
+                  <CheckCheck className="h-4 w-4 text-emerald-500/50" />
                 </div>
-                <div className="space-y-3">
+                <div className="space-y-4">
                   {completedTrainings.map((t) => {
                     const trainingStudents = students.filter((s) => t.studentIds.includes(s.id));
                     
                     return (
                       <div
                         key={t.id}
-                        className="rounded-xl border border-emerald-500/20 bg-emerald-500/[0.03] p-4 transition-all"
+                        className="rounded-2xl border border-emerald-500/30 bg-background dark:bg-emerald-950/10 p-4.5 transition-all shadow-sm hover:shadow-md"
                       >
-                        <div className="flex items-start justify-between gap-3">
-                          <div className="flex items-start gap-3.5 flex-1 min-w-0">
-                            <div className="flex flex-col items-center justify-center rounded-xl px-3 py-2 min-w-[60px] bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 shadow-sm">
-                              <span className="text-sm font-black leading-none">{t.time}</span>
-                              <span className="text-[10px] font-bold leading-none mt-1 opacity-80">{getEndTime(t.time, t.durationMinutes)}</span>
+                        <div className="flex items-start justify-between gap-4">
+                          <div className="flex items-start gap-4 flex-1 min-w-0">
+                            <div className="flex flex-col items-center justify-center rounded-xl px-4 py-2.5 min-w-[70px] bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 shadow-sm">
+                              <span className="text-base font-black leading-none">{t.time}</span>
+                              <span className="text-[10px] font-bold leading-none mt-1.5 opacity-80 uppercase tracking-tighter">
+                                FIM: {getEndTime(t.time, t.durationMinutes)}
+                              </span>
                             </div>
 
                             <div className="flex-1 min-w-0">
-                              <div className="flex items-center gap-1.5">
-                                <div className="p-0.5 rounded-full bg-emerald-500">
-                                  <Check className="h-2.5 w-2.5 text-white" />
+                              <div className="flex items-center gap-2">
+                                <div className="p-1 rounded-full bg-emerald-500 shadow-md shadow-emerald-500/30">
+                                  <Check className="h-3 w-3 text-white stroke-[4]" />
                                 </div>
-                                <span className="text-xs font-black uppercase tracking-widest text-emerald-600 dark:text-emerald-400">Concluído</span>
+                                <span className="text-[11px] font-black uppercase tracking-widest text-emerald-600 dark:text-emerald-400">Concluído</span>
                                 {t.completedAt && (
-                                  <span className="text-[10px] font-medium text-muted-foreground/60">
-                                    às {new Date(t.completedAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                                  <span className="text-[10px] font-bold text-muted-foreground/60 ml-auto">
+                                    {new Date(t.completedAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
                                   </span>
                                 )}
                               </div>
-                              <div className="flex items-center gap-3 mt-1.5 text-[11px] text-muted-foreground font-medium">
-                                <span className="flex items-center gap-1">
-                                  <MapPin className="h-3.5 w-3.5" />{t.location || 'Local'}
+                              <div className="flex items-center gap-4 mt-3 text-[12px] text-muted-foreground font-bold">
+                                <span className="flex items-center gap-1.5">
+                                  <MapPin className="h-4 w-4 opacity-60" />{t.location || 'Local'}
                                 </span>
-                                <span className="flex items-center gap-1">
-                                  <Users className="h-3.5 w-3.5" />{trainingStudents.length} aluno{trainingStudents.length !== 1 ? 's' : ''}
+                                <span className="flex items-center gap-1.5">
+                                  <Users className="h-4 w-4 opacity-60" />{trainingStudents.length} Alunos
                                 </span>
                               </div>
                             </div>
@@ -567,10 +590,10 @@ export function NotificationBell() {
 
                           <button
                             onClick={() => handleUndoComplete(t.id)}
-                            className="p-2 rounded-xl bg-muted text-muted-foreground hover:bg-emerald-500 hover:text-white transition-all active:scale-95 shadow-sm"
+                            className="p-2.5 rounded-xl bg-muted text-muted-foreground hover:bg-emerald-500 hover:text-white transition-all active:scale-90 shadow-sm border border-border/50"
                             title="Reabrir treino"
                           >
-                            <Undo2 className="h-4 w-4" />
+                            <Undo2 className="h-5 w-5" />
                           </button>
                         </div>
                       </div>
@@ -580,31 +603,50 @@ export function NotificationBell() {
               </div>
             )}
 
-            {/* Calendar link */}
+            {/* Premium Full Agenda Link */}
             {showTrainings && (pendingTrainings.length > 0 || completedTrainings.length > 0) && (
-              <div className="px-4 pb-4">
+              <div className="p-6">
                 <Link
                   to="/calendario"
                   onClick={() => setOpen(false)}
-                  className="flex items-center justify-center gap-2 mt-2 py-3 rounded-xl border border-primary/20 bg-primary/5 text-[11px] font-black uppercase tracking-widest text-primary hover:bg-primary/10 transition-all active:scale-[0.98]"
+                  className="flex items-center justify-center gap-2.5 py-4 rounded-2xl border-2 border-primary/20 bg-primary/5 text-[12px] font-black uppercase tracking-[0.2em] text-primary hover:bg-primary hover:text-white hover:shadow-xl hover:shadow-primary/20 transition-all active:scale-[0.97] group"
                 >
-                  <Calendar className="h-4 w-4" />
-                  Abrir agenda completa
+                  <Calendar className="h-5 w-5 group-hover:rotate-12 transition-transform" />
+                  Abrir Agenda Completa
                 </Link>
               </div>
             )}
           </div>
 
-          {/* Footer Info */}
-          <div className="px-5 py-3 border-t border-border/50 bg-muted/40">
-            <div className="flex items-center justify-center gap-4 text-[10px] font-bold text-muted-foreground/60">
-              <span className="flex items-center gap-1">
-                <Calendar className="h-3 w-3" /> {todayTrainings.length} TREINOS
-              </span>
-              <span className="w-1 h-1 rounded-full bg-muted-foreground/30" />
-              <span className="flex items-center gap-1">
-                <CreditCard className="h-3 w-3" /> {overduePayments.length} ATRASADOS
-              </span>
+          {/* Elegant Status Footer */}
+          <div className="px-6 py-4 border-t border-border/50 bg-muted/50 backdrop-blur-sm">
+            <div className="flex items-center justify-center gap-6">
+              <div className="flex items-center gap-2 group cursor-help" title="Treinos agendados para hoje">
+                <div className="h-2 w-2 rounded-full bg-primary/60 shadow-sm" />
+                <span className="text-[10px] font-black text-muted-foreground/80 tracking-widest uppercase">{todayTrainings.length} TREINOS</span>
+              </div>
+              <div className="h-4 w-[1px] bg-border/60" />
+              <div className="flex items-center gap-2 group cursor-help" title="Pagamentos em atraso">
+                <div className="h-2 w-2 rounded-full bg-destructive/60 shadow-sm" />
+                <span className="text-[10px] font-black text-muted-foreground/80 tracking-widest uppercase">{overduePayments.length} ATRASADOS</span>
+              </div>
+              {todayBirthdays.length > 0 && (
+                <>
+                  <div className="h-4 w-[1px] bg-border/60" />
+                  <div className="flex items-center gap-2 group cursor-help" title="Aniversariantes de hoje">
+                    <span className="text-xs">🎂</span>
+                    <span className="text-[10px] font-black text-muted-foreground/80 tracking-widest uppercase">{todayBirthdays.length} HOJE</span>
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+            </span>
             </div>
           </div>
         </div>

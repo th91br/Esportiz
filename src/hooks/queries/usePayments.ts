@@ -142,6 +142,27 @@ export function usePayments() {
         },
     });
 
+    /**
+     * Sincroniza pagamentos não pagos de um aluno específico após troca de plano ou vencimento.
+     */
+    const syncStudentPaymentsMutation = useMutation({
+        mutationFn: async (params: { studentId: string, planChanged: boolean, newPlanId?: string | null, newDueDay?: number | null }) => {
+            if (!user) throw new Error('Usuário não autenticado');
+            
+            const { error } = await supabase.rpc('sync_student_unpaid_payments', {
+                p_student_id: params.studentId,
+                p_plan_changed: params.planChanged,
+                p_new_plan_id: params.newPlanId || null,
+                p_new_due_day: params.newDueDay || null
+            });
+
+            if (error) throw error;
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['payments'] });
+        }
+    });
+
     return {
         payments,
         loadingPayments,
@@ -150,5 +171,7 @@ export function usePayments() {
         deletePayment: async (id: string) => deletePaymentMutation.mutateAsync(id),
         generateMonthlyPayments: async (monthRef: string) =>
             generateMonthlyPaymentsMutation.mutateAsync(monthRef),
+        syncStudentPayments: async (params: { studentId: string, planChanged: boolean, newPlanId?: string | null, newDueDay?: number | null }) =>
+            syncStudentPaymentsMutation.mutateAsync(params),
     };
 }

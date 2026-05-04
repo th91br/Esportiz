@@ -15,6 +15,7 @@ import {
 import { toast } from '@/hooks/use-toast';
 import { useStudents } from '@/hooks/queries/useStudents';
 import { usePlans } from '@/hooks/queries/usePlans';
+import { usePayments } from '@/hooks/queries/usePayments';
 import { useModalities } from '@/hooks/queries/useModalities';
 import { useGroups } from '@/hooks/queries/useGroups';
 import type { Student } from '@/data/mockData';
@@ -61,6 +62,8 @@ export function StudentForm({ student, trigger }: StudentFormProps) {
   const [photoFile, setPhotoFile] = useState<File | null>(null);
   const [photoPreview, setPhotoPreview] = useState<string | null>(student?.photo || null);
   const [isTrial, setIsTrial] = useState(student?.isTrial ?? false);
+  const { generateMonthlyPayments, syncStudentPayments } = usePayments();
+  const [billingStartMonth, setBillingStartMonth] = useState(new Date().toLocaleDateString('en-CA').slice(0, 7));
   const { groups } = useGroups();
   const [selectedGroups, setSelectedGroups] = useState<string[]>(student?.groupIds || []);
 
@@ -153,32 +156,52 @@ export function StudentForm({ student, trigger }: StudentFormProps) {
       const data = {
         name: formData.name,
         phone: formData.phone,
-        email: formData.email,
+        email: formData.email || null,
         level: formData.level as Student['level'],
-        planId: formData.planId && formData.planId !== 'none' && formData.planId !== 'no_plan' ? formData.planId : undefined,
-        paymentDueDay: derivedDueDay,
-        birthDate: formData.birthDate || undefined,
-        modalityId: formData.modalityId && formData.modalityId !== 'none' ? formData.modalityId : undefined,
-        photo: photoUrl,
-        cpf: formData.cpf || undefined,
-        rg: formData.rg || undefined,
-        address: formData.address || undefined,
-        city: formData.city || undefined,
-        state: formData.state || undefined,
-        zipCode: formData.zipCode || undefined,
+        planId: formData.planId && formData.planId !== 'none' && formData.planId !== 'no_plan' ? formData.planId : null,
+        paymentDueDay: derivedDueDay || null,
+        birthDate: formData.birthDate || null,
+        modalityId: formData.modalityId && formData.modalityId !== 'none' ? formData.modalityId : null,
+        photo: photoUrl || null,
+        cpf: formData.cpf || null,
+        rg: formData.rg || null,
+        address: formData.address || null,
+        city: formData.city || null,
+        state: formData.state || null,
+        zipCode: formData.zipCode || null,
         isTrial,
-        trialStartedAt: isTrial && !student?.trialStartedAt ? new Date().toISOString() : student?.trialStartedAt || undefined,
-        trialConvertedAt: !isTrial && student?.isTrial ? new Date().toISOString() : student?.trialConvertedAt || undefined,
+        trialStartedAt: isTrial && !student?.trialStartedAt ? new Date().toISOString() : student?.trialStartedAt || null,
+        trialConvertedAt: !isTrial && student?.isTrial ? new Date().toISOString() : student?.trialConvertedAt || null,
         groupIds: selectedGroups,
       };
 
       if (isEditing) {
-        await updateStudent(student.id, data);
+        const result = await updateStudent(student.id, data);
+        const updatedStudentId = student.id;
         toast({ title: 'Aluno atualizado!', description: `${formData.name} foi atualizado com sucesso.` });
 
-        // Check if frequency changed
+        // Sync payments if it's or was a monthly plan
         const oldPlan = plans.find(p => p.id === student.planId);
         const newPlan = plans.find(p => p.id === data.planId);
+        const wasMonthly = oldPlan?.billingType === 'monthly';
+        const isMonthlyNow = newPlan?.billingType === 'monthly';
+
+        if (wasMonthly || isMonthlyNow) {
+          // 1. If it's monthly now, ensure the record for the start month exists
+          if (isMonthlyNow) {
+            await generateMonthlyPayments(billingStartMonth);
+          }
+          
+          // 2. Sync (update or delete unpaid)
+          await syncStudentPayments({
+            studentId: updatedStudentId,
+            planChanged: student.planId !== data.planId,
+            newPlanId: data.planId,
+            newDueDay: data.paymentDueDay
+          });
+        }
+
+        // Check if frequency changed for training schedule
         const oldFreq = oldPlan?.billingType === 'monthly' ? oldPlan.sessionsPerWeek : 0;
         const newFreq = newPlan?.billingType === 'monthly' ? newPlan.sessionsPerWeek : 0;
 
@@ -189,6 +212,14 @@ export function StudentForm({ student, trigger }: StudentFormProps) {
       } else {
         const result = await addStudent(data);
         toast({ title: 'Aluno cadastrado!', description: `${formData.name} foi adicionado com sucesso.` });
+        
+        // Generate initial payment if monthly
+        if (data.planId) {
+          const planObj = plans.find(p => p.id === data.planId);
+          if (planObj?.billingType === 'monthly') {
+            await generateMonthlyPayments(billingStartMonth);
+          }
+        }
       }
       form.reset();
       setOpen(false);
@@ -569,22 +600,45 @@ export function StudentForm({ student, trigger }: StudentFormProps) {
             </div>
 
             {isMonthly && (
-              <FormField
-                control={form.control}
-                name="paymentDueDay"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Dia de Vencimento</FormLabel>
+              <div className="grid grid-cols-2 gap-3 pt-2">
+                <FormField
+                  control={form.control}
+                  name="paymentDueDay"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Dia de Vencimento</FormLabel>
+                      <FormControl>
+                        <Input type="number" min="1" max="31" placeholder="Ex: 10" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormItem>
+                  <FormLabel>Iniciar Cobrança em</FormLabel>
+                  <Select value={billingStartMonth} onValueChange={setBillingStartMonth}>
                     <FormControl>
-                      <Input type="number" min="1" max="31" placeholder="Ex: 10" {...field} />
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione o mês" />
+                      </SelectTrigger>
                     </FormControl>
-                    <FormDescription>
-                      Dia do mês em que a mensalidade vencerá.
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+                    <SelectContent>
+                      {Array.from({ length: 6 }).map((_, i) => {
+                        const d = new Date();
+                        d.setMonth(d.getMonth() + i);
+                        const val = d.toLocaleDateString('en-CA').slice(0, 7);
+                        const label = d.toLocaleString('pt-BR', { month: 'long', year: 'numeric' });
+                        return (
+                          <SelectItem key={val} value={val} className="capitalize">
+                            {label}
+                          </SelectItem>
+                        );
+                      })}
+                    </SelectContent>
+                  </Select>
+                </FormItem>
+              </div>
             )}
 
             <div className="flex gap-3 pt-4">

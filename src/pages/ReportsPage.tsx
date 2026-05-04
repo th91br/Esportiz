@@ -124,7 +124,8 @@ export default function ReportsPage() {
   const filteredPayments = useMemo(() => {
     if (!range) return payments;
     return payments.filter((p) => {
-      const dateToCheck = p.paid && p.paymentDate ? p.paymentDate : p.dueDate;
+      const paymentDateOnly = p.paidAt ? p.paidAt.slice(0, 10) : null;
+      const dateToCheck = p.paid && paymentDateOnly ? paymentDateOnly : p.dueDate;
       return dateToCheck >= range.start && dateToCheck <= range.end;
     });
   }, [payments, range]);
@@ -183,7 +184,11 @@ export default function ReportsPage() {
         const attInDay = attendance.filter(a => a.date === dateStr);
         const p = attInDay.filter(a => a.present).length;
         const f = attInDay.filter(a => !a.present).length;
-        const name = d.getDate().toString().padStart(2, '0') + '/' + (d.getMonth() + 1).toString().padStart(2, '0');
+        
+        // Use split to avoid timezone shift on label
+        const [year, month, day] = dateStr.split('-');
+        const name = `${day}/${month}`;
+        
         return { name, presentes: p, faltas: f };
       });
     }
@@ -231,13 +236,21 @@ export default function ReportsPage() {
       }
       return days.map(d => {
         const dateStr = d.toISOString().split('T')[0];
-        const dayPayments = payments.filter(p => {
-          const dateToCheck = p.paid && p.paymentDate ? p.paymentDate : p.dueDate;
-          return dateToCheck === dateStr;
-        });
-        const expected = dayPayments.reduce((acc, curr) => acc + curr.amount, 0);
-        const received = dayPayments.filter(p => p.paid).reduce((acc, curr) => acc + curr.amount, 0);
-        const name = d.getDate().toString().padStart(2, '0') + '/' + (d.getMonth() + 1).toString().padStart(2, '0');
+        
+        // Previsto (Total): Sempre usa a data de vencimento original
+        const expected = payments
+          .filter(p => p.dueDate === dateStr)
+          .reduce((acc, curr) => acc + curr.amount, 0);
+          
+        // Realizado (Caixa): Sempre usa a data em que o pagamento foi efetuado
+        const received = payments
+          .filter(p => p.paid && p.paidAt && p.paidAt.slice(0, 10) === dateStr)
+          .reduce((acc, curr) => acc + curr.amount, 0);
+        
+        // Use split para evitar problemas de fuso horário no label
+        const [year, month, day] = dateStr.split('-');
+        const name = `${day}/${month}`;
+        
         return { name, Total: expected, Recebido: received };
       });
     }
@@ -422,10 +435,17 @@ export default function ReportsPage() {
             <p className="text-sm text-muted-foreground mb-6">Preferência da base de alunos mensalistas</p>
             <div className="h-[250px] w-full">
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={planDistributionData} layout="vertical" margin={{ top: 0, right: 30, left: 0, bottom: 0 }}>
+                <BarChart data={planDistributionData} layout="vertical" margin={{ top: 0, right: 30, left: 10, bottom: 0 }}>
                   <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} stroke="hsl(var(--border))" />
                   <XAxis type="number" hide />
-                  <YAxis type="category" dataKey="name" tick={{ fontSize: 13, fill: 'hsl(var(--foreground))', fontWeight: 500 }} axisLine={false} tickLine={false} width={120} />
+                  <YAxis 
+                    type="category" 
+                    dataKey="name" 
+                    tick={{ fontSize: 12, fill: 'hsl(var(--foreground))', fontWeight: 500 }} 
+                    axisLine={false} 
+                    tickLine={false} 
+                    width={160}
+                  />
                   <Tooltip contentStyle={customTooltipStyle} cursor={{ fill: 'hsl(var(--muted)/0.3)' }} formatter={(value: number) => [privacyMode ? '••••' : `${value} aluno(s)`, 'Aderência']} />
                   <Bar dataKey="alunos" fill={COLORS.primary} radius={[0, 4, 4, 0]} barSize={28}>
                     {

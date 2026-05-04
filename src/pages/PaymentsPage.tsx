@@ -8,9 +8,10 @@ import { formatCurrency } from '@/lib/formatCurrency';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Check, X, DollarSign, AlertTriangle, Clock, TrendingUp, Eye, EyeOff, Percent, Trash2, Download } from 'lucide-react';
+import { Check, X, DollarSign, AlertTriangle, Clock, TrendingUp, Eye, EyeOff, Percent, Trash2, Download, Search } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { exportToCSV } from '@/lib/exportUtils';
+import { Input } from '@/components/ui/input';
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
@@ -23,6 +24,7 @@ export default function PaymentsPage() {
   const { plans } = usePlans();
   const { payments, generateMonthlyPayments, markAsPaid, markAsUnpaid, deletePayment, loadingPayments } = usePayments();
   const [privacyMode, togglePrivacyMode] = usePrivacyMode();
+  const [searchTerm, setSearchTerm] = useState('');
 
   const now = new Date();
   const [selectedYear, setSelectedYear] = useState(now.getFullYear());
@@ -40,6 +42,18 @@ export default function PaymentsPage() {
   }, [monthRef, loadingPayments, currentMonthRef]);
 
   const monthPayments = payments.filter(p => p.monthRef === monthRef);
+
+  const filteredPayments = monthPayments
+    .filter(p => {
+      const student = students.find(s => s.id === p.studentId);
+      if (!student) return false;
+      return student.name.toLowerCase().includes(searchTerm.toLowerCase());
+    })
+    .sort((a, b) => {
+      const nameA = students.find(s => s.id === a.studentId)?.name || '';
+      const nameB = students.find(s => s.id === b.studentId)?.name || '';
+      return nameA.localeCompare(nameB, 'pt-BR');
+    });
 
   const getStatus = (p: typeof monthPayments[0]): 'paid' | 'pending' | 'overdue' => {
     if (p.paid) return 'paid';
@@ -62,10 +76,11 @@ export default function PaymentsPage() {
             <h1 className="font-display text-2xl font-bold text-foreground">Pagamentos</h1>
             <p className="text-sm text-muted-foreground">Controle de pagamentos mensais dos alunos</p>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 w-full sm:w-auto overflow-x-auto pb-1 sm:pb-0">
             <Button
               variant="outline"
-              className="gap-2"
+              size="sm"
+              className="gap-2 shrink-0"
               onClick={() => {
                 const exportData = monthPayments.map(p => {
                   const student = students.find(s => s.id === p.userId);
@@ -82,19 +97,19 @@ export default function PaymentsPage() {
               }}
               disabled={loadingPayments || monthPayments.length === 0}
             >
-              <Download className="h-4 w-4" /> Exportar
+              <Download className="h-4 w-4" /> <span className="hidden xs:inline">Exportar</span>
             </Button>
             <Button
               variant="ghost"
               size="icon"
-              className="rounded-full h-8 w-8"
+              className="rounded-full h-8 w-8 shrink-0"
               onClick={togglePrivacyMode}
               title={privacyMode ? 'Mostrar valores' : 'Ocultar valores'}
             >
               {privacyMode ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
             </Button>
             <Select value={String(selectedMonth)} onValueChange={v => setSelectedMonth(Number(v))}>
-              <SelectTrigger className="w-[140px]"><SelectValue /></SelectTrigger>
+              <SelectTrigger className="w-[120px] sm:w-[140px] shrink-0"><SelectValue /></SelectTrigger>
               <SelectContent>
                 {monthNames.map((name, i) => (
                   <SelectItem key={i} value={String(i + 1)}>{name}</SelectItem>
@@ -102,7 +117,7 @@ export default function PaymentsPage() {
               </SelectContent>
             </Select>
             <Select value={String(selectedYear)} onValueChange={v => setSelectedYear(Number(v))}>
-              <SelectTrigger className="w-[100px]"><SelectValue /></SelectTrigger>
+              <SelectTrigger className="w-[90px] sm:w-[100px] shrink-0"><SelectValue /></SelectTrigger>
               <SelectContent>
                 {years.map(y => (
                   <SelectItem key={y} value={String(y)}>{y}</SelectItem>
@@ -110,6 +125,17 @@ export default function PaymentsPage() {
               </SelectContent>
             </Select>
           </div>
+        </div>
+
+        {/* Search Bar */}
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Buscar aluno por nome..."
+            className="pl-10 bg-background/50 border-muted-foreground/20 focus:border-primary/50 transition-all"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
         </div>
 
         {/* Summary cards */}
@@ -147,15 +173,18 @@ export default function PaymentsPage() {
             <h3 className="font-display font-semibold text-lg text-foreground">Nenhum pagamento para {monthNames[selectedMonth - 1]}/{selectedYear}</h3>
             <p className="text-sm text-muted-foreground mt-1">Alunos com plano mensal e dia de vencimento definido aparecerão aqui automaticamente.</p>
           </div>
+        ) : filteredPayments.length === 0 ? (
+          <div className="card-elevated p-12 text-center">
+            <Search className="h-12 w-12 mx-auto text-muted-foreground/30 mb-4" />
+            <h3 className="font-display font-semibold text-lg text-foreground">Nenhum aluno encontrado</h3>
+            <p className="text-sm text-muted-foreground mt-1">Não encontramos nenhum resultado para "{searchTerm}".</p>
+            <Button variant="link" onClick={() => setSearchTerm('')} className="mt-2">
+              Limpar busca
+            </Button>
+          </div>
         ) : (
           <div className="space-y-3">
-            {[...monthPayments]
-              .sort((a, b) => {
-                const nameA = students.find(s => s.id === a.studentId)?.name || '';
-                const nameB = students.find(s => s.id === b.studentId)?.name || '';
-                return nameA.localeCompare(nameB, 'pt-BR');
-              })
-              .map(payment => {
+            {filteredPayments.map(payment => {
               const student = students.find(s => s.id === payment.studentId);
               const plan = plans.find(p => p.id === payment.planId);
               const status = getStatus(payment);

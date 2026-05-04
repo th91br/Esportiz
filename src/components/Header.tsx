@@ -77,13 +77,13 @@ export function Header() {
         </nav>
 
         {/* Profile & Mobile Menu */}
-        <div className="flex items-center gap-1.5 shrink-0">
+        <div className="flex items-center gap-1 shrink-0">
+          <NotificationBell />
           <div className="hidden md:flex items-center gap-1">
             <Button variant="ghost" size="icon" className="rounded-full hidden md:flex" title={`Logado como: ${user?.email}`}>
               <UserCircle className="h-4 w-4 text-muted-foreground" />
             </Button>
             <InstallPWAButton />
-            <NotificationBell />
             <Link to="/configuracoes">
               <Button variant="ghost" size="icon" className="rounded-full" title="Configurações">
                 <Settings className="h-4 w-4" />

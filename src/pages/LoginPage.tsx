@@ -73,10 +73,17 @@ export default function LoginPage() {
       });
       goTo('login');
     } catch (err: any) {
+      let errorMessage = err.message;
+      
+      if (err.message === 'User already registered') {
+        errorMessage = 'Este e-mail já está cadastrado.';
+      } else if (err.message.includes('rate limit exceeded')) {
+        errorMessage = 'O limite de cadastros momentâneo foi atingido. Por favor, tente novamente em alguns minutos ou entre em contato com nosso suporte.';
+      }
+
       toast({
         title: 'Erro ao criar conta',
-        description: err.message === 'User already registered'
-          ? 'Este e-mail já está cadastrado.' : err.message,
+        description: errorMessage,
         variant: 'destructive',
       });
     } finally { setLoading(false); }

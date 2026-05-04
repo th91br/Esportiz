@@ -225,7 +225,7 @@ export function NotificationBell() {
       </button>
 
       {open && (
-        <div className="absolute right-0 top-full mt-3 w-[360px] sm:w-[440px] rounded-2xl border border-border/60 bg-card shadow-[0_20px_60px_-15px_rgba(0,0,0,0.3)] z-50 overflow-hidden animate-in fade-in slide-in-from-top-4 duration-300 ring-1 ring-black/5 dark:ring-white/5">
+        <div className="absolute right-[-48px] md:right-0 top-full mt-3 w-[calc(100vw-32px)] sm:w-[440px] rounded-2xl border border-border/60 bg-card shadow-[0_20px_60px_-15px_rgba(0,0,0,0.3)] z-50 overflow-hidden animate-in fade-in slide-in-from-top-4 duration-300 ring-1 ring-black/5 dark:ring-white/5">
           {/* Header Section */}
           <div className="flex items-center justify-between px-6 py-5 bg-gradient-to-r from-primary/10 via-primary/5 to-transparent border-b border-border/50">
             <div className="flex items-center gap-3">

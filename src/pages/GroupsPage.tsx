@@ -288,9 +288,34 @@ export default function GroupsPage() {
     return ids.size;
   }, [groups]);
 
-  const filteredGroups = groups.filter(g =>
-    g.name.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredGroups = useMemo(() => {
+    const filtered = groups.filter(g =>
+      g.name.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+
+    return filtered.sort((a, b) => {
+      // 1. Cronológico: Dia e Hora do primeiro treino da turma
+      const getFirstSlot = (g: Group) => {
+        if (!g.schedule || g.schedule.length === 0) return { day: 8, time: '24:00' };
+        // Pega o primeiro slot (menor dia/hora) da turma
+        const sortedSlots = [...g.schedule].sort((sa, sb) => {
+          const sortDay = (day: number) => day === 0 ? 7 : day;
+          return sortDay(sa.dayOfWeek) - sortDay(sb.dayOfWeek) || sa.time.localeCompare(sb.time);
+        });
+        const first = sortedSlots[0];
+        return { day: first.dayOfWeek === 0 ? 7 : first.dayOfWeek, time: first.time };
+      };
+
+      const slotA = getFirstSlot(a);
+      const slotB = getFirstSlot(b);
+
+      if (slotA.day !== slotB.day) return slotA.day - slotB.day;
+      if (slotA.time !== slotB.time) return slotA.time.localeCompare(slotB.time);
+
+      // 2. Ordem Numérica e Alfabética Natural (ex: Turma 2 antes de Turma 10)
+      return a.name.localeCompare(b.name, 'pt-BR', { numeric: true, sensitivity: 'base' });
+    });
+  }, [groups, searchQuery]);
 
   const handleEdit = (group: Group) => {
     setEditingGroup(group);

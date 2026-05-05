@@ -571,8 +571,34 @@ export function StudentForm({ student, trigger }: StudentFormProps) {
                 </div>
               ) : (
                 <div className="flex flex-wrap gap-2">
-                  {groups.map(group => {
+                  {[...groups].sort((a, b) => {
+                    const getFirstSlot = (g: any) => {
+                      if (!g.schedule || g.schedule.length === 0) return { day: 8, time: '24:00' };
+                      const sortedSlots = [...g.schedule].sort((sa, sb) => {
+                        const sortDay = (day: number) => day === 0 ? 7 : day;
+                        return sortDay(sa.dayOfWeek) - sortDay(sb.dayOfWeek) || sa.time.localeCompare(sb.time);
+                      });
+                      const first = sortedSlots[0];
+                      return { day: first.dayOfWeek === 0 ? 7 : first.dayOfWeek, time: first.time };
+                    };
+                    const slotA = getFirstSlot(a);
+                    const slotB = getFirstSlot(b);
+                    if (slotA.day !== slotB.day) return slotA.day - slotB.day;
+                    if (slotA.time !== slotB.time) return slotA.time.localeCompare(slotB.time);
+                    return a.name.localeCompare(b.name, 'pt-BR', { numeric: true, sensitivity: 'base' });
+                  }).map(group => {
                     const isSelected = selectedGroups.includes(group.id);
+                    
+                    // Descobrir o primeiro horário para mostrar no botão
+                    let timeLabel = '';
+                    if (group.schedule && group.schedule.length > 0) {
+                      const sortedSlots = [...group.schedule].sort((sa, sb) => {
+                        const sortDay = (day: number) => day === 0 ? 7 : day;
+                        return sortDay(sa.dayOfWeek) - sortDay(sb.dayOfWeek) || sa.time.localeCompare(sb.time);
+                      });
+                      timeLabel = ` - ${sortedSlots[0].time}`;
+                    }
+
                     return (
                       <button
                         key={group.id}
@@ -590,7 +616,7 @@ export function StudentForm({ student, trigger }: StudentFormProps) {
                         )}
                       >
                         <div className="h-2 w-2 rounded-full shrink-0" style={{ backgroundColor: group.color }} />
-                        {group.name}
+                        {group.name}{timeLabel}
                         {isSelected && <Check className="h-3 w-3 shrink-0" />}
                       </button>
                     );

@@ -69,57 +69,65 @@ export default function ModalitiesPage() {
             <ModalityManager />
           </div>
           
-          <div className="lg:col-span-2 space-y-4">
-            <h2 className="text-xl font-display font-bold flex items-center gap-2 px-1">
-              <Calendar className="h-5 w-5 text-primary" />
-              Visão Geral por Unidade
-            </h2>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {modalityStats.map((mod) => (
-                <Card key={mod.id} className="overflow-hidden border-primary/5 hover:border-primary/20 transition-all group">
-                  <CardContent className="p-0">
-                    <div className="h-2 w-full" style={{ backgroundColor: mod.color }} />
-                    <div className="p-5">
-                      <div className="flex justify-between items-start mb-4">
-                        <div>
-                          <h3 className="font-display font-bold text-lg">{mod.name}</h3>
-                          <p className="text-xs text-muted-foreground">Núcleo Esportivo</p>
-                        </div>
-                        <div className="p-2 rounded-lg bg-muted group-hover:bg-primary/10 transition-colors">
-                          <Tag className="h-4 w-4 text-primary" />
-                        </div>
-                      </div>
-                      
-                      <div className="grid grid-cols-2 gap-4 mb-6">
-                        <div className="space-y-1">
-                          <p className="text-2xl font-display font-bold">{mod.studentCount}</p>
-                          <p className="text-[10px] uppercase font-bold tracking-wider text-muted-foreground">Alunos</p>
-                        </div>
-                        <div className="space-y-1">
-                          <p className="text-2xl font-display font-bold">{mod.trainingCount}</p>
-                          <p className="text-[10px] uppercase font-bold tracking-wider text-muted-foreground">Treinos</p>
-                        </div>
-                      </div>
-                      
-                      <Button 
-                        variant="outline" 
-                        className="w-full text-xs font-bold uppercase tracking-wider group-hover:bg-primary group-hover:text-white transition-all"
-                        onClick={() => navigate('/alunos')}
-                      >
-                        Gerenciar Alunos
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-              
-              {modalities.length === 0 && (
-                <div className="col-span-full py-12 text-center border-2 border-dashed rounded-2xl bg-muted/30">
-                  <p className="text-muted-foreground">Cadastre sua primeira modalidade para ver as estatísticas aqui.</p>
+          <div className="lg:col-span-2">
+            <Card className="h-full border-primary/10 shadow-sm overflow-hidden flex flex-col">
+              <div className="h-1 bg-gradient-to-r from-primary/50 to-primary" />
+              <div className="p-6 pb-4">
+                <div className="space-y-1">
+                  <h2 className="flex items-center gap-2 text-lg font-display font-semibold">
+                    <Calendar className="h-5 w-5 text-primary" />
+                    Visão Geral por Unidade
+                  </h2>
+                  <p className="text-sm text-muted-foreground">Estatísticas de alunos e treinos ativos por modalidade.</p>
                 </div>
-              )}
-            </div>
+              </div>
+              
+              <CardContent className="flex-1">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {modalityStats.map((mod) => (
+                    <div key={mod.id} className="rounded-xl overflow-hidden border border-border/60 hover:border-primary/30 bg-background shadow-sm hover:shadow-md transition-all group">
+                      <div className="h-1.5 w-full" style={{ backgroundColor: mod.color }} />
+                      <div className="p-5">
+                        <div className="flex justify-between items-start mb-4">
+                          <div>
+                            <h3 className="font-display font-bold text-lg">{mod.name}</h3>
+                            <p className="text-xs text-muted-foreground">Núcleo Esportivo</p>
+                          </div>
+                          <div className="p-2 rounded-lg bg-muted group-hover:bg-primary/10 transition-colors">
+                            <Tag className="h-4 w-4 text-primary" />
+                          </div>
+                        </div>
+                        
+                        <div className="grid grid-cols-2 gap-4 mb-6">
+                          <div className="space-y-1">
+                            <p className="text-2xl font-display font-bold">{mod.studentCount}</p>
+                            <p className="text-[10px] uppercase font-bold tracking-wider text-muted-foreground">Alunos</p>
+                          </div>
+                          <div className="space-y-1">
+                            <p className="text-2xl font-display font-bold">{mod.trainingCount}</p>
+                            <p className="text-[10px] uppercase font-bold tracking-wider text-muted-foreground">Treinos</p>
+                          </div>
+                        </div>
+                        
+                        <Button 
+                          variant="outline" 
+                          className="w-full text-xs font-bold uppercase tracking-wider group-hover:bg-primary group-hover:text-white transition-all"
+                          onClick={() => navigate('/alunos')}
+                        >
+                          Gerenciar Alunos
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                  
+                  {modalities.length === 0 && (
+                    <div className="col-span-full py-12 text-center border-2 border-dashed rounded-xl bg-muted/30">
+                      <p className="text-sm text-muted-foreground">Cadastre sua primeira modalidade para ver as estatísticas.</p>
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
           </div>
         </div>
       </main>

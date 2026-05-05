@@ -1,4 +1,17 @@
-import { Users, Calendar, CheckCircle, DollarSign, Eye, EyeOff, Cake, Tag } from 'lucide-react';
+import {
+  Users,
+  Calendar,
+  CheckCircle,
+  DollarSign,
+  Eye,
+  EyeOff,
+  Cake,
+  Tag,
+  TrendingUp,
+  TrendingDown,
+  ShoppingCart,
+  Landmark,
+} from 'lucide-react';
 import { Header } from '@/components/Header';
 import { StatCard } from '@/components/StatCard';
 import { TodaySchedule } from '@/components/TodaySchedule';
@@ -10,7 +23,10 @@ import { usePlans } from '@/hooks/queries/usePlans';
 import { useTrainings } from '@/hooks/queries/useTrainings';
 import { useAttendance } from '@/hooks/queries/useAttendance';
 import { usePayments } from '@/hooks/queries/usePayments';
+import { useExpenses } from '@/hooks/queries/useExpenses';
+import { useSales } from '@/hooks/queries/useSales';
 import { usePrivacyMode } from '@/hooks/usePrivacyMode';
+import { useBusinessContext } from '@/hooks/useBusinessContext';
 import { getActiveMonthlyStudents, getTotalStudents } from '@/lib/studentHelpers';
 import { formatCurrency } from '@/lib/formatCurrency';
 import { DashboardCharts } from '@/components/DashboardCharts';
@@ -24,61 +40,95 @@ export default function Index() {
   const { trainings, loadingTrainings } = useTrainings();
   const { attendance, loadingAttendance } = useAttendance();
   const { payments, loadingPayments } = usePayments();
-  const loading = loadingStudents || loadingPlans || loadingTrainings || loadingAttendance || loadingPayments;
+  const { expenses, loadingExpenses } = useExpenses();
+  const { sales } = useSales();
+  const loading =
+    loadingStudents ||
+    loadingPlans ||
+    loadingTrainings ||
+    loadingAttendance ||
+    loadingPayments ||
+    loadingExpenses;
+
   const [privacyMode, togglePrivacyMode] = usePrivacyMode();
   const { profile } = useProfile();
   const { modalities } = useModalities();
+  const { labels, isSportSchool, isArena, isOther } = useBusinessContext();
 
   const hour = new Date().getHours();
   const greeting = hour < 12 ? 'Bom dia' : hour < 18 ? 'Boa tarde' : 'Boa noite';
 
+  const todayDateStr = new Date().toISOString().split('T')[0];
+
+  // ── Alunos / Clientes ──
   const activeMonthly = getActiveMonthlyStudents(students, plans);
   const activeStudents = activeMonthly.length;
   const totalStudents = getTotalStudents(students);
-  
-  const todayDateStr = new Date().toISOString().split('T')[0];
-  const todayTrainings = trainings.filter(t => t.date === todayDateStr).length;
 
-  const attendanceRate = attendance.length > 0
-    ? Math.round((attendance.filter((a) => a.present).length / attendance.length) * 100)
-    : 0;
-    
+  // ── Treinos / Reservas / Aulas ──
+  const todayTrainings = trainings.filter((t) => t.date === todayDateStr).length;
+
+  // ── Presença ──
+  const attendanceRate =
+    attendance.length > 0
+      ? Math.round((attendance.filter((a) => a.present).length / attendance.length) * 100)
+      : 0;
+
+  // ── Financeiro ──
   const currentMonthStr = new Date().toISOString().slice(0, 7);
   let expectedRevenue = 0;
   let receivedRevenue = 0;
-  payments.forEach(p => {
+  payments.forEach((p) => {
     if (p.monthRef === currentMonthStr) {
       expectedRevenue += p.amount;
       if (p.paid) receivedRevenue += p.amount;
     }
   });
-  const revenueProgress = expectedRevenue > 0 ? (receivedRevenue / expectedRevenue) * 100 : 0;
-  
-  const birthdaysToday = students.filter(student => {
-    if (!student.active || !student.birthDate) return false;
+  const revenueProgress =
+    expectedRevenue > 0 ? (receivedRevenue / expectedRevenue) * 100 : 0;
+
+  let totalExpensesPaid = 0;
+  expenses.forEach((exp) => {
+    if (exp.date.slice(0, 7) === currentMonthStr && exp.paid) {
+      totalExpensesPaid += exp.amount;
+    }
+  });
+  const netProfit = receivedRevenue - totalExpensesPaid;
+
+  // ── Vendas de hoje (Arena usa isso como destaque) ──
+  const todaySalesTotal = sales
+    .filter((s) => s.soldAt.startsWith(todayDateStr))
+    .reduce((sum, s) => sum + s.total, 0);
+
+  // ── Aniversários (só sport_school) ──
+  const birthdaysToday = students.filter((s) => {
+    if (!s.active || !s.birthDate) return false;
     const today = new Date();
-    const [_, month, day] = student.birthDate.split('-').map(Number);
+    const [, month, day] = s.birthDate.split('-').map(Number);
     return today.getMonth() + 1 === month && today.getDate() === day;
   });
-
-  const birthdaysMonth = students.filter(student => {
-    if (!student.active || !student.birthDate) return false;
-    const today = new Date();
-    const [_, month] = student.birthDate.split('-').map(Number);
-    return today.getMonth() + 1 === month;
+  const birthdaysMonth = students.filter((s) => {
+    if (!s.active || !s.birthDate) return false;
+    const [, month] = s.birthDate.split('-').map(Number);
+    return new Date().getMonth() + 1 === month;
   });
 
-  const modalityStats = modalities.map(mod => ({
-    ...mod,
-    studentCount: students.filter(s => s.active && s.modalityId === mod.id).length
-  })).sort((a, b) => b.studentCount - a.studentCount);
+  // ── Quadras / Modalidades ──
+  const modalityStats = modalities
+    .map((mod) => ({
+      ...mod,
+      studentCount: students.filter((s) => s.active && s.modalityId === mod.id).length,
+    }))
+    .sort((a, b) => b.studentCount - a.studentCount);
+
+  const pv = (val: number | string) => (privacyMode ? '••••' : val);
 
   return (
     <div className="min-h-screen bg-background">
       <Header />
 
       <main className="container py-6 md:py-8 space-y-6 md:space-y-8">
-        {/* Welcome Section */}
+        {/* ── Hero Banner ── */}
         <section className="animate-fade-up">
           <div className="bg-gradient-hero rounded-2xl p-6 md:p-8 text-white">
             <div className="max-w-2xl">
@@ -87,31 +137,39 @@ export default function Index() {
               </p>
               <div className="flex items-center gap-3 mb-2">
                 {profile?.logo_url ? (
-                  <img src={profile.logo_url} alt={profile.ct_name || "CT"} className="h-10 w-10 md:h-12 md:w-12 object-contain rounded-xl bg-white/10 p-1" />
+                  <img
+                    src={profile.logo_url}
+                    alt={profile.ct_name || ''}
+                    className="h-10 w-10 md:h-12 md:w-12 object-contain rounded-xl bg-white/10 p-1"
+                  />
                 ) : (
                   <div className="bg-white/10 p-2 rounded-xl">
                     <Logo size="sm" variant="white" />
                   </div>
                 )}
                 <h1 className="font-display text-2xl md:text-3xl lg:text-4xl font-extrabold">
-                  {profile?.ct_name || "Esportiz"}
+                  {profile?.ct_name || 'Esportiz'}
                 </h1>
               </div>
               <div className="flex flex-col sm:flex-row gap-3 mt-4 text-sm font-medium text-white/90">
                 <span className="bg-white/20 px-3 py-1.5 rounded-full inline-flex items-center gap-2 w-fit">
-                  <Calendar className="h-4 w-4" /> 
-                  {loadingTrainings ? '...' : todayTrainings > 0 ? `${todayTrainings} treino(s) agendado(s) para hoje` : 'Nenhum treino hoje'}
+                  <Calendar className="h-4 w-4" />
+                  {loading
+                    ? '...'
+                    : todayTrainings > 0
+                    ? `${todayTrainings} ${labels.trainingLabelSingular.toLowerCase()}(s) hoje`
+                    : `Nenhum(a) ${labels.trainingLabelSingular.toLowerCase()} hoje`}
                 </span>
               </div>
             </div>
           </div>
         </section>
 
-        {/* Overdue Payments Alert */}
+        {/* ── Overdue Alert ── */}
         <OverdueAlert privacyMode={privacyMode} />
-        
-        {/* Birthday Alert */}
-        {birthdaysToday.length > 0 && (
+
+        {/* ── Aniversários de hoje (só sport_school) ── */}
+        {isSportSchool && birthdaysToday.length > 0 && (
           <section className="animate-fade-up">
             <div className="bg-primary/10 border-2 border-primary/20 rounded-2xl p-4 md:p-6 flex flex-col md:flex-row items-center justify-between gap-4">
               <div className="flex items-center gap-4 text-center md:text-left">
@@ -119,10 +177,12 @@ export default function Index() {
                   <Cake className="h-6 w-6" />
                 </div>
                 <div>
-                  <h3 className="font-display font-bold text-lg">Parabéns aos aniversariantes! 🎂</h3>
+                  <h3 className="font-display font-bold text-lg">
+                    Parabéns aos aniversariantes! 🎂
+                  </h3>
                   <p className="text-muted-foreground text-sm">
-                    {birthdaysToday.length === 1 
-                      ? `${birthdaysToday[0].name} faz aniversário hoje!` 
+                    {birthdaysToday.length === 1
+                      ? `${birthdaysToday[0].name} faz aniversário hoje!`
                       : `${birthdaysToday.length} alunos fazem aniversário hoje!`}
                   </p>
                 </div>
@@ -134,9 +194,9 @@ export default function Index() {
           </section>
         )}
 
-
-        {/* Stats Grid */}
+        {/* ── Stats ── */}
         <section className="space-y-3">
+          {/* Privacy toggle */}
           <div className="flex items-center justify-end">
             <Button
               variant="ghost"
@@ -148,56 +208,134 @@ export default function Index() {
               {privacyMode ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
             </Button>
           </div>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-6 gap-3 md:gap-4">
-            <StatCard 
-              title="Alunos Ativos" 
-              value={loading ? '...' : privacyMode ? '••••' : activeStudents} 
-              icon={Users} 
-              description={privacyMode ? '' : `${activeStudents} ativos de ${totalStudents} total`} 
+
+          {/* ── Linha 1: KPIs operacionais por tipo ── */}
+          {isSportSchool && (
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
+              <StatCard
+                title="Alunos Ativos"
+                value={loading ? '...' : pv(activeStudents)}
+                icon={Users}
+                description={privacyMode ? '' : `de ${totalStudents} total`}
+              />
+              <StatCard
+                title="Treinos de Hoje"
+                value={loading ? '...' : pv(todayTrainings)}
+                icon={Calendar}
+                variant="primary"
+              />
+              <StatCard
+                title="Taxa de Presença"
+                value={loading ? '...' : pv(`${attendanceRate}%`)}
+                icon={CheckCircle}
+              />
+              <StatCard
+                title="Aniversários (Mês)"
+                value={loading ? '...' : pv(birthdaysMonth.length)}
+                icon={Cake}
+                description={privacyMode ? '' : 'Alunos este mês'}
+              />
+            </div>
+          )}
+
+          {isArena && (
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-4">
+              <StatCard
+                title="Clientes Ativos"
+                value={loading ? '...' : pv(activeStudents)}
+                icon={Users}
+                description={privacyMode ? '' : `de ${totalStudents} total`}
+              />
+              <StatCard
+                title="Reservas de Hoje"
+                value={loading ? '...' : pv(todayTrainings)}
+                icon={Calendar}
+                variant="primary"
+              />
+              <StatCard
+                title="Vendas de Hoje"
+                value={loading ? '...' : pv(formatCurrency(todaySalesTotal))}
+                icon={ShoppingCart}
+                description={privacyMode ? '' : 'PDV do dia'}
+              />
+            </div>
+          )}
+
+          {isOther && (
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-4">
+              <StatCard
+                title="Alunos Ativos"
+                value={loading ? '...' : pv(activeStudents)}
+                icon={Users}
+                description={privacyMode ? '' : `de ${totalStudents} total`}
+              />
+              <StatCard
+                title="Aulas de Hoje"
+                value={loading ? '...' : pv(todayTrainings)}
+                icon={Calendar}
+                variant="primary"
+              />
+              <StatCard
+                title="Taxa de Presença"
+                value={loading ? '...' : pv(`${attendanceRate}%`)}
+                icon={CheckCircle}
+              />
+            </div>
+          )}
+
+          {/* ── Linha 2: Financeiro — igual para todos ── */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-4">
+            <StatCard
+              title="Faturamento Total"
+              value={loading ? '...' : pv(formatCurrency(expectedRevenue))}
+              icon={DollarSign}
+              description={privacyMode ? '' : 'Total bruto esperado'}
             />
-            <StatCard title="Treinos de Hoje" value={loading ? '...' : privacyMode ? '••••' : todayTrainings} icon={Calendar} variant="primary" />
-            <StatCard title="Taxa de Presença" value={loading ? '...' : privacyMode ? '••••' : `${attendanceRate}%`} icon={CheckCircle} />
-            <StatCard 
-               title="Aniversários (Mês)" 
-               value={loading ? '...' : privacyMode ? '••••' : birthdaysMonth.length} 
-               icon={Cake}
-               description={privacyMode ? '' : 'Alunos celebrando este mês'}
+            <StatCard
+              title="Recebido no Mês"
+              value={loading ? '...' : pv(formatCurrency(receivedRevenue))}
+              icon={CheckCircle}
+              variant="primary"
+              progress={privacyMode ? undefined : { value: revenueProgress, label: 'Meta Mensal' }}
             />
-            <StatCard 
-               title="Faturamento Total" 
-               value={loading ? '...' : privacyMode ? '••••' : formatCurrency(expectedRevenue)} 
-               icon={DollarSign} 
-               description={privacyMode ? '' : 'Total bruto esperado'}
-            />
-            <StatCard 
-               title="Recebido no Mês" 
-               value={loading ? '...' : privacyMode ? '••••' : formatCurrency(receivedRevenue)} 
-               icon={CheckCircle} 
-               variant="primary"
-               progress={privacyMode ? undefined : { value: revenueProgress, label: 'Meta Mensal' }}
+            <StatCard
+              title="Lucro Líquido"
+              value={loading ? '...' : pv(formatCurrency(netProfit))}
+              icon={netProfit >= 0 ? TrendingUp : TrendingDown}
+              variant={netProfit >= 0 ? 'primary' : undefined}
+              description={privacyMode ? '' : `Despesas pagas: ${formatCurrency(totalExpensesPaid)}`}
             />
           </div>
         </section>
 
-        {/* Modalities Quick Overview */}
-        {modalities.length > 0 && (
+        {/* ── Quadras / Modalidades — sport_school e arena ── */}
+        {(isSportSchool || isArena) && modalities.length > 0 && (
           <section className="animate-fade-up" style={{ animationDelay: '0.05s' }}>
             <div className="flex items-center gap-2 mb-4 px-1">
-              <Tag className="h-4 w-4 text-primary" />
-              <h2 className="font-display font-bold text-lg">Suas Modalidades</h2>
+              {isArena ? (
+                <Landmark className="h-4 w-4 text-primary" />
+              ) : (
+                <Tag className="h-4 w-4 text-primary" />
+              )}
+              <h2 className="font-display font-bold text-lg">
+                {isArena ? 'Suas Quadras' : 'Suas Modalidades'}
+              </h2>
             </div>
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
               {modalityStats.map((mod) => (
-                <div 
-                  key={mod.id} 
+                <div
+                  key={mod.id}
                   className="card-interactive p-3 flex items-center gap-3 border-primary/5 hover:border-primary/20 transition-all cursor-pointer"
-                  onClick={() => window.location.href = '/modalidades'}
+                  onClick={() => (window.location.href = '/modalidades')}
                 >
-                  <div className="w-2.5 h-2.5 rounded-full shadow-sm" style={{ backgroundColor: mod.color }} />
+                  <div
+                    className="w-2.5 h-2.5 rounded-full shadow-sm shrink-0"
+                    style={{ backgroundColor: mod.color }}
+                  />
                   <div className="min-w-0">
                     <p className="text-sm font-bold truncate">{mod.name}</p>
                     <p className="text-[10px] text-muted-foreground uppercase font-bold tracking-tight">
-                      {mod.studentCount} Alunos
+                      {mod.studentCount} {labels.studentLabel}
                     </p>
                   </div>
                 </div>
@@ -206,7 +344,37 @@ export default function Index() {
           </section>
         )}
 
-        {/* Dashboard Charts */}
+        {/* ── Turmas — other ── */}
+        {isOther && modalities.length > 0 && (
+          <section className="animate-fade-up" style={{ animationDelay: '0.05s' }}>
+            <div className="flex items-center gap-2 mb-4 px-1">
+              <Tag className="h-4 w-4 text-primary" />
+              <h2 className="font-display font-bold text-lg">Suas Turmas</h2>
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+              {modalityStats.map((mod) => (
+                <div
+                  key={mod.id}
+                  className="card-interactive p-3 flex items-center gap-3 border-primary/5 hover:border-primary/20 transition-all cursor-pointer"
+                  onClick={() => (window.location.href = '/turmas')}
+                >
+                  <div
+                    className="w-2.5 h-2.5 rounded-full shadow-sm shrink-0"
+                    style={{ backgroundColor: mod.color }}
+                  />
+                  <div className="min-w-0">
+                    <p className="text-sm font-bold truncate">{mod.name}</p>
+                    <p className="text-[10px] text-muted-foreground uppercase font-bold tracking-tight">
+                      {mod.studentCount} alunos
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
+
+        {/* ── Charts ── */}
         <section className="animate-fade-up" style={{ animationDelay: '0.1s' }}>
           <DashboardCharts
             payments={payments}
@@ -215,8 +383,11 @@ export default function Index() {
           />
         </section>
 
-        {/* Main Content Grid */}
-        <div className="grid lg:grid-cols-3 gap-6 animate-fade-up" style={{ animationDelay: '0.2s' }}>
+        {/* ── Agenda + Quick Actions ── */}
+        <div
+          className="grid lg:grid-cols-3 gap-6 animate-fade-up"
+          style={{ animationDelay: '0.2s' }}
+        >
           <div className="lg:col-span-2">
             <TodaySchedule />
           </div>

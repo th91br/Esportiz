@@ -23,6 +23,9 @@ import SettingsPage from "./pages/SettingsPage";
 import ModalitiesPage from "./pages/ModalitiesPage";
 import GroupsPage from "./pages/GroupsPage";
 import CommunicationPage from "./pages/CommunicationPage";
+import ExpensesPage from "./pages/ExpensesPage";
+import ProductsPage from "./pages/ProductsPage";
+import SalesPage from "./pages/SalesPage";
 import NotFound from "./pages/NotFound";
 import { useProfile } from "./hooks/queries/useProfile";
 
@@ -84,6 +87,9 @@ function AppRoutes() {
       <Route path="/presenca" element={<ProtectedRoute><AttendancePage /></ProtectedRoute>} />
       <Route path="/planos" element={<ProtectedRoute><PlansPage /></ProtectedRoute>} />
       <Route path="/pagamentos" element={<ProtectedRoute><PaymentsPage /></ProtectedRoute>} />
+      <Route path="/despesas" element={<ProtectedRoute><ExpensesPage /></ProtectedRoute>} />
+      <Route path="/produtos" element={<ProtectedRoute><ProductsPage /></ProtectedRoute>} />
+      <Route path="/vendas" element={<ProtectedRoute><SalesPage /></ProtectedRoute>} />
       <Route path="/aniversariantes" element={<ProtectedRoute><BirthdaysPage /></ProtectedRoute>} />
       <Route path="/relatorios" element={<ProtectedRoute><ReportsPage /></ProtectedRoute>} />
       <Route path="/comunicacao" element={<ProtectedRoute><CommunicationPage /></ProtectedRoute>} />

@@ -3,6 +3,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 
+export type BusinessType = 'sport_school' | 'arena' | 'other';
+
 export interface Profile {
   id: string;
   user_id: string;
@@ -10,6 +12,7 @@ export interface Profile {
   logo_url: string | null;
   primary_color: string | null;
   secondary_color: string | null;
+  business_type: BusinessType;
   onboarding_completed: boolean;
   google_access_token?: string | null;
   google_refresh_token?: string | null;

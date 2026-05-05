@@ -17,10 +17,19 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { toast } from 'sonner';
-import { UploadCloud, Save, Building, Trash2, Calendar, FileSpreadsheet, CheckCircle2, AlertCircle, Loader2, Tag } from 'lucide-react';
+import { UploadCloud, Save, Building, Trash2, Calendar, FileSpreadsheet, CheckCircle2, AlertCircle, Loader2, Tag, Volleyball, Landmark, GraduationCap, CheckCircle } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
+import { useBusinessContext } from '@/hooks/useBusinessContext';
 import { ModalityManager } from '@/components/ModalityManager';
 import { supabase } from '@/integrations/supabase/client';
+import { type BusinessType } from '@/hooks/queries/useProfile';
+import { cn } from '@/lib/utils';
+
+const BUSINESS_OPTIONS: { type: BusinessType; title: string; description: string; emoji: string }[] = [
+  { type: 'sport_school', title: 'Escola de Esportes', description: 'Futevôlei, Vôlei, Beach Tennis...', emoji: '🏐' },
+  { type: 'arena', title: 'Arena / CT de Locação', description: 'Locação de quadras, Day Use...', emoji: '🏟️' },
+  { type: 'other', title: 'Escola / Outros', description: 'Idiomas, Música, Cursos livres...', emoji: '📚' },
+];
 
 const GOOGLE_CLIENT_ID = '101916210739-8dd7avpijkt4oc5t053fg7tqtahfakdr.apps.googleusercontent.com';
 const GOOGLE_REDIRECT_URI = window.location.origin + '/configuracoes';
@@ -29,6 +38,8 @@ const GOOGLE_SCOPES = 'https://www.googleapis.com/auth/calendar.events https://w
 export default function SettingsPage() {
   const { profile, updateProfile, uploadLogo, isUpdatingProfile, isUploadingLogo } = useProfile();
   const { user } = useAuth();
+  const { labels } = useBusinessContext();
+  const [selectedBusinessType, setSelectedBusinessType] = useState<BusinessType>('sport_school');
 
   const [ctName, setCtName] = useState('');
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
@@ -40,6 +51,7 @@ export default function SettingsPage() {
     if (profile) {
       setCtName(profile.ct_name || '');
       setLogoPreview(profile.logo_url || null);
+      setSelectedBusinessType(profile.business_type || 'sport_school');
     }
   }, [profile]);
 
@@ -172,8 +184,70 @@ export default function SettingsPage() {
 
       <main className="container py-6 md:py-8 space-y-6 max-w-4xl">
         <div>
-          <h1 className="text-3xl font-display font-bold">Configurações do CT</h1>
-          <p className="text-muted-foreground mt-1">Gerencie as informações da sua conta e do seu Centro de Treinamento.</p>
+          <h1 className="text-3xl font-display font-bold">Configurações do {labels.ctLabelShort}</h1>
+          <p className="text-muted-foreground mt-1">Gerencie as informações da sua conta e do seu {labels.ctLabel}.</p>
+        </div>
+
+        {/* Business Type Card */}
+        <div className="grid gap-6 md:grid-cols-3">
+          <div className="md:col-span-1 space-y-1">
+            <h3 className="font-medium">Tipo de Negócio</h3>
+            <p className="text-sm text-muted-foreground">
+              O sistema adapta a interface e termos automaticamente ao seu tipo de negócio.
+            </p>
+          </div>
+          <Card className="md:col-span-2">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-lg">
+                <Building className="h-5 w-5 text-primary" />
+                Segmento do Negócio
+              </CardTitle>
+              <CardDescription>Escolha o tipo que melhor representa sua atividade.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {BUSINESS_OPTIONS.map((option) => {
+                const isSelected = selectedBusinessType === option.type;
+                return (
+                  <button
+                    key={option.type}
+                    onClick={async () => {
+                      setSelectedBusinessType(option.type);
+                      try {
+                        await updateProfile({ business_type: option.type });
+                        toast.success(`Tipo de negócio alterado para ${option.title}!`);
+                      } catch (err) {
+                        toast.error('Erro ao alterar tipo de negócio.');
+                      }
+                    }}
+                    disabled={isBusy}
+                    className={cn(
+                      'w-full flex items-center gap-4 p-4 rounded-xl border-2 transition-all duration-200 text-left group',
+                      isSelected
+                        ? 'border-primary bg-primary/5 shadow-md shadow-primary/10'
+                        : 'border-border hover:border-primary/40 hover:bg-muted/50'
+                    )}
+                  >
+                    <div className={cn(
+                      'flex items-center justify-center h-10 w-10 rounded-xl text-xl shrink-0 transition-all',
+                      isSelected ? 'bg-primary/10 scale-110' : 'bg-muted group-hover:bg-primary/5'
+                    )}>
+                      {option.emoji}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className={cn('font-semibold text-sm', isSelected && 'text-primary')}>{option.title}</p>
+                      <p className="text-xs text-muted-foreground">{option.description}</p>
+                    </div>
+                    <div className={cn(
+                      'h-5 w-5 rounded-full border-2 shrink-0 flex items-center justify-center transition-all',
+                      isSelected ? 'border-primary bg-primary' : 'border-muted-foreground/30'
+                    )}>
+                      {isSelected && <CheckCircle className="h-3 w-3 text-primary-foreground" />}
+                    </div>
+                  </button>
+                );
+              })}
+            </CardContent>
+          </Card>
         </div>
 
         <div className="grid gap-6 md:grid-cols-3">
@@ -188,7 +262,7 @@ export default function SettingsPage() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-lg">
                 <Building className="h-5 w-5 text-primary" />
-                Dados do Centro de Treinamento
+                Dados do {labels.ctLabel}
               </CardTitle>
               <CardDescription>Personalize sua experiência no Esportiz.</CardDescription>
             </CardHeader>
@@ -199,10 +273,10 @@ export default function SettingsPage() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="ct-name">Nome do CT</Label>
+                <Label htmlFor="ct-name">Nome do {labels.ctLabelShort}</Label>
                 <Input
                   id="ct-name"
-                  placeholder="Ex: CT Futuro Craque"
+                  placeholder={`Ex: ${labels.ctLabel} Exemplo`}
                   value={ctName}
                   onChange={(e) => setCtName(e.target.value)}
                 />

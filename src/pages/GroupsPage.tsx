@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Header } from '@/components/Header';
 import { StatCard } from '@/components/StatCard';
 import { useGroups, type Group, type GroupScheduleSlot } from '@/hooks/queries/useGroups';
@@ -43,6 +43,21 @@ function GroupFormDialog({
   const [saving, setSaving] = useState(false);
   const [studentSearch, setStudentSearch] = useState('');
 
+  // Reseta o formulário sempre que abrir ou mudar a turma (Corrige o bug dos alunos sumindo/repetindo)
+  useEffect(() => {
+    if (open) {
+      setName(group?.name || '');
+      setLocation(group?.location || '');
+      setModalityId(group?.modalityId || 'none');
+      setMaxStudents(group?.maxStudents?.toString() || '');
+      setDuration(group?.durationMinutes?.toString() || '60');
+      setColor(group?.color || '#6366f1');
+      setSchedule(group?.schedule || []);
+      setSelectedStudentIds(group?.studentIds || []);
+      setStudentSearch('');
+    }
+  }, [open, group]);
+
   // Schedule helpers
   const addSlot = () => setSchedule([...schedule, { dayOfWeek: 1, time: '18:00' }]);
   const removeSlot = (i: number) => setSchedule(schedule.filter((_, idx) => idx !== i));
@@ -63,6 +78,12 @@ function GroupFormDialog({
     if (!name.trim() || schedule.length === 0) return;
     setSaving(true);
     try {
+      // Ordenação cronológica: 1. Dia da semana (Segunda=1 ... Domingo=7) 2. Horário do menor para o maior
+      const sortDay = (day: number) => day === 0 ? 7 : day;
+      const sortedSchedule = [...schedule].sort((a, b) => 
+        sortDay(a.dayOfWeek) - sortDay(b.dayOfWeek) || a.time.localeCompare(b.time)
+      );
+
       const data = {
         name: name.trim(),
         location: location.trim(),
@@ -70,7 +91,7 @@ function GroupFormDialog({
         maxStudents: maxStudents ? parseInt(maxStudents) : undefined,
         durationMinutes: parseInt(duration) || 60,
         color,
-        schedule,
+        schedule: sortedSchedule,
         active: true,
         studentIds: selectedStudentIds,
       };
@@ -395,8 +416,11 @@ export default function GroupsPage() {
 
                     {/* Schedule pills */}
                     <div className="flex flex-wrap gap-1.5 mb-4">
-                      {group.schedule.map((slot, i) => (
-                        <span key={i} className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-primary/10 text-primary text-[11px] font-semibold">
+                      {[...group.schedule].sort((a, b) => {
+                        const sortDay = (day: number) => day === 0 ? 7 : day;
+                        return sortDay(a.dayOfWeek) - sortDay(b.dayOfWeek) || a.time.localeCompare(b.time);
+                      }).map((slot, i) => (
+                        <span key={`${slot.dayOfWeek}-${slot.time}-${i}`} className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-primary/10 text-primary text-[11px] font-semibold">
                           {DAY_NAMES[slot.dayOfWeek]} {slot.time}
                         </span>
                       ))}

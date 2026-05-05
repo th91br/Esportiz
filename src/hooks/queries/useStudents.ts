@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { useProfile } from '@/hooks/queries/useProfile';
 
 export interface Student {
   id: string;
@@ -30,16 +31,19 @@ export interface Student {
 
 export function useStudents() {
   const { user } = useAuth();
+  const { profile } = useProfile();
   const queryClient = useQueryClient();
 
   const { data: students = [], isLoading: loadingStudents } = useQuery({
-    queryKey: ['students', user?.id],
+    queryKey: ['students', user?.id, profile?.business_type],
     queryFn: async () => {
       if (!user) return [];
+      const businessType = profile?.business_type || 'sport_school';
       const { data, error } = await supabase
         .from('students')
         .select('*, group_students(group_id)')
-        .eq('user_id', user.id) // Reforço extra de segurança
+        .eq('user_id', user.id)
+        .eq('business_type', businessType)
         .order('name');
       
       if (error) throw error;
@@ -76,10 +80,12 @@ export function useStudents() {
     mutationFn: async (data: Partial<Student>) => {
       if (!user) throw new Error('Usuário não autenticado');
       
+      const businessType = profile?.business_type || 'sport_school';
       const { data: newStudent, error } = await supabase
         .from('students')
         .insert({
           user_id: user.id,
+          business_type: businessType,
           name: data.name,
           phone: data.phone,
           email: data.email,

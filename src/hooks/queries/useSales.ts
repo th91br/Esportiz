@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
+import { useProfile } from '@/hooks/queries/useProfile';
 
 export type PaymentMethod = 'dinheiro' | 'pix' | 'cartao_credito' | 'cartao_debito';
 
@@ -46,16 +47,19 @@ function mapSale(row: any): Sale {
 
 export function useSales() {
   const { user } = useAuth();
+  const { profile } = useProfile();
   const queryClient = useQueryClient();
 
   const salesQuery = useQuery({
-    queryKey: ['sales', user?.id],
+    queryKey: ['sales', user?.id, profile?.business_type],
     queryFn: async () => {
       if (!user?.id) return [];
+      const businessType = profile?.business_type || 'sport_school';
       const { data, error } = await supabase
         .from('sales')
         .select('*')
         .eq('user_id', user.id)
+        .eq('business_type', businessType)
         .order('sold_at', { ascending: false });
       if (error) throw error;
       return (data || []).map(mapSale);
@@ -73,8 +77,10 @@ export function useSales() {
     }) => {
       if (!user?.id) throw new Error('Not authenticated');
       const total = sale.quantity * sale.unitPrice;
+      const businessType = profile?.business_type || 'sport_school';
       const { error } = await supabase.from('sales').insert({
         user_id: user.id,
+        business_type: businessType,
         product_id: sale.productId || null,
         product_name: sale.productName,
         quantity: sale.quantity,

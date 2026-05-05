@@ -3,17 +3,20 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import type { Attendance } from '@/data/mockData';
 import { useAuth } from '@/contexts/AuthContext';
+import { useProfile } from '@/hooks/queries/useProfile';
 import { useCallback } from 'react';
 
 export function useAttendance() {
     const queryClient = useQueryClient();
     const { user } = useAuth();
+    const { profile } = useProfile();
 
     const { data: attendance = [], isLoading: loadingAttendance } = useQuery({
-        queryKey: ['attendance', user?.id],
+        queryKey: ['attendance', user?.id, profile?.business_type],
         queryFn: async () => {
             if (!user) return [];
-            const { data, error } = await supabase.from('attendance').select('*').order('date', { ascending: false });
+            const businessType = profile?.business_type || 'sport_school';
+            const { data, error } = await supabase.from('attendance').select('*').eq('user_id', user.id).eq('business_type', businessType).order('date', { ascending: false });
             if (error) throw error;
             return data.map((a: any) => ({
                 id: a.id,
@@ -37,8 +40,10 @@ export function useAttendance() {
                 const { error } = await supabase.from('attendance').update({ present: newStatus }).eq('id', existing.id);
                 if (error) throw error;
             } else {
+                const businessType = profile?.business_type || 'sport_school';
                 const { error } = await supabase.from('attendance').insert({
                     user_id: user.id,
+                    business_type: businessType,
                     training_id: trainingId,
                     student_id: studentId,
                     present: newStatus,

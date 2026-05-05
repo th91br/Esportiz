@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
+import { useProfile } from '@/hooks/queries/useProfile';
 
 export interface Product {
   id: string;
@@ -27,16 +28,19 @@ function mapProduct(row: any): Product {
 
 export function useProducts() {
   const { user } = useAuth();
+  const { profile } = useProfile();
   const queryClient = useQueryClient();
 
   const productsQuery = useQuery({
-    queryKey: ['products', user?.id],
+    queryKey: ['products', user?.id, profile?.business_type],
     queryFn: async () => {
       if (!user?.id) return [];
+      const businessType = profile?.business_type || 'sport_school';
       const { data, error } = await supabase
         .from('products')
         .select('*')
         .eq('user_id', user.id)
+        .eq('business_type', businessType)
         .order('name');
       if (error) throw error;
       return (data || []).map(mapProduct);
@@ -47,8 +51,10 @@ export function useProducts() {
   const addProductMutation = useMutation({
     mutationFn: async (product: { name: string; price: number; category?: string }) => {
       if (!user?.id) throw new Error('Not authenticated');
+      const businessType = profile?.business_type || 'sport_school';
       const { error } = await supabase.from('products').insert({
         user_id: user.id,
+        business_type: businessType,
         name: product.name,
         price: product.price,
         category: product.category || 'geral',

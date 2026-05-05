@@ -97,12 +97,10 @@ function buildNavModules(type: BusinessType, labels: BusinessLabels): NavModule[
         { label: labels.attendanceLabel, path: '/presenca' },
         { label: labels.planLabel, path: '/planos' },
         shared.pagamentos,
-        shared.despesas,
-        shared.produtos,
-        shared.vendas,
         { label: 'Aniversários', path: '/aniversariantes' },
         shared.relatorios,
         shared.comunicacao,
+        // Ocultos: Despesas, Produtos, Vendas
       ];
 
     case 'arena':
@@ -117,8 +115,7 @@ function buildNavModules(type: BusinessType, labels: BusinessLabels): NavModule[
         shared.produtos,
         shared.vendas,
         shared.relatorios,
-        shared.comunicacao,
-        // Ocultos: Presença, Planos, Aniversários
+        // Ocultos: Presença, Planos, Aniversários, Comunicação
       ];
 
     case 'other':

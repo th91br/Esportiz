@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
+import { useProfile } from '@/hooks/queries/useProfile';
 
 export interface GroupScheduleSlot {
   dayOfWeek: number; // 0=Dom, 1=Seg, 2=Ter, 3=Qua, 4=Qui, 5=Sex, 6=Sab
@@ -25,16 +26,19 @@ export interface Group {
 
 export function useGroups() {
   const { user } = useAuth();
+  const { profile } = useProfile();
   const queryClient = useQueryClient();
 
   const { data: groups = [], isLoading: loadingGroups } = useQuery({
-    queryKey: ['groups', user?.id],
+    queryKey: ['groups', user?.id, profile?.business_type],
     queryFn: async () => {
       if (!user) return [];
+      const businessType = profile?.business_type || 'sport_school';
       const { data, error } = await supabase
         .from('groups')
         .select('*, group_students(student_id)')
         .eq('user_id', user.id)
+        .eq('business_type', businessType)
         .order('name');
 
       if (error) throw error;
@@ -60,10 +64,12 @@ export function useGroups() {
     mutationFn: async (data: Omit<Group, 'id' | 'userId' | 'createdAt' | 'studentIds'> & { studentIds?: string[] }) => {
       if (!user) throw new Error('Usuário não autenticado');
 
+      const businessType = profile?.business_type || 'sport_school';
       const { data: newGroup, error } = await supabase
         .from('groups')
         .insert({
           user_id: user.id,
+          business_type: businessType,
           name: data.name,
           schedule: data.schedule as any,
           location: data.location,

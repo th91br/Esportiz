@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
+import { useProfile } from '@/hooks/queries/useProfile';
 
 export interface Modality {
   id: string;
@@ -13,16 +14,19 @@ export interface Modality {
 
 export function useModalities() {
   const { user } = useAuth();
+  const { profile } = useProfile();
   const queryClient = useQueryClient();
 
   const { data: modalities = [], isLoading: loadingModalities } = useQuery({
-    queryKey: ['modalities', user?.id],
+    queryKey: ['modalities', user?.id, profile?.business_type],
     queryFn: async () => {
       if (!user) return [];
+      const businessType = profile?.business_type || 'sport_school';
       const { data, error } = await supabase
         .from('modalities')
         .select('*')
         .eq('user_id', user.id)
+        .eq('business_type', businessType)
         .order('name');
       
       if (error) throw error;
@@ -35,10 +39,12 @@ export function useModalities() {
     mutationFn: async (data: Omit<Modality, 'id' | 'user_id' | 'created_at'>) => {
       if (!user) throw new Error('Usuário não autenticado');
       
+      const businessType = profile?.business_type || 'sport_school';
       const { data: newModality, error } = await supabase
         .from('modalities')
         .insert({
           user_id: user.id,
+          business_type: businessType,
           name: data.name,
           color: data.color || '#4285F4'
         })

@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
+import { useProfile } from '@/hooks/queries/useProfile';
 
 export interface Plan {
   id: string;
@@ -13,16 +14,19 @@ export interface Plan {
 
 export function usePlans() {
   const { user } = useAuth();
+  const { profile } = useProfile();
   const queryClient = useQueryClient();
 
   const { data: plans = [], isLoading: loadingPlans } = useQuery({
-    queryKey: ['plans', user?.id],
+    queryKey: ['plans', user?.id, profile?.business_type],
     queryFn: async () => {
       if (!user) return [];
+      const businessType = profile?.business_type || 'sport_school';
       const { data, error } = await supabase
         .from('plans')
         .select('*')
         .eq('user_id', user.id)
+        .eq('business_type', businessType)
         .order('name');
       
       if (error) throw error;
@@ -42,10 +46,12 @@ export function usePlans() {
     mutationFn: async (data: Omit<Plan, 'id'>) => {
       if (!user) throw new Error('Usuário não autenticado');
       
+      const businessType = profile?.business_type || 'sport_school';
       const { data: newPlan, error } = await supabase
         .from('plans')
         .insert({
           user_id: user.id,
+          business_type: businessType,
           name: data.name,
           price: data.price,
           sessions_per_week: data.sessionsPerWeek,

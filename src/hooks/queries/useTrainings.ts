@@ -3,18 +3,23 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import type { Training, TimeSlot } from '@/data/mockData';
 import { useAuth } from '@/contexts/AuthContext';
+import { useProfile } from '@/hooks/queries/useProfile';
 
 export function useTrainings() {
     const queryClient = useQueryClient();
     const { user } = useAuth();
+    const { profile } = useProfile();
 
     const { data: trainings = [], isLoading: loadingTrainings } = useQuery({
-        queryKey: ['trainings', user?.id],
+        queryKey: ['trainings', user?.id, profile?.business_type],
         queryFn: async () => {
             if (!user) return [];
+            const businessType = profile?.business_type || 'sport_school';
             const { data, error } = await supabase
                 .from('trainings')
                 .select('*, training_students(student_id)')
+                .eq('user_id', user.id)
+                .eq('business_type', businessType)
                 .order('date')
                 .order('time');
 
@@ -40,8 +45,10 @@ export function useTrainings() {
         mutationFn: async (data: Omit<Training, 'id' | 'completed' | 'completedAt'>) => {
             if (!user) throw new Error('Usuário não autenticado');
 
+            const businessType = profile?.business_type || 'sport_school';
             const { data: training, error } = await supabase.from('trainings').insert({
                 user_id: user.id,
+                business_type: businessType,
                 date: data.date,
                 time: data.time,
                 location: data.location,

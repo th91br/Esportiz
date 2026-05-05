@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
+import { useProfile } from '@/hooks/queries/useProfile';
 
 export interface Expense {
   id: string;
@@ -37,16 +38,19 @@ function mapExpense(row: any): Expense {
 
 export function useExpenses() {
   const { user } = useAuth();
+  const { profile } = useProfile();
   const queryClient = useQueryClient();
 
   const expensesQuery = useQuery({
-    queryKey: ['expenses', user?.id],
+    queryKey: ['expenses', user?.id, profile?.business_type],
     queryFn: async () => {
       if (!user?.id) return [];
+      const businessType = profile?.business_type || 'sport_school';
       const { data, error } = await supabase
         .from('expenses')
         .select('*')
         .eq('user_id', user.id)
+        .eq('business_type', businessType)
         .order('date', { ascending: false });
       if (error) throw error;
       return (data || []).map(mapExpense);
@@ -64,8 +68,10 @@ export function useExpenses() {
       notes?: string;
     }) => {
       if (!user?.id) throw new Error('Not authenticated');
+      const businessType = profile?.business_type || 'sport_school';
       const { error } = await supabase.from('expenses').insert({
         user_id: user.id,
+        business_type: businessType,
         description: expense.description,
         amount: expense.amount,
         category: expense.category || 'geral',

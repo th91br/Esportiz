@@ -885,6 +885,45 @@ footer{padding:60px 0 30px;border-top:1px solid rgba(255,255,255,.06);background
 .niche-card h3 { font-size: 20px; color: #fff; margin-bottom: 12px; font-weight: 700; }
 .niche-card p { color: #9CA3AF; font-size: 14px; line-height: 1.6; }
 
+/* UX CAMALEÃO — COMPARAÇÃO DE PERSONAS */
+.cameleon-section { padding: 100px 0; background: rgba(255,255,255,0.01); border-top: 1px solid rgba(255,255,255,0.04); }
+.cameleon-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-top: 48px; }
+.cameleon-card { border-radius: 20px; overflow: hidden; border: 1px solid rgba(255,255,255,0.06); transition: all 0.4s ease; position: relative; }
+.cameleon-card:hover { transform: translateY(-8px); box-shadow: 0 32px 64px rgba(0,0,0,0.4); }
+.cameleon-card.sport { border-color: rgba(29,184,116,0.2); }
+.cameleon-card.sport:hover { border-color: rgba(29,184,116,0.5); }
+.cameleon-card.arena { border-color: rgba(55,138,221,0.2); }
+.cameleon-card.arena:hover { border-color: rgba(55,138,221,0.5); }
+.cameleon-card.other { border-color: rgba(245,158,11,0.2); }
+.cameleon-card.other:hover { border-color: rgba(245,158,11,0.5); }
+/* Card header / mockup nav */
+.cam-nav { padding: 12px 16px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid rgba(255,255,255,0.05); }
+.cam-nav.sport { background: rgba(29,184,116,0.08); }
+.cam-nav.arena { background: rgba(55,138,221,0.08); }
+.cam-nav.other { background: rgba(245,158,11,0.08); }
+.cam-badge { font-size: 10px; font-weight: 700; padding: 3px 10px; border-radius: 100px; }
+.cam-badge.sport { background: rgba(29,184,116,0.15); color: #1DB874; border: 1px solid rgba(29,184,116,0.3); }
+.cam-badge.arena { background: rgba(55,138,221,0.15); color: #378ADD; border: 1px solid rgba(55,138,221,0.3); }
+.cam-badge.other { background: rgba(245,158,11,0.15); color: #F59E0B; border: 1px solid rgba(245,158,11,0.3); }
+.cam-title { font-family: 'Syne', sans-serif; font-size: 13px; font-weight: 800; color: #fff; }
+/* Vocabulary items */
+.cam-body { padding: 20px; background: rgba(13,31,60,0.6); }
+.cam-vocab { display: flex; flex-direction: column; gap: 8px; margin-bottom: 20px; }
+.cam-vocab-item { display: flex; align-items: center; justify-content: space-between; padding: 8px 12px; background: rgba(255,255,255,0.03); border-radius: 8px; border: 1px solid rgba(255,255,255,0.04); }
+.cam-vocab-label { font-size: 11px; color: rgba(255,255,255,0.45); }
+.cam-vocab-value { font-size: 12px; font-weight: 700; color: #fff; }
+.cam-vocab-value.sport { color: #1DB874; }
+.cam-vocab-value.arena { color: #378ADD; }
+.cam-vocab-value.other { color: #F59E0B; }
+/* Module tags */
+.cam-modules { display: flex; flex-wrap: wrap; gap: 6px; }
+.cam-module { font-size: 10px; font-weight: 600; padding: 4px 10px; border-radius: 6px; }
+.cam-module.sport { background: rgba(29,184,116,0.1); color: #1DB874; border: 1px solid rgba(29,184,116,0.2); }
+.cam-module.arena { background: rgba(55,138,221,0.1); color: #378ADD; border: 1px solid rgba(55,138,221,0.2); }
+.cam-module.other { background: rgba(245,158,11,0.1); color: #F59E0B; border: 1px solid rgba(245,158,11,0.2); }
+/* Separator label */
+.cam-sep { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px; color: rgba(255,255,255,0.25); margin-bottom: 8px; }
+
 @media(max-width: 768px) {
   .mockup-sys { aspect-ratio: auto; max-height: 450px; }
   .ms-nav-links { display: none; }
@@ -893,6 +932,7 @@ footer{padding:60px 0 30px;border-top:1px solid rgba(255,255,255,.06);background
   .ms-wl-preview { grid-template-columns: 1fr; }
   .ms-mod-grid { grid-template-columns: 1fr; }
   .niche-grid { grid-template-columns: 1fr; }
+  .cameleon-grid { grid-template-columns: 1fr; }
 }
 @media(max-width: 480px) {
   .ms-nav-right span:first-child { display: none; }
@@ -1843,6 +1883,158 @@ footer{padding:60px 0 30px;border-top:1px solid rgba(255,255,255,.06);background
         <h3>Artístico</h3>
         <p>Feito para <strong>Escolas de Música, Dança e Artes</strong>. Agendamento de estúdios, gestão de aulas individuais e acompanhamento da evolução do aluno.</p>
       </div>
+    </div>
+  </div>
+</section>
+
+<!-- UX CAMALEÃO — ADAPTAÇÃO POR NICHO -->
+<section class="cameleon-section" id="ux-cameleon">
+  <div class="container">
+    <div class="section-header">
+      <div class="badge reveal">UX Camaleão</div>
+      <h2 class="reveal">O sistema que <span class="grad">fala a sua língua.</span></h2>
+      <p class="reveal" style="max-width: 680px; margin: 16px auto 0;">Mais do que um software genérico: o Esportiz detecta o tipo de negócio e <strong>adapta completamente o vocabulário, os módulos e a interface</strong> para a realidade de cada escola.</p>
+    </div>
+    <div class="cameleon-grid">
+
+      <!-- ESCOLA ESPORTIVA -->
+      <div class="cameleon-card sport reveal">
+        <div class="cam-nav sport">
+          <div class="cam-title">esport<span style="color:#1DB874;">iz</span></div>
+          <div class="cam-badge sport">Escola Esportiva</div>
+        </div>
+        <div class="cam-body">
+          <div class="cam-sep">Vocabulário do sistema</div>
+          <div class="cam-vocab">
+            <div class="cam-vocab-item">
+              <span class="cam-vocab-label">Membros</span>
+              <span class="cam-vocab-value sport">Alunos</span>
+            </div>
+            <div class="cam-vocab-item">
+              <span class="cam-vocab-label">Atividades</span>
+              <span class="cam-vocab-value sport">Treinos</span>
+            </div>
+            <div class="cam-vocab-item">
+              <span class="cam-vocab-label">Grupos</span>
+              <span class="cam-vocab-value sport">Turmas</span>
+            </div>
+            <div class="cam-vocab-item">
+              <span class="cam-vocab-label">Espaços</span>
+              <span class="cam-vocab-value sport">Modalidades</span>
+            </div>
+            <div class="cam-vocab-item">
+              <span class="cam-vocab-label">Registro</span>
+              <span class="cam-vocab-value sport">Presença</span>
+            </div>
+          </div>
+          <div class="cam-sep">Módulos ativos</div>
+          <div class="cam-modules">
+            <span class="cam-module sport">Dashboard</span>
+            <span class="cam-module sport">Calendário</span>
+            <span class="cam-module sport">Alunos</span>
+            <span class="cam-module sport">Modalidades</span>
+            <span class="cam-module sport">Turmas</span>
+            <span class="cam-module sport">Presença</span>
+            <span class="cam-module sport">Planos</span>
+            <span class="cam-module sport">Pagamentos</span>
+            <span class="cam-module sport">Comunicação</span>
+            <span class="cam-module sport">Relatórios</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- ARENA -->
+      <div class="cameleon-card arena reveal" style="transition-delay: 100ms;">
+        <div class="cam-nav arena">
+          <div class="cam-title">esport<span style="color:#378ADD;">iz</span></div>
+          <div class="cam-badge arena">Arena / CT</div>
+        </div>
+        <div class="cam-body">
+          <div class="cam-sep">Vocabulário do sistema</div>
+          <div class="cam-vocab">
+            <div class="cam-vocab-item">
+              <span class="cam-vocab-label">Membros</span>
+              <span class="cam-vocab-value arena">Clientes</span>
+            </div>
+            <div class="cam-vocab-item">
+              <span class="cam-vocab-label">Atividades</span>
+              <span class="cam-vocab-value arena">Reservas</span>
+            </div>
+            <div class="cam-vocab-item">
+              <span class="cam-vocab-label">Grupos</span>
+              <span class="cam-vocab-value arena">Horários</span>
+            </div>
+            <div class="cam-vocab-item">
+              <span class="cam-vocab-label">Espaços</span>
+              <span class="cam-vocab-value arena">Quadras</span>
+            </div>
+            <div class="cam-vocab-item">
+              <span class="cam-vocab-label">Registro</span>
+              <span class="cam-vocab-value arena">Check-in</span>
+            </div>
+          </div>
+          <div class="cam-sep">Módulos ativos</div>
+          <div class="cam-modules">
+            <span class="cam-module arena">Dashboard</span>
+            <span class="cam-module arena">Calendário</span>
+            <span class="cam-module arena">Clientes</span>
+            <span class="cam-module arena">Quadras</span>
+            <span class="cam-module arena">Horários</span>
+            <span class="cam-module arena">Pagamentos</span>
+            <span class="cam-module arena">Despesas</span>
+            <span class="cam-module arena">Produtos</span>
+            <span class="cam-module arena">Vendas</span>
+            <span class="cam-module arena">Relatórios</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- ESCOLA / CURSOS -->
+      <div class="cameleon-card other reveal" style="transition-delay: 200ms;">
+        <div class="cam-nav other">
+          <div class="cam-title">esport<span style="color:#F59E0B;">iz</span></div>
+          <div class="cam-badge other">Escola / Cursos</div>
+        </div>
+        <div class="cam-body">
+          <div class="cam-sep">Vocabulário do sistema</div>
+          <div class="cam-vocab">
+            <div class="cam-vocab-item">
+              <span class="cam-vocab-label">Membros</span>
+              <span class="cam-vocab-value other">Alunos</span>
+            </div>
+            <div class="cam-vocab-item">
+              <span class="cam-vocab-label">Atividades</span>
+              <span class="cam-vocab-value other">Aulas</span>
+            </div>
+            <div class="cam-vocab-item">
+              <span class="cam-vocab-label">Grupos</span>
+              <span class="cam-vocab-value other">Turmas</span>
+            </div>
+            <div class="cam-vocab-item">
+              <span class="cam-vocab-label">Espaços</span>
+              <span class="cam-vocab-value other">Cursos</span>
+            </div>
+            <div class="cam-vocab-item">
+              <span class="cam-vocab-label">Local</span>
+              <span class="cam-vocab-value other">Sala</span>
+            </div>
+          </div>
+          <div class="cam-sep">Módulos ativos</div>
+          <div class="cam-modules">
+            <span class="cam-module other">Dashboard</span>
+            <span class="cam-module other">Calendário</span>
+            <span class="cam-module other">Alunos</span>
+            <span class="cam-module other">Turmas</span>
+            <span class="cam-module other">Presença</span>
+            <span class="cam-module other">Planos</span>
+            <span class="cam-module other">Pagamentos</span>
+            <span class="cam-module other">Despesas</span>
+            <span class="cam-module other">Comunicação</span>
+            <span class="cam-module other">Relatórios</span>
+          </div>
+        </div>
+      </div>
+
     </div>
   </div>
 </section>

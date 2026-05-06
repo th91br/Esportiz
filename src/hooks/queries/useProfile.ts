@@ -56,22 +56,53 @@ export function useProfile() {
     mutationFn: async (updates: Partial<Profile>) => {
       if (!user?.id) throw new Error('Not authenticated');
 
-      const { data, error } = await supabase
+      const { data: existing, error: fetchError } = await supabase
         .from('profiles')
-        .upsert({
-          user_id: user.id,
-          ...updates,
-          updated_at: new Date().toISOString(),
-        }, { onConflict: 'user_id' })
-        .select()
-        .single();
+        .select('id')
+        .eq('user_id', user.id)
+        .maybeSingle();
 
-      if (error) {
-        console.error('Error updating profile:', error);
-        throw error;
+      if (fetchError) {
+        console.error('Error fetching existing profile:', fetchError);
+        throw fetchError;
       }
 
-      return data as Profile;
+      let result;
+      if (existing) {
+        const { data, error } = await supabase
+          .from('profiles')
+          .update({
+            ...updates,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('user_id', user.id)
+          .select()
+          .single();
+
+        if (error) {
+          console.error('Error updating profile:', error);
+          throw error;
+        }
+        result = data;
+      } else {
+        const { data, error } = await supabase
+          .from('profiles')
+          .insert({
+            user_id: user.id,
+            ...updates,
+            updated_at: new Date().toISOString(),
+          })
+          .select()
+          .single();
+
+        if (error) {
+          console.error('Error inserting profile:', error);
+          throw error;
+        }
+        result = data;
+      }
+
+      return result as Profile;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['profile', user?.id] });

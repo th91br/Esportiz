@@ -74,7 +74,12 @@ export default function OnboardingPage() {
     try {
       let logoUrl = null;
       if (logoFile) {
-        logoUrl = await uploadLogo(logoFile);
+        try {
+          logoUrl = await uploadLogo(logoFile);
+        } catch (uploadError) {
+          console.error("Failed to upload logo, proceeding without it:", uploadError);
+          toast.warning("Não foi possível salvar a sua logo temporariamente, mas estamos concluindo o perfil!");
+        }
       }
 
       await updateProfile({

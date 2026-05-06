@@ -26,6 +26,7 @@ import { useAttendance } from '@/hooks/queries/useAttendance';
 import { usePayments } from '@/hooks/queries/usePayments';
 import { useExpenses } from '@/hooks/queries/useExpenses';
 import { useSales } from '@/hooks/queries/useSales';
+import { useReservations } from '@/hooks/queries/useReservations';
 import { usePrivacyMode } from '@/hooks/usePrivacyMode';
 import { useBusinessContext } from '@/hooks/useBusinessContext';
 import { getActiveMonthlyStudents, getTotalStudents } from '@/lib/studentHelpers';
@@ -36,6 +37,7 @@ import { useModalities } from '@/hooks/queries/useModalities';
 import { Logo } from '@/components/Logo';
 
 export default function Index() {
+  const { labels, isSportSchool, isArena, isOther } = useBusinessContext();
   const { students, loadingStudents } = useStudents();
   const { plans, loadingPlans } = usePlans();
   const { trainings, loadingTrainings } = useTrainings();
@@ -43,18 +45,19 @@ export default function Index() {
   const { payments, loadingPayments } = usePayments();
   const { expenses, loadingExpenses } = useExpenses();
   const { sales } = useSales();
+  const { reservations, loadingReservations } = useReservations();
   const loading =
     loadingStudents ||
     loadingPlans ||
     loadingTrainings ||
     loadingAttendance ||
     loadingPayments ||
-    loadingExpenses;
+    loadingExpenses ||
+    (isArena && loadingReservations);
 
   const [privacyMode, togglePrivacyMode] = usePrivacyMode();
   const { profile } = useProfile();
   const { modalities } = useModalities();
-  const { labels, isSportSchool, isArena, isOther } = useBusinessContext();
 
   const hour = new Date().getHours();
   const greeting = hour < 12 ? 'Bom dia' : hour < 18 ? 'Boa tarde' : 'Boa noite';
@@ -79,12 +82,42 @@ export default function Index() {
   const currentMonthStr = new Date().toISOString().slice(0, 7);
   let expectedRevenue = 0;
   let receivedRevenue = 0;
-  payments.forEach((p) => {
-    if (p.monthRef === currentMonthStr) {
-      expectedRevenue += p.amount;
-      if (p.paid) receivedRevenue += p.amount;
-    }
-  });
+
+  if (isArena) {
+    // 1. Reservas de Quadras
+    reservations.forEach((r) => {
+      if (r.date.startsWith(currentMonthStr) && r.status !== 'cancelled') {
+        expectedRevenue += r.finalPrice;
+        if (r.paymentStatus === 'paid') {
+          receivedRevenue += r.finalPrice;
+        }
+      }
+    });
+
+    // 2. Vendas de Produtos
+    sales.forEach((s) => {
+      if (s.soldAt.startsWith(currentMonthStr)) {
+        expectedRevenue += s.total;
+        receivedRevenue += s.total; // Vendas são sempre recebidas no ato
+      }
+    });
+  } else {
+    // Escolinhas e outros nichos: Mensalidades dos Alunos + Vendas
+    payments.forEach((p) => {
+      if (p.monthRef === currentMonthStr) {
+        expectedRevenue += p.amount;
+        if (p.paid) receivedRevenue += p.amount;
+      }
+    });
+
+    sales.forEach((s) => {
+      if (s.soldAt.startsWith(currentMonthStr)) {
+        expectedRevenue += s.total;
+        receivedRevenue += s.total;
+      }
+    });
+  }
+
   const revenueProgress =
     expectedRevenue > 0 ? (receivedRevenue / expectedRevenue) * 100 : 0;
 
@@ -273,10 +306,10 @@ export default function Index() {
                 description={privacyMode ? '' : 'Média do mês'}
               />
               <StatCard
-                title="Faturamento do Mês"
-                value={loading ? '...' : pv(formatCurrency(receivedRevenue))}
+                title="Vendas de Hoje"
+                value={loading ? '...' : pv(formatCurrency(todaySalesTotal))}
                 icon={DollarSign}
-                description={privacyMode ? '' : 'Total recebido'}
+                description={privacyMode ? '' : 'Consumo / Cantina'}
               />
             </div>
           )}
@@ -304,32 +337,30 @@ export default function Index() {
           )}
 
           {/* ── Linha 2: Financeiro ── */}
-          {!isArena && (
-            <div className={`grid grid-cols-1 gap-3 md:gap-4 ${isSportSchool ? 'md:grid-cols-2' : 'md:grid-cols-3'}`}>
+          <div className={`grid grid-cols-1 gap-3 md:gap-4 ${isSportSchool ? 'md:grid-cols-2' : 'md:grid-cols-3'}`}>
+            <StatCard
+              title="Faturamento Total"
+              value={loading ? '...' : pv(formatCurrency(expectedRevenue))}
+              icon={DollarSign}
+              description={privacyMode ? '' : 'Total bruto esperado'}
+            />
+            <StatCard
+              title="Recebido no Mês"
+              value={loading ? '...' : pv(formatCurrency(receivedRevenue))}
+              icon={CheckCircle}
+              variant="primary"
+              progress={privacyMode ? undefined : { value: revenueProgress, label: 'Meta Mensal' }}
+            />
+            {!isSportSchool && (
               <StatCard
-                title="Faturamento Total"
-                value={loading ? '...' : pv(formatCurrency(expectedRevenue))}
-                icon={DollarSign}
-                description={privacyMode ? '' : 'Total bruto esperado'}
+                title="Lucro Líquido"
+                value={loading ? '...' : pv(formatCurrency(netProfit))}
+                icon={netProfit >= 0 ? TrendingUp : TrendingDown}
+                variant={netProfit >= 0 ? 'primary' : undefined}
+                description={privacyMode ? '' : `Despesas pagas: ${formatCurrency(totalExpensesPaid)}`}
               />
-              <StatCard
-                title="Recebido no Mês"
-                value={loading ? '...' : pv(formatCurrency(receivedRevenue))}
-                icon={CheckCircle}
-                variant="primary"
-                progress={privacyMode ? undefined : { value: revenueProgress, label: 'Meta Mensal' }}
-              />
-              {!isSportSchool && (
-                <StatCard
-                  title="Lucro Líquido"
-                  value={loading ? '...' : pv(formatCurrency(netProfit))}
-                  icon={netProfit >= 0 ? TrendingUp : TrendingDown}
-                  variant={netProfit >= 0 ? 'primary' : undefined}
-                  description={privacyMode ? '' : `Despesas pagas: ${formatCurrency(totalExpensesPaid)}`}
-                />
-              )}
-            </div>
-          )}
+            )}
+          </div>
         </section>
 
         {/* ── Quadras / Modalidades — sport_school e arena ── */}
@@ -404,6 +435,9 @@ export default function Index() {
             payments={payments}
             attendance={attendance}
             privacyMode={privacyMode}
+            isArena={isArena}
+            reservations={reservations}
+            sales={sales}
           />
         </section>
 

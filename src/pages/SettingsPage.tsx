@@ -156,7 +156,12 @@ export default function SettingsPage() {
       let logoUrl = profile?.logo_url || null;
 
       if (logoFile) {
-        logoUrl = await uploadLogo(logoFile);
+        try {
+          logoUrl = await uploadLogo(logoFile);
+        } catch (uploadErr) {
+          console.error("Failed to upload logo inside settings:", uploadErr);
+          toast.warning("Não foi possível salvar o arquivo da logo, mas estamos atualizando os outros dados!");
+        }
       }
 
       await updateProfile({

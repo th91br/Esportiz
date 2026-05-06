@@ -16,6 +16,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from '@/components/ui/dialog';
 import { cn } from '@/lib/utils';
 import { getEndTime } from '@/data/mockData';
+import { useBusinessContext } from '@/hooks/useBusinessContext';
 
 const DAY_NAMES = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
 const DAY_NAMES_FULL = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
@@ -29,6 +30,7 @@ function GroupFormDialog({
   const { addGroup, updateGroup } = useGroups();
   const { students } = useStudents();
   const { modalities } = useModalities();
+  const { labels } = useBusinessContext();
   const activeStudents = students.filter(s => s.active).sort((a, b) => a.name.localeCompare(b.name, 'pt-BR'));
   const isEditing = !!group;
 
@@ -116,15 +118,15 @@ function GroupFormDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>{isEditing ? 'Editar Turma' : 'Nova Turma'}</DialogTitle>
-          <DialogDescription>Configure os horários, local e alunos da turma.</DialogDescription>
+          <DialogTitle>{isEditing ? `Editar ${labels.groupLabelSingular}` : `Novo(a) ${labels.groupLabelSingular}`}</DialogTitle>
+          <DialogDescription>Configure os horários, local e {labels.studentLabel.toLowerCase()} da {labels.groupLabelSingular.toLowerCase()}.</DialogDescription>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-5">
           {/* Nome + Cor */}
           <div className="flex gap-3">
             <div className="flex-1 space-y-2">
-              <Label>Nome da Turma *</Label>
+              <Label>Nome da {labels.groupLabelSingular} *</Label>
               <Input placeholder="Ex: Sub-15 Noturno" value={name} onChange={e => setName(e.target.value)} required />
             </div>
             <div className="space-y-2">
@@ -164,7 +166,7 @@ function GroupFormDialog({
           {/* Modalidade + Vagas */}
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-2">
-              <Label>Modalidade</Label>
+              <Label>{labels.modalityLabelSingular}</Label>
               <Select value={modalityId} onValueChange={setModalityId}>
                 <SelectTrigger><SelectValue placeholder="Nenhuma" /></SelectTrigger>
                 <SelectContent>
@@ -176,7 +178,7 @@ function GroupFormDialog({
               </Select>
             </div>
             <div className="space-y-2">
-              <Label>Máx. Alunos</Label>
+              <Label>Máx. {labels.studentLabel}</Label>
               <Input type="number" min="1" placeholder="Ilimitado" value={maxStudents} onChange={e => setMaxStudents(e.target.value)} />
             </div>
           </div>
@@ -186,7 +188,7 @@ function GroupFormDialog({
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Calendar className="h-4 w-4 text-primary" />
-                <Label className="text-sm font-semibold">Horários da Turma *</Label>
+                <Label className="text-sm font-semibold">Horários da {labels.groupLabelSingular} *</Label>
               </div>
               <Button type="button" variant="outline" size="sm" onClick={addSlot} className="gap-1.5 text-xs">
                 <Plus className="h-3 w-3" />Adicionar
@@ -194,7 +196,7 @@ function GroupFormDialog({
             </div>
             {schedule.length === 0 && (
               <p className="text-xs text-muted-foreground text-center py-4 border border-dashed rounded-lg bg-muted/20">
-                Adicione pelo menos um horário para a turma.
+                Adicione pelo menos um horário para a {labels.groupLabelSingular.toLowerCase()}.
               </p>
             )}
             {schedule.map((slot, i) => (
@@ -231,12 +233,12 @@ function GroupFormDialog({
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Users className="h-4 w-4 text-primary" />
-                <Label className="text-sm font-semibold">Alunos ({selectedStudentIds.length})</Label>
+                <Label className="text-sm font-semibold">{labels.studentLabel} ({selectedStudentIds.length})</Label>
               </div>
             </div>
             <div className="relative">
               <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-              <Input placeholder="Buscar aluno..." value={studentSearch} onChange={e => setStudentSearch(e.target.value)} className="pl-8 h-9 text-sm" />
+              <Input placeholder={`Buscar ${labels.studentLabelSingular.toLowerCase()}...`} value={studentSearch} onChange={e => setStudentSearch(e.target.value)} className="pl-8 h-9 text-sm" />
             </div>
             <div className="max-h-[180px] overflow-y-auto space-y-1 border rounded-lg p-2 bg-muted/10">
               {filteredStudents.map(s => {
@@ -259,13 +261,13 @@ function GroupFormDialog({
                 );
               })}
               {filteredStudents.length === 0 && (
-                <p className="text-xs text-muted-foreground text-center py-3">Nenhum aluno encontrado.</p>
+                <p className="text-xs text-muted-foreground text-center py-3">Nenhum {labels.studentLabelSingular.toLowerCase()} encontrado.</p>
               )}
             </div>
           </div>
 
           <Button type="submit" className="w-full btn-primary-gradient" disabled={saving || !name.trim() || schedule.length === 0}>
-            {saving ? 'Salvando...' : isEditing ? 'Salvar Alterações' : 'Criar Turma'}
+            {saving ? 'Salvando...' : isEditing ? 'Salvar Alterações' : `Criar ${labels.groupLabelSingular}`}
           </Button>
         </form>
       </DialogContent>
@@ -277,6 +279,7 @@ export default function GroupsPage() {
   const { groups, loadingGroups, deleteGroup } = useGroups();
   const { students } = useStudents();
   const { modalities } = useModalities();
+  const { labels } = useBusinessContext();
   const [formOpen, setFormOpen] = useState(false);
   const [editingGroup, setEditingGroup] = useState<Group | undefined>();
   const [expandedGroup, setExpandedGroup] = useState<string | null>(null);
@@ -323,7 +326,7 @@ export default function GroupsPage() {
   };
 
   const handleDelete = async (group: Group) => {
-    if (!confirm(`Remover a turma "${group.name}"? Os alunos não serão excluídos.`)) return;
+    if (!confirm(`Remover a ${labels.groupLabelSingular.toLowerCase()} "${group.name}"? Os ${labels.studentLabel.toLowerCase()} não serão excluídos.`)) return;
     await deleteGroup(group.id);
   };
 
@@ -340,45 +343,45 @@ export default function GroupsPage() {
       <main className="container py-6 md:py-8 space-y-6">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
-            <h1 className="section-title text-2xl md:text-3xl">Turmas & Grupos</h1>
-            <p className="text-muted-foreground mt-1">Organize seus alunos em turmas com horários fixos</p>
+            <h1 className="section-title text-2xl md:text-3xl">{labels.groupLabel}</h1>
+            <p className="text-muted-foreground mt-1">Organize seus {labels.studentLabel.toLowerCase()} em {labels.groupLabel.toLowerCase()} com horários fixos</p>
           </div>
           <Button onClick={handleNewGroup} className="btn-primary-gradient gap-2">
-            <Plus className="h-4 w-4" />Nova Turma
+            <Plus className="h-4 w-4" />Novo(a) {labels.groupLabelSingular}
           </Button>
         </div>
 
         {/* Stats */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 animate-fade-up">
-          <StatCard title="Total de Turmas" value={loadingGroups ? '...' : groups.length} icon={UsersRound} />
-          <StatCard title="Turmas Ativas" value={loadingGroups ? '...' : activeGroups.length} icon={Calendar} variant="primary" />
-          <StatCard title="Alunos Enturmados" value={totalStudentsInGroups} icon={UserPlus} description="Alunos únicos em turmas" />
-          <StatCard title="Sem Turma" value={students.filter(s => s.active).length - totalStudentsInGroups} icon={UserMinus} description="Alunos ativos soltos" />
+          <StatCard title={`Total de ${labels.groupLabel}`} value={loadingGroups ? '...' : groups.length} icon={UsersRound} />
+          <StatCard title={`${labels.groupLabel} Ativas`} value={loadingGroups ? '...' : activeGroups.length} icon={Calendar} variant="primary" />
+          <StatCard title={`${labels.studentLabel} Enturmados`} value={totalStudentsInGroups} icon={UserPlus} description={`${labels.studentLabel} únicos em ${labels.groupLabel.toLowerCase()}`} />
+          <StatCard title={`Sem ${labels.groupLabelSingular}`} value={students.filter(s => s.active).length - totalStudentsInGroups} icon={UserMinus} description={`${labels.studentLabel} ativos soltos`} />
         </div>
 
         {/* Search */}
         <div className="card-elevated p-4">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input placeholder="Buscar turma..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)} className="pl-10" />
+            <Input placeholder={`Buscar ${labels.groupLabelSingular.toLowerCase()}...`} value={searchQuery} onChange={e => setSearchQuery(e.target.value)} className="pl-10" />
           </div>
         </div>
 
         {/* Groups Grid */}
         {loadingGroups ? (
-          <div className="text-center py-12 text-muted-foreground">Carregando turmas...</div>
+          <div className="text-center py-12 text-muted-foreground">Carregando {labels.groupLabel.toLowerCase()}...</div>
         ) : filteredGroups.length === 0 ? (
           <div className="card-elevated p-12 text-center">
             <UsersRound className="h-12 w-12 mx-auto text-muted-foreground/50 mb-3" />
             <p className="text-lg font-medium text-muted-foreground">
-              {searchQuery ? 'Nenhuma turma encontrada' : 'Nenhuma turma cadastrada'}
+              {searchQuery ? `Nenhuma ${labels.groupLabelSingular.toLowerCase()} encontrada` : `Nenhuma ${labels.groupLabelSingular.toLowerCase()} cadastrada`}
             </p>
             <p className="text-sm text-muted-foreground/70 mt-1">
-              {searchQuery ? 'Tente outro termo de busca' : 'Crie sua primeira turma para organizar seus alunos'}
+              {searchQuery ? 'Tente outro termo de busca' : `Crie sua primeira ${labels.groupLabelSingular.toLowerCase()} para organizar seus ${labels.studentLabel.toLowerCase()}`}
             </p>
             {!searchQuery && (
               <Button onClick={handleNewGroup} className="mt-4 btn-primary-gradient gap-2">
-                <Plus className="h-4 w-4" />Criar Turma
+                <Plus className="h-4 w-4" />Criar {labels.groupLabelSingular}
               </Button>
             )}
           </div>
@@ -457,7 +460,7 @@ export default function GroupsPage() {
                         className="flex items-center gap-2 text-sm font-medium text-foreground hover:text-primary transition-colors">
                         <Users className="h-4 w-4" />
                         <span>
-                          {groupStudents.length} aluno{groupStudents.length !== 1 ? 's' : ''}
+                          {groupStudents.length} {groupStudents.length === 1 ? labels.studentLabelSingular.toLowerCase() : labels.studentLabel.toLowerCase()}
                           {group.maxStudents && <span className="text-muted-foreground"> / {group.maxStudents}</span>}
                         </span>
                         {isExpanded ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
@@ -471,7 +474,7 @@ export default function GroupsPage() {
                     {isExpanded && (
                       <div className="mt-3 pt-3 border-t border-border/50 space-y-1.5 animate-in fade-in slide-in-from-top-2 duration-200">
                         {groupStudents.length === 0 ? (
-                          <p className="text-xs text-muted-foreground text-center py-2">Nenhum aluno nesta turma</p>
+                          <p className="text-xs text-muted-foreground text-center py-2">Nenhum {labels.studentLabelSingular.toLowerCase()} nesta {labels.groupLabelSingular.toLowerCase()}</p>
                         ) : (
                           groupStudents.map(s => (
                             <div key={s.id} className="flex items-center gap-2.5 px-2 py-1.5 rounded-md bg-muted/30 text-sm">

@@ -41,8 +41,8 @@ const LABELS: Record<BusinessType, BusinessLabels> = {
     attendanceLabel: 'Presença',
   },
   arena: {
-    studentLabel: 'Clientes',
-    studentLabelSingular: 'Cliente',
+    studentLabel: 'Reservantes',
+    studentLabelSingular: 'Reservante',
     trainingLabel: 'Reservas',
     trainingLabelSingular: 'Reserva',
     planLabel: 'Pacotes',
@@ -54,21 +54,21 @@ const LABELS: Record<BusinessType, BusinessLabels> = {
     locationLabel: 'Quadra',
     ctLabel: 'Arena',
     ctLabelShort: 'Arena',
-    attendanceLabel: 'Check-in',
+    attendanceLabel: 'Ocupação',
   },
   other: {
     studentLabel: 'Alunos',
     studentLabelSingular: 'Aluno',
     trainingLabel: 'Aulas',
     trainingLabelSingular: 'Aula',
-    planLabel: 'Planos',
-    planLabelSingular: 'Plano',
-    modalityLabel: 'Cursos',
-    modalityLabelSingular: 'Curso',
+    planLabel: 'Cursos',
+    planLabelSingular: 'Curso',
+    modalityLabel: 'Disciplinas',
+    modalityLabelSingular: 'Disciplina',
     groupLabel: 'Turmas',
     groupLabelSingular: 'Turma',
-    locationLabel: 'Sala',
-    ctLabel: 'Escola',
+    locationLabel: 'Sala / Local',
+    ctLabel: 'Escola / Curso',
     ctLabelShort: 'Escola',
     attendanceLabel: 'Presença',
   },
@@ -106,16 +106,14 @@ function buildNavModules(type: BusinessType, labels: BusinessLabels): NavModule[
     case 'arena':
       return [
         shared.dashboard,
-        shared.calendario,
-        { label: labels.studentLabel, path: '/alunos' },      // Clientes
-        { label: labels.modalityLabel, path: '/modalidades' }, // Quadras
-        { label: labels.groupLabel, path: '/turmas' },         // Horários
+        { label: labels.modalityLabel, path: '/quadras' },        // Quadras
+        { label: 'Agenda', path: '/agenda' },                     // Agenda de Reservas
+        { label: labels.studentLabel, path: '/reservantes' },    // Reservantes
         shared.pagamentos,
         shared.despesas,
         shared.produtos,
         shared.vendas,
         shared.relatorios,
-        // Ocultos: Presença, Planos, Aniversários, Comunicação
       ];
 
     case 'other':

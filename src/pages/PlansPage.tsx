@@ -20,6 +20,7 @@ import { useStudents } from '@/hooks/queries/useStudents';
 import { usePrivacyMode } from '@/hooks/usePrivacyMode';
 import { formatCurrency } from '@/lib/formatCurrency';
 import { getActiveMonthlyStudents } from '@/lib/studentHelpers';
+import { useBusinessContext } from '@/hooks/useBusinessContext';
 
 export default function PlansPage() {
   const { plans, addPlan, updatePlan, deletePlan } = usePlans();
@@ -32,6 +33,7 @@ export default function PlansPage() {
   const [formBillingType, setFormBillingType] = useState<'monthly' | 'per_session'>('monthly');
   const [saving, setSaving] = useState(false);
   const [privacyMode, togglePrivacyMode] = usePrivacyMode();
+  const { labels } = useBusinessContext();
 
   const openNew = () => { setEditingPlan(undefined); setFormName(''); setFormSessions(''); setFormPrice(''); setFormBillingType('monthly'); setDialogOpen(true); };
   const openEdit = (plan: Plan) => { setEditingPlan(plan); setFormName(plan.name); setFormSessions(plan.sessionsPerWeek.toString()); setFormPrice(plan.price.toString()); setFormBillingType(plan.billingType); setDialogOpen(true); };
@@ -44,10 +46,10 @@ export default function PlansPage() {
       const data = { name: formName, sessionsPerWeek: parseInt(formSessions), price: parseFloat(formPrice), billingType: formBillingType };
       if (editingPlan) {
         await updatePlan(editingPlan.id, data);
-        toast({ title: 'Plano atualizado!' });
+        toast({ title: `${labels.planLabelSingular} atualizado(a)!` });
       } else {
         await addPlan(data);
-        toast({ title: 'Plano criado!' });
+        toast({ title: `${labels.planLabelSingular} criado(a)!` });
       }
       setDialogOpen(false);
     } finally { setSaving(false); }
@@ -55,7 +57,7 @@ export default function PlansPage() {
 
   const handleDelete = async (plan: Plan) => {
     await deletePlan(plan.id);
-    toast({ title: 'Plano removido' });
+    toast({ title: `${labels.planLabelSingular} removido(a)` });
   };
 
   const getStudentsOnPlan = (planId: string) => students.filter((s) => s.planId === planId && s.active);
@@ -71,21 +73,21 @@ export default function PlansPage() {
       <main className="container py-6 md:py-8 space-y-6">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
-            <h1 className="section-title text-2xl md:text-3xl">Planos e Preços</h1>
-            <p className="text-muted-foreground mt-1">Gerencie os planos de treino e valores</p>
+            <h1 className="section-title text-2xl md:text-3xl">{labels.planLabel} e Preços</h1>
+            <p className="text-muted-foreground mt-1">Gerencie os(as) {labels.planLabel.toLowerCase()} de {labels.trainingLabelSingular.toLowerCase()} e valores</p>
           </div>
           <div className="flex items-center gap-2">
             <Button variant="ghost" size="icon" className="rounded-full h-8 w-8" onClick={togglePrivacyMode} title={privacyMode ? 'Mostrar dados' : 'Ocultar dados'}>
               {privacyMode ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
             </Button>
-            <Button className="btn-primary-gradient" onClick={openNew}><Plus className="h-4 w-4 mr-2" />Novo Plano</Button>
+            <Button className="btn-primary-gradient" onClick={openNew}><Plus className="h-4 w-4 mr-2" />Novo(a) {labels.planLabelSingular}</Button>
           </div>
         </div>
 
         <div className="card-elevated p-6 bg-gradient-hero text-white">
           <div className="flex items-center gap-3 mb-2"><DollarSign className="h-6 w-6" /><h2 className="font-display font-bold text-xl">Receita Mensal Estimada</h2></div>
           <p className="font-display text-4xl font-extrabold">{privacyMode ? '••••' : formatCurrency(totalRevenue)}</p>
-          <p className="text-white/70 text-sm mt-1">Projeção baseada em {activeMonthly.length} aluno(s) mensalista(s) ativo(s)</p>
+          <p className="text-white/70 text-sm mt-1">Projeção baseada em {activeMonthly.length} {activeMonthly.length !== 1 ? labels.studentLabel.toLowerCase() : labels.studentLabelSingular.toLowerCase()} mensalista(s) ativo(s)</p>
         </div>
 
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -102,15 +104,15 @@ export default function PlansPage() {
                         <span className="px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-400 text-[10px] font-semibold uppercase tracking-wide">Avulso</span>
                       )}
                     </div>
-                    <p className="text-sm text-muted-foreground">{isPerSession ? 'Por treino' : `${plan.sessionsPerWeek}x por semana`}</p>
+                    <p className="text-sm text-muted-foreground">{isPerSession ? `Por ${labels.trainingLabelSingular.toLowerCase()}` : `${plan.sessionsPerWeek}x por semana`}</p>
                   </div>
                   <div className="flex gap-1">
                     <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEdit(plan)}><Pencil className="h-4 w-4" /></Button>
                     <AlertDialog>
                       <AlertDialogTrigger asChild><Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive"><Trash2 className="h-4 w-4" /></Button></AlertDialogTrigger>
                       <AlertDialogContent>
-                        <AlertDialogHeader><AlertDialogTitle>Remover plano?</AlertDialogTitle>
-                          <AlertDialogDescription>{planStudents.length > 0 ? `${planStudents.length} aluno(s) serão desvinculados.` : 'Nenhum aluno vinculado.'}</AlertDialogDescription>
+                        <AlertDialogHeader><AlertDialogTitle>Remover {labels.planLabelSingular.toLowerCase()}?</AlertDialogTitle>
+                          <AlertDialogDescription>{planStudents.length > 0 ? `${planStudents.length} ${planStudents.length !== 1 ? labels.studentLabel.toLowerCase() : labels.studentLabelSingular.toLowerCase()} serão desvinculados.` : `Nenhum(a) ${labels.studentLabelSingular.toLowerCase()} vinculado(a).`}</AlertDialogDescription>
                         </AlertDialogHeader>
                         <AlertDialogFooter>
                           <AlertDialogCancel>Cancelar</AlertDialogCancel>
@@ -122,10 +124,10 @@ export default function PlansPage() {
                 </div>
                 <div className="text-3xl font-display font-extrabold text-primary mb-4">
                   {formatCurrency(plan.price)}
-                  <span className="text-sm font-normal text-muted-foreground">{isPerSession ? '/treino' : '/mês'}</span>
+                  <span className="text-sm font-normal text-muted-foreground">{isPerSession ? `/${labels.trainingLabelSingular.toLowerCase()}` : '/mês'}</span>
                 </div>
                 <div className="mt-auto pt-4 border-t border-border/50">
-                  <p className="text-sm text-muted-foreground">{planStudents.length} aluno(s) neste plano</p>
+                  <p className="text-sm text-muted-foreground">{planStudents.length} {planStudents.length !== 1 ? labels.studentLabel.toLowerCase() : labels.studentLabelSingular.toLowerCase()} neste {labels.planLabelSingular.toLowerCase()}</p>
                   {planStudents.length > 0 && (
                     <div className="flex flex-wrap gap-1.5 mt-2">
                       {planStudents.map((s) => (<span key={s.id} className="px-2 py-0.5 rounded-full bg-muted text-xs font-medium">{s.name.split(' ')[0]}</span>))}
@@ -138,8 +140,8 @@ export default function PlansPage() {
           {plans.length === 0 && (
             <div className="col-span-full card-elevated p-12 text-center">
               <DollarSign className="h-12 w-12 mx-auto text-muted-foreground/50 mb-3" />
-              <p className="text-lg font-medium text-muted-foreground">Nenhum plano cadastrado</p>
-              <p className="text-sm text-muted-foreground/70 mt-1">Crie seu primeiro plano de treino</p>
+              <p className="text-lg font-medium text-muted-foreground">Nenhum {labels.planLabelSingular.toLowerCase()} cadastrado</p>
+              <p className="text-sm text-muted-foreground/70 mt-1">Crie seu(sua) primeiro(a) {labels.planLabelSingular.toLowerCase()} de {labels.trainingLabelSingular.toLowerCase()}</p>
             </div>
           )}
         </div>
@@ -147,25 +149,25 @@ export default function PlansPage() {
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
           <DialogContent className="sm:max-w-md">
             <DialogHeader>
-              <DialogTitle className="font-display">{editingPlan ? 'Editar Plano' : 'Novo Plano'}</DialogTitle>
+              <DialogTitle className="font-display">{editingPlan ? `Editar ${labels.planLabelSingular}` : `Novo(a) ${labels.planLabelSingular}`}</DialogTitle>
               <DialogDescription>Configure o nome, frequência e valor.</DialogDescription>
             </DialogHeader>
             <form onSubmit={handleSubmit} className="space-y-4 mt-4">
-              <div className="space-y-2"><Label>Nome do plano</Label><Input placeholder="Ex: 2x na semana" value={formName} onChange={(e) => setFormName(e.target.value)} /></div>
+              <div className="space-y-2"><Label>Nome do(a) {labels.planLabelSingular.toLowerCase()}</Label><Input placeholder="Ex: 2x na semana" value={formName} onChange={(e) => setFormName(e.target.value)} /></div>
               <div className="space-y-2">
                 <Label>Tipo de cobrança</Label>
                 <Select value={formBillingType} onValueChange={(v) => setFormBillingType(v as 'monthly' | 'per_session')}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="monthly">Mensal</SelectItem>
-                    <SelectItem value="per_session">Avulso (por treino)</SelectItem>
+                    <SelectItem value="per_session">Avulso (por {labels.trainingLabelSingular.toLowerCase()})</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
               {formBillingType === 'monthly' && (
                 <div className="space-y-2"><Label>Vezes por semana</Label><Input type="number" min="1" max="7" placeholder="2" value={formSessions} onChange={(e) => setFormSessions(e.target.value)} /></div>
               )}
-              <div className="space-y-2"><Label>{formBillingType === 'per_session' ? 'Preço por treino (R$)' : 'Preço mensal (R$)'}</Label><Input type="number" min="0" step="0.01" placeholder={formBillingType === 'per_session' ? '45.00' : '250.00'} value={formPrice} onChange={(e) => setFormPrice(e.target.value)} /></div>
+              <div className="space-y-2"><Label>{formBillingType === 'per_session' ? `Preço por ${labels.trainingLabelSingular.toLowerCase()} (R$)` : 'Preço mensal (R$)'}</Label><Input type="number" min="0" step="0.01" placeholder={formBillingType === 'per_session' ? '45.00' : '250.00'} value={formPrice} onChange={(e) => setFormPrice(e.target.value)} /></div>
               <div className="flex gap-3 pt-4">
                 <Button type="button" variant="outline" className="flex-1" onClick={() => setDialogOpen(false)}>Cancelar</Button>
                 <Button type="submit" className="flex-1 btn-primary-gradient" disabled={saving}>

@@ -9,12 +9,14 @@ import { Card, CardContent } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
+import { useBusinessContext } from '@/hooks/useBusinessContext';
 
 export default function ModalitiesPage() {
   const { modalities, loadingModalities } = useModalities();
   const { students } = useStudents();
   const { trainings } = useTrainings();
   const navigate = useNavigate();
+  const { labels } = useBusinessContext();
 
   const totalModalities = modalities.length;
   const totalStudentsWithModality = students.filter(s => s.modalityId).length;
@@ -34,9 +36,9 @@ export default function ModalitiesPage() {
       <main className="container py-6 md:py-8 space-y-6">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
-            <h1 className="section-title text-2xl md:text-3xl">Modalidades Esportivas</h1>
+            <h1 className="section-title text-2xl md:text-3xl">{labels.modalityLabel}</h1>
             <p className="text-muted-foreground mt-1">
-              Gerencie os núcleos e esportes do seu CT
+              Gerencie o cadastro de {labels.modalityLabel.toLowerCase()} do seu {labels.ctLabel}
             </p>
           </div>
         </div>
@@ -44,23 +46,23 @@ export default function ModalitiesPage() {
         {/* Summary Stats */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 animate-fade-up">
           <StatCard 
-            title="Total de Modalidades" 
+            title={`Total de ${labels.modalityLabel}`} 
             value={loadingModalities ? '...' : totalModalities} 
             icon={Tag} 
             description="Ativas no sistema"
           />
           <StatCard 
-            title="Alunos Enturmados" 
+            title={`${labels.studentLabel} Vinculados`} 
             value={totalStudentsWithModality} 
             icon={Users} 
             variant="primary"
-            description="Vinculados a uma modalidade"
+            description={`Vinculados a uma ${labels.modalityLabelSingular.toLowerCase()}`}
           />
           <StatCard 
             title="Destaque" 
             value={topModality?.name || '---'} 
             icon={Award} 
-            description={topModality ? `${topModality.studentCount} alunos ativos` : "Nenhum dado disponível"}
+            description={topModality ? `${topModality.studentCount} ${labels.studentLabel.toLowerCase()} ativos` : "Nenhum dado disponível"}
           />
         </div>
 
@@ -78,7 +80,7 @@ export default function ModalitiesPage() {
                     <Calendar className="h-5 w-5 text-primary" />
                     Visão Geral por Unidade
                   </h2>
-                  <p className="text-sm text-muted-foreground">Estatísticas de alunos e treinos ativos por modalidade.</p>
+                  <p className="text-sm text-muted-foreground">Estatísticas de {labels.studentLabel.toLowerCase()} e {labels.trainingLabel.toLowerCase()} por {labels.modalityLabelSingular.toLowerCase()}.</p>
                 </div>
               </div>
               
@@ -91,7 +93,7 @@ export default function ModalitiesPage() {
                         <div className="flex justify-between items-start mb-4">
                           <div>
                             <h3 className="font-display font-bold text-lg">{mod.name}</h3>
-                            <p className="text-xs text-muted-foreground">Núcleo Esportivo</p>
+                            <p className="text-xs text-muted-foreground">{labels.modalityLabelSingular}</p>
                           </div>
                           <div className="p-2 rounded-lg bg-muted group-hover:bg-primary/10 transition-colors">
                             <Tag className="h-4 w-4 text-primary" />
@@ -101,11 +103,11 @@ export default function ModalitiesPage() {
                         <div className="grid grid-cols-2 gap-4 mb-6">
                           <div className="space-y-1">
                             <p className="text-2xl font-display font-bold">{mod.studentCount}</p>
-                            <p className="text-[10px] uppercase font-bold tracking-wider text-muted-foreground">Alunos</p>
+                            <p className="text-[10px] uppercase font-bold tracking-wider text-muted-foreground">{labels.studentLabel}</p>
                           </div>
                           <div className="space-y-1">
                             <p className="text-2xl font-display font-bold">{mod.trainingCount}</p>
-                            <p className="text-[10px] uppercase font-bold tracking-wider text-muted-foreground">Treinos</p>
+                            <p className="text-[10px] uppercase font-bold tracking-wider text-muted-foreground">{labels.trainingLabel}</p>
                           </div>
                         </div>
                         
@@ -114,7 +116,7 @@ export default function ModalitiesPage() {
                           className="w-full text-xs font-bold uppercase tracking-wider group-hover:bg-primary group-hover:text-white transition-all"
                           onClick={() => navigate('/alunos')}
                         >
-                          Gerenciar Alunos
+                          Gerenciar {labels.studentLabel}
                         </Button>
                       </div>
                     </div>
@@ -122,7 +124,7 @@ export default function ModalitiesPage() {
                   
                   {modalities.length === 0 && (
                     <div className="col-span-full py-12 text-center border-2 border-dashed rounded-xl bg-muted/30">
-                      <p className="text-sm text-muted-foreground">Cadastre sua primeira modalidade para ver as estatísticas.</p>
+                      <p className="text-sm text-muted-foreground">Cadastre sua primeira {labels.modalityLabelSingular.toLowerCase()} para ver as estatísticas.</p>
                     </div>
                   )}
                 </div>

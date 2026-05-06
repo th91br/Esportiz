@@ -13,10 +13,12 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
+import { useBusinessContext } from '@/hooks/useBusinessContext';
 
 export default function AttendancePage() {
   const today = new Date().toISOString().split('T')[0];
   const [selectedDate, setSelectedDate] = useState(today);
+  const { labels } = useBusinessContext();
 
   const handlePrevDay = () => {
     const date = parseISO(selectedDate);
@@ -45,10 +47,10 @@ export default function AttendancePage() {
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <h1 className="section-title text-2xl md:text-3xl">
-              Controle de Presença
+              Controle de {labels.attendanceLabel}
             </h1>
             <p className="text-muted-foreground mt-1">
-              Registre a presença dos alunos em cada treino
+              Registre o(a) {labels.attendanceLabel.toLowerCase()} dos(as) {labels.studentLabel.toLowerCase()} em cada {labels.trainingLabelSingular.toLowerCase()}
             </p>
           </div>
 

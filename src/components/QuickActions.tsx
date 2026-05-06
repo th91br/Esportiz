@@ -1,12 +1,20 @@
-import { UserPlus, CreditCard, Activity, CalendarCheck } from 'lucide-react';
+import { UserPlus, CreditCard, Activity, CalendarCheck, CalendarPlus } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { useBusinessContext } from '@/hooks/useBusinessContext';
 
 export function QuickActions() {
-  const actions = [
+  const { isArena, labels } = useBusinessContext();
+
+  const actions = isArena ? [
+    { label: 'Nova Reserva', icon: CalendarPlus, href: '/agenda', color: 'text-emerald-500', bg: 'bg-emerald-500/10 hover:bg-emerald-500/20' },
+    { label: 'Receber Pgto', icon: CreditCard, href: '/pagamentos', color: 'text-blue-500', bg: 'bg-blue-500/10 hover:bg-blue-500/20' },
+    { label: `Novo ${labels.studentLabelSingular}`, icon: UserPlus, href: '/reservantes', color: 'text-violet-500', bg: 'bg-violet-500/10 hover:bg-violet-500/20' },
+    { label: 'Visão Geral', icon: Activity, href: '/relatorios', color: 'text-amber-500', bg: 'bg-amber-500/10 hover:bg-amber-500/20' },
+  ] : [
     { label: 'Fazer Chamada', icon: CalendarCheck, href: '/presenca', color: 'text-emerald-500', bg: 'bg-emerald-500/10 hover:bg-emerald-500/20' },
     { label: 'Receber Pgto', icon: CreditCard, href: '/pagamentos', color: 'text-blue-500', bg: 'bg-blue-500/10 hover:bg-blue-500/20' },
-    { label: 'Novo Aluno', icon: UserPlus, href: '/alunos', color: 'text-violet-500', bg: 'bg-violet-500/10 hover:bg-violet-500/20' },
+    { label: `Novo ${labels.studentLabelSingular}`, icon: UserPlus, href: '/alunos', color: 'text-violet-500', bg: 'bg-violet-500/10 hover:bg-violet-500/20' },
     { label: 'Visão Geral', icon: Activity, href: '/relatorios', color: 'text-amber-500', bg: 'bg-amber-500/10 hover:bg-amber-500/20' },
   ];
 

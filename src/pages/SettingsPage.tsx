@@ -26,9 +26,9 @@ import { type BusinessType } from '@/hooks/queries/useProfile';
 import { cn } from '@/lib/utils';
 
 const BUSINESS_OPTIONS: { type: BusinessType; title: string; description: string; emoji: string }[] = [
-  { type: 'sport_school', title: 'Escola de Esportes', description: 'Futevôlei, Vôlei, Beach Tennis...', emoji: '🏐' },
-  { type: 'arena', title: 'Arena / CT de Locação', description: 'Locação de quadras, Day Use...', emoji: '🏟️' },
-  { type: 'other', title: 'Escola / Outros', description: 'Idiomas, Música, Cursos livres...', emoji: '📚' },
+  { type: 'sport_school', title: 'Escola Esportiva', description: 'Esportiz Sport — Futevôlei, Vôlei, Futebol, Artes Marciais...', emoji: '🏐' },
+  { type: 'arena', title: 'Arena / CT de Quadras', description: 'Esportiz Arena — Locação de quadras, Day Use, Eventos esportivos...', emoji: '🏟️' },
+  { type: 'other', title: 'Escola / Curso Livre', description: 'Esportiz Club — Idiomas, Música, Cursos livres, Dança...', emoji: '📚' },
 ];
 
 const GOOGLE_CLIENT_ID = '101916210739-8dd7avpijkt4oc5t053fg7tqtahfakdr.apps.googleusercontent.com';
@@ -81,7 +81,7 @@ export default function SettingsPage() {
         await supabase.functions.invoke('google-sync', {
           body: { user_id: user?.id }
         });
-        toast.success('Sincronização de alunos concluída!');
+        toast.success(`Sincronização de ${labels.studentLabel.toLowerCase()} concluída!`);
       } catch (syncErr) {
         console.error('Initial sync error:', syncErr);
       }
@@ -427,7 +427,7 @@ export default function SettingsPage() {
                     <Calendar className="h-5 w-5 text-[#4285F4]" />
                     Google Agenda
                   </CardTitle>
-                  <CardDescription>Sincronize treinos e alunos automaticamente.</CardDescription>
+                  <CardDescription>Sincronize {labels.trainingLabel.toLowerCase()} e {labels.studentLabel.toLowerCase()} automaticamente.</CardDescription>
                 </div>
                 {profile?.google_access_token ? (
                   <div className="flex items-center gap-1 text-xs font-medium text-green-600 bg-green-50 px-2 py-1 rounded-full">
@@ -443,8 +443,8 @@ export default function SettingsPage() {
               </CardHeader>
               <CardContent className="space-y-4">
                 <p className="text-sm text-muted-foreground">
-                  Ao conectar, seus treinos do Esportiz aparecerão na sua agenda do Google e vice-versa. 
-                  Adicione alunos pelo e-mail no Google Agenda e eles serão registrados aqui.
+                  Ao conectar, seus(as) {labels.trainingLabel.toLowerCase()} do Esportiz aparecerão na sua agenda do Google e vice-versa. 
+                  Adicione {labels.studentLabel.toLowerCase()} pelo e-mail no Google Agenda e eles serão registrados aqui.
                 </p>
                 <div className="flex justify-end gap-2">
                   {profile?.google_access_token && (
@@ -452,7 +452,7 @@ export default function SettingsPage() {
                       variant="outline"
                       size="sm"
                       onClick={async () => {
-                        const tid = toast.loading('Sincronizando alunos...');
+                        const tid = toast.loading(`Sincronizando ${labels.studentLabel.toLowerCase()}...`);
                         try {
                           const { data, error } = await supabase.functions.invoke('google-sync', {
                             body: { user_id: user?.id }
@@ -464,7 +464,7 @@ export default function SettingsPage() {
                         }
                       }}
                     >
-                      Sincronizar Alunos Agora
+                      Sincronizar {labels.studentLabel} Agora
                     </Button>
                   )}
                   <Button 

@@ -16,6 +16,7 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
+import { useBusinessContext } from '@/hooks/useBusinessContext';
 
 const monthNames = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
 
@@ -25,6 +26,7 @@ export default function PaymentsPage() {
   const { payments, generateMonthlyPayments, markAsPaid, markAsUnpaid, deletePayment, loadingPayments } = usePayments();
   const [privacyMode, togglePrivacyMode] = usePrivacyMode();
   const [searchTerm, setSearchTerm] = useState('');
+  const { labels } = useBusinessContext();
 
   const now = new Date();
   const [selectedYear, setSelectedYear] = useState(now.getFullYear());
@@ -74,7 +76,7 @@ export default function PaymentsPage() {
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div>
             <h1 className="font-display text-2xl font-bold text-foreground">Pagamentos</h1>
-            <p className="text-sm text-muted-foreground">Controle de pagamentos mensais dos alunos</p>
+            <p className="text-sm text-muted-foreground">Controle de pagamentos mensais dos(as) {labels.studentLabel.toLowerCase()}</p>
           </div>
           <div className="flex items-center gap-2 w-full sm:w-auto overflow-x-auto pb-1 sm:pb-0">
             <Button
@@ -85,7 +87,7 @@ export default function PaymentsPage() {
                 const exportData = monthPayments.map(p => {
                   const student = students.find(s => s.id === p.userId);
                   return {
-                    'Aluno': student?.name || 'Aluno Desconhecido',
+                    [labels.studentLabelSingular]: student?.name || `${labels.studentLabelSingular} Desconhecido(a)`,
                     'Status': getStatus(p) === 'paid' ? 'Pago' : getStatus(p) === 'overdue' ? 'Atrasado' : 'Pendente',
                     'Valor (R$)': p.amount.toFixed(2).replace('.', ','),
                     'Referência': p.monthRef,
@@ -131,7 +133,7 @@ export default function PaymentsPage() {
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder="Buscar aluno por nome..."
+            placeholder={`Buscar ${labels.studentLabelSingular.toLowerCase()} por nome...`}
             className="pl-10 bg-background/50 border-muted-foreground/20 focus:border-primary/50 transition-all"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
@@ -171,12 +173,12 @@ export default function PaymentsPage() {
           <div className="card-elevated p-12 text-center">
             <DollarSign className="h-12 w-12 mx-auto text-muted-foreground/30 mb-4" />
             <h3 className="font-display font-semibold text-lg text-foreground">Nenhum pagamento para {monthNames[selectedMonth - 1]}/{selectedYear}</h3>
-            <p className="text-sm text-muted-foreground mt-1">Alunos com plano mensal e dia de vencimento definido aparecerão aqui automaticamente.</p>
+            <p className="text-sm text-muted-foreground mt-1">{labels.studentLabel} com {labels.planLabel.toLowerCase()} mensal e dia de vencimento definido aparecerão aqui automaticamente.</p>
           </div>
         ) : filteredPayments.length === 0 ? (
           <div className="card-elevated p-12 text-center">
             <Search className="h-12 w-12 mx-auto text-muted-foreground/30 mb-4" />
-            <h3 className="font-display font-semibold text-lg text-foreground">Nenhum aluno encontrado</h3>
+            <h3 className="font-display font-semibold text-lg text-foreground">Nenhum(a) {labels.studentLabelSingular.toLowerCase()} encontrado(a)</h3>
             <p className="text-sm text-muted-foreground mt-1">Não encontramos nenhum resultado para "{searchTerm}".</p>
             <Button variant="link" onClick={() => setSearchTerm('')} className="mt-2">
               Limpar busca
@@ -212,7 +214,7 @@ export default function PaymentsPage() {
                       )}
                     </div>
                     <div className="text-sm text-muted-foreground mt-1 flex flex-wrap gap-x-4 gap-y-1">
-                      <span>{plan?.name || 'Plano removido'}</span>
+                      <span>{plan?.name || `${labels.planLabelSingular} removido`}</span>
                       {payment.isProrata && payment.fullPrice ? (
                         <span>
                           <span className="line-through opacity-60">{formatCurrency(payment.fullPrice)}</span>

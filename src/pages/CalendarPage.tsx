@@ -22,6 +22,7 @@ import {
 import {
   Tooltip, TooltipContent, TooltipProvider, TooltipTrigger,
 } from '@/components/ui/tooltip';
+import { useBusinessContext } from '@/hooks/useBusinessContext';
 
 import { toast } from '@/hooks/use-toast';
 import { useStudents } from '@/hooks/queries/useStudents';
@@ -50,6 +51,7 @@ function TrainingFormDialog({
   const [formDuration, setFormDuration] = useState(training?.durationMinutes?.toString() || '60');
   const { modalities } = useModalities();
   const [studentSearch, setStudentSearch] = useState('');
+  const { labels } = useBusinessContext();
 
   const filteredStudents = activeStudents.filter((s) =>
     s.name.toLowerCase().includes(studentSearch.toLowerCase())
@@ -82,7 +84,7 @@ function TrainingFormDialog({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formTime || !formLocation || formStudentIds.length === 0) {
-      toast({ title: 'Preencha todos os campos', description: 'Selecione horário, local e pelo menos um aluno.', variant: 'destructive' });
+      toast({ title: 'Preencha todos os campos', description: `Selecione horário, local e pelo menos um ${labels.studentLabelSingular.toLowerCase()}.`, variant: 'destructive' });
       return;
     }
     setSaving(true);
@@ -118,9 +120,9 @@ function TrainingFormDialog({
         }
         
         if (extraDates.length > 0) {
-          toast({ title: `Treino atualizado e replicado!`, description: `${extraDates.length + 1} treinos ajustados na agenda.` });
+          toast({ title: `${labels.trainingLabelSingular} atualizado(a) e replicado(a)!`, description: `${extraDates.length + 1} ${labels.trainingLabel.toLowerCase()} ajustados na agenda.` });
         } else {
-          toast({ title: 'Treino atualizado!' });
+          toast({ title: `${labels.trainingLabelSingular} atualizado(a)!` });
         }
       } else {
         for (const date of datesToSchedule) {
@@ -134,9 +136,9 @@ function TrainingFormDialog({
         }
         
         if (datesToSchedule.length > 1) {
-          toast({ title: `${datesToSchedule.length} treinos processados!`, description: `Pauta atualizada usando a proteção de agenda.` });
+          toast({ title: `${datesToSchedule.length} ${labels.trainingLabel.toLowerCase()} processados!`, description: `Pauta atualizada usando a proteção de agenda.` });
         } else {
-          toast({ title: 'Treino agendado!' });
+          toast({ title: `${labels.trainingLabelSingular} agendado(a)!` });
         }
       }
       onSaved?.(formDate);
@@ -150,8 +152,8 @@ function TrainingFormDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="font-display">{isEditing ? 'Editar Treino' : 'Agendar Novo Treino'}</DialogTitle>
-          <DialogDescription>Configure os detalhes do treino</DialogDescription>
+          <DialogTitle className="font-display">{isEditing ? `Editar ${labels.trainingLabelSingular}` : `Agendar ${labels.trainingLabelSingular}`}</DialogTitle>
+          <DialogDescription>Configure os detalhes do agendamento</DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4 mt-4">
           <div className="space-y-2">
@@ -160,7 +162,7 @@ function TrainingFormDialog({
           </div>
 
           <div className="space-y-2">
-            <Label>Recorrência de Treino</Label>
+            <Label>Recorrência de {labels.trainingLabelSingular}</Label>
             <Select value={recurrence} onValueChange={(value: any) => setRecurrence(value)}>
               <SelectTrigger className="bg-muted/50 border-border/50">
                 <div className="flex items-center gap-2">
@@ -227,18 +229,18 @@ function TrainingFormDialog({
           </div>
 
           <div className="space-y-2">
-            <Label>Alunos ({formStudentIds.length} selecionado{formStudentIds.length !== 1 ? 's' : ''})</Label>
+            <Label>{labels.studentLabel} ({formStudentIds.length} selecionado{formStudentIds.length !== 1 ? 's' : ''})</Label>
             <Input
-              placeholder="Buscar aluno pelo nome..."
+              placeholder={`Buscar ${labels.studentLabelSingular.toLowerCase()} pelo nome...`}
               value={studentSearch}
               onChange={(e) => setStudentSearch(e.target.value)}
               className="mb-2"
             />
             <div className="grid grid-cols-1 gap-2 max-h-40 overflow-y-auto rounded-lg border border-border p-2">
               {filteredStudents.length === 0 && activeStudents.length > 0 && (
-                <p className="text-sm text-muted-foreground p-2">Nenhum aluno encontrado.</p>
+                <p className="text-sm text-muted-foreground p-2">Nenhum {labels.studentLabelSingular.toLowerCase()} encontrado.</p>
               )}
-              {activeStudents.length === 0 && <p className="text-sm text-muted-foreground p-2">Cadastre alunos primeiro.</p>}
+              {activeStudents.length === 0 && <p className="text-sm text-muted-foreground p-2">Cadastre {labels.studentLabel.toLowerCase()} primeiro.</p>}
               {filteredStudents.map((student) => {
                 const isSelected = formStudentIds.includes(student.id);
                 return (
@@ -269,6 +271,7 @@ function TrainingFormDialog({
 
 // Annual calendar mini-view with hover tooltips
 function AnnualCalendar({ year, trainings, students, onDayClick }: { year: number; trainings: Training[]; students: { id: string; name: string }[]; onDayClick?: (dateStr: string) => void }) {
+  const { labels } = useBusinessContext();
   const months = Array.from({ length: 12 }, (_, i) => i);
   const studentMap = useMemo(() => {
     const map = new Map<string, string>();
@@ -320,7 +323,7 @@ function AnnualCalendar({ year, trainings, students, onDayClick }: { year: numbe
                           </span>
                         </TooltipTrigger>
                         <TooltipContent side="top" className="max-w-[200px]">
-                          <p className="font-semibold text-xs mb-1">{dayTrainings.length} treino{dayTrainings.length !== 1 ? 's' : ''}</p>
+                          <p className="font-semibold text-xs mb-1">{dayTrainings.length} {dayTrainings.length !== 1 ? labels.trainingLabel.toLowerCase() : labels.trainingLabelSingular.toLowerCase()}</p>
                           <div className="space-y-0.5">
                             {allStudentNames.map((name) => (
                               <p key={name} className="text-xs text-muted-foreground">• {name.split(' ')[0]}</p>
@@ -367,6 +370,7 @@ export default function CalendarPage() {
   const [editOpen, setEditOpen] = useState(false);
   const [modalityFilter, setModalityFilter] = useState('all');
   const { modalities } = useModalities();
+  const { labels } = useBusinessContext();
 
   const weekDates = useMemo(() => getWeekDatesArray(weekOffset), [weekOffset]);
   const weekStart = weekDates[0];
@@ -379,9 +383,9 @@ export default function CalendarPage() {
     if (modalityFilter === 'all') return true;
     if (t.modalityId === modalityFilter) return true;
     
-    // Fallback inteligente: se o treino não tem essa modalidade explicitamente,
-    // verificamos se algum dos alunos agendados neste treino pertence à modalidade filtrada.
-    // Isso garante que alterações feitas nos alunos reflitam imediatamente no calendário.
+    // Fallback inteligente: se o agendamento não tem essa modalidade explicitamente,
+    // verificamos se algum dos clientes agendados neste treino pertence à modalidade filtrada.
+    // Isso garante que alterações feitas nos clientes reflitam imediatamente no calendário.
     const trainingStudents = students.filter(s => t.studentIds.includes(s.id));
     return trainingStudents.some(s => s.modalityId === modalityFilter);
   });
@@ -395,7 +399,7 @@ export default function CalendarPage() {
 
   const handleDeleteTraining = async (training: Training) => {
     await deleteTraining(training.id);
-    toast({ title: 'Treino removido' });
+    toast({ title: `${labels.trainingLabelSingular} removido(a)` });
   };
 
   const handleTrainingSaved = (date: string) => {
@@ -420,8 +424,8 @@ export default function CalendarPage() {
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
-            <h1 className="section-title text-2xl md:text-3xl">Calendário de Treinos</h1>
-            <p className="text-muted-foreground mt-1">Gerencie a agenda de aulas</p>
+            <h1 className="section-title text-2xl md:text-3xl">Calendário de {labels.trainingLabel}</h1>
+            <p className="text-muted-foreground mt-1">Gerencie a agenda de {labels.trainingLabel.toLowerCase()}</p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
             <div className="flex rounded-lg border border-border overflow-hidden shrink-0">
@@ -444,7 +448,7 @@ export default function CalendarPage() {
               </SelectContent>
             </Select>
             <Button className="btn-primary-gradient shrink-0" onClick={() => setNewTrainingOpen(true)}>
-              <Plus className="h-4 w-4 sm:mr-2" /><span className="hidden sm:inline">Novo Treino</span>
+              <Plus className="h-4 w-4 sm:mr-2" /><span className="hidden sm:inline">Novo(a) {labels.trainingLabelSingular}</span>
             </Button>
           </div>
         </div>
@@ -514,7 +518,7 @@ export default function CalendarPage() {
                   <p className="text-sm text-muted-foreground">{formatDate(selectedDate)}</p>
                 </div>
                 <span className="px-3 py-1 rounded-full bg-muted text-sm font-medium">
-                  {selectedTrainings.length} treino{selectedTrainings.length !== 1 ? 's' : ''}
+                  {selectedTrainings.length} {selectedTrainings.length !== 1 ? labels.trainingLabel.toLowerCase() : labels.trainingLabelSingular.toLowerCase()}
                 </span>
               </div>
 
@@ -552,7 +556,7 @@ export default function CalendarPage() {
                           <div className="flex items-center gap-2">
                             <div className="flex flex-col sm:items-end gap-1 text-sm mr-2">
                               <div className="flex items-center gap-1.5 text-muted-foreground"><MapPin className="h-3.5 w-3.5" />{training.location}</div>
-                              <div className="flex items-center gap-1.5 text-muted-foreground"><Users className="h-3.5 w-3.5" />{trainingStudents.length} aluno{trainingStudents.length !== 1 ? 's' : ''}</div>
+                              <div className="flex items-center gap-1.5 text-muted-foreground"><Users className="h-3.5 w-3.5" />{trainingStudents.length} {trainingStudents.length !== 1 ? labels.studentLabel.toLowerCase() : labels.studentLabelSingular.toLowerCase()}</div>
                             </div>
                             <Button variant="ghost" size="icon" className="h-8 w-8"
                               onClick={() => { setEditingTraining(training); setEditOpen(true); }}>
@@ -564,7 +568,7 @@ export default function CalendarPage() {
                               </AlertDialogTrigger>
                               <AlertDialogContent>
                                 <AlertDialogHeader>
-                                  <AlertDialogTitle>Remover treino?</AlertDialogTitle>
+                                  <AlertDialogTitle>Remover {labels.trainingLabelSingular.toLowerCase()}?</AlertDialogTitle>
                                   <AlertDialogDescription>Tem certeza? Essa ação não pode ser desfeita.</AlertDialogDescription>
                                 </AlertDialogHeader>
                                 <AlertDialogFooter>
@@ -597,9 +601,9 @@ export default function CalendarPage() {
                 </div>
               ) : (
                 <div className="text-center py-8">
-                  <p className="text-muted-foreground">Nenhum treino agendado para este dia</p>
+                  <p className="text-muted-foreground">Nenhum(a) {labels.trainingLabelSingular.toLowerCase()} agendado(a) para este dia</p>
                   <Button className="mt-4" variant="outline" onClick={() => setNewTrainingOpen(true)}>
-                    <Plus className="h-4 w-4 mr-2" />Agendar treino
+                    <Plus className="h-4 w-4 mr-2" />Agendar {labels.trainingLabelSingular.toLowerCase()}
                   </Button>
                 </div>
               )}

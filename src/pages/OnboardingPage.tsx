@@ -14,22 +14,22 @@ const BUSINESS_OPTIONS: { type: BusinessType; icon: typeof Volleyball; title: st
   {
     type: 'sport_school',
     icon: Volleyball,
-    title: 'Escola de Esportes',
-    description: 'Futevôlei, Vôlei, Beach Tennis, Futebol, Artes Marciais...',
+    title: 'Escola Esportiva',
+    description: 'Esportiz Sport — Futevôlei, Vôlei, Futebol, Artes Marciais...',
     emoji: '🏐',
   },
   {
     type: 'arena',
     icon: Landmark,
-    title: 'Arena / CT de Locação',
-    description: 'Locação de quadras, Day Use, Eventos esportivos...',
+    title: 'Arena / CT de Quadras',
+    description: 'Esportiz Arena — Locação de quadras, Day Use, Eventos esportivos...',
     emoji: '🏟️',
   },
   {
     type: 'other',
     icon: GraduationCap,
-    title: 'Escola / Outros',
-    description: 'Idiomas, Música, Cursos livres, Dança...',
+    title: 'Escola / Curso Livre',
+    description: 'Esportiz Club — Idiomas, Música, Cursos livres, Dança...',
     emoji: '📚',
   },
 ];

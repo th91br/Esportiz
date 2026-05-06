@@ -8,10 +8,14 @@ import { usePlans } from '@/hooks/queries/usePlans';
 import { useTrainings } from '@/hooks/queries/useTrainings';
 import { useAttendance } from '@/hooks/queries/useAttendance';
 import { usePayments } from '@/hooks/queries/usePayments';
+import { useCourts } from '@/hooks/queries/useCourts';
+import { useReservations } from '@/hooks/queries/useReservations';
+import { useSales } from '@/hooks/queries/useSales';
 import { usePrivacyMode } from '@/hooks/usePrivacyMode';
 import { formatCurrency } from '@/lib/formatCurrency';
 import { cn } from '@/lib/utils';
 import { getActiveMonthlyStudents } from '@/lib/studentHelpers';
+import { useBusinessContext } from '@/hooks/useBusinessContext';
 import {
   BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell, Legend
@@ -105,8 +109,12 @@ export default function ReportsPage() {
   const { trainings } = useTrainings();
   const { attendance } = useAttendance();
   const { payments } = usePayments();
+  const { courts } = useCourts();
+  const { reservations } = useReservations();
+  const { sales } = useSales();
   const [period, setPeriod] = useState<FilterPeriod>('month');
   const [privacyMode, togglePrivacyMode] = usePrivacyMode();
+  const { labels, isArena, isOther } = useBusinessContext();
 
   const range = useMemo(() => getDateRange(period), [period]);
   const monthRefs = useMemo(() => getMonthRefsForPeriod(period), [period]);
@@ -124,11 +132,18 @@ export default function ReportsPage() {
   const filteredPayments = useMemo(() => {
     if (!range) return payments;
     return payments.filter((p) => {
-      const paymentDateOnly = p.paidAt ? p.paidAt.slice(0, 10) : null;
-      const dateToCheck = p.paid && paymentDateOnly ? paymentDateOnly : p.dueDate;
-      return dateToCheck >= range.start && dateToCheck <= range.end;
+      // Filtragem estrita por competência (data de vencimento) para alinhar 100% com a página de Pagamentos
+      return p.dueDate >= range.start && p.dueDate <= range.end;
     });
   }, [payments, range]);
+
+  const filteredSales = useMemo(() => {
+    if (!range) return sales;
+    return sales.filter((s) => {
+      const soldDate = s.soldAt.slice(0, 10);
+      return soldDate >= range.start && soldDate <= range.end;
+    });
+  }, [sales, range]);
 
   // KPIs Calculations
   const presentCount = filteredAttendance.filter((a) => a.present).length;
@@ -140,12 +155,46 @@ export default function ReportsPage() {
   const activeMonthly = getActiveMonthlyStudents(students, plans);
   const totalActive = activeMonthly.length;
 
+  const filteredReservations = useMemo(() => {
+    if (!range) return reservations;
+    return reservations.filter(r => r.date >= range.start && r.date <= range.end && r.status !== 'cancelled');
+  }, [reservations, range]);
+
+  const reservationsByCourtData = useMemo(() => {
+    if (!isArena) return [];
+    return courts.filter(c => c.isActive).map(court => {
+      const courtRes = filteredReservations.filter(r => r.courtId === court.id);
+      return {
+        name: court.name,
+        hours: courtRes.reduce((acc, r) => acc + (r.durationMinutes / 60), 0),
+        revenue: courtRes.reduce((acc, r) => acc + r.finalPrice, 0)
+      };
+    }).sort((a, b) => b.hours - a.hours);
+  }, [courts, filteredReservations, isArena]);
+
+  const topReservantesData = useMemo(() => {
+    if (!isArena) return [];
+    const map: Record<string, { count: number, revenue: number, name: string }> = {};
+    filteredReservations.forEach(r => {
+       r.reservanteIds.forEach(id => {
+         const s = students.find(st => st.id === id);
+         if (s) {
+           if (!map[s.id]) map[s.id] = { count: 0, revenue: 0, name: s.name };
+           map[s.id].count += 1;
+           map[s.id].revenue += r.finalPrice;
+         }
+       });
+    });
+    return Object.values(map).sort((a, b) => b.revenue - a.revenue).slice(0, 5);
+  }, [filteredReservations, students, isArena]);
+
   let expectedRevenue = 0;
   let receivedRevenue = 0;
   let overdueRevenue = 0;
   
   const todayDateStr = new Date().toISOString().split('T')[0];
 
+  // 1. Mensalidades / Planos (Comum a todos, se houver)
   filteredPayments.forEach(p => {
     expectedRevenue += p.amount;
     if (p.paid) {
@@ -154,6 +203,24 @@ export default function ReportsPage() {
       overdueRevenue += p.amount;
     }
   });
+
+  // 2. Vendas de Produtos (Sempre recebidas no ato da venda)
+  filteredSales.forEach(s => {
+    expectedRevenue += s.total;
+    receivedRevenue += s.total;
+  });
+
+  // 3. Reservas de Quadras (Exclusivo da Arena)
+  if (isArena) {
+    filteredReservations.forEach(r => {
+      expectedRevenue += r.finalPrice;
+      if (r.paymentStatus === 'paid') {
+        receivedRevenue += r.finalPrice;
+      } else if (r.date < todayDateStr) {
+        overdueRevenue += r.finalPrice;
+      }
+    });
+  }
 
   const pendingRevenue = expectedRevenue - receivedRevenue - overdueRevenue;
   const revenueProgress = expectedRevenue > 0 ? (receivedRevenue / expectedRevenue) * 100 : 0;
@@ -208,10 +275,11 @@ export default function ReportsPage() {
     { name: 'Avançado', value: activeMonthly.filter((s) => s.level === 'avançado').length, color: COLORS.violet },
   ];
 
+  const studentKey = labels.studentLabel.toLowerCase();
   const planDistributionData = plans.filter(p => activeMonthly.some(s => s.planId === p.id)).map(plan => ({
     name: plan.name,
-    alunos: activeMonthly.filter((s) => s.planId === plan.id).length,
-  })).sort((a, b) => b.alunos - a.alunos);
+    [studentKey]: activeMonthly.filter((s) => s.planId === plan.id).length,
+  })).sort((a: any, b: any) => b[studentKey] - a[studentKey]);
 
   // Historical Financial Data - Dynamic Evolution based on period
   const historicalFinancialData = useMemo(() => {
@@ -220,9 +288,25 @@ export default function ReportsPage() {
       const months = Array.from({ length: 12 }, (_, i) => ({ year: yearToUse, month: i + 1 }));
       return months.map(({ year, month }) => {
         const monthRef = `${year}-${String(month).padStart(2, '0')}`;
+        
+        // 1. Pagamentos
         const monthPayments = payments.filter(p => p.monthRef === monthRef);
-        const expected = monthPayments.reduce((acc, curr) => acc + curr.amount, 0);
-        const received = monthPayments.filter(p => p.paid).reduce((acc, curr) => acc + curr.amount, 0);
+        let expected = monthPayments.reduce((acc, curr) => acc + curr.amount, 0);
+        let received = monthPayments.filter(p => p.paid).reduce((acc, curr) => acc + curr.amount, 0);
+        
+        // 2. Vendas de Produtos
+        const monthSales = sales.filter(s => s.soldAt.startsWith(monthRef));
+        const salesTotal = monthSales.reduce((acc, curr) => acc + curr.total, 0);
+        expected += salesTotal;
+        received += salesTotal;
+
+        // 3. Reservas (Arena)
+        if (isArena) {
+          const monthReservations = reservations.filter(r => r.date.startsWith(monthRef) && r.status !== 'cancelled');
+          expected += monthReservations.reduce((acc, r) => acc + r.finalPrice, 0);
+          received += monthReservations.filter(r => r.paymentStatus === 'paid').reduce((acc, r) => acc + r.finalPrice, 0);
+        }
+
         const label = new Date(year, month - 1).toLocaleString('pt-BR', { month: 'short' });
         return { name: label.charAt(0).toUpperCase() + label.slice(1), Total: expected, Recebido: received };
       });
@@ -237,15 +321,27 @@ export default function ReportsPage() {
       return days.map(d => {
         const dateStr = d.toISOString().split('T')[0];
         
-        // Previsto (Total): Sempre usa a data de vencimento original
-        const expected = payments
+        // 1. Pagamentos
+        let expected = payments
           .filter(p => p.dueDate === dateStr)
           .reduce((acc, curr) => acc + curr.amount, 0);
           
-        // Realizado (Caixa): Sempre usa a data em que o pagamento foi efetuado
-        const received = payments
-          .filter(p => p.paid && p.paidAt && p.paidAt.slice(0, 10) === dateStr)
+        let received = payments
+          .filter(p => p.dueDate === dateStr && p.paid)
           .reduce((acc, curr) => acc + curr.amount, 0);
+
+        // 2. Vendas de Produtos
+        const daySales = sales.filter(s => s.soldAt.startsWith(dateStr));
+        const salesTotal = daySales.reduce((acc, curr) => acc + curr.total, 0);
+        expected += salesTotal;
+        received += salesTotal;
+
+        // 3. Reservas (Arena)
+        if (isArena) {
+          const dayReservations = reservations.filter(r => r.date === dateStr && r.status !== 'cancelled');
+          expected += dayReservations.reduce((acc, r) => acc + r.finalPrice, 0);
+          received += dayReservations.filter(r => r.paymentStatus === 'paid').reduce((acc, r) => acc + r.finalPrice, 0);
+        }
         
         // Use split para evitar problemas de fuso horário no label
         const [year, month, day] = dateStr.split('-');
@@ -254,7 +350,7 @@ export default function ReportsPage() {
         return { name, Total: expected, Recebido: received };
       });
     }
-  }, [payments, period, range]);
+  }, [payments, sales, reservations, isArena, period, range]);
 
   // Retention Data (Funnel)
   const retentionData = useMemo(() => {
@@ -262,8 +358,8 @@ export default function ReportsPage() {
     const experimentais = students.filter(s => s.active && s.isTrial).length;
     const inativos = students.filter(s => !s.active).length;
     return [
-      { name: 'Alunos Ativos', value: ativos, color: COLORS.emerald },
-      { name: 'Aulas Experimentais', value: experimentais, color: COLORS.warning },
+      { name: `${labels.studentLabel} Ativos`, value: ativos, color: COLORS.emerald },
+      { name: `${labels.trainingLabel} Experimentais`, value: experimentais, color: COLORS.warning },
       { name: 'Inativos (Churn)', value: inativos, color: COLORS.destructive },
     ];
   }, [students]);
@@ -291,7 +387,7 @@ export default function ReportsPage() {
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
           <div>
             <h1 className="font-display font-extrabold text-3xl md:text-4xl tracking-tight text-foreground">Relatórios Analíticos</h1>
-            <p className="text-muted-foreground mt-1.5 text-sm md:text-base">Métricas, faturamento e engajamento da sua escola de futevôlei.</p>
+            <p className="text-muted-foreground mt-1.5 text-sm md:text-base">Métricas, faturamento e engajamento da sua {labels.ctLabelShort.toLowerCase()}.</p>
           </div>
 
           <div className="flex items-center gap-2 sm:gap-3 bg-muted/30 p-1.5 rounded-xl border border-border/50">
@@ -321,24 +417,24 @@ export default function ReportsPage() {
         {/* KPIs Premium */}
         <section className="grid grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-3 md:gap-5 animate-fade-in">
           <StatCard 
-            title="Alunos Base" 
+            title={`${labels.studentLabel} Base`} 
             value={privacyMode ? '••••' : totalActive} 
             icon={Users} 
-            description={privacyMode ? '' : `Planos mensais ativos`} 
+            description={privacyMode ? '' : `${labels.planLabel} mensais ativos`} 
           />
           <StatCard 
-            title={`Aulas (${filterLabels[period]})`} 
+            title={`${labels.trainingLabel} (${filterLabels[period]})`} 
             value={privacyMode ? '••••' : filteredTrainings.length} 
             icon={Calendar} 
             variant="default" 
-            description={filteredTrainings.length === 1 ? 'Treino computado' : 'Treinos computados'}
+            description={filteredTrainings.length === 1 ? `${labels.trainingLabelSingular} computado` : `${labels.trainingLabel} computados`}
           />
           <StatCard 
             title="Engajamento" 
             value={privacyMode ? '••••' : `${attendanceRate}%`} 
             icon={CheckCircle} 
-            description={privacyMode ? '' : 'Média de presença'}
-            progress={privacyMode ? undefined : { value: attendanceRate, label: "Assiduidade" }}
+            description={privacyMode ? '' : `Média de ${labels.attendanceLabel.toLowerCase()}`}
+            progress={privacyMode ? undefined : { value: attendanceRate, label: `Taxa de ${labels.attendanceLabel}` }}
           />
           <StatCard 
             title="Faturamento Total" 
@@ -394,8 +490,8 @@ export default function ReportsPage() {
 
           {/* Gráfico de Presença X Faltas */}
           <div className="card-interactive p-4 md:p-6">
-            <h3 className="font-display font-bold text-lg md:text-xl text-foreground mb-1">Assiduidade Geral</h3>
-            <p className="text-sm text-muted-foreground mb-6">Controle de engajamento dos alunos nas aulas registradas</p>
+            <h3 className="font-display font-bold text-lg md:text-xl text-foreground mb-1">{labels.attendanceLabel} Geral</h3>
+            <p className="text-sm text-muted-foreground mb-6">Controle de engajamento nos registros realizados</p>
             <div className="h-[280px] w-full">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={evolutionAttendanceData} barGap={4} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
@@ -412,52 +508,95 @@ export default function ReportsPage() {
           </div>
 
           {/* Demografia: Alunos por Nível */}
-          <div className="card-interactive p-4 md:p-6 lg:col-span-1 border-border/60">
-            <h3 className="font-display font-bold text-lg md:text-xl text-foreground mb-1">Perfil Técnico (Base Ativa)</h3>
-            <p className="text-sm text-muted-foreground mb-6">Distribuição da base por nível para guiar treinos</p>
-            <div className="h-[250px] w-full mt-2">
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie data={levelData} cx="50%" cy="50%" innerRadius={65} outerRadius={100} paddingAngle={4} dataKey="value"
-                    label={({ name, value }) => privacyMode ? '••••' : `${value}`} labelLine={{ strokeWidth: 1, stroke: 'hsl(var(--muted-foreground))' }}>
-                    {levelData.map((entry, index) => (<Cell key={index} fill={entry.color} />))}
-                  </Pie>
-                  <Tooltip contentStyle={customTooltipStyle} formatter={(value: number) => [privacyMode ? '••••' : value, 'Alunos']} />
-                  <Legend layout="horizontal" verticalAlign="bottom" align="center" wrapperStyle={{ paddingTop: '10px', fontSize: '12px' }} iconType="circle" />
-                </PieChart>
-              </ResponsiveContainer>
+          {!isArena && (
+            <div className="card-interactive p-4 md:p-6 lg:col-span-1 border-border/60">
+              <h3 className="font-display font-bold text-lg md:text-xl text-foreground mb-1">{isOther ? 'Perfil dos Alunos por Nível' : 'Perfil Técnico (Base Ativa)'}</h3>
+              <p className="text-sm text-muted-foreground mb-6">{isOther ? 'Distribuição dos alunos por nível de conhecimento' : 'Distribuição da base por nível'}</p>
+              <div className="h-[250px] w-full mt-2">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie data={levelData} cx="50%" cy="50%" innerRadius={65} outerRadius={100} paddingAngle={4} dataKey="value"
+                      label={({ name, value }) => privacyMode ? '••••' : `${value}`} labelLine={{ strokeWidth: 1, stroke: 'hsl(var(--muted-foreground))' }}>
+                      {levelData.map((entry, index) => (<Cell key={index} fill={entry.color} />))}
+                    </Pie>
+                    <Tooltip contentStyle={customTooltipStyle} formatter={(value: number) => [privacyMode ? '••••' : value, labels.studentLabel]} />
+                    <Legend layout="horizontal" verticalAlign="bottom" align="center" wrapperStyle={{ paddingTop: '10px', fontSize: '12px' }} iconType="circle" />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
             </div>
-          </div>
+          )}
 
           {/* Demografia: Planos */}
-          <div className="card-interactive p-4 md:p-6 lg:col-span-1 border-border/60">
-            <h3 className="font-display font-bold text-lg md:text-xl text-foreground mb-1">Aderência de Planos</h3>
-            <p className="text-sm text-muted-foreground mb-6">Preferência da base de alunos mensalistas</p>
-            <div className="h-[250px] w-full">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={planDistributionData} layout="vertical" margin={{ top: 0, right: 30, left: 10, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} stroke="hsl(var(--border))" />
-                  <XAxis type="number" hide />
-                  <YAxis 
-                    type="category" 
-                    dataKey="name" 
-                    tick={{ fontSize: 12, fill: 'hsl(var(--foreground))', fontWeight: 500 }} 
-                    axisLine={false} 
-                    tickLine={false} 
-                    width={160}
-                  />
-                  <Tooltip contentStyle={customTooltipStyle} cursor={{ fill: 'hsl(var(--muted)/0.3)' }} formatter={(value: number) => [privacyMode ? '••••' : `${value} aluno(s)`, 'Aderência']} />
-                  <Bar dataKey="alunos" fill={COLORS.primary} radius={[0, 4, 4, 0]} barSize={28}>
-                    {
-                      planDistributionData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={index === 0 ? COLORS.primary : 'hsl(var(--primary)/0.6)'} />
-                      ))
-                    }
-                  </Bar>
-                </BarChart>
-              </ResponsiveContainer>
+          {!isArena && (
+            <div className="card-interactive p-4 md:p-6 lg:col-span-1 border-border/60">
+              <h3 className="font-display font-bold text-lg md:text-xl text-foreground mb-1">Aderência de {labels.planLabel}</h3>
+              <p className="text-sm text-muted-foreground mb-6">Preferência da base de {labels.studentLabel.toLowerCase()}</p>
+              <div className="h-[250px] w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={planDistributionData} layout="vertical" margin={{ top: 0, right: 30, left: 10, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} stroke="hsl(var(--border))" />
+                    <XAxis type="number" hide />
+                    <YAxis 
+                      type="category" 
+                      dataKey="name" 
+                      tick={{ fontSize: 12, fill: 'hsl(var(--foreground))', fontWeight: 500 }} 
+                      axisLine={false} 
+                      tickLine={false} 
+                      width={160}
+                    />
+                    <Tooltip contentStyle={customTooltipStyle} cursor={{ fill: 'hsl(var(--muted)/0.3)' }} formatter={(value: number) => [privacyMode ? '••••' : `${value} ${labels.studentLabelSingular.toLowerCase()}(s)`, 'Aderência']} />
+                    <Bar dataKey={studentKey} fill={COLORS.primary} radius={[0, 4, 4, 0]} barSize={28}>
+                      {
+                        planDistributionData.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={index === 0 ? COLORS.primary : 'hsl(var(--primary)/0.6)'} />
+                        ))
+                      }
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
             </div>
-          </div>
+          )}
+
+          {isArena && (
+            <>
+              {/* Ocupação por Quadra (Horas) */}
+              <div className="card-interactive p-4 md:p-6 lg:col-span-1 border-border/60">
+                <h3 className="font-display font-bold text-lg md:text-xl text-foreground mb-1">Ocupação por Quadra</h3>
+                <p className="text-sm text-muted-foreground mb-6">Horas reservadas no período</p>
+                <div className="h-[250px] w-full mt-2">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={reservationsByCourtData} layout="vertical" margin={{ top: 0, right: 30, left: 10, bottom: 0 }}>
+                      <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} stroke="hsl(var(--border))" />
+                      <XAxis type="number" hide />
+                      <YAxis type="category" dataKey="name" tick={{ fontSize: 12, fill: 'hsl(var(--foreground))', fontWeight: 500 }} axisLine={false} tickLine={false} width={120} />
+                      <Tooltip contentStyle={customTooltipStyle} cursor={{ fill: 'hsl(var(--muted)/0.3)' }} formatter={(value: number) => [`${value}h`, 'Horas']} />
+                      <Bar dataKey="hours" fill={COLORS.primary} radius={[0, 4, 4, 0]} barSize={28} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+
+              {/* Faturamento por Quadra (Pie) */}
+              <div className="card-interactive p-4 md:p-6 lg:col-span-1 border-border/60">
+                <h3 className="font-display font-bold text-lg md:text-xl text-foreground mb-1">Faturamento por Quadra</h3>
+                <p className="text-sm text-muted-foreground mb-6">Distribuição da receita gerada</p>
+                <div className="h-[250px] w-full mt-2">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie data={reservationsByCourtData} cx="50%" cy="50%" innerRadius={65} outerRadius={100} paddingAngle={4} dataKey="revenue"
+                        label={({ name, value }) => privacyMode ? '••••' : formatCurrency(value)} labelLine={{ strokeWidth: 1, stroke: 'hsl(var(--muted-foreground))' }}>
+                        {reservationsByCourtData.map((entry, index) => (<Cell key={index} fill={Object.values(COLORS)[index % Object.values(COLORS).length]} />))}
+                      </Pie>
+                      <Tooltip contentStyle={customTooltipStyle} formatter={(value: number) => [privacyMode ? '••••' : formatCurrency(value), 'Faturamento']} />
+                      <Legend layout="horizontal" verticalAlign="bottom" align="center" wrapperStyle={{ paddingTop: '10px', fontSize: '12px' }} iconType="circle" />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+            </>
+          )}
 
           {/* Histórico Financeiro Mensal */}
           <div className="card-interactive p-4 md:p-6 lg:col-span-2 mt-4 border-primary/20 bg-gradient-to-br from-background to-muted/20">
@@ -492,37 +631,60 @@ export default function ReportsPage() {
           </div>
 
           {/* Métricas de Retenção e Churn */}
-          <div className="card-interactive p-4 md:p-6 lg:col-span-2 border-destructive/10 mt-4">
-            <div className="flex items-start justify-between mb-6">
-              <div>
-                <h3 className="font-display font-bold text-lg md:text-xl text-foreground flex items-center gap-2">
-                  <UserMinus className="h-5 w-5 text-destructive" /> Retenção e Churn
-                </h3>
-                <p className="text-sm text-muted-foreground mt-1">Visão geral do funil de retenção e perda de alunos na base inteira</p>
+          {!isArena && (
+            <div className="card-interactive p-4 md:p-6 lg:col-span-2 border-destructive/10 mt-4">
+              <div className="flex items-start justify-between mb-6">
+                <div>
+                  <h3 className="font-display font-bold text-lg md:text-xl text-foreground flex items-center gap-2">
+                    <UserMinus className="h-5 w-5 text-destructive" /> Retenção e Churn
+                  </h3>
+                  <p className="text-sm text-muted-foreground mt-1">Visão geral do funil de retenção e perda de {labels.studentLabel.toLowerCase()} na base inteira</p>
+                </div>
+                <div className="bg-destructive/10 border border-destructive/20 px-4 py-2 rounded-lg text-center shrink-0">
+                  <p className="text-xs font-bold text-destructive uppercase tracking-wider mb-0.5">Taxa de Churn</p>
+                  <p className="text-2xl font-display font-bold text-destructive">{privacyMode ? '••%' : `${churnRate}%`}</p>
+                </div>
               </div>
-              <div className="bg-destructive/10 border border-destructive/20 px-4 py-2 rounded-lg text-center shrink-0">
-                <p className="text-xs font-bold text-destructive uppercase tracking-wider mb-0.5">Taxa de Churn</p>
-                <p className="text-2xl font-display font-bold text-destructive">{privacyMode ? '••%' : `${churnRate}%`}</p>
+              <div className="h-[280px] w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={retentionData} layout="vertical" margin={{ top: 0, right: 30, left: 0, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} stroke="hsl(var(--border))" />
+                    <XAxis type="number" hide />
+                    <YAxis type="category" dataKey="name" tick={{ fontSize: 13, fill: 'hsl(var(--foreground))', fontWeight: 500 }} axisLine={false} tickLine={false} width={150} />
+                    <Tooltip contentStyle={customTooltipStyle} cursor={{ fill: 'hsl(var(--muted)/0.3)' }} formatter={(value: number) => [privacyMode ? '••••' : `${value} ${labels.studentLabelSingular.toLowerCase()}(s)`, 'Quantidade']} />
+                    <Bar dataKey="value" radius={[0, 4, 4, 0]} barSize={32}>
+                      {
+                        retentionData.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={entry.color} />
+                        ))
+                      }
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
               </div>
             </div>
-            <div className="h-[280px] w-full">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={retentionData} layout="vertical" margin={{ top: 0, right: 30, left: 0, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} stroke="hsl(var(--border))" />
-                  <XAxis type="number" hide />
-                  <YAxis type="category" dataKey="name" tick={{ fontSize: 13, fill: 'hsl(var(--foreground))', fontWeight: 500 }} axisLine={false} tickLine={false} width={150} />
-                  <Tooltip contentStyle={customTooltipStyle} cursor={{ fill: 'hsl(var(--muted)/0.3)' }} formatter={(value: number) => [privacyMode ? '••••' : `${value} aluno(s)`, 'Quantidade']} />
-                  <Bar dataKey="value" radius={[0, 4, 4, 0]} barSize={32}>
-                    {
-                      retentionData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={entry.color} />
-                      ))
-                    }
-                  </Bar>
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-          </div>
+          )}
+
+          {isArena && (
+            <>
+              {/* Top Reservantes */}
+              <div className="card-interactive p-4 md:p-6 lg:col-span-2 border-primary/10 mt-4">
+                <h3 className="font-display font-bold text-lg md:text-xl text-foreground mb-1">Top Reservantes</h3>
+                <p className="text-sm text-muted-foreground mb-6">Clientes que geraram mais receita no período</p>
+                <div className="h-[280px] w-full">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={topReservantesData} layout="vertical" margin={{ top: 0, right: 30, left: 0, bottom: 0 }}>
+                      <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} stroke="hsl(var(--border))" />
+                      <XAxis type="number" hide />
+                      <YAxis type="category" dataKey="name" tick={{ fontSize: 13, fill: 'hsl(var(--foreground))', fontWeight: 500 }} axisLine={false} tickLine={false} width={150} />
+                      <Tooltip contentStyle={customTooltipStyle} cursor={{ fill: 'hsl(var(--muted)/0.3)' }} formatter={(value: number) => [privacyMode ? '••••' : formatCurrency(value), 'Faturamento']} />
+                      <Bar dataKey="revenue" fill={COLORS.emerald} radius={[0, 4, 4, 0]} barSize={32} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+            </>
+          )}
 
         </div>
       </main>

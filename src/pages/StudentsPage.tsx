@@ -20,12 +20,14 @@ import {
   getInactiveStudents, 
   getStudentsWithoutPlan 
 } from '@/lib/studentHelpers';
+import { useBusinessContext } from '@/hooks/useBusinessContext';
 
 export default function StudentsPage() {
   const { students, loadingStudents } = useStudents();
   const { plans, loadingPlans } = usePlans();
   const { modalities } = useModalities();
   const { groups } = useGroups();
+  const { labels, isOther } = useBusinessContext();
   
   const loading = loadingStudents || loadingPlans;
   
@@ -56,9 +58,9 @@ export default function StudentsPage() {
       <main className="container py-6 md:py-8 space-y-6">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
-            <h1 className="section-title text-2xl md:text-3xl">Meus Alunos</h1>
+            <h1 className="section-title text-2xl md:text-3xl">Meus {labels.studentLabel}</h1>
             <p className="text-muted-foreground mt-1">
-              Gerencie sua base de alunos e acompanhe o status de cada um
+              Gerencie sua base de {labels.studentLabel.toLowerCase()} e acompanhe o status de cada um
             </p>
           </div>
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
@@ -74,15 +76,15 @@ export default function StudentsPage() {
                   'Experimental': s.isTrial ? 'Sim' : 'Não',
                   'Telefone': s.phone || '',
                   'Email': s.email || '',
-                  'Plano': plan?.name || 'Sem plano',
-                  'Modalidade': modality?.name || '',
+                  [labels.planLabelSingular]: plan?.name || `Sem ${labels.planLabelSingular.toLowerCase()}`,
+                  [labels.modalityLabelSingular]: modality?.name || '',
                   'Nível': s.level || '',
-                  'Turmas': studentGroups,
+                  [labels.groupLabel]: studentGroups,
                   'Dia Vencimento': s.paymentDueDay || '',
                   'Data de Entrada': s.joinDate ? new Date(s.joinDate).toLocaleDateString('pt-BR') : '',
                 };
               });
-              exportToCSV(exportData, 'Alunos_Esportiz');
+              exportToCSV(exportData, `${labels.studentLabel}_Esportiz`);
             }} disabled={loading || students.length === 0}>
               <Download className="h-4 w-4" /> Exportar (CSV)
             </Button>
@@ -93,7 +95,7 @@ export default function StudentsPage() {
         {/* Summary Stats */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4 animate-fade-up">
           <StatCard 
-            title="Total de Alunos" 
+            title={`Total de ${labels.studentLabel}`} 
             value={loading ? '...' : totalStudents} 
             icon={Users} 
             description="Cadastrados no sistema"
@@ -103,19 +105,19 @@ export default function StudentsPage() {
             value={loading ? '...' : activeMonthlyCount} 
             icon={UserCheck} 
             variant="primary"
-            description="Com plano mensal ativo"
+            description={`Com ${labels.planLabelSingular.toLowerCase()} mensal ativo`}
           />
           <StatCard 
-            title="Sem Plano" 
+            title={`Sem ${labels.planLabelSingular}`} 
             value={loading ? '...' : withoutPlanCount} 
             icon={UserMinus} 
-            description="Ativos sem plano definido"
+            description={`Ativos sem ${labels.planLabelSingular.toLowerCase()} definido`}
           />
           <StatCard 
             title="Inativos" 
             value={loading ? '...' : inactiveCount} 
             icon={UserX} 
-            description="Alunos desativados"
+            description={`${labels.studentLabel} desativados`}
           />
         </div>
 
@@ -123,16 +125,30 @@ export default function StudentsPage() {
           <div className="flex flex-col md:flex-row gap-3">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input placeholder="Buscar aluno..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="pl-10" />
+              <Input placeholder={`Buscar ${labels.studentLabelSingular.toLowerCase()}...`} value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="pl-10" />
             </div>
             <div className="flex gap-2">
               <Select value={levelFilter} onValueChange={setLevelFilter}>
                 <SelectTrigger className="w-[140px]"><SelectValue placeholder="Nível" /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Todos os níveis</SelectItem>
-                  <SelectItem value="iniciante">Iniciante</SelectItem>
-                  <SelectItem value="intermediário">Intermediário</SelectItem>
-                  <SelectItem value="avançado">Avançado</SelectItem>
+                  {isOther ? (
+                    <>
+                      <SelectItem value="básico 1">Básico 1</SelectItem>
+                      <SelectItem value="básico 2">Básico 2</SelectItem>
+                      <SelectItem value="pré-intermediário">Pré-Intermediário</SelectItem>
+                      <SelectItem value="intermediário">Intermediário</SelectItem>
+                      <SelectItem value="intermediário avançado">Intermediário Avançado</SelectItem>
+                      <SelectItem value="avançado">Avançado</SelectItem>
+                      <SelectItem value="fluente">Fluente / Concluinte</SelectItem>
+                    </>
+                  ) : (
+                    <>
+                      <SelectItem value="iniciante">Iniciante</SelectItem>
+                      <SelectItem value="intermediário">Intermediário</SelectItem>
+                      <SelectItem value="avançado">Avançado</SelectItem>
+                    </>
+                  )}
                 </SelectContent>
               </Select>
               <Select value={statusFilter} onValueChange={setStatusFilter}>
@@ -145,9 +161,9 @@ export default function StudentsPage() {
                 </SelectContent>
               </Select>
               <Select value={modalityFilter} onValueChange={setModalityFilter}>
-                <SelectTrigger className="w-[140px]"><SelectValue placeholder="Modalidade" /></SelectTrigger>
+                <SelectTrigger className="w-[140px]"><SelectValue placeholder={labels.modalityLabelSingular} /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">Todas as modalidades</SelectItem>
+                  <SelectItem value="all">Todas as {labels.modalityLabel.toLowerCase()}</SelectItem>
                   {modalities.map((mod) => (
                     <SelectItem key={mod.id} value={mod.id}>{mod.name}</SelectItem>
                   ))}
@@ -168,8 +184,8 @@ export default function StudentsPage() {
         ) : (
           <div className="card-elevated p-12 text-center">
             <Users className="h-12 w-12 mx-auto text-muted-foreground/50 mb-3" />
-            <p className="text-lg font-medium text-muted-foreground">Nenhum aluno encontrado</p>
-            <p className="text-sm text-muted-foreground/70 mt-1">Tente ajustar os filtros ou adicione um novo aluno</p>
+            <p className="text-lg font-medium text-muted-foreground">Nenhum {labels.studentLabelSingular.toLowerCase()} encontrado</p>
+            <p className="text-sm text-muted-foreground/70 mt-1">Tente ajustar os filtros ou adicione um(a) novo(a) {labels.studentLabelSingular.toLowerCase()}</p>
           </div>
         )}
       </main>

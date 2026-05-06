@@ -20,6 +20,7 @@ import {
 import { formatCurrency } from '@/lib/formatCurrency';
 import { cn } from '@/lib/utils';
 import { getDayName } from '@/data/mockData';
+import { useBusinessContext } from '@/hooks/useBusinessContext';
 
 export default function StudentProfilePage() {
   const { id } = useParams();
@@ -34,6 +35,7 @@ export default function StudentProfilePage() {
   const { groups } = useGroups();
   const { profile } = useProfile();
   const { attendance } = useAttendance();
+  const { labels, isArena } = useBusinessContext();
 
   const [activeTab, setActiveTab] = useState('overview');
 
@@ -77,8 +79,8 @@ export default function StudentProfilePage() {
       <div className="min-h-screen bg-background">
         <Header />
         <div className="container py-8 text-center">
-          <h2 className="text-xl font-bold mb-4">Aluno não encontrado</h2>
-          <Button onClick={() => navigate('/alunos')} variant="outline">Voltar para Alunos</Button>
+          <h2 className="text-xl font-bold mb-4">{labels.studentLabelSingular} não encontrado(a)</h2>
+          <Button onClick={() => navigate('/alunos')} variant="outline">Voltar para {labels.studentLabel}</Button>
         </div>
       </div>
     );
@@ -105,7 +107,7 @@ export default function StudentProfilePage() {
           </Button>
           <StudentForm student={student} trigger={
             <Button variant="outline" className="gap-2">
-              <Edit className="h-4 w-4" /> Editar Aluno
+              <Edit className="h-4 w-4" /> Editar {labels.studentLabelSingular}
             </Button>
           } />
         </div>
@@ -132,22 +134,24 @@ export default function StudentProfilePage() {
               {(student.city || student.state) && <div className="flex items-center gap-1.5"><MapPin className="h-4 w-4" />{[student.city, student.state].filter(Boolean).join(' - ')}</div>}
             </div>
 
-            <div className="flex flex-wrap gap-2 pt-1">
-              <span className="px-3 py-1 rounded-md text-xs font-semibold bg-muted border">
-                Nível: <span className="capitalize text-foreground">{student.level}</span>
-              </span>
-              {modality && (
-                <span className="px-3 py-1 rounded-md text-xs font-semibold border flex items-center gap-1.5 bg-background">
-                  <div className="h-2 w-2 rounded-full" style={{ backgroundColor: modality.color }} />
-                  {modality.name}
+            {!isArena && (
+              <div className="flex flex-wrap gap-2 pt-1">
+                <span className="px-3 py-1 rounded-md text-xs font-semibold bg-muted border">
+                  Nível: <span className="capitalize text-foreground">{student.level}</span>
                 </span>
-              )}
-              {plan && (
-                <span className="px-3 py-1 rounded-md text-xs font-semibold bg-primary/10 text-primary border border-primary/20">
-                  {plan.name}
-                </span>
-              )}
-            </div>
+                {modality && (
+                  <span className="px-3 py-1 rounded-md text-xs font-semibold border flex items-center gap-1.5 bg-background">
+                    <div className="h-2 w-2 rounded-full" style={{ backgroundColor: modality.color }} />
+                    {modality.name}
+                  </span>
+                )}
+                {plan && (
+                  <span className="px-3 py-1 rounded-md text-xs font-semibold bg-primary/10 text-primary border border-primary/20">
+                    {plan.name}
+                  </span>
+                )}
+              </div>
+            )}
           </div>
         </div>
 
@@ -156,13 +160,13 @@ export default function StudentProfilePage() {
           <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 md:w-auto md:inline-flex h-auto p-1 bg-muted/50 gap-1 sm:gap-0">
             <TabsTrigger value="overview" className="gap-2 py-2.5"><User className="h-4 w-4 hidden sm:block" />Visão Geral</TabsTrigger>
             <TabsTrigger value="finance" className="gap-2 py-2.5"><DollarSign className="h-4 w-4 hidden sm:block" />Financeiro</TabsTrigger>
-            <TabsTrigger value="attendance" className="gap-2 py-2.5"><Activity className="h-4 w-4 hidden sm:block" />Frequência</TabsTrigger>
+            {!isArena && <TabsTrigger value="attendance" className="gap-2 py-2.5"><Activity className="h-4 w-4 hidden sm:block" />Frequência</TabsTrigger>}
             <TabsTrigger value="documents" className="gap-2 py-2.5"><FileSignature className="h-4 w-4 hidden sm:block" />Contratos</TabsTrigger>
           </TabsList>
 
           {/* OVERVIEW TAB */}
           <TabsContent value="overview" className="mt-6 space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
-            <div className="grid md:grid-cols-2 gap-6">
+            <div className={cn("grid gap-6", isArena ? "grid-cols-1" : "md:grid-cols-2")}>
               <Card>
                 <CardHeader>
                   <CardTitle className="text-lg flex items-center gap-2"><FileText className="h-5 w-5 text-primary" /> Dados Pessoais</CardTitle>
@@ -182,7 +186,7 @@ export default function StudentProfilePage() {
                       <p className="text-sm font-semibold">{student.birthDate ? new Date(student.birthDate).toLocaleDateString('pt-BR') : 'Não informado'}</p>
                     </div>
                     <div>
-                      <p className="text-sm font-medium text-muted-foreground mb-1">Entrada no CT</p>
+                      <p className="text-sm font-medium text-muted-foreground mb-1">Entrada no {labels.ctLabel}</p>
                       <p className="text-sm font-semibold">{new Date(student.joinDate).toLocaleDateString('pt-BR')}</p>
                     </div>
                   </div>
@@ -195,34 +199,36 @@ export default function StudentProfilePage() {
                 </CardContent>
               </Card>
 
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg flex items-center gap-2"><CalendarDays className="h-5 w-5 text-primary" /> Turmas Vinculadas</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  {studentGroups.length === 0 ? (
-                    <p className="text-sm text-muted-foreground py-4 text-center border border-dashed rounded-lg">Este aluno não está em nenhuma turma.</p>
-                  ) : (
-                    <div className="space-y-3">
-                      {studentGroups.map(group => (
-                        <div key={group.id} className="flex flex-col p-3 rounded-lg border bg-muted/10">
-                          <div className="flex items-center gap-2 mb-2">
-                            <div className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: group.color }} />
-                            <span className="font-semibold text-sm">{group.name}</span>
+              {!isArena && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-lg flex items-center gap-2"><CalendarDays className="h-5 w-5 text-primary" /> {labels.groupLabel}</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    {studentGroups.length === 0 ? (
+                      <p className="text-sm text-muted-foreground py-4 text-center border border-dashed rounded-lg">Este(a) {labels.studentLabelSingular.toLowerCase()} não está em nenhum(a) {labels.groupLabelSingular.toLowerCase()}.</p>
+                    ) : (
+                      <div className="space-y-3">
+                        {studentGroups.map(group => (
+                          <div key={group.id} className="flex flex-col p-3 rounded-lg border bg-muted/10">
+                            <div className="flex items-center gap-2 mb-2">
+                              <div className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: group.color }} />
+                              <span className="font-semibold text-sm">{group.name}</span>
+                            </div>
+                            <div className="flex flex-wrap gap-1.5">
+                              {group.schedule.map((slot: any, i: number) => (
+                                <span key={i} className="text-xs bg-background border px-2 py-1 rounded-md text-muted-foreground">
+                                  {getDayName(slot.dayOfWeek)} - {slot.time}
+                                </span>
+                              ))}
+                            </div>
                           </div>
-                          <div className="flex flex-wrap gap-1.5">
-                            {group.schedule.map((slot: any, i: number) => (
-                              <span key={i} className="text-xs bg-background border px-2 py-1 rounded-md text-muted-foreground">
-                                {getDayName(slot.dayOfWeek)} - {slot.time}
-                              </span>
-                            ))}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
+                        ))}
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              )}
             </div>
           </TabsContent>
 
@@ -235,8 +241,8 @@ export default function StudentProfilePage() {
                 <CardContent>
                   <div className="mb-6 grid grid-cols-1 sm:grid-cols-3 gap-4">
                     <div className="bg-primary/5 border border-primary/20 rounded-xl p-4">
-                      <p className="text-sm text-primary font-semibold mb-1">Plano Atual</p>
-                      <p className="text-xl font-display font-bold">{plan?.name || 'Sem plano'}</p>
+                      <p className="text-sm text-primary font-semibold mb-1">{labels.planLabelSingular} Atual</p>
+                      <p className="text-xl font-display font-bold">{plan?.name || `Sem ${labels.planLabelSingular.toLowerCase()}`}</p>
                       {plan && <p className="text-xs text-muted-foreground mt-1">{formatCurrency(plan.price)} {plan.billingType === 'monthly' ? 'por mês' : 'por sessão'}</p>}
                     </div>
                     <div className="bg-muted rounded-xl p-4">
@@ -294,63 +300,65 @@ export default function StudentProfilePage() {
           </TabsContent>
 
           {/* ATTENDANCE TAB */}
-          <TabsContent value="attendance" className="mt-6 space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
-             <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg flex items-center gap-2"><TrendingUp className="h-5 w-5 text-primary" /> Visão de Frequência</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="mb-6 grid grid-cols-1 sm:grid-cols-3 gap-4">
-                    <div className="bg-primary/5 border border-primary/20 rounded-xl p-4">
-                      <p className="text-sm text-primary font-semibold mb-1">Taxa de Frequência</p>
-                      <p className="text-3xl font-display font-bold">{attendanceStats.rate}%</p>
-                    </div>
-                    <div className="bg-muted rounded-xl p-4">
-                      <p className="text-sm text-muted-foreground font-semibold mb-1">Presenças</p>
-                      <p className="text-3xl font-display font-bold text-emerald-600">{attendanceStats.present}</p>
-                    </div>
-                    <div className="bg-muted rounded-xl p-4">
-                      <p className="text-sm text-muted-foreground font-semibold mb-1">Faltas</p>
-                      <p className="text-3xl font-display font-bold text-destructive">{attendanceStats.absent}</p>
-                    </div>
-                  </div>
-
-                  <div>
-                    <h3 className="font-semibold text-lg mb-3">Últimas Aulas</h3>
-                    {studentTrainings.length === 0 ? (
-                      <p className="text-sm text-muted-foreground py-4 border border-dashed rounded-lg text-center">Nenhum treino encontrado para este aluno.</p>
-                    ) : (
-                      <div className="space-y-3">
-                        {studentTrainings.slice(0, 10).map(training => {
-                          const record = studentAttendance.find(a => a.trainingId === training.id);
-                          const trainingGroup = groups.find(g => g.id === training.groupId);
-                          
-                          return (
-                            <div key={training.id} className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-3 rounded-lg border bg-muted/10">
-                              <div className="flex flex-col">
-                                <span className="font-semibold text-sm">{trainingGroup?.name || 'Treino'}</span>
-                                <span className="text-xs text-muted-foreground">
-                                  {new Date(training.date).toLocaleDateString('pt-BR')} às {training.time}
-                                </span>
-                              </div>
-                              <div className="shrink-0">
-                                {!record ? (
-                                  <span className="inline-flex items-center gap-1 text-xs font-bold bg-muted text-muted-foreground px-2 py-0.5 rounded-full"><Activity className="h-3 w-3" /> Sem chamada</span>
-                                ) : record.present ? (
-                                  <span className="inline-flex items-center gap-1 text-xs font-bold text-emerald-600 bg-emerald-100 px-2 py-0.5 rounded-full"><CheckCircle className="h-3 w-3" /> Presente</span>
-                                ) : (
-                                  <span className="inline-flex items-center gap-1 text-xs font-bold text-destructive bg-destructive/10 px-2 py-0.5 rounded-full"><XCircle className="h-3 w-3" /> Faltou</span>
-                                )}
-                              </div>
-                            </div>
-                          );
-                        })}
+          {!isArena && (
+            <TabsContent value="attendance" className="mt-6 space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
+               <Card>
+                  <CardHeader>
+                    <CardTitle className="text-lg flex items-center gap-2"><TrendingUp className="h-5 w-5 text-primary" /> Visão de Frequência</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="mb-6 grid grid-cols-1 sm:grid-cols-3 gap-4">
+                      <div className="bg-primary/5 border border-primary/20 rounded-xl p-4">
+                        <p className="text-sm text-primary font-semibold mb-1">Taxa de Frequência</p>
+                        <p className="text-3xl font-display font-bold">{attendanceStats.rate}%</p>
                       </div>
-                    )}
-                  </div>
-                </CardContent>
-             </Card>
-          </TabsContent>
+                      <div className="bg-muted rounded-xl p-4">
+                        <p className="text-sm text-muted-foreground font-semibold mb-1">Presenças</p>
+                        <p className="text-3xl font-display font-bold text-emerald-600">{attendanceStats.present}</p>
+                      </div>
+                      <div className="bg-muted rounded-xl p-4">
+                        <p className="text-sm text-muted-foreground font-semibold mb-1">Faltas</p>
+                        <p className="text-3xl font-display font-bold text-destructive">{attendanceStats.absent}</p>
+                      </div>
+                    </div>
+
+                    <div>
+                      <h3 className="font-semibold text-lg mb-3">Últimos(as) {labels.trainingLabel}</h3>
+                      {studentTrainings.length === 0 ? (
+                        <p className="text-sm text-muted-foreground py-4 border border-dashed rounded-lg text-center">Nenhum(a) {labels.trainingLabelSingular.toLowerCase()} encontrado(a) para este(a) {labels.studentLabelSingular.toLowerCase()}.</p>
+                      ) : (
+                        <div className="space-y-3">
+                          {studentTrainings.slice(0, 10).map(training => {
+                            const record = studentAttendance.find(a => a.trainingId === training.id);
+                            const trainingGroup = groups.find(g => g.id === training.groupId);
+                            
+                            return (
+                              <div key={training.id} className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-3 rounded-lg border bg-muted/10">
+                                <div className="flex flex-col">
+                                  <span className="font-semibold text-sm">{trainingGroup?.name || labels.trainingLabelSingular}</span>
+                                  <span className="text-xs text-muted-foreground">
+                                    {new Date(training.date).toLocaleDateString('pt-BR')} às {training.time}
+                                  </span>
+                                </div>
+                                <div className="shrink-0">
+                                  {!record ? (
+                                    <span className="inline-flex items-center gap-1 text-xs font-bold bg-muted text-muted-foreground px-2 py-0.5 rounded-full"><Activity className="h-3 w-3" /> Sem chamada</span>
+                                  ) : record.present ? (
+                                    <span className="inline-flex items-center gap-1 text-xs font-bold text-emerald-600 bg-emerald-100 px-2 py-0.5 rounded-full"><CheckCircle className="h-3 w-3" /> Presente</span>
+                                  ) : (
+                                    <span className="inline-flex items-center gap-1 text-xs font-bold text-destructive bg-destructive/10 px-2 py-0.5 rounded-full"><XCircle className="h-3 w-3" /> Faltou</span>
+                                  )}
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  </CardContent>
+               </Card>
+            </TabsContent>
+          )}
 
           {/* DOCUMENTS/CONTRACTS TAB */}
           <TabsContent value="documents" className="mt-6 space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
@@ -383,16 +391,16 @@ export default function StudentProfilePage() {
                       no nível {student.level}, nas instalações do CONTRATADO.
                     </p>
 
-                    <h3 className="font-bold mt-6 mb-2">CLÁUSULA 2ª - DOS VALORES E PLANO</h3>
+                    <h3 className="font-bold mt-6 mb-2">CLÁUSULA 2ª - DOS VALORES E {labels.planLabelSingular.toUpperCase()}</h3>
                     <p className="mb-4">
-                      O CONTRATANTE adere ao plano <strong>{plan?.name || '__________'}</strong>, comprometendo-se ao pagamento 
+                      O CONTRATANTE adere ao {labels.planLabelSingular.toLowerCase()} <strong>{plan?.name || '__________'}</strong>, comprometendo-se ao pagamento 
                       do valor de {plan ? `R$ ${plan.price.toFixed(2)}` : '__________'}, com vencimento todo dia {student.paymentDueDay || '__'} de cada mês.
                     </p>
 
                     <h3 className="font-bold mt-6 mb-2">CLÁUSULA 3ª - DAS REGRAS DO CT</h3>
                     <p className="mb-4">
-                      É dever do CONTRATANTE zelar pelas instalações, equipamentos e respeitar os horários preestabelecidos para as aulas 
-                      {studentGroups.length > 0 ? ` (Turmas: ${studentGroups.map(g => g.name).join(', ')})` : ''}.
+                      É dever do CONTRATANTE zelar pelas instalações, equipamentos e respeitar os horários preestabelecidos para os(as) {labels.trainingLabel.toLowerCase()} 
+                      {studentGroups.length > 0 ? ` (${labels.groupLabel}: ${studentGroups.map(g => g.name).join(', ')})` : ''}.
                     </p>
 
                     <div className="mt-16 pt-8 border-t border-dashed grid grid-cols-2 gap-8 text-center">
@@ -441,16 +449,16 @@ export default function StudentProfilePage() {
           no nível {student.level}, nas instalações do CONTRATADO.
         </p>
 
-        <h3 className="font-bold mt-6 mb-2">CLÁUSULA 2ª - DOS VALORES E PLANO</h3>
+        <h3 className="font-bold mt-6 mb-2">CLÁUSULA 2ª - DOS VALORES E {labels.planLabelSingular.toUpperCase()}</h3>
         <p className="mb-6 text-justify">
-          O CONTRATANTE adere ao plano <strong>{plan?.name || '__________'}</strong>, comprometendo-se ao pagamento 
+          O CONTRATANTE adere ao {labels.planLabelSingular.toLowerCase()} <strong>{plan?.name || '__________'}</strong>, comprometendo-se ao pagamento 
           do valor de {plan ? `R$ ${plan.price.toFixed(2)}` : '__________'}, com vencimento todo dia {student.paymentDueDay || '__'} de cada mês.
         </p>
 
         <h3 className="font-bold mt-6 mb-2">CLÁUSULA 3ª - DAS REGRAS GERAIS</h3>
         <p className="mb-6 text-justify">
-          É dever do CONTRATANTE zelar pelas instalações, equipamentos e respeitar os horários preestabelecidos para as aulas 
-          {studentGroups.length > 0 ? ` (Turmas: ${studentGroups.map(g => g.name).join(', ')})` : ''}.
+          É dever do CONTRATANTE zelar pelas instalações, equipamentos e respeitar os horários preestabelecidos para os(as) {labels.trainingLabel.toLowerCase()} 
+          {studentGroups.length > 0 ? ` (${labels.groupLabel}: ${studentGroups.map(g => g.name).join(', ')})` : ''}.
         </p>
 
         <div className="mt-32 pt-8 grid grid-cols-2 gap-16 text-center">

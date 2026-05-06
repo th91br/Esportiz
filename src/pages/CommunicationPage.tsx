@@ -9,6 +9,7 @@ import { useStudents } from '@/hooks/queries/useStudents';
 import { usePayments } from '@/hooks/queries/usePayments';
 import { getActiveMonthlyStudents, getInactiveStudents, getStudentsWithoutPlan } from '@/lib/studentHelpers';
 import { usePlans } from '@/hooks/queries/usePlans';
+import { useBusinessContext } from '@/hooks/useBusinessContext';
 import { toast } from 'sonner';
 
 type Audience = 'all_active' | 'overdue' | 'due_7_days' | 'trial' | 'without_plan' | 'inactive';
@@ -17,9 +18,10 @@ export default function CommunicationPage() {
   const { students, loadingStudents } = useStudents();
   const { payments, loadingPayments } = usePayments();
   const { plans, loadingPlans } = usePlans();
+  const { labels } = useBusinessContext();
   
   const [audience, setAudience] = useState<Audience>('all_active');
-  const [messageTemplate, setMessageTemplate] = useState('Olá {nome}, tudo bem? Aqui é do CT!');
+  const [messageTemplate, setMessageTemplate] = useState(`Olá {nome}, tudo bem? Aqui é da {escola}! 😊`);
   const [sentTo, setSentTo] = useState<Set<string>>(new Set());
 
   const loading = loadingStudents || loadingPayments || loadingPlans;
@@ -73,19 +75,22 @@ export default function CommunicationPage() {
 
   const handleSendWhatsApp = (studentId: string, studentName: string, studentPhone: string | null) => {
     if (!studentPhone) {
-      toast.error(`O aluno ${studentName} não possui um telefone cadastrado.`);
+      toast.error(`O(A) ${labels.studentLabelSingular.toLowerCase()} ${studentName} não possui um telefone cadastrado.`);
       return;
     }
 
     const whatsappPhone = formatPhoneForWhatsApp(studentPhone);
     if (!whatsappPhone) {
-      toast.error(`Número de telefone inválido para o aluno ${studentName}.`);
+      toast.error(`Número de telefone inválido para o(a) ${labels.studentLabelSingular.toLowerCase()} ${studentName}.`);
       return;
     }
 
     // Variáveis dinâmicas
     const firstName = studentName.split(' ')[0];
-    const personalizedMessage = messageTemplate.replace(/{nome}/g, firstName).replace(/{nome_completo}/g, studentName);
+    const personalizedMessage = messageTemplate
+      .replace(/{nome}/g, firstName)
+      .replace(/{nome_completo}/g, studentName)
+      .replace(/{escola}/g, labels.ctLabelShort);
     const encodedMessage = encodeURIComponent(personalizedMessage);
 
     const url = `https://wa.me/${whatsappPhone}?text=${encodedMessage}`;
@@ -109,7 +114,7 @@ export default function CommunicationPage() {
             <MessageCircle className="h-6 w-6 text-primary" /> Comunicação em Massa
           </h1>
           <p className="text-muted-foreground mt-1">
-            Crie campanhas e dispare mensagens personalizadas via WhatsApp para seus alunos.
+            Crie campanhas e dispare mensagens personalizadas via WhatsApp para seus(as) {labels.studentLabel.toLowerCase()}.
           </p>
         </div>
 
@@ -119,18 +124,18 @@ export default function CommunicationPage() {
             <div className="card-interactive p-6 space-y-4 border-primary/20">
               <div className="space-y-2">
                 <Label className="text-base font-bold">1. Público-Alvo</Label>
-                <p className="text-sm text-muted-foreground mb-3">Selecione o grupo de alunos que receberá a mensagem.</p>
+                <p className="text-sm text-muted-foreground mb-3">Selecione o grupo de {labels.studentLabel.toLowerCase()} que receberá a mensagem.</p>
                 <Select value={audience} onValueChange={(val) => setAudience(val as Audience)} disabled={loading}>
                   <SelectTrigger className="w-full bg-background border-border/50">
                     <SelectValue placeholder="Selecione o público" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all_active">Todos os Alunos Ativos</SelectItem>
+                    <SelectItem value="all_active">Todos(as) os(as) {labels.studentLabel} (Ativos)</SelectItem>
                     <SelectItem value="overdue">Inadimplentes (Mensalidade Atrasada)</SelectItem>
                     <SelectItem value="due_7_days">Vencendo nos próximos 7 dias</SelectItem>
-                    <SelectItem value="trial">Aulas Experimentais (Leads)</SelectItem>
-                    <SelectItem value="without_plan">Alunos sem Plano Definido</SelectItem>
-                    <SelectItem value="inactive">Alunos Inativos (Recuperação)</SelectItem>
+                    <SelectItem value="trial">{labels.trainingLabel} Experimentais (Leads)</SelectItem>
+                    <SelectItem value="without_plan">{labels.studentLabel} sem {labels.planLabel}</SelectItem>
+                    <SelectItem value="inactive">{labels.studentLabel} Inativos(as) (Recuperação)</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -138,7 +143,7 @@ export default function CommunicationPage() {
               <div className="space-y-2 pt-4">
                 <Label className="text-base font-bold">2. Mensagem</Label>
                 <p className="text-sm text-muted-foreground mb-3">
-                  Use <code className="bg-muted px-1 py-0.5 rounded text-primary">{`{nome}`}</code> para inserir o primeiro nome do aluno.
+                  Variáveis: <code className="bg-muted px-1 py-0.5 rounded text-primary">{`{nome}`}</code> para o nome do {labels.studentLabelSingular.toLowerCase()} e <code className="bg-muted px-1 py-0.5 rounded text-primary">{`{escola}`}</code> para o nome do negócio.
                 </p>
                 <Textarea 
                   className="min-h-[150px] resize-none bg-background border-border/50" 
@@ -151,7 +156,7 @@ export default function CommunicationPage() {
               <div className="bg-primary/10 border border-primary/20 rounded-lg p-4 flex gap-3 mt-4">
                 <AlertCircle className="h-5 w-5 text-primary shrink-0" />
                 <p className="text-xs text-muted-foreground">
-                  Para evitar bloqueios pelo WhatsApp (Anti-Spam), você precisará clicar em "Enviar" aluno por aluno. A mensagem já será preenchida automaticamente.
+                  Para evitar bloqueios pelo WhatsApp (Anti-Spam), você precisará clicar em "Enviar" {labels.studentLabelSingular.toLowerCase()} por {labels.studentLabelSingular.toLowerCase()}. A mensagem já será preenchida automaticamente.
                 </p>
               </div>
             </div>
@@ -163,7 +168,7 @@ export default function CommunicationPage() {
               <div className="flex items-center justify-between mb-6 pb-4 border-b border-border/40">
                 <div>
                   <h2 className="text-lg font-bold font-display">Lista de Disparo</h2>
-                  <p className="text-sm text-muted-foreground">{targetStudents.length} aluno(s) encontrado(s)</p>
+                  <p className="text-sm text-muted-foreground">{targetStudents.length} {targetStudents.length !== 1 ? labels.studentLabel.toLowerCase() : labels.studentLabelSingular.toLowerCase()} encontrado(s)</p>
                 </div>
                 <div className="bg-muted px-3 py-1.5 rounded-full flex items-center gap-2">
                   <Users className="h-4 w-4 text-muted-foreground" />
@@ -178,9 +183,9 @@ export default function CommunicationPage() {
               ) : targetStudents.length === 0 ? (
                 <div className="flex-1 flex flex-col items-center justify-center text-center p-8 bg-muted/20 rounded-xl border border-dashed border-border/50">
                   <MessageCircle className="h-12 w-12 text-muted-foreground/30 mb-4" />
-                  <h3 className="text-lg font-semibold text-foreground">Nenhum aluno encontrado</h3>
+                  <h3 className="text-lg font-semibold text-foreground">Nenhum(a) {labels.studentLabelSingular.toLowerCase()} encontrado(a)</h3>
                   <p className="text-sm text-muted-foreground max-w-sm mt-2">
-                    Não existem alunos correspondentes a este filtro no momento. Tente selecionar outro público-alvo.
+                    Não existem {labels.studentLabel.toLowerCase()} correspondentes a este filtro no momento. Tente selecionar outro público-alvo.
                   </p>
                 </div>
               ) : (

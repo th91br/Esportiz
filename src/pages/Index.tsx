@@ -15,6 +15,7 @@ import {
 import { Header } from '@/components/Header';
 import { StatCard } from '@/components/StatCard';
 import { TodaySchedule } from '@/components/TodaySchedule';
+import { ArenaTodaySchedule } from '@/components/ArenaTodaySchedule';
 import { QuickActions } from '@/components/QuickActions';
 import { OverdueAlert } from '@/components/OverdueAlert';
 import { Button } from '@/components/ui/button';
@@ -121,6 +122,20 @@ export default function Index() {
     }))
     .sort((a, b) => b.studentCount - a.studentCount);
 
+  // ── Arena Specific Stats ──
+  const occupancyRate = isArena ? (() => {
+    const activeCourts = modalities.filter(c => {
+      try {
+        const meta = typeof (c as any).metadata === 'string' ? JSON.parse((c as any).metadata) : ((c as any).metadata || {});
+        return meta.isActive !== false;
+      } catch { return true; }
+    });
+    const totalHoursAvailable = activeCourts.length * 15 * new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).getDate();
+    const monthReservations = trainings.filter(t => t.date.startsWith(currentMonthStr) && (t as any).status !== 'cancelled');
+    const totalHoursBooked = monthReservations.reduce((acc, r) => acc + ((r as any).duration_minutes || 60) / 60, 0);
+    return totalHoursAvailable > 0 ? Math.round((totalHoursBooked / totalHoursAvailable) * 100) : 0;
+  })() : 0;
+
   const pv = (val: number | string) => (privacyMode ? '••••' : val);
 
   return (
@@ -183,7 +198,7 @@ export default function Index() {
                   <p className="text-muted-foreground text-sm">
                     {birthdaysToday.length === 1
                       ? `${birthdaysToday[0].name} faz aniversário hoje!`
-                      : `${birthdaysToday.length} alunos fazem aniversário hoje!`}
+                      : `${birthdaysToday.length} ${labels.studentLabel.toLowerCase()} fazem aniversário hoje!`}
                   </p>
                 </div>
               </div>
@@ -213,19 +228,19 @@ export default function Index() {
           {isSportSchool && (
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
               <StatCard
-                title="Alunos Ativos"
+                title={`${labels.studentLabel} Ativos`}
                 value={loading ? '...' : pv(activeStudents)}
                 icon={Users}
                 description={privacyMode ? '' : `de ${totalStudents} total`}
               />
               <StatCard
-                title="Treinos de Hoje"
+                title={`${labels.trainingLabel} de Hoje`}
                 value={loading ? '...' : pv(todayTrainings)}
                 icon={Calendar}
                 variant="primary"
               />
               <StatCard
-                title="Taxa de Presença"
+                title={`Taxa de ${labels.attendanceLabel}`}
                 value={loading ? '...' : pv(`${attendanceRate}%`)}
                 icon={CheckCircle}
               />
@@ -233,18 +248,17 @@ export default function Index() {
                 title="Aniversários (Mês)"
                 value={loading ? '...' : pv(birthdaysMonth.length)}
                 icon={Cake}
-                description={privacyMode ? '' : 'Alunos este mês'}
+                description={privacyMode ? '' : `${labels.studentLabel} este mês`}
               />
             </div>
           )}
 
           {isArena && (
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
               <StatCard
-                title="Clientes Ativos"
-                value={loading ? '...' : pv(activeStudents)}
-                icon={Users}
-                description={privacyMode ? '' : `de ${totalStudents} total`}
+                title="Quadras Ativas"
+                value={loading ? '...' : pv(modalities.length)}
+                icon={Landmark}
               />
               <StatCard
                 title="Reservas de Hoje"
@@ -253,10 +267,16 @@ export default function Index() {
                 variant="primary"
               />
               <StatCard
-                title="Vendas de Hoje"
-                value={loading ? '...' : pv(formatCurrency(todaySalesTotal))}
-                icon={ShoppingCart}
-                description={privacyMode ? '' : 'PDV do dia'}
+                title="Taxa de Ocupação"
+                value={loading ? '...' : pv(`${occupancyRate}%`)}
+                icon={TrendingUp}
+                description={privacyMode ? '' : 'Média do mês'}
+              />
+              <StatCard
+                title="Faturamento do Mês"
+                value={loading ? '...' : pv(formatCurrency(receivedRevenue))}
+                icon={DollarSign}
+                description={privacyMode ? '' : 'Total recebido'}
               />
             </div>
           )}
@@ -264,48 +284,52 @@ export default function Index() {
           {isOther && (
             <div className="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-4">
               <StatCard
-                title="Alunos Ativos"
+                title={`${labels.studentLabel} Ativos`}
                 value={loading ? '...' : pv(activeStudents)}
                 icon={Users}
                 description={privacyMode ? '' : `de ${totalStudents} total`}
               />
               <StatCard
-                title="Aulas de Hoje"
+                title={`${labels.trainingLabel} de Hoje`}
                 value={loading ? '...' : pv(todayTrainings)}
                 icon={Calendar}
                 variant="primary"
               />
               <StatCard
-                title="Taxa de Presença"
+                title={`Taxa de ${labels.attendanceLabel}`}
                 value={loading ? '...' : pv(`${attendanceRate}%`)}
                 icon={CheckCircle}
               />
             </div>
           )}
 
-          {/* ── Linha 2: Financeiro — igual para todos ── */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-4">
-            <StatCard
-              title="Faturamento Total"
-              value={loading ? '...' : pv(formatCurrency(expectedRevenue))}
-              icon={DollarSign}
-              description={privacyMode ? '' : 'Total bruto esperado'}
-            />
-            <StatCard
-              title="Recebido no Mês"
-              value={loading ? '...' : pv(formatCurrency(receivedRevenue))}
-              icon={CheckCircle}
-              variant="primary"
-              progress={privacyMode ? undefined : { value: revenueProgress, label: 'Meta Mensal' }}
-            />
-            <StatCard
-              title="Lucro Líquido"
-              value={loading ? '...' : pv(formatCurrency(netProfit))}
-              icon={netProfit >= 0 ? TrendingUp : TrendingDown}
-              variant={netProfit >= 0 ? 'primary' : undefined}
-              description={privacyMode ? '' : `Despesas pagas: ${formatCurrency(totalExpensesPaid)}`}
-            />
-          </div>
+          {/* ── Linha 2: Financeiro ── */}
+          {!isArena && (
+            <div className={`grid grid-cols-1 gap-3 md:gap-4 ${isSportSchool ? 'md:grid-cols-2' : 'md:grid-cols-3'}`}>
+              <StatCard
+                title="Faturamento Total"
+                value={loading ? '...' : pv(formatCurrency(expectedRevenue))}
+                icon={DollarSign}
+                description={privacyMode ? '' : 'Total bruto esperado'}
+              />
+              <StatCard
+                title="Recebido no Mês"
+                value={loading ? '...' : pv(formatCurrency(receivedRevenue))}
+                icon={CheckCircle}
+                variant="primary"
+                progress={privacyMode ? undefined : { value: revenueProgress, label: 'Meta Mensal' }}
+              />
+              {!isSportSchool && (
+                <StatCard
+                  title="Lucro Líquido"
+                  value={loading ? '...' : pv(formatCurrency(netProfit))}
+                  icon={netProfit >= 0 ? TrendingUp : TrendingDown}
+                  variant={netProfit >= 0 ? 'primary' : undefined}
+                  description={privacyMode ? '' : `Despesas pagas: ${formatCurrency(totalExpensesPaid)}`}
+                />
+              )}
+            </div>
+          )}
         </section>
 
         {/* ── Quadras / Modalidades — sport_school e arena ── */}
@@ -318,7 +342,7 @@ export default function Index() {
                 <Tag className="h-4 w-4 text-primary" />
               )}
               <h2 className="font-display font-bold text-lg">
-                {isArena ? 'Suas Quadras' : 'Suas Modalidades'}
+                Suas {labels.modalityLabel}
               </h2>
             </div>
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
@@ -335,7 +359,7 @@ export default function Index() {
                   <div className="min-w-0">
                     <p className="text-sm font-bold truncate">{mod.name}</p>
                     <p className="text-[10px] text-muted-foreground uppercase font-bold tracking-tight">
-                      {mod.studentCount} {labels.studentLabel}
+                      {mod.studentCount} {labels.studentLabel.toLowerCase()}
                     </p>
                   </div>
                 </div>
@@ -349,7 +373,7 @@ export default function Index() {
           <section className="animate-fade-up" style={{ animationDelay: '0.05s' }}>
             <div className="flex items-center gap-2 mb-4 px-1">
               <Tag className="h-4 w-4 text-primary" />
-              <h2 className="font-display font-bold text-lg">Suas Turmas</h2>
+              <h2 className="font-display font-bold text-lg">Suas {labels.groupLabel}</h2>
             </div>
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
               {modalityStats.map((mod) => (
@@ -365,7 +389,7 @@ export default function Index() {
                   <div className="min-w-0">
                     <p className="text-sm font-bold truncate">{mod.name}</p>
                     <p className="text-[10px] text-muted-foreground uppercase font-bold tracking-tight">
-                      {mod.studentCount} alunos
+                      {mod.studentCount} {labels.studentLabel.toLowerCase()}
                     </p>
                   </div>
                 </div>
@@ -389,7 +413,7 @@ export default function Index() {
           style={{ animationDelay: '0.2s' }}
         >
           <div className="lg:col-span-2">
-            <TodaySchedule />
+            {isArena ? <ArenaTodaySchedule /> : <TodaySchedule />}
           </div>
           <div className="lg:col-span-1 border border-border/50 rounded-2xl bg-muted/5 flex flex-col pt-1 p-0.5">
             <QuickActions />

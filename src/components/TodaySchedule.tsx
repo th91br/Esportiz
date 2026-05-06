@@ -4,12 +4,14 @@ import { Button } from '@/components/ui/button';
 import { useTrainings } from '@/hooks/queries/useTrainings';
 import { useStudents } from '@/hooks/queries/useStudents';
 import { getDayName, formatDate, getEndTime, getTimePeriod } from '@/data/mockData';
+import { useBusinessContext } from '@/hooks/useBusinessContext';
 
 const periodIcons = { manhã: Sun, tarde: Sunset, noite: Moon };
 
 export function TodaySchedule() {
   const { trainings, loadingTrainings } = useTrainings();
   const { students } = useStudents();
+  const { labels } = useBusinessContext();
   
   const today = new Date().toISOString().split('T')[0];
   const todayTrainings = trainings.filter(t => t.date === today).sort((a, b) => a.time.localeCompare(b.time));
@@ -69,7 +71,7 @@ export function TodaySchedule() {
                   
                   <div className="flex items-center justify-between sm:justify-end gap-4 bg-muted/40 sm:bg-transparent px-3 py-2 sm:p-0 rounded-lg border sm:border-0 border-border/30">
                     <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
-                        <Users className="h-4 w-4" /> <span className="font-semibold text-foreground">{trainingStudents.length}</span><span className="hidden sm:inline"> alunos</span>
+                        <Users className="h-4 w-4" /> <span className="font-semibold text-foreground">{trainingStudents.length}</span><span className="hidden sm:inline"> {labels.studentLabel.toLowerCase()}</span>
                     </div>
                     <div className="flex items-center -space-x-1.5 pl-3 border-l border-border/50">
                       {trainingStudents.slice(0, 4).map(s => {
@@ -94,8 +96,8 @@ export function TodaySchedule() {
             <div className="bg-primary/10 p-4 rounded-full mb-4">
               <Sun className="h-8 w-8 text-primary opacity-80" />
             </div>
-            <p className="text-foreground font-semibold text-lg">Nenhum treino hoje</p>
-            <p className="text-sm text-muted-foreground mt-1 max-w-[200px]">Aproveite o dia livre ou crie novos agendamentos no calendário.</p>
+            <p className="text-foreground font-semibold text-lg">Nenhum(a) {labels.trainingLabelSingular.toLowerCase()} hoje</p>
+            <p className="text-sm text-muted-foreground mt-1 max-w-[200px]">Aproveite o dia livre ou crie um(a) novo(a) {labels.trainingLabelSingular.toLowerCase()} no calendário.</p>
           </div>
         )}
       </div>

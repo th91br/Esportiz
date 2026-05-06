@@ -25,12 +25,13 @@ import * as z from 'zod';
 import { useTrainings } from '@/hooks/queries/useTrainings';
 import { useAuth } from '@/contexts/AuthContext';
 import { getDayName } from '@/data/mockData';
+import { useBusinessContext } from '@/hooks/useBusinessContext';
 
 const studentSchema = z.object({
   name: z.string().min(3, "Nome deve ter no mínimo 3 caracteres"),
   phone: z.string().min(10, "Telefone inválido (mínimo 10 dígitos)"),
   email: z.string().email("E-mail inválido").optional().or(z.literal('')),
-  level: z.string().min(1, "Selecione o nível"),
+  level: z.string().optional().or(z.literal('')),
   birthDate: z.string().optional(),
   planId: z.string().optional(),
   paymentDueDay: z.string().optional(),
@@ -66,6 +67,7 @@ export function StudentForm({ student, trigger }: StudentFormProps) {
   const [billingStartMonth, setBillingStartMonth] = useState(new Date().toLocaleDateString('en-CA').slice(0, 7));
   const { groups } = useGroups();
   const [selectedGroups, setSelectedGroups] = useState<string[]>(student?.groupIds || []);
+  const { labels, isOther, isArena } = useBusinessContext();
 
   // Freq adjustment state
   const [schedulePromptOpen, setSchedulePromptOpen] = useState(false);
@@ -157,7 +159,10 @@ export function StudentForm({ student, trigger }: StudentFormProps) {
         name: formData.name,
         phone: formData.phone,
         email: formData.email || null,
-        level: formData.level as Student['level'],
+        level: (isArena ? 'iniciante' : (
+          formData.level === 'fluente' || formData.level === 'avançado' ? 'avançado' :
+          formData.level === 'pré-intermediário' || formData.level === 'intermediário' || formData.level === 'intermediário avançado' ? 'intermediário' : 'iniciante'
+        )) as Student['level'],
         planId: formData.planId && formData.planId !== 'none' && formData.planId !== 'no_plan' ? formData.planId : null,
         paymentDueDay: derivedDueDay || null,
         birthDate: formData.birthDate || null,
@@ -178,7 +183,7 @@ export function StudentForm({ student, trigger }: StudentFormProps) {
       if (isEditing) {
         const result = await updateStudent(student.id, data);
         const updatedStudentId = student.id;
-        toast({ title: 'Aluno atualizado!', description: `${formData.name} foi atualizado com sucesso.` });
+        toast({ title: `${labels.studentLabelSingular} atualizado(a)!`, description: `${formData.name} foi atualizado(a) com sucesso.` });
 
         // Sync payments if it's or was a monthly plan
         const oldPlan = plans.find(p => p.id === student.planId);
@@ -211,7 +216,7 @@ export function StudentForm({ student, trigger }: StudentFormProps) {
         }
       } else {
         const result = await addStudent(data);
-        toast({ title: 'Aluno cadastrado!', description: `${formData.name} foi adicionado com sucesso.` });
+        toast({ title: `${labels.studentLabelSingular} cadastrado(a)!`, description: `${formData.name} foi adicionado(a) com sucesso.` });
         
         // Generate initial payment if monthly
         if (data.planId) {
@@ -284,7 +289,7 @@ export function StudentForm({ student, trigger }: StudentFormProps) {
         }
       }
 
-      toast({ title: 'Agenda configurada!', description: 'Treinos gerados para os próximos 3 meses.' });
+      toast({ title: 'Agenda configurada!', description: `${labels.trainingLabel} gerados para os próximos 3 meses.` });
       setSchedulePromptOpen(false);
     } catch (err: any) {
       toast({ title: 'Erro ao configurar agenda', description: err.message, variant: 'destructive' });
@@ -296,7 +301,7 @@ export function StudentForm({ student, trigger }: StudentFormProps) {
   const defaultTrigger = (
     <Button className="btn-primary-gradient">
       <UserPlus className="h-4 w-4 mr-2" />
-      Novo Aluno
+      Novo {labels.studentLabelSingular}
     </Button>
   );
 
@@ -308,37 +313,39 @@ export function StudentForm({ student, trigger }: StudentFormProps) {
       </DialogTrigger>
       <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="font-display">{isEditing ? 'Editar Aluno' : 'Cadastrar Novo Aluno'}</DialogTitle>
-          <DialogDescription>{isEditing ? 'Atualize os dados do aluno.' : 'Preencha os dados básicos do aluno.'}</DialogDescription>
+          <DialogTitle className="font-display">{isEditing ? `Editar ${labels.studentLabelSingular}` : `Cadastrar Novo ${labels.studentLabelSingular}`}</DialogTitle>
+          <DialogDescription>{isEditing ? `Atualize os dados do ${labels.studentLabelSingular.toLowerCase()}.` : `Preencha os dados básicos do ${labels.studentLabelSingular.toLowerCase()}.`}</DialogDescription>
         </DialogHeader>
 
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 mt-4">
             {/* Trial Student Toggle */}
-            <button type="button" onClick={() => setIsTrial(!isTrial)}
-              className={cn(
-                "w-full flex items-center gap-3 px-4 py-3 rounded-xl border-2 transition-all text-left",
-                isTrial 
-                  ? "border-amber-500/50 bg-amber-500/10 text-amber-700 dark:text-amber-300" 
-                  : "border-border/50 bg-muted/20 text-muted-foreground hover:border-border"
-              )}>
-              <Beaker className="h-5 w-5 shrink-0" />
-              <div className="flex-1 min-w-0">
-                <span className="text-sm font-semibold block">Aula Experimental</span>
-                <span className="text-[11px] opacity-70">
-                  {isTrial ? 'Este aluno está em período de teste' : 'Marcar como aluno experimental'}
-                </span>
-              </div>
-              <div className={cn(
-                "h-6 w-11 rounded-full transition-colors relative shrink-0",
-                isTrial ? "bg-amber-500" : "bg-border"
-              )}>
+            {!isArena && (
+              <button type="button" onClick={() => setIsTrial(!isTrial)}
+                className={cn(
+                  "w-full flex items-center gap-3 px-4 py-3 rounded-xl border-2 transition-all text-left",
+                  isTrial 
+                    ? "border-amber-500/50 bg-amber-500/10 text-amber-700 dark:text-amber-300" 
+                    : "border-border/50 bg-muted/20 text-muted-foreground hover:border-border"
+                )}>
+                <Beaker className="h-5 w-5 shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <span className="text-sm font-semibold block">{labels.trainingLabelSingular} Experimental</span>
+                  <span className="text-[11px] opacity-70">
+                    {isTrial ? `Este ${labels.studentLabelSingular.toLowerCase()} está em período de teste` : `Marcar como ${labels.studentLabelSingular.toLowerCase()} experimental`}
+                  </span>
+                </div>
                 <div className={cn(
-                  "absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform",
-                  isTrial ? "translate-x-5" : "translate-x-0.5"
-                )} />
-              </div>
-            </button>
+                  "h-6 w-11 rounded-full transition-colors relative shrink-0",
+                  isTrial ? "bg-amber-500" : "bg-border"
+                )}>
+                  <div className={cn(
+                    "absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform",
+                    isTrial ? "translate-x-5" : "translate-x-0.5"
+                  )} />
+                </div>
+              </button>
+            )}
             <FormField
               control={form.control}
               name="name"
@@ -397,7 +404,7 @@ export function StudentForm({ student, trigger }: StudentFormProps) {
 
             {/* Foto do Aluno */}
             <div className="space-y-2">
-              <FormLabel>Foto do Aluno</FormLabel>
+              <FormLabel>Foto do {labels.studentLabelSingular}</FormLabel>
               <div className="flex items-center gap-3">
                 <div className="h-16 w-16 rounded-xl border-2 border-dashed border-border overflow-hidden flex items-center justify-center bg-muted/30 shrink-0">
                   {photoPreview ? (
@@ -490,140 +497,160 @@ export function StudentForm({ student, trigger }: StudentFormProps) {
                 )} />
               </div>
             </div>
-            <FormField
-              control={form.control}
-              name="level"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Nível</FormLabel>
-                  <Select onValueChange={field.onChange} value={field.value}>
-                    <FormControl>
-                      <SelectTrigger><SelectValue placeholder="Selecione o nível" /></SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      <SelectItem value="iniciante">Iniciante</SelectItem>
-                      <SelectItem value="intermediário">Intermediário</SelectItem>
-                      <SelectItem value="avançado">Avançado</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
 
-            <FormField
-              control={form.control}
-              name="planId"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Plano</FormLabel>
-                  <Select onValueChange={field.onChange} value={field.value || 'none'}>
-                    <FormControl>
-                      <SelectTrigger><SelectValue placeholder="Selecione o plano" /></SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      <SelectItem value="none">🧪 Aula Experimental</SelectItem>
-                      <SelectItem value="no_plan">📋 Sem Plano (Avulso eventual)</SelectItem>
-                      {plans.map((plan) => (
-                        <SelectItem key={plan.id} value={plan.id}>
-                          {plan.name} - R$ {plan.price.toFixed(2)}{plan.billingType === 'per_session' ? '/treino' : '/mês'}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            
-            <FormField
-              control={form.control}
-              name="modalityId"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Modalidade</FormLabel>
-                  <Select onValueChange={field.onChange} value={field.value || 'none'}>
-                    <FormControl>
-                      <SelectTrigger><SelectValue placeholder="Selecione a modalidade" /></SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      <SelectItem value="none">Sem modalidade</SelectItem>
-                      {modalities.map((mod) => (
-                        <SelectItem key={mod.id} value={mod.id}>
-                          {mod.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            {!isArena && (
+              <>
+                <FormField
+                  control={form.control}
+                  name="level"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Nível</FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value}>
+                        <FormControl>
+                          <SelectTrigger><SelectValue placeholder="Selecione o nível" /></SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {isOther ? (
+                            <>
+                              <SelectItem value="sem_nível">Sem nível definido</SelectItem>
+                              <SelectItem value="básico 1">Básico 1</SelectItem>
+                              <SelectItem value="básico 2">Básico 2</SelectItem>
+                              <SelectItem value="pré-intermediário">Pré-Intermediário</SelectItem>
+                              <SelectItem value="intermediário">Intermediário</SelectItem>
+                              <SelectItem value="intermediário avançado">Intermediário Avançado</SelectItem>
+                              <SelectItem value="avançado">Avançado</SelectItem>
+                              <SelectItem value="fluente">Fluente / Concluinte</SelectItem>
+                            </>
+                          ) : (
+                            <>
+                              <SelectItem value="iniciante">Iniciante</SelectItem>
+                              <SelectItem value="intermediário">Intermediário</SelectItem>
+                              <SelectItem value="avançado">Avançado</SelectItem>
+                            </>
+                          )}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
-            <div className="space-y-3 pt-2">
-              <FormLabel className="flex items-center gap-2 text-foreground">
-                <UsersRound className="h-4 w-4 text-primary" />
-                Turmas / Grupos (Opcional)
-              </FormLabel>
-              {groups.length === 0 ? (
-                <div className="text-sm text-muted-foreground bg-muted/20 p-3 rounded-lg border border-dashed text-center">
-                  Nenhuma turma cadastrada. Você pode criar turmas no menu "Turmas".
+                <FormField
+                  control={form.control}
+                  name="planId"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>{labels.planLabelSingular}</FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value || 'none'}>
+                        <FormControl>
+                          <SelectTrigger><SelectValue placeholder={`Selecione o(a) ${labels.planLabelSingular.toLowerCase()}`} /></SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="none">🧪 {labels.trainingLabelSingular} Experimental</SelectItem>
+                          <SelectItem value="no_plan">📋 Sem {labels.planLabelSingular} (Avulso eventual)</SelectItem>
+                          {plans.map((plan) => (
+                            <SelectItem key={plan.id} value={plan.id}>
+                              {plan.name} - R$ {plan.price.toFixed(2)}{plan.billingType === 'per_session' ? `/${labels.trainingLabelSingular.toLowerCase()}` : '/mês'}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={form.control}
+                  name="modalityId"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>{labels.modalityLabelSingular}</FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value || 'none'}>
+                        <FormControl>
+                          <SelectTrigger><SelectValue placeholder={`Selecione o(a) ${labels.modalityLabelSingular.toLowerCase()}`} /></SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="none">Sem {labels.modalityLabelSingular.toLowerCase()} definido</SelectItem>
+                          {modalities.map((mod) => (
+                            <SelectItem key={mod.id} value={mod.id}>
+                              {mod.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <div className="space-y-3 pt-2">
+                  <FormLabel className="flex items-center gap-2 text-foreground">
+                    <UsersRound className="h-4 w-4 text-primary" />
+                    {labels.groupLabel} (Opcional)
+                  </FormLabel>
+                  {groups.length === 0 ? (
+                    <div className="text-sm text-muted-foreground bg-muted/20 p-3 rounded-lg border border-dashed text-center">
+                      Nenhuma {labels.groupLabelSingular.toLowerCase()} cadastrada. Você pode criar em "{labels.groupLabel}".
+                    </div>
+                  ) : (
+                    <div className="flex flex-wrap gap-2">
+                      {[...groups].sort((a, b) => {
+                        const getFirstSlot = (g: any) => {
+                          if (!g.schedule || g.schedule.length === 0) return { day: 8, time: '24:00' };
+                          const sortedSlots = [...g.schedule].sort((sa, sb) => {
+                            const sortDay = (day: number) => day === 0 ? 7 : day;
+                            return sortDay(sa.dayOfWeek) - sortDay(sb.dayOfWeek) || sa.time.localeCompare(sb.time);
+                          });
+                          const first = sortedSlots[0];
+                          return { day: first.dayOfWeek === 0 ? 7 : first.dayOfWeek, time: first.time };
+                        };
+                        const slotA = getFirstSlot(a);
+                        const slotB = getFirstSlot(b);
+                        if (slotA.day !== slotB.day) return slotA.day - slotB.day;
+                        if (slotA.time !== slotB.time) return slotA.time.localeCompare(slotB.time);
+                        return a.name.localeCompare(b.name, 'pt-BR', { numeric: true, sensitivity: 'base' });
+                      }).map(group => {
+                        const isSelected = selectedGroups.includes(group.id);
+                        
+                        // Descobrir o primeiro horário para mostrar no botão
+                        let timeLabel = '';
+                        if (group.schedule && group.schedule.length > 0) {
+                          const sortedSlots = [...group.schedule].sort((sa, sb) => {
+                            const sortDay = (day: number) => day === 0 ? 7 : day;
+                            return sortDay(sa.dayOfWeek) - sortDay(sb.dayOfWeek) || sa.time.localeCompare(sb.time);
+                          });
+                          timeLabel = ` - ${sortedSlots[0].time}`;
+                        }
+
+                        return (
+                          <button
+                            key={group.id}
+                            type="button"
+                            onClick={() => {
+                              setSelectedGroups(prev => 
+                                isSelected ? prev.filter(id => id !== group.id) : [...prev, group.id]
+                              );
+                            }}
+                            className={cn(
+                              "flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold transition-all border",
+                              isSelected 
+                                ? "bg-primary/10 border-primary text-primary" 
+                                : "bg-background border-border text-muted-foreground hover:border-primary/50"
+                            )}
+                          >
+                            <div className="h-2 w-2 rounded-full shrink-0" style={{ backgroundColor: group.color }} />
+                            {group.name}{timeLabel}
+                            {isSelected && <Check className="h-3 w-3 shrink-0" />}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
-              ) : (
-                <div className="flex flex-wrap gap-2">
-                  {[...groups].sort((a, b) => {
-                    const getFirstSlot = (g: any) => {
-                      if (!g.schedule || g.schedule.length === 0) return { day: 8, time: '24:00' };
-                      const sortedSlots = [...g.schedule].sort((sa, sb) => {
-                        const sortDay = (day: number) => day === 0 ? 7 : day;
-                        return sortDay(sa.dayOfWeek) - sortDay(sb.dayOfWeek) || sa.time.localeCompare(sb.time);
-                      });
-                      const first = sortedSlots[0];
-                      return { day: first.dayOfWeek === 0 ? 7 : first.dayOfWeek, time: first.time };
-                    };
-                    const slotA = getFirstSlot(a);
-                    const slotB = getFirstSlot(b);
-                    if (slotA.day !== slotB.day) return slotA.day - slotB.day;
-                    if (slotA.time !== slotB.time) return slotA.time.localeCompare(slotB.time);
-                    return a.name.localeCompare(b.name, 'pt-BR', { numeric: true, sensitivity: 'base' });
-                  }).map(group => {
-                    const isSelected = selectedGroups.includes(group.id);
-                    
-                    // Descobrir o primeiro horário para mostrar no botão
-                    let timeLabel = '';
-                    if (group.schedule && group.schedule.length > 0) {
-                      const sortedSlots = [...group.schedule].sort((sa, sb) => {
-                        const sortDay = (day: number) => day === 0 ? 7 : day;
-                        return sortDay(sa.dayOfWeek) - sortDay(sb.dayOfWeek) || sa.time.localeCompare(sb.time);
-                      });
-                      timeLabel = ` - ${sortedSlots[0].time}`;
-                    }
-
-                    return (
-                      <button
-                        key={group.id}
-                        type="button"
-                        onClick={() => {
-                          setSelectedGroups(prev => 
-                            isSelected ? prev.filter(id => id !== group.id) : [...prev, group.id]
-                          );
-                        }}
-                        className={cn(
-                          "flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold transition-all border",
-                          isSelected 
-                            ? "bg-primary/10 border-primary text-primary" 
-                            : "bg-background border-border text-muted-foreground hover:border-primary/50"
-                        )}
-                      >
-                        <div className="h-2 w-2 rounded-full shrink-0" style={{ backgroundColor: group.color }} />
-                        {group.name}{timeLabel}
-                        {isSelected && <Check className="h-3 w-3 shrink-0" />}
-                      </button>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
+              </>
+            )}
 
             {isMonthly && (
               <div className="grid grid-cols-2 gap-3 pt-2">
@@ -685,7 +712,7 @@ export function StudentForm({ student, trigger }: StudentFormProps) {
             <DialogTitle className="font-display">Ajustar Calendário</DialogTitle>
             <DialogDescription>
               A frequência de {schedulePromptData.name} mudou de {schedulePromptData.oldFreq}x para {schedulePromptData.newFreq}x na semana.
-              Quais dias e horários o aluno irá treinar?
+              Quais dias e horários o {labels.studentLabelSingular.toLowerCase()} irá treinar?
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 mt-4">

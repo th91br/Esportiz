@@ -5,6 +5,7 @@ import { getDayName, formatDate, getEndTime, getTimePeriod } from '@/data/mockDa
 import { useTrainings } from '@/hooks/queries/useTrainings';
 import { useStudents } from '@/hooks/queries/useStudents';
 import { useAttendance } from '@/hooks/queries/useAttendance';
+import { useBusinessContext } from '@/hooks/useBusinessContext';
 
 interface AttendanceListProps {
   selectedDate?: string;
@@ -20,6 +21,7 @@ export function AttendanceList({ selectedDate }: AttendanceListProps) {
   const { trainings } = useTrainings();
   const { students } = useStudents();
   const { toggleAttendance, getAttendanceStatus } = useAttendance();
+  const { labels } = useBusinessContext();
   const today = new Date().toISOString().split('T')[0];
   const activeDate = selectedDate || today;
 
@@ -29,7 +31,7 @@ export function AttendanceList({ selectedDate }: AttendanceListProps) {
     return (
       <div className="card-elevated p-8 text-center">
         <Clock className="h-12 w-12 mx-auto text-muted-foreground/50 mb-3" />
-        <p className="text-lg font-medium text-muted-foreground">Sem treinos para esta data</p>
+        <p className="text-lg font-medium text-muted-foreground">Sem {labels.trainingLabel.toLowerCase()} para esta data</p>
         <p className="text-sm text-muted-foreground/70 mt-1">{getDayName(activeDate)}, {formatDate(activeDate)}</p>
       </div>
     );
@@ -96,7 +98,7 @@ export function AttendanceList({ selectedDate }: AttendanceListProps) {
             <div className="p-4 bg-muted/30 border-t border-border/30">
               <div className="flex items-center justify-between text-sm">
                 <span className="text-muted-foreground">
-                  {trainingStudents.length} aluno{trainingStudents.length > 1 ? 's' : ''} agendado{trainingStudents.length > 1 ? 's' : ''}
+                  {trainingStudents.length} {labels.studentLabelSingular.toLowerCase()}{trainingStudents.length !== 1 ? 's' : ''} agendado{trainingStudents.length !== 1 ? 's' : ''}
                 </span>
                 <span className="text-success font-medium">
                   <Check className="h-3.5 w-3.5 inline mr-1" />

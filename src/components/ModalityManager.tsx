@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useModalities, Modality } from '@/hooks/queries/useModalities';
+import { useBusinessContext } from '@/hooks/useBusinessContext';
 import { cn } from '@/lib/utils';
 import {
   AlertDialog,
@@ -32,6 +33,7 @@ const PRESET_COLORS = [
 
 export function ModalityManager() {
   const { modalities, addModality, updateModality, deleteModality, loadingModalities } = useModalities();
+  const { labels } = useBusinessContext();
   const [isAdding, setIsAdding] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   
@@ -71,9 +73,9 @@ export function ModalityManager() {
         <div className="space-y-1">
           <CardTitle className="flex items-center gap-2 text-lg font-display">
             <Tag className="h-5 w-5 text-primary" />
-            Modalidades Esportivas
+            {labels.modalityLabel}
           </CardTitle>
-          <CardDescription>Gerencie as modalidades oferecidas pelo CT.</CardDescription>
+          <CardDescription>Gerencie o(s) {labels.modalityLabel.toLowerCase()} oferecido(s) pela(o) {labels.ctLabelShort}.</CardDescription>
         </div>
         {!isAdding && (
           <Button size="sm" className="h-8 gap-1" onClick={() => setIsAdding(true)}>
@@ -86,7 +88,7 @@ export function ModalityManager() {
           <div className="p-3 rounded-lg border border-primary/20 bg-primary/5 space-y-3 animate-in fade-in slide-in-from-top-2">
             <div className="flex gap-2">
               <Input
-                placeholder="Nome da modalidade (ex: Futevôlei)"
+                placeholder={`Nome da ${labels.modalityLabelSingular.toLowerCase()}`}
                 value={newName}
                 onChange={(e) => setNewName(e.target.value)}
                 autoFocus
@@ -116,7 +118,7 @@ export function ModalityManager() {
             </div>
             <div className="flex justify-end gap-2">
               <Button variant="ghost" size="sm" onClick={() => setIsAdding(false)}>Cancelar</Button>
-              <Button size="sm" onClick={handleAdd}>Salvar Modalidade</Button>
+              <Button size="sm" onClick={handleAdd}>Salvar {labels.modalityLabelSingular}</Button>
             </div>
           </div>
         )}
@@ -127,8 +129,8 @@ export function ModalityManager() {
           ) : modalities.length === 0 && !isAdding ? (
             <div className="py-8 text-center border-2 border-dashed border-muted rounded-xl">
               <Tag className="h-8 w-8 mx-auto text-muted-foreground/30 mb-2" />
-              <p className="text-sm text-muted-foreground">Nenhuma modalidade cadastrada.</p>
-              <Button variant="link" size="sm" onClick={() => setIsAdding(true)}>Criar a primeira</Button>
+              <p className="text-sm text-muted-foreground">Nenhum(a) {labels.modalityLabelSingular.toLowerCase()} cadastrado(a).</p>
+              <Button variant="link" size="sm" onClick={() => setIsAdding(true)}>Criar o(a) primeiro(a)</Button>
             </div>
           ) : (
             modalities.map((modality) => (
@@ -174,9 +176,9 @@ export function ModalityManager() {
                         </AlertDialogTrigger>
                         <AlertDialogContent>
                           <AlertDialogHeader>
-                            <AlertDialogTitle>Remover modalidade?</AlertDialogTitle>
+                            <AlertDialogTitle>Remover {labels.modalityLabelSingular.toLowerCase()}?</AlertDialogTitle>
                             <AlertDialogDescription>
-                              Deseja remover a modalidade "{modality.name}"? Esta ação não poderá ser desfeita e só é permitida se não houver alunos ou treinos vinculados.
+                              Deseja remover o(a) {labels.modalityLabelSingular.toLowerCase()} "{modality.name}"? Esta ação não poderá ser desfeita e só é permitida se não houver {labels.studentLabel.toLowerCase()} ou {labels.trainingLabel.toLowerCase()} vinculados.
                             </AlertDialogDescription>
                           </AlertDialogHeader>
                           <AlertDialogFooter>

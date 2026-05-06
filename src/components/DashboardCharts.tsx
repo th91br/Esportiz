@@ -64,6 +64,9 @@ export function DashboardCharts({ payments, attendance, privacyMode }: Dashboard
     const chartColorPrimary = theme === 'dark' ? '#10b981' : '#059669'; // Tailwind Emerald
     const chartColorSecondary = theme === 'dark' ? '#334155' : '#cbd5e1'; // Tailwind Slate
 
+    const maxRevenue = Math.max(0, ...revenueData.map(d => d['Faturamento Total']));
+    const maxAttendance = Math.max(0, ...attendanceData.map(d => d['Presenças'] + d['Ausências']));
+
     return (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <Card>
@@ -73,25 +76,31 @@ export function DashboardCharts({ payments, attendance, privacyMode }: Dashboard
                 </CardHeader>
                 <CardContent>
                     <div className="h-[300px] w-full mt-4">
-                        <ResponsiveContainer width="100%" height="100%">
-                            <BarChart data={revenueData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={theme === 'dark' ? '#334155' : '#e2e8f0'} />
-                                <XAxis dataKey="name" fontSize={12} tickLine={false} axisLine={false} />
-                                <YAxis
-                                    fontSize={12}
-                                    tickLine={false}
-                                    axisLine={false}
-                                    tickFormatter={(val) => privacyMode ? '•••' : formatCurrency(val)}
-                                />
-                                <Tooltip
-                                    cursor={{ fill: theme === 'dark' ? '#1e293b' : '#f1f5f9' }}
-                                    contentStyle={{ backgroundColor: theme === 'dark' ? '#020817' : '#ffffff', borderRadius: '8px' }}
-                                    formatter={tooltipFormatter}
-                                />
-                                <Bar dataKey="Faturamento Total" fill={chartColorSecondary} radius={[4, 4, 0, 0]} />
-                                <Bar dataKey="Recebido" fill={chartColorPrimary} radius={[4, 4, 0, 0]} />
-                            </BarChart>
-                        </ResponsiveContainer>
+                        {maxRevenue === 0 ? (
+                            <div className="w-full h-full flex items-center justify-center bg-muted/10 rounded-xl border border-dashed border-border/50">
+                                <p className="text-muted-foreground font-medium text-sm">Sem dados</p>
+                            </div>
+                        ) : (
+                            <ResponsiveContainer width="100%" height="100%">
+                                <BarChart data={revenueData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={theme === 'dark' ? '#334155' : '#e2e8f0'} />
+                                    <XAxis dataKey="name" fontSize={12} tickLine={false} axisLine={false} />
+                                    <YAxis
+                                        fontSize={12}
+                                        tickLine={false}
+                                        axisLine={false}
+                                        tickFormatter={(val) => privacyMode ? '•••' : formatCurrency(val)}
+                                    />
+                                    <Tooltip
+                                        cursor={{ fill: theme === 'dark' ? '#1e293b' : '#f1f5f9' }}
+                                        contentStyle={{ backgroundColor: theme === 'dark' ? '#020817' : '#ffffff', borderRadius: '8px' }}
+                                        formatter={tooltipFormatter}
+                                    />
+                                    <Bar dataKey="Faturamento Total" fill={chartColorSecondary} radius={[4, 4, 0, 0]} />
+                                    <Bar dataKey="Recebido" fill={chartColorPrimary} radius={[4, 4, 0, 0]} />
+                                </BarChart>
+                            </ResponsiveContainer>
+                        )}
                     </div>
                 </CardContent>
             </Card>
@@ -103,29 +112,35 @@ export function DashboardCharts({ payments, attendance, privacyMode }: Dashboard
                 </CardHeader>
                 <CardContent>
                     <div className="h-[300px] w-full mt-4">
-                        <ResponsiveContainer width="100%" height="100%">
-                            <AreaChart data={attendanceData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                                <defs>
-                                    <linearGradient id="colorPresent" x1="0" y1="0" x2="0" y2="1">
-                                        <stop offset="5%" stopColor={chartColorPrimary} stopOpacity={0.3} />
-                                        <stop offset="95%" stopColor={chartColorPrimary} stopOpacity={0} />
-                                    </linearGradient>
-                                </defs>
-                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={theme === 'dark' ? '#334155' : '#e2e8f0'} />
-                                <XAxis dataKey="name" fontSize={12} tickLine={false} axisLine={false} />
-                                <YAxis
-                                    fontSize={12}
-                                    tickLine={false}
-                                    axisLine={false}
-                                    tickFormatter={(val) => privacyMode ? '•••' : val}
-                                />
-                                <Tooltip
-                                    contentStyle={{ backgroundColor: theme === 'dark' ? '#020817' : '#ffffff', borderRadius: '8px' }}
-                                    formatter={attendanceTooltipFormatter}
-                                />
-                                <Area type="monotone" dataKey="Presenças" stroke={chartColorPrimary} strokeWidth={3} fillOpacity={1} fill="url(#colorPresent)" />
-                            </AreaChart>
-                        </ResponsiveContainer>
+                        {maxAttendance === 0 ? (
+                            <div className="w-full h-full flex items-center justify-center bg-muted/10 rounded-xl border border-dashed border-border/50">
+                                <p className="text-muted-foreground font-medium text-sm">Sem dados</p>
+                            </div>
+                        ) : (
+                            <ResponsiveContainer width="100%" height="100%">
+                                <AreaChart data={attendanceData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                                    <defs>
+                                        <linearGradient id="colorPresent" x1="0" y1="0" x2="0" y2="1">
+                                            <stop offset="5%" stopColor={chartColorPrimary} stopOpacity={0.3} />
+                                            <stop offset="95%" stopColor={chartColorPrimary} stopOpacity={0} />
+                                        </linearGradient>
+                                    </defs>
+                                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={theme === 'dark' ? '#334155' : '#e2e8f0'} />
+                                    <XAxis dataKey="name" fontSize={12} tickLine={false} axisLine={false} />
+                                    <YAxis
+                                        fontSize={12}
+                                        tickLine={false}
+                                        axisLine={false}
+                                        tickFormatter={(val) => privacyMode ? '•••' : val}
+                                    />
+                                    <Tooltip
+                                        contentStyle={{ backgroundColor: theme === 'dark' ? '#020817' : '#ffffff', borderRadius: '8px' }}
+                                        formatter={attendanceTooltipFormatter}
+                                    />
+                                    <Area type="monotone" dataKey="Presenças" stroke={chartColorPrimary} strokeWidth={3} fillOpacity={1} fill="url(#colorPresent)" />
+                                </AreaChart>
+                            </ResponsiveContainer>
+                        )}
                     </div>
                 </CardContent>
             </Card>

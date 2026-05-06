@@ -8,6 +8,7 @@ import { useStudents } from '@/hooks/queries/useStudents';
 import { usePlans } from '@/hooks/queries/usePlans';
 import { useTrainings } from '@/hooks/queries/useTrainings';
 import { useGroups } from '@/hooks/queries/useGroups';
+import { useBusinessContext } from '@/hooks/useBusinessContext';
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
@@ -41,6 +42,7 @@ export function StudentCard({ student, onClick }: StudentCardProps) {
   const { modalities } = useModalities();
   const { trainings } = useTrainings();
   const { groups } = useGroups();
+  const { labels, isArena } = useBusinessContext();
   const navigate = useNavigate();
   const modality = student.modalityId ? modalities.find(m => m.id === student.modalityId) : undefined;
   const plan = student.planId ? plans.find((p) => p.id === student.planId) : undefined;
@@ -153,9 +155,11 @@ export function StudentCard({ student, onClick }: StudentCardProps) {
               </div>
               <div className="flex flex-col items-end shrink-0 gap-1.5">
                 <div className="flex gap-1.5">
-                  <span className={cn('px-2 py-0.5 rounded-full text-[10px] uppercase font-bold tracking-wider border shrink-0', levelStyles[student.level])}>
-                    {levelLabels[student.level]}
-                  </span>
+                  {!isArena && (
+                    <span className={cn('px-2 py-0.5 rounded-full text-[10px] uppercase font-bold tracking-wider border shrink-0', levelStyles[student.level])}>
+                      {levelLabels[student.level]}
+                    </span>
+                  )}
                   {modality && (
                     <span 
                       className="px-2 py-0.5 rounded-full text-[10px] uppercase font-bold tracking-wider border border-primary/20 bg-primary/5 text-primary flex items-center gap-1.5 shrink-0"
@@ -206,17 +210,17 @@ export function StudentCard({ student, onClick }: StudentCardProps) {
             {plan ? (
               <div className="mt-3 flex items-center gap-1.5 text-xs font-semibold text-primary bg-primary/5 w-fit px-2.5 py-1 rounded-md border border-primary/10">
                 <DollarSign className="h-3.5 w-3.5 shrink-0" />
-                <span className="truncate max-w-[120px] sm:max-w-[150px]">{plan.name}</span> <span className="text-primary/40 mx-1">—</span> R$ {plan.price.toFixed(2)}{plan.billingType === 'per_session' ? '/treino' : '/mês'}
+                <span className="truncate max-w-[120px] sm:max-w-[150px]">{plan.name}</span> <span className="text-primary/40 mx-1">—</span> R$ {plan.price.toFixed(2)}{plan.billingType === 'per_session' ? `/${labels.trainingLabelSingular.toLowerCase()}` : '/mês'}
               </div>
             ) : student.planId ? (
               <div className="mt-3 flex items-center gap-1.5 text-xs font-semibold text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/30 w-fit px-2.5 py-1 rounded-md border border-amber-200 dark:border-amber-900/50">
                 <span className="text-xs">🧪</span>
-                <span className="truncate">Aula Experimental</span>
+                <span className="truncate">{labels.trainingLabelSingular} Experimental</span>
               </div>
             ) : (
               <div className="mt-3 flex items-center gap-1.5 text-xs font-semibold text-muted-foreground bg-muted/50 w-fit px-2.5 py-1 rounded-md border border-border">
                 <span className="text-xs">📋</span>
-                <span className="truncate">Sem Plano</span>
+                <span className="truncate">Sem {labels.planLabelSingular}</span>
               </div>
             )}
           </div>
@@ -261,7 +265,7 @@ export function StudentCard({ student, onClick }: StudentCardProps) {
           <AlertDialog>
             <AlertDialogTrigger asChild>
               <Button variant="ghost" size="sm" className="h-7 text-[11px] font-medium text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors px-2" onClick={(e) => e.stopPropagation()}>
-                Desativar Aluno
+                Desativar {labels.studentLabelSingular}
               </Button>
             </AlertDialogTrigger>
             <AlertDialogContent>
@@ -271,10 +275,10 @@ export function StudentCard({ student, onClick }: StudentCardProps) {
                   {futureTrainingsCount > 0 ? (
                     <>
                       Ao desativar, <strong>{futureTrainingsCount} treino{futureTrainingsCount !== 1 ? 's' : ''} futuro{futureTrainingsCount !== 1 ? 's' : ''}</strong> ser{futureTrainingsCount !== 1 ? 'ão' : 'á'} removido{futureTrainingsCount !== 1 ? 's' : ''} do calendário.
-                      {' '}Para reagendar, ative o aluno novamente e crie novos treinos.
+                      {' '}Para reagendar, ative o(a) {labels.studentLabelSingular.toLowerCase()} novamente e crie novos treinos.
                     </>
                   ) : (
-                    <>O aluno será marcado como inativo. Para reativá-lo, clique em "Ativar".</>
+                    <>O(A) {labels.studentLabelSingular.toLowerCase()} será marcado(a) como inativo(a). Para reativá-lo(a), clique em "Ativar".</>
                   )}
                 </AlertDialogDescription>
               </AlertDialogHeader>
@@ -289,7 +293,7 @@ export function StudentCard({ student, onClick }: StudentCardProps) {
         ) : (
           /* Ativar — simple button, no side effects */
           <Button variant="ghost" size="sm" className="h-7 text-[11px] font-semibold text-primary hover:bg-primary/10 transition-colors px-2" onClick={(e) => { e.stopPropagation(); handleReactivate(); }}>
-            Ativar Aluno
+            Ativar {labels.studentLabelSingular}
           </Button>
         )}
         

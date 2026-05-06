@@ -27,6 +27,8 @@ import ExpensesPage from "./pages/ExpensesPage";
 import ProductsPage from "./pages/ProductsPage";
 import SalesPage from "./pages/SalesPage";
 import NotFound from "./pages/NotFound";
+import CourtsPage from "./pages/CourtsPage";
+import ArenaAgendaPage from "./pages/ArenaAgendaPage";
 import { useProfile } from "./hooks/queries/useProfile";
 
 
@@ -96,6 +98,10 @@ function AppRoutes() {
       <Route path="/modalidades" element={<ProtectedRoute><ModalitiesPage /></ProtectedRoute>} />
       <Route path="/turmas" element={<ProtectedRoute><GroupsPage /></ProtectedRoute>} />
       <Route path="/configuracoes" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
+      {/* Arena-specific routes */}
+      <Route path="/quadras" element={<ProtectedRoute><CourtsPage /></ProtectedRoute>} />
+      <Route path="/agenda" element={<ProtectedRoute><ArenaAgendaPage /></ProtectedRoute>} />
+      <Route path="/reservantes" element={<ProtectedRoute><StudentsPage /></ProtectedRoute>} />
       <Route path="*" element={<NotFound />} />
     </Routes>
   );

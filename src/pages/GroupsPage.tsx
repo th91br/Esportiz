@@ -19,7 +19,6 @@ import { getEndTime } from '@/data/mockData';
 import { useBusinessContext } from '@/hooks/useBusinessContext';
 
 const DAY_NAMES = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
-const DAY_NAMES_FULL = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
 const COLORS = ['#6366f1', '#f43f5e', '#f97316', '#22c55e', '#06b6d4', '#8b5cf6', '#ec4899', '#eab308'];
 
 function GroupFormDialog({
@@ -201,11 +200,19 @@ function GroupFormDialog({
             )}
             {schedule.map((slot, i) => (
               <div key={i} className="flex items-center gap-2 p-2.5 rounded-lg border bg-muted/10">
-                <Select value={String(slot.dayOfWeek)} onValueChange={v => updateSlot(i, 'dayOfWeek', v)}>
+                 <Select value={String(slot.dayOfWeek)} onValueChange={v => updateSlot(i, 'dayOfWeek', v)}>
                   <SelectTrigger className="w-[110px] h-9"><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    {DAY_NAMES_FULL.map((d, idx) => (
-                      <SelectItem key={idx} value={String(idx)}>{d}</SelectItem>
+                    {[
+                      { value: 1, label: 'Segunda-feira' },
+                      { value: 2, label: 'Terça-feira' },
+                      { value: 3, label: 'Quarta-feira' },
+                      { value: 4, label: 'Quinta-feira' },
+                      { value: 5, label: 'Sexta-feira' },
+                      { value: 6, label: 'Sábado' },
+                      { value: 0, label: 'Domingo' }
+                    ].map((d) => (
+                      <SelectItem key={d.value} value={String(d.value)}>{d.label}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -297,25 +304,36 @@ export default function GroupsPage() {
     );
 
     return filtered.sort((a, b) => {
-      // 1. Cronológico: Dia e Hora do primeiro treino da turma
-      const getFirstSlot = (g: Group) => {
-        if (!g.schedule || g.schedule.length === 0) return { day: 8, time: '24:00' };
-        // Pega o primeiro slot (menor dia/hora) da turma
-        const sortedSlots = [...g.schedule].sort((sa, sb) => {
-          const sortDay = (day: number) => day === 0 ? 7 : day;
-          return sortDay(sa.dayOfWeek) - sortDay(sb.dayOfWeek) || sa.time.localeCompare(sb.time);
-        });
-        const first = sortedSlots[0];
-        return { day: first.dayOfWeek === 0 ? 7 : first.dayOfWeek, time: first.time };
+      // 1. Prioridade por Dia da Semana contido no Nome da Turma (Segunda a Domingo)
+      const getDayPriority = (name: string) => {
+        const n = name.toLowerCase();
+        if (n.includes('segunda')) return 1;
+        if (n.includes('terça')) return 2;
+        if (n.includes('quarta')) return 3;
+        if (n.includes('quinta')) return 4;
+        if (n.includes('sexta')) return 5;
+        if (n.includes('sáb') || n.includes('sabado')) return 6;
+        if (n.includes('domingo')) return 7;
+        return 999; // Sem correspondência de dia (Ex: Turma 1, Turma 2)
       };
 
-      const slotA = getFirstSlot(a);
-      const slotB = getFirstSlot(b);
+      const prioA = getDayPriority(a.name);
+      const prioB = getDayPriority(b.name);
 
-      if (slotA.day !== slotB.day) return slotA.day - slotB.day;
-      if (slotA.time !== slotB.time) return slotA.time.localeCompare(slotB.time);
+      if (prioA !== prioB) return prioA - prioB;
 
-      // 2. Ordem Numérica e Alfabética Natural (ex: Turma 2 antes de Turma 10)
+      // 2. Se as turmas tiverem o mesmo nome/dia (Ex: duas "Segunda-Feira"), ordena por horário do menor pro maior
+      const getFirstSlotTime = (g: Group) => {
+        if (!g.schedule || g.schedule.length === 0) return '24:00';
+        const sortedSlots = [...g.schedule].sort((sa, sb) => sa.time.localeCompare(sb.time));
+        return sortedSlots[0].time;
+      };
+
+      const timeA = getFirstSlotTime(a);
+      const timeB = getFirstSlotTime(b);
+      if (timeA !== timeB) return timeA.localeCompare(timeB);
+
+      // 3. Ordem Numérica e Alfabética Natural (Ex: Turma 2 antes de Turma 10, 1 antes de 20)
       return a.name.localeCompare(b.name, 'pt-BR', { numeric: true, sensitivity: 'base' });
     });
   }, [groups, searchQuery]);

@@ -58,8 +58,9 @@ export default function SalesPage() {
   const [cart, setCart] = useState<CartItem[]>([]);
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('dinheiro');
 
-  // Today's sales
-  const todayStr = new Date().toISOString().split('T')[0];
+  // Today's sales (Sincronia com data local)
+  const now = new Date();
+  const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
   const todaySales = useMemo(() => {
     return sales.filter(s => s.soldAt.startsWith(todayStr));
   }, [sales, todayStr]);

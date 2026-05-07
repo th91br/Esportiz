@@ -11,6 +11,7 @@ import { usePayments } from '@/hooks/queries/usePayments';
 import { useCourts } from '@/hooks/queries/useCourts';
 import { useReservations } from '@/hooks/queries/useReservations';
 import { useSales } from '@/hooks/queries/useSales';
+import { useExpenses } from '@/hooks/queries/useExpenses';
 import { usePrivacyMode } from '@/hooks/usePrivacyMode';
 import { formatCurrency } from '@/lib/formatCurrency';
 import { cn } from '@/lib/utils';
@@ -43,6 +44,13 @@ const filterLabels: Record<FilterPeriod, string> = {
   all: 'Todos',
 };
 
+function formatLocalDate(date: Date): string {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
 function getDateRange(period: FilterPeriod): { start: string; end: string } | null {
   if (period === 'all') return null;
   const now = new Date();
@@ -74,8 +82,8 @@ function getDateRange(period: FilterPeriod): { start: string; end: string } | nu
   }
 
   return { 
-    start: start!.toISOString().split('T')[0], 
-    end: endD.toISOString().split('T')[0] 
+    start: formatLocalDate(start!), 
+    end: formatLocalDate(endD) 
   };
 }
 
@@ -86,12 +94,13 @@ function getDateRange(period: FilterPeriod): { start: string; end: string } | nu
 function getMonthRefsForPeriod(period: FilterPeriod): string[] | null {
   if (period === 'all') return null;
   const now = new Date();
+  const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
 
   switch (period) {
     case 'day':
     case 'week':
     case 'month':
-      return [now.toISOString().slice(0, 7)];
+      return [currentMonth];
     case 'year': {
       const year = now.getFullYear();
       return Array.from({ length: 12 }, (_, i) => 
@@ -112,6 +121,7 @@ export default function ReportsPage() {
   const { courts } = useCourts();
   const { reservations } = useReservations();
   const { sales } = useSales();
+  const { expenses } = useExpenses();
   const [period, setPeriod] = useState<FilterPeriod>('month');
   const [privacyMode, togglePrivacyMode] = usePrivacyMode();
   const { labels, isArena, isOther } = useBusinessContext();
@@ -144,6 +154,17 @@ export default function ReportsPage() {
       return soldDate >= range.start && soldDate <= range.end;
     });
   }, [sales, range]);
+
+  const filteredExpenses = useMemo(() => {
+    if (!range) return expenses;
+    return expenses.filter((e) => {
+      return e.date >= range.start && e.date <= range.end;
+    });
+  }, [expenses, range]);
+
+  const totalExpensesPaid = useMemo(() => {
+    return filteredExpenses.filter((e) => e.paid).reduce((sum, e) => sum + e.amount, 0);
+  }, [filteredExpenses]);
 
   // KPIs Calculations
   const presentCount = filteredAttendance.filter((a) => a.present).length;
@@ -197,10 +218,13 @@ export default function ReportsPage() {
   // 1. Mensalidades / Planos (Comum a todos, se houver)
   filteredPayments.forEach(p => {
     expectedRevenue += p.amount;
-    if (p.paid) {
-      receivedRevenue += p.amount;
-    } else if (p.dueDate < todayDateStr) {
-      overdueRevenue += p.amount;
+    const paidAmt = p.paidAmount || 0;
+    receivedRevenue += paidAmt;
+    if (!p.paid) {
+      const remaining = p.amount - paidAmt;
+      if (p.dueDate < todayDateStr) {
+        overdueRevenue += remaining;
+      }
     }
   });
 
@@ -224,6 +248,7 @@ export default function ReportsPage() {
 
   const pendingRevenue = expectedRevenue - receivedRevenue - overdueRevenue;
   const revenueProgress = expectedRevenue > 0 ? (receivedRevenue / expectedRevenue) * 100 : 0;
+  const netProfit = receivedRevenue - totalExpensesPaid;
 
   // Chart Data - Dynamic Evolution for Attendance
   const evolutionAttendanceData = useMemo(() => {
@@ -266,7 +291,9 @@ export default function ReportsPage() {
     Total: expectedRevenue,
     Recebido: receivedRevenue,
     Pendente: pendingRevenue > 0 ? pendingRevenue : 0,
-    Atrasado: overdueRevenue
+    Atrasado: overdueRevenue,
+    Despesas: totalExpensesPaid,
+    Lucro: netProfit
   }];
 
   const levelData = [
@@ -292,7 +319,7 @@ export default function ReportsPage() {
         // 1. Pagamentos
         const monthPayments = payments.filter(p => p.monthRef === monthRef);
         let expected = monthPayments.reduce((acc, curr) => acc + curr.amount, 0);
-        let received = monthPayments.filter(p => p.paid).reduce((acc, curr) => acc + curr.amount, 0);
+        let received = monthPayments.reduce((acc, curr) => acc + (curr.paidAmount || 0), 0);
         
         // 2. Vendas de Produtos
         const monthSales = sales.filter(s => s.soldAt.startsWith(monthRef));
@@ -307,8 +334,18 @@ export default function ReportsPage() {
           received += monthReservations.filter(r => r.paymentStatus === 'paid').reduce((acc, r) => acc + r.finalPrice, 0);
         }
 
+        // 4. Despesas Pagas (Sincronia!)
+        const monthExpenses = expenses.filter(e => e.date.startsWith(monthRef) && e.paid);
+        const expensesTotal = monthExpenses.reduce((acc, curr) => acc + curr.amount, 0);
+
         const label = new Date(year, month - 1).toLocaleString('pt-BR', { month: 'short' });
-        return { name: label.charAt(0).toUpperCase() + label.slice(1), Total: expected, Recebido: received };
+        return { 
+          name: label.charAt(0).toUpperCase() + label.slice(1), 
+          Total: expected, 
+          Recebido: received,
+          Despesas: expensesTotal,
+          Lucro: received - expensesTotal
+        };
       });
     } else {
       if (!range) return [];
@@ -327,8 +364,8 @@ export default function ReportsPage() {
           .reduce((acc, curr) => acc + curr.amount, 0);
           
         let received = payments
-          .filter(p => p.dueDate === dateStr && p.paid)
-          .reduce((acc, curr) => acc + curr.amount, 0);
+          .filter(p => p.dueDate === dateStr)
+          .reduce((acc, curr) => acc + (curr.paidAmount || 0), 0);
 
         // 2. Vendas de Produtos
         const daySales = sales.filter(s => s.soldAt.startsWith(dateStr));
@@ -342,15 +379,25 @@ export default function ReportsPage() {
           expected += dayReservations.reduce((acc, r) => acc + r.finalPrice, 0);
           received += dayReservations.filter(r => r.paymentStatus === 'paid').reduce((acc, r) => acc + r.finalPrice, 0);
         }
+
+        // 4. Despesas Pagas (Sincronia!)
+        const dayExpenses = expenses.filter(e => e.date === dateStr && e.paid);
+        const expensesTotal = dayExpenses.reduce((acc, curr) => acc + curr.amount, 0);
         
         // Use split para evitar problemas de fuso horário no label
         const [year, month, day] = dateStr.split('-');
         const name = `${day}/${month}`;
         
-        return { name, Total: expected, Recebido: received };
+        return { 
+          name, 
+          Total: expected, 
+          Recebido: received,
+          Despesas: expensesTotal,
+          Lucro: received - expensesTotal
+        };
       });
     }
-  }, [payments, sales, reservations, isArena, period, range]);
+  }, [payments, sales, reservations, expenses, isArena, period, range]);
 
   // Retention Data (Funnel)
   const retentionData = useMemo(() => {
@@ -415,7 +462,7 @@ export default function ReportsPage() {
         </div>
 
         {/* KPIs Premium */}
-        <section className="grid grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-3 md:gap-5 animate-fade-in">
+        <section className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7 gap-3 md:gap-5 animate-fade-in">
           <StatCard 
             title={`${labels.studentLabel} Base`} 
             value={privacyMode ? '••••' : totalActive} 
@@ -449,6 +496,20 @@ export default function ReportsPage() {
             variant="primary"
             progress={privacyMode ? undefined : { value: revenueProgress, label: "Meta vs Esperado" }}
           />
+          <StatCard 
+            title="Despesas (Pagas)" 
+            value={privacyMode ? '••••' : formatCurrency(totalExpensesPaid)} 
+            icon={DollarSign} 
+            variant="default"
+            description={privacyMode ? '' : 'Total de despesas pagas'}
+          />
+          <StatCard 
+            title="Resultado Líquido" 
+            value={privacyMode ? '••••' : formatCurrency(netProfit)} 
+            icon={TrendingUp} 
+            variant="success"
+            description={privacyMode ? '' : netProfit >= 0 ? 'Saldo positivo (Superávit)' : 'Saldo negativo (Déficit)'}
+          />
         </section>
 
         {/* Charts Grid */}
@@ -467,15 +528,17 @@ export default function ReportsPage() {
             <div className="h-[280px] w-full">
               {!privacyMode ? (
                 <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={financialData} barSize={60} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                  <BarChart data={financialData} barSize={50} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--border))" />
                     <XAxis dataKey="name" tick={{ fontSize: 13, fill: 'hsl(var(--muted-foreground))' }} axisLine={false} tickLine={false} />
                     <YAxis tick={{ fontSize: 13, fill: 'hsl(var(--muted-foreground))' }} axisLine={false} tickLine={false} tickFormatter={(v) => `R$${v}`} />
                     <Tooltip contentStyle={customTooltipStyle} cursor={{ fill: 'hsl(var(--muted)/0.4)' }} formatter={(value: number) => [formatCurrency(value), '']} />
-                    <Bar dataKey="Total" name="Faturamento Total" fill="hsl(var(--muted-foreground)/0.3)" radius={[4, 4, 0, 0]} />
+                    <Bar dataKey="Total" name="Esperado" fill="hsl(var(--muted-foreground)/0.3)" radius={[4, 4, 0, 0]} />
                     <Bar dataKey="Recebido" stackId="a" name="Recebido" fill={COLORS.success} radius={pendingRevenue === 0 && overdueRevenue === 0 ? [4, 4, 0, 0] : [0, 0, 4, 4]} />
-                    <Bar dataKey="Pendente" stackId="a" name="Pendente (À vencer)" fill={COLORS.slate} radius={overdueRevenue === 0 ? [4, 4, 0, 0] : [0, 0, 0, 0]} />
+                    <Bar dataKey="Pendente" stackId="a" name="Pendente" fill={COLORS.slate} radius={overdueRevenue === 0 ? [4, 4, 0, 0] : [0, 0, 0, 0]} />
                     <Bar dataKey="Atrasado" stackId="a" name="Atrasado" fill={COLORS.destructive} radius={[4, 4, 0, 0]} />
+                    <Bar dataKey="Despesas" name="Despesas" fill={COLORS.amber} radius={[4, 4, 0, 0]} />
+                    <Bar dataKey="Lucro" name="Lucro Líquido" fill={COLORS.emerald} radius={[4, 4, 0, 0]} />
                     <Legend wrapperStyle={{ paddingTop: '20px', fontSize: '12px' }} iconType="circle" />
                   </BarChart>
                 </ResponsiveContainer>

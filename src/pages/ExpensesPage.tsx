@@ -49,8 +49,9 @@ import {
   Repeat,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useBusinessContext } from '@/hooks/useBusinessContext';
 
-const EXPENSE_CATEGORIES = [
+const DEFAULT_EXPENSE_CATEGORIES = [
   'Aluguel',
   'Energia/Água',
   'Salários',
@@ -68,10 +69,50 @@ const getMonthName = (month: number): string => {
 };
 
 export default function ExpensesPage() {
+  const { isOther, isArena } = useBusinessContext();
   const { expenses, loadingExpenses, addExpense, updateExpense, deleteExpense, markExpensePaid, markExpenseUnpaid, isAddingExpense } = useExpenses();
   const [monthOffset, setMonthOffset] = useState(0);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingExpense, setEditingExpense] = useState<string | null>(null);
+
+  const categories = useMemo(() => {
+    if (isArena) {
+      return [
+        'Aluguel',
+        'Energia/Água',
+        'Salários de Funcionários',
+        'Manutenção de Quadras/Areia',
+        'Estoque de Bar/Cantina',
+        'Equipamentos Esportivos',
+        'Marketing',
+        'Limpeza/Conservação',
+        'Geral',
+      ];
+    }
+    if (isOther) {
+      return [
+        'Aluguel',
+        'Energia/Água',
+        'Salários de Professores',
+        'Material Didático',
+        'Marketing',
+        'Manutenção',
+        'Alimentação',
+        'Geral',
+      ];
+    }
+    // sport_school
+    return [
+      'Aluguel',
+      'Energia/Água',
+      'Salários de Professores',
+      'Material de Treino',
+      'Marketing',
+      'Manutenção',
+      'Alimentação',
+      'Geral',
+    ];
+  }, [isOther, isArena]);
 
   // Form state
   const [formDescription, setFormDescription] = useState('');
@@ -192,7 +233,7 @@ export default function ExpensesPage() {
                   <Label htmlFor="exp-description">Descrição *</Label>
                   <Input
                     id="exp-description"
-                    placeholder="Ex: Aluguel da quadra, Energia..."
+                    placeholder={isOther ? "Ex: Aluguel da sala, Energia, Livros..." : "Ex: Aluguel da quadra, Energia..."}
                     value={formDescription}
                     onChange={(e) => setFormDescription(e.target.value)}
                     autoFocus
@@ -229,7 +270,7 @@ export default function ExpensesPage() {
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        {EXPENSE_CATEGORIES.map((cat) => (
+                        {categories.map((cat) => (
                           <SelectItem key={cat} value={cat}>{cat}</SelectItem>
                         ))}
                       </SelectContent>

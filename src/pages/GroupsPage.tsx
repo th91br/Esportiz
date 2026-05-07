@@ -29,7 +29,7 @@ function GroupFormDialog({
   const { addGroup, updateGroup } = useGroups();
   const { students } = useStudents();
   const { modalities } = useModalities();
-  const { labels } = useBusinessContext();
+  const { labels, isOther, isArena } = useBusinessContext();
   const activeStudents = students.filter(s => s.active).sort((a, b) => a.name.localeCompare(b.name, 'pt-BR'));
   const isEditing = !!group;
 
@@ -126,7 +126,7 @@ function GroupFormDialog({
           <div className="flex gap-3">
             <div className="flex-1 space-y-2">
               <Label>Nome da {labels.groupLabelSingular} *</Label>
-              <Input placeholder="Ex: Sub-15 Noturno" value={name} onChange={e => setName(e.target.value)} required />
+              <Input placeholder={isOther ? "Ex: Turma A - Inglês Iniciante" : isArena ? "Ex: Quadra 1 - Noite" : "Ex: Sub-15 Noturno"} value={name} onChange={e => setName(e.target.value)} required />
             </div>
             <div className="space-y-2">
               <Label>Cor</Label>
@@ -144,7 +144,7 @@ function GroupFormDialog({
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-2">
               <Label>Local</Label>
-              <Input placeholder="Ex: Arena Principal" value={location} onChange={e => setLocation(e.target.value)} />
+              <Input placeholder={isOther ? "Ex: Sala 101" : isArena ? "Ex: Quadra Coberta" : "Ex: Arena Principal"} value={location} onChange={e => setLocation(e.target.value)} />
             </div>
             <div className="space-y-2">
               <Label>Duração</Label>

@@ -44,6 +44,9 @@ export function usePayments() {
                 createdAt: p.created_at,
                 isProrata: p.is_prorata || false,
                 fullPrice: p.full_price ? Number(p.full_price) : undefined,
+                paidAmount: p.paid && (!p.paid_amount || Number(p.paid_amount) === 0) 
+                    ? Number(p.amount) 
+                    : (p.paid_amount !== undefined && p.paid_amount !== null ? Number(p.paid_amount) : 0),
             })) as Payment[];
         },
         enabled: !!user,
@@ -75,10 +78,31 @@ export function usePayments() {
     }, [user, loadingPayments, payments, queryClient]);
 
     const markAsPaidMutation = useMutation({
-        mutationFn: async (paymentId: string) => {
+        mutationFn: async ({ paymentId, paidAmount }: { paymentId: string; paidAmount?: number }) => {
+            let finalPaidAmount = paidAmount;
+            let isFullyPaid = true;
+
+            const { data: payRow, error: fetchErr } = await supabase
+                .from('payments')
+                .select('amount')
+                .eq('id', paymentId)
+                .single();
+                
+            if (fetchErr) throw fetchErr;
+
+            if (finalPaidAmount === undefined) {
+                finalPaidAmount = Number(payRow.amount);
+            } else if (finalPaidAmount < Number(payRow.amount)) {
+                isFullyPaid = false;
+            }
+
             const { error } = await supabase
                 .from('payments')
-                .update({ paid: true, paid_at: new Date().toISOString() })
+                .update({ 
+                    paid: isFullyPaid, 
+                    paid_amount: finalPaidAmount, 
+                    paid_at: new Date().toISOString() 
+                })
                 .eq('id', paymentId);
             if (error) throw error;
         },
@@ -94,7 +118,7 @@ export function usePayments() {
         mutationFn: async (paymentId: string) => {
             const { error } = await supabase
                 .from('payments')
-                .update({ paid: false, paid_at: null })
+                .update({ paid: false, paid_at: null, paid_amount: 0 })
                 .eq('id', paymentId);
             if (error) throw error;
         },
@@ -173,7 +197,7 @@ export function usePayments() {
     return {
         payments,
         loadingPayments,
-        markAsPaid: async (id: string) => markAsPaidMutation.mutateAsync(id),
+        markAsPaid: async (id: string, paidAmount?: number) => markAsPaidMutation.mutateAsync({ paymentId: id, paidAmount }),
         markAsUnpaid: async (id: string) => markAsUnpaidMutation.mutateAsync(id),
         deletePayment: async (id: string) => deletePaymentMutation.mutateAsync(id),
         generateMonthlyPayments: async (monthRef: string) =>

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { UserPlus, UploadCloud, MapPin, FileText, Beaker, UsersRound, Check } from 'lucide-react';
+import { UserPlus, UploadCloud, MapPin, FileText, Beaker, UsersRound, Check, Tag, Percent } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
@@ -42,6 +42,10 @@ const studentSchema = z.object({
   city: z.string().optional(),
   state: z.string().optional(),
   zipCode: z.string().optional(),
+  discountType: z.string().optional(),
+  discountValue: z.string().optional(),
+  discountDurationMonths: z.string().optional(),
+  discountStartMonth: z.string().optional(),
 });
 
 type StudentFormValues = z.infer<typeof studentSchema>;
@@ -92,6 +96,10 @@ export function StudentForm({ student, trigger }: StudentFormProps) {
       city: student?.city || '',
       state: student?.state || '',
       zipCode: student?.zipCode || '',
+      discountType: student?.discountType || 'none',
+      discountValue: student?.discountValue ? String(student.discountValue) : '',
+      discountDurationMonths: student?.discountDurationMonths ? String(student.discountDurationMonths) : 'none',
+      discountStartMonth: student?.discountStartMonth || new Date().toLocaleDateString('en-CA').slice(0, 7),
     },
   });
 
@@ -113,6 +121,10 @@ export function StudentForm({ student, trigger }: StudentFormProps) {
           city: student.city || '',
           state: student.state || '',
           zipCode: student.zipCode || '',
+          discountType: student.discountType || 'none',
+          discountValue: student.discountValue ? String(student.discountValue) : '',
+          discountDurationMonths: student.discountDurationMonths ? String(student.discountDurationMonths) : 'none',
+          discountStartMonth: student.discountStartMonth || new Date().toLocaleDateString('en-CA').slice(0, 7),
         });
         setPhotoPreview(student.photo || null);
         setIsTrial(student.isTrial ?? false);
@@ -120,7 +132,8 @@ export function StudentForm({ student, trigger }: StudentFormProps) {
       } else {
         form.reset({
           name: '', phone: '', email: '', level: '', planId: 'none', paymentDueDay: '', birthDate: '', modalityId: 'none',
-          cpf: '', rg: '', address: '', city: '', state: '', zipCode: ''
+          cpf: '', rg: '', address: '', city: '', state: '', zipCode: '',
+          discountType: 'none', discountValue: '', discountDurationMonths: 'none', discountStartMonth: new Date().toLocaleDateString('en-CA').slice(0, 7),
         });
         setPhotoPreview(null);
         setIsTrial(false);
@@ -131,6 +144,7 @@ export function StudentForm({ student, trigger }: StudentFormProps) {
   }, [open, student, form]);
 
   const planIdWatch = form.watch('planId');
+  const discountTypeWatch = form.watch('discountType');
   const selectedPlan = plans.find(p => p.id === planIdWatch);
   const isMonthly = selectedPlan && selectedPlan.billingType === 'monthly';
 
@@ -155,6 +169,11 @@ export function StudentForm({ student, trigger }: StudentFormProps) {
         photoUrl = urlData.publicUrl;
       }
 
+      const discType = formData.discountType && formData.discountType !== 'none' ? formData.discountType : null;
+      const discVal = discType ? Number(formData.discountValue || 0) : 0;
+      const discDuration = formData.discountDurationMonths && formData.discountDurationMonths !== 'none' ? Number(formData.discountDurationMonths) : null;
+      const discStart = discType ? formData.discountStartMonth : null;
+
       const data = {
         name: formData.name,
         phone: formData.phone,
@@ -178,6 +197,10 @@ export function StudentForm({ student, trigger }: StudentFormProps) {
         trialStartedAt: isTrial && !student?.trialStartedAt ? new Date().toISOString() : student?.trialStartedAt || null,
         trialConvertedAt: !isTrial && student?.isTrial ? new Date().toISOString() : student?.trialConvertedAt || null,
         groupIds: selectedGroups,
+        discountType: discType,
+        discountValue: discVal,
+        discountDurationMonths: discDuration,
+        discountStartMonth: discStart,
       };
 
       if (isEditing) {
@@ -547,8 +570,14 @@ export function StudentForm({ student, trigger }: StudentFormProps) {
                           <SelectTrigger><SelectValue placeholder={`Selecione o(a) ${labels.planLabelSingular.toLowerCase()}`} /></SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          <SelectItem value="none">🧪 {labels.trainingLabelSingular} Experimental</SelectItem>
-                          <SelectItem value="no_plan">📋 Sem {labels.planLabelSingular} (Avulso eventual)</SelectItem>
+                          {!isOther ? (
+                            <>
+                              <SelectItem value="none">🧪 {labels.trainingLabelSingular} Experimental</SelectItem>
+                              <SelectItem value="no_plan">📋 Sem {labels.planLabelSingular} (Avulso eventual)</SelectItem>
+                            </>
+                          ) : (
+                            <SelectItem value="none">Selecione o(a) {labels.planLabelSingular.toLowerCase()}</SelectItem>
+                          )}
                           {plans.map((plan) => (
                             <SelectItem key={plan.id} value={plan.id}>
                               {plan.name} - R$ {plan.price.toFixed(2)}{plan.billingType === 'per_session' ? `/${labels.trainingLabelSingular.toLowerCase()}` : '/mês'}
@@ -691,6 +720,120 @@ export function StudentForm({ student, trigger }: StudentFormProps) {
                     </SelectContent>
                   </Select>
                 </FormItem>
+              </div>
+            )}
+
+            {isMonthly && (
+              <div className="border border-border/60 bg-muted/20 p-4 rounded-xl space-y-3 mt-2 text-left">
+                <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+                  <Tag className="h-3.5 w-3.5 text-primary" /> Bolsas & Descontos Promocionais
+                </h4>
+                
+                <div className="grid grid-cols-2 gap-3 text-left">
+                  <FormField
+                    control={form.control}
+                    name="discountType"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Tipo de Desconto</FormLabel>
+                        <Select onValueChange={field.onChange} value={field.value || 'none'}>
+                          <FormControl>
+                            <SelectTrigger><SelectValue placeholder="Selecione o tipo" /></SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="none">Sem Desconto</SelectItem>
+                            <SelectItem value="percentage">Porcentagem (%)</SelectItem>
+                            <SelectItem value="fixed">Valor Fixo (R$)</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  {discountTypeWatch && discountTypeWatch !== 'none' && (
+                    <FormField
+                      control={form.control}
+                      name="discountValue"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>
+                            {discountTypeWatch === 'percentage' ? 'Porcentagem (%)' : 'Valor (R$)'}
+                          </FormLabel>
+                          <FormControl>
+                            <Input 
+                              type="number" 
+                              min="0" 
+                              max={discountTypeWatch === 'percentage' ? 100 : undefined} 
+                              placeholder={discountTypeWatch === 'percentage' ? "Ex: 10" : "Ex: 25.00"} 
+                              {...field} 
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  )}
+                </div>
+
+                {discountTypeWatch && discountTypeWatch !== 'none' && (
+                  <div className="grid grid-cols-2 gap-3 text-left">
+                    <FormField
+                      control={form.control}
+                      name="discountDurationMonths"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Duração</FormLabel>
+                          <Select onValueChange={field.onChange} value={field.value || 'none'}>
+                            <FormControl>
+                              <SelectTrigger><SelectValue placeholder="Selecione a duração" /></SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              <SelectItem value="none">Permanente (Sem limite)</SelectItem>
+                              <SelectItem value="1">1 Mês</SelectItem>
+                              <SelectItem value="2">2 Meses</SelectItem>
+                              <SelectItem value="3">3 Meses</SelectItem>
+                              <SelectItem value="6">6 Meses</SelectItem>
+                              <SelectItem value="12">12 Meses</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="discountStartMonth"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Mês de Início</FormLabel>
+                          <Select onValueChange={field.onChange} value={field.value || billingStartMonth}>
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Selecione o mês" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              {Array.from({ length: 6 }).map((_, i) => {
+                                const d = new Date();
+                                d.setMonth(d.getMonth() + i);
+                                const val = d.toLocaleDateString('en-CA').slice(0, 7);
+                                const label = d.toLocaleString('pt-BR', { month: 'long', year: 'numeric' });
+                                return (
+                                  <SelectItem key={val} value={val} className="capitalize">
+                                    {label}
+                                  </SelectItem>
+                                );
+                              })}
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                )}
               </div>
             )}
 

@@ -27,6 +27,10 @@ export interface Student {
   trialStartedAt?: string | null;
   trialConvertedAt?: string | null;
   groupIds?: string[];
+  discountType?: 'percentage' | 'fixed' | null;
+  discountValue?: number;
+  discountDurationMonths?: number | null;
+  discountStartMonth?: string | null;
 }
 
 export function useStudents() {
@@ -71,6 +75,10 @@ export function useStudents() {
         trialStartedAt: s.trial_started_at,
         trialConvertedAt: s.trial_converted_at,
         groupIds: (s.group_students || []).map((gs: any) => gs.group_id),
+        discountType: s.discount_type,
+        discountValue: Number(s.discount_value || 0),
+        discountDurationMonths: s.discount_duration_months,
+        discountStartMonth: s.discount_start_month,
       })) as Student[];
     },
     enabled: !!user
@@ -105,7 +113,11 @@ export function useStudents() {
           is_trial: data.isTrial ?? false,
           trial_started_at: data.trialStartedAt || null,
           trial_converted_at: data.trialConvertedAt || null,
-          join_date: new Date().toISOString().split('T')[0]
+          join_date: new Date().toISOString().split('T')[0],
+          discount_type: data.discountType || null,
+          discount_value: data.discountValue || 0,
+          discount_duration_months: data.discountDurationMonths || null,
+          discount_start_month: data.discountStartMonth || null,
         })
         .select()
         .single();
@@ -127,6 +139,7 @@ export function useStudents() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['students'] });
+      queryClient.invalidateQueries({ queryKey: ['payments'] });
     }
   });
 
@@ -157,6 +170,10 @@ export function useStudents() {
           is_trial: data.isTrial,
           trial_started_at: data.trialStartedAt,
           trial_converted_at: data.trialConvertedAt,
+          discount_type: data.discountType === undefined ? undefined : data.discountType,
+          discount_value: data.discountValue === undefined ? undefined : data.discountValue,
+          discount_duration_months: data.discountDurationMonths === undefined ? undefined : data.discountDurationMonths,
+          discount_start_month: data.discountStartMonth === undefined ? undefined : data.discountStartMonth,
           updated_at: new Date().toISOString()
         })
         .eq('id', id)
@@ -184,6 +201,7 @@ export function useStudents() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['students'] });
+      queryClient.invalidateQueries({ queryKey: ['payments'] });
     }
   });
 

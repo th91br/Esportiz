@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Phone, Mail, Award, Pencil, Trash2, DollarSign, CalendarDays, MapPin, FileText, Beaker, UsersRound } from 'lucide-react';
+import { Phone, Mail, Award, Pencil, Trash2, DollarSign, CalendarDays, MapPin, FileText, Beaker, UsersRound, Percent, ExternalLink } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { StudentForm } from '@/components/StudentForm';
@@ -120,6 +120,16 @@ export function StudentCard({ student, onClick }: StudentCardProps) {
     toast({ title: 'Aluno reativado', description: `${student.name} está ativo novamente. Agende novos treinos para ele.` });
   };
 
+  const copyPortalLink = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    const url = `${window.location.origin}/portal-aluno?token=${student.id}`;
+    navigator.clipboard.writeText(url);
+    toast({
+      title: 'Portal do Aluno',
+      description: 'Link mágico de acesso copiado com sucesso!',
+    });
+  };
+
   const levelBorderColor = {
     iniciante: 'bg-emerald-500',
     intermediário: 'bg-amber-500',
@@ -173,6 +183,11 @@ export function StudentCard({ student, onClick }: StudentCardProps) {
                 {student.isTrial && (
                   <span className="px-2 py-0.5 rounded-full text-[10px] uppercase font-bold tracking-wider bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 flex items-center gap-1">
                     <Beaker className="h-2.5 w-2.5" />Experimental
+                  </span>
+                )}
+                {student.discountType && student.discountType !== 'none' && (
+                  <span className="px-2 py-0.5 rounded-full text-[10px] uppercase font-bold tracking-wider bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20 flex items-center gap-1 shrink-0">
+                    <Percent className="h-2.5 w-2.5" /> Bolsa {student.discountType === 'percentage' ? `${student.discountValue}%` : `R$ ${student.discountValue}`}
                   </span>
                 )}
               </div>
@@ -298,6 +313,15 @@ export function StudentCard({ student, onClick }: StudentCardProps) {
         )}
         
         <div className="flex items-center gap-0.5">
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            className="h-8 w-8 text-muted-foreground hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-950/30 transition-colors" 
+            onClick={copyPortalLink}
+            title="Copiar Link do Portal"
+          >
+            <ExternalLink className="h-3.5 w-3.5" />
+          </Button>
           <StudentForm
             student={student}
             trigger={

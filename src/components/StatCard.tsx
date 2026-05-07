@@ -28,9 +28,9 @@ export function StatCard({
 }: StatCardProps) {
   const variants = {
     default: 'bg-card',
-    primary: 'bg-gradient-hero text-white',
-    success: 'bg-success text-success-foreground',
-    warning: 'bg-warning text-warning-foreground',
+    primary: 'bg-gradient-hero text-white border-none',
+    success: 'bg-success text-success-foreground border-none bg-none',
+    warning: 'bg-warning text-warning-foreground border-none bg-none',
   };
 
   const iconVariants = {

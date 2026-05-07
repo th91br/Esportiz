@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Search, Users, UserCheck, UserMinus, UserX, Download } from 'lucide-react';
+import { Search, Users, UserCheck, UserMinus, UserX, Download, Link as LinkIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Header } from '@/components/Header';
 import { StatCard } from '@/components/StatCard';
@@ -13,6 +13,8 @@ import { useStudents } from '@/hooks/queries/useStudents';
 import { usePlans } from '@/hooks/queries/usePlans';
 import { useModalities } from '@/hooks/queries/useModalities';
 import { useGroups } from '@/hooks/queries/useGroups';
+import { useAuth } from '@/contexts/AuthContext';
+import { toast } from 'sonner';
 import { exportToCSV } from '@/lib/exportUtils';
 import { 
   getActiveMonthlyStudents, 
@@ -27,9 +29,17 @@ export default function StudentsPage() {
   const { plans, loadingPlans } = usePlans();
   const { modalities } = useModalities();
   const { groups } = useGroups();
-  const { labels, isOther } = useBusinessContext();
+  const { labels, isOther, isArena } = useBusinessContext();
+  const { user } = useAuth();
   
   const loading = loadingStudents || loadingPlans;
+
+  const copyEnrollmentLink = () => {
+    if (!user) return;
+    const url = `${window.location.origin}/matricula?ct=${user.id}`;
+    navigator.clipboard.writeText(url);
+    toast.success("Link de Matrícula Online copiado!");
+  };
   
   const totalStudents = getTotalStudents(students);
   const activeMonthlyCount = getActiveMonthlyStudents(students, plans).length;
@@ -88,6 +98,11 @@ export default function StudentsPage() {
             }} disabled={loading || students.length === 0}>
               <Download className="h-4 w-4" /> Exportar (CSV)
             </Button>
+            {!isArena && (
+              <Button variant="outline" className="gap-2 bg-background hover:bg-muted border-primary/20 text-primary shrink-0" onClick={copyEnrollmentLink}>
+                <LinkIcon className="h-4 w-4 text-primary" /> Link de Matrícula
+              </Button>
+            )}
             <StudentForm />
           </div>
         </div>

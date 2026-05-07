@@ -34,7 +34,9 @@ import { formatCurrency } from '@/lib/formatCurrency';
 import { DashboardCharts } from '@/components/DashboardCharts';
 import { useProfile } from '@/hooks/queries/useProfile';
 import { useModalities } from '@/hooks/queries/useModalities';
+import { useGroups } from '@/hooks/queries/useGroups';
 import { Logo } from '@/components/Logo';
+import { useMemo } from 'react';
 
 export default function Index() {
   const { labels, isSportSchool, isArena, isOther } = useBusinessContext();
@@ -46,6 +48,7 @@ export default function Index() {
   const { expenses, loadingExpenses } = useExpenses();
   const { sales } = useSales();
   const { reservations, loadingReservations } = useReservations();
+  const { groups, loadingGroups } = useGroups();
   const loading =
     loadingStudents ||
     loadingPlans ||
@@ -53,16 +56,24 @@ export default function Index() {
     loadingAttendance ||
     loadingPayments ||
     loadingExpenses ||
+    loadingGroups ||
     (isArena && loadingReservations);
 
   const [privacyMode, togglePrivacyMode] = usePrivacyMode();
   const { profile } = useProfile();
   const { modalities } = useModalities();
 
+  const activeGroups = useMemo(() => {
+    return groups.filter((g) => g.active);
+  }, [groups]);
+
   const hour = new Date().getHours();
   const greeting = hour < 12 ? 'Bom dia' : hour < 18 ? 'Boa tarde' : 'Boa noite';
 
-  const todayDateStr = new Date().toISOString().split('T')[0];
+  // Format local date securely as YYYY-MM-DD
+  const now = new Date();
+  const todayDateStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+  const currentMonthStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
 
   // ── Alunos / Clientes ──
   const activeMonthly = getActiveMonthlyStudents(students, plans);
@@ -79,12 +90,11 @@ export default function Index() {
       : 0;
 
   // ── Financeiro ──
-  const currentMonthStr = new Date().toISOString().slice(0, 7);
   let expectedRevenue = 0;
   let receivedRevenue = 0;
 
   if (isArena) {
-    // 1. Reservas de Quadras
+    // 1. Reservas de Quadras (Locações Avulsas)
     reservations.forEach((r) => {
       if (r.date.startsWith(currentMonthStr) && r.status !== 'cancelled') {
         expectedRevenue += r.finalPrice;
@@ -94,7 +104,15 @@ export default function Index() {
       }
     });
 
-    // 2. Vendas de Produtos
+    // 2. Pacotes Mensais de Mensalistas (Sincronia com Pagamentos!)
+    payments.forEach((p) => {
+      if (p.monthRef === currentMonthStr) {
+        expectedRevenue += p.amount;
+        receivedRevenue += p.paidAmount || 0;
+      }
+    });
+
+    // 3. Vendas de Produtos / Comandas (Sincronia com Vendas!)
     sales.forEach((s) => {
       if (s.soldAt.startsWith(currentMonthStr)) {
         expectedRevenue += s.total;
@@ -106,7 +124,7 @@ export default function Index() {
     payments.forEach((p) => {
       if (p.monthRef === currentMonthStr) {
         expectedRevenue += p.amount;
-        if (p.paid) receivedRevenue += p.amount;
+        receivedRevenue += p.paidAmount || 0;
       }
     });
 
@@ -148,12 +166,15 @@ export default function Index() {
   });
 
   // ── Quadras / Modalidades ──
-  const modalityStats = modalities
-    .map((mod) => ({
-      ...mod,
-      studentCount: students.filter((s) => s.active && s.modalityId === mod.id).length,
-    }))
-    .sort((a, b) => b.studentCount - a.studentCount);
+  const modalityStats = useMemo(() => {
+    return modalities
+      .map((mod) => ({
+        ...mod,
+        studentCount: students.filter((s) => s.active && s.modalityId === mod.id).length,
+        reservationCount: reservations.filter((r) => r.courtId === mod.id && r.date.startsWith(currentMonthStr) && r.status !== 'cancelled').length,
+      }))
+      .sort((a, b) => isArena ? b.reservationCount - a.reservationCount : b.studentCount - a.studentCount);
+  }, [modalities, students, reservations, isArena, currentMonthStr]);
 
   // ── Arena Specific Stats ──
   const occupancyRate = isArena ? (() => {
@@ -164,8 +185,8 @@ export default function Index() {
       } catch { return true; }
     });
     const totalHoursAvailable = activeCourts.length * 15 * new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).getDate();
-    const monthReservations = trainings.filter(t => t.date.startsWith(currentMonthStr) && (t as any).status !== 'cancelled');
-    const totalHoursBooked = monthReservations.reduce((acc, r) => acc + ((r as any).duration_minutes || 60) / 60, 0);
+    const monthReservations = reservations.filter(r => r.date.startsWith(currentMonthStr) && r.status !== 'cancelled');
+    const totalHoursBooked = monthReservations.reduce((acc, r) => acc + (r.durationMinutes || 60) / 60, 0);
     return totalHoursAvailable > 0 ? Math.round((totalHoursBooked / totalHoursAvailable) * 100) : 0;
   })() : 0;
 
@@ -337,7 +358,7 @@ export default function Index() {
           )}
 
           {/* ── Linha 2: Financeiro ── */}
-          <div className={`grid grid-cols-1 gap-3 md:gap-4 ${isSportSchool ? 'md:grid-cols-2' : 'md:grid-cols-3'}`}>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-4">
             <StatCard
               title="Faturamento Total"
               value={loading ? '...' : pv(formatCurrency(expectedRevenue))}
@@ -351,15 +372,13 @@ export default function Index() {
               variant="primary"
               progress={privacyMode ? undefined : { value: revenueProgress, label: 'Meta Mensal' }}
             />
-            {!isSportSchool && (
-              <StatCard
-                title="Lucro Líquido"
-                value={loading ? '...' : pv(formatCurrency(netProfit))}
-                icon={netProfit >= 0 ? TrendingUp : TrendingDown}
-                variant={netProfit >= 0 ? 'primary' : undefined}
-                description={privacyMode ? '' : `Despesas pagas: ${formatCurrency(totalExpensesPaid)}`}
-              />
-            )}
+            <StatCard
+              title="Lucro Líquido"
+              value={loading ? '...' : pv(formatCurrency(netProfit))}
+              icon={netProfit >= 0 ? TrendingUp : TrendingDown}
+              variant="success"
+              description={privacyMode ? '' : `Despesas pagas: ${formatCurrency(totalExpensesPaid)}`}
+            />
           </div>
         </section>
 
@@ -390,7 +409,7 @@ export default function Index() {
                   <div className="min-w-0">
                     <p className="text-sm font-bold truncate">{mod.name}</p>
                     <p className="text-[10px] text-muted-foreground uppercase font-bold tracking-tight">
-                      {mod.studentCount} {labels.studentLabel.toLowerCase()}
+                      {isArena ? `${mod.reservationCount} reserva(s) no mês` : `${mod.studentCount} ${labels.studentLabel.toLowerCase()}`}
                     </p>
                   </div>
                 </div>
@@ -400,27 +419,27 @@ export default function Index() {
         )}
 
         {/* ── Turmas — other ── */}
-        {isOther && modalities.length > 0 && (
+        {isOther && activeGroups.length > 0 && (
           <section className="animate-fade-up" style={{ animationDelay: '0.05s' }}>
             <div className="flex items-center gap-2 mb-4 px-1">
               <Tag className="h-4 w-4 text-primary" />
               <h2 className="font-display font-bold text-lg">Suas {labels.groupLabel}</h2>
             </div>
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-              {modalityStats.map((mod) => (
+              {activeGroups.map((group) => (
                 <div
-                  key={mod.id}
+                  key={group.id}
                   className="card-interactive p-3 flex items-center gap-3 border-primary/5 hover:border-primary/20 transition-all cursor-pointer"
                   onClick={() => (window.location.href = '/turmas')}
                 >
                   <div
                     className="w-2.5 h-2.5 rounded-full shadow-sm shrink-0"
-                    style={{ backgroundColor: mod.color }}
+                    style={{ backgroundColor: group.color }}
                   />
-                  <div className="min-w-0">
-                    <p className="text-sm font-bold truncate">{mod.name}</p>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-bold truncate">{group.name}</p>
                     <p className="text-[10px] text-muted-foreground uppercase font-bold tracking-tight">
-                      {mod.studentCount} {labels.studentLabel.toLowerCase()}
+                      {group.studentIds.length} {labels.studentLabel.toLowerCase()}
                     </p>
                   </div>
                 </div>

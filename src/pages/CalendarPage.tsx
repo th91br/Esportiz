@@ -51,7 +51,7 @@ function TrainingFormDialog({
   const [formDuration, setFormDuration] = useState(training?.durationMinutes?.toString() || '60');
   const { modalities } = useModalities();
   const [studentSearch, setStudentSearch] = useState('');
-  const { labels } = useBusinessContext();
+  const { labels, isOther } = useBusinessContext();
 
   const filteredStudents = activeStudents.filter((s) =>
     s.name.toLowerCase().includes(studentSearch.toLowerCase())
@@ -191,7 +191,7 @@ function TrainingFormDialog({
           </div>
           <div className="space-y-2">
             <Label>Local</Label>
-            <Input placeholder="Ex: Praia de Copacabana" value={formLocation} onChange={(e) => setFormLocation(e.target.value)} />
+            <Input placeholder={isOther ? "Ex: Sala 101, Laboratório" : "Ex: Quadra 1, Arena Principal"} value={formLocation} onChange={(e) => setFormLocation(e.target.value)} />
           </div>
 
           <div className="space-y-2">

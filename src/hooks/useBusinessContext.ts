@@ -112,6 +112,7 @@ function buildNavModules(type: BusinessType, labels: BusinessLabels): NavModule[
         shared.pagamentos,
         shared.despesas,
         shared.produtos,
+        { label: 'Comandas', path: '/comandas' },
         shared.vendas,
         shared.relatorios,
       ];
@@ -121,6 +122,7 @@ function buildNavModules(type: BusinessType, labels: BusinessLabels): NavModule[
         shared.dashboard,
         shared.calendario,
         { label: labels.studentLabel, path: '/alunos' },
+        { label: labels.modalityLabel, path: '/modalidades' },
         { label: labels.groupLabel, path: '/turmas' },
         { label: labels.attendanceLabel, path: '/presenca' },
         { label: labels.planLabel, path: '/planos' },
@@ -128,7 +130,6 @@ function buildNavModules(type: BusinessType, labels: BusinessLabels): NavModule[
         shared.despesas,
         shared.relatorios,
         shared.comunicacao,
-        // Ocultos: Modalidades, Produtos, Vendas, Aniversários
       ];
   }
 }

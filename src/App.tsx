@@ -29,6 +29,9 @@ import SalesPage from "./pages/SalesPage";
 import NotFound from "./pages/NotFound";
 import CourtsPage from "./pages/CourtsPage";
 import ArenaAgendaPage from "./pages/ArenaAgendaPage";
+import ComandasPage from "./pages/ComandasPage";
+import EnrollmentPage from "./pages/EnrollmentPage";
+import StudentPortalPage from "./pages/StudentPortalPage";
 import { useProfile } from "./hooks/queries/useProfile";
 
 
@@ -77,6 +80,8 @@ function AppRoutes() {
     <Routes>
       {/* Rota pública — landing page */}
       <Route path="/" element={<LandingPage />} />
+      <Route path="/matricula" element={<EnrollmentPage />} />
+      <Route path="/portal-aluno" element={<StudentPortalPage />} />
       {/* Auth */}
       <Route path="/login" element={user ? <Navigate to="/dashboard" replace /> : <LoginPage />} />
       <Route path="/reset-password" element={<ResetPasswordPage />} />
@@ -102,6 +107,7 @@ function AppRoutes() {
       <Route path="/quadras" element={<ProtectedRoute><CourtsPage /></ProtectedRoute>} />
       <Route path="/agenda" element={<ProtectedRoute><ArenaAgendaPage /></ProtectedRoute>} />
       <Route path="/reservantes" element={<ProtectedRoute><StudentsPage /></ProtectedRoute>} />
+      <Route path="/comandas" element={<ProtectedRoute><ComandasPage /></ProtectedRoute>} />
       <Route path="*" element={<NotFound />} />
     </Routes>
   );

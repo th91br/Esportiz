@@ -124,7 +124,7 @@ export default function ReportsPage() {
   const { expenses } = useExpenses();
   const [period, setPeriod] = useState<FilterPeriod>('month');
   const [privacyMode, togglePrivacyMode] = usePrivacyMode();
-  const { labels, isArena, isOther } = useBusinessContext();
+  const { labels, isArena, isOther, isSportSchool } = useBusinessContext();
 
   const range = useMemo(() => getDateRange(period), [period]);
   const monthRefs = useMemo(() => getMonthRefsForPeriod(period), [period]);
@@ -462,7 +462,10 @@ export default function ReportsPage() {
         </div>
 
         {/* KPIs Premium */}
-        <section className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7 gap-3 md:gap-4 xl:gap-3 animate-fade-in">
+        <section className={cn(
+          "grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-4 xl:gap-3 animate-fade-in",
+          isSportSchool ? "xl:grid-cols-6" : "xl:grid-cols-7"
+        )}>
           <StatCard 
             title={`${labels.studentLabel} Base`} 
             value={privacyMode ? '••••' : totalActive} 
@@ -496,13 +499,15 @@ export default function ReportsPage() {
             variant="primary"
             progress={privacyMode ? undefined : { value: revenueProgress, label: "Meta vs Esperado" }}
           />
-          <StatCard 
-            title="Despesas (Pagas)" 
-            value={privacyMode ? '••••' : formatCurrency(totalExpensesPaid)} 
-            icon={DollarSign} 
-            variant="default"
-            description={privacyMode ? '' : 'Total de despesas pagas'}
-          />
+          {!isSportSchool && (
+            <StatCard 
+              title="Despesas (Pagas)" 
+              value={privacyMode ? '••••' : formatCurrency(totalExpensesPaid)} 
+              icon={DollarSign} 
+              variant="default"
+              description={privacyMode ? '' : 'Total de despesas pagas'}
+            />
+          )}
           <StatCard 
             title="Resultado Líquido" 
             value={privacyMode ? '••••' : formatCurrency(netProfit)} 

@@ -32,11 +32,19 @@ export default function ComandasPage() {
   const [selectedComanda, setSelectedComanda] = useState<Comanda | null>(null);
   const [productSearch, setProductSearch] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
+  const [modalTab, setModalTab] = useState<'items' | 'catalog'>('items');
   
   // Closing/Payment states
   const [closingComanda, setClosingComanda] = useState<Comanda | null>(null);
   const [paymentMethod, setPaymentMethod] = useState<'dinheiro' | 'pix' | 'cartao_credito' | 'cartao_debito'>('pix');
   const [isClosingSubmitting, setIsClosingSubmitting] = useState(false);
+
+  // Reset modal tab to consumed items when opening a new comanda
+  useEffect(() => {
+    if (selectedComanda) {
+      setModalTab('items');
+    }
+  }, [selectedComanda?.id]);
 
   // Update selectedComanda state in real-time when the lists refresh
   useEffect(() => {
@@ -315,11 +323,26 @@ export default function ComandasPage() {
                   </div>
                 </div>
 
-                <div className="mt-5 pt-4 border-t border-border/50 flex items-center justify-between">
-                  <span className="text-xs text-muted-foreground uppercase font-bold tracking-tight">Valor Total:</span>
-                  <span className="font-display font-extrabold text-lg text-primary">
-                    {pv(formatCurrency(comanda.totalAmount))}
-                  </span>
+                <div className="mt-5 pt-4 border-t border-border/50 flex items-center justify-between gap-2">
+                  <div className="flex flex-col">
+                    <span className="text-[10px] text-muted-foreground uppercase font-bold tracking-tight">Valor Total:</span>
+                    <span className="font-display font-extrabold text-base text-primary">
+                      {pv(formatCurrency(comanda.totalAmount))}
+                    </span>
+                  </div>
+                  {comanda.status === 'open' && comanda.items.length > 0 && (
+                    <Button
+                      size="sm"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setClosingComanda(comanda);
+                      }}
+                      className="h-8 px-3 bg-success hover:bg-success/90 text-success-foreground font-bold text-xs rounded-lg gap-1 shadow-sm shrink-0"
+                    >
+                      <CreditCard className="h-3.5 w-3.5" />
+                      Finalizar
+                    </Button>
+                  )}
                 </div>
               </div>
             ))}
@@ -434,11 +457,44 @@ export default function ComandasPage() {
                 )}
               </div>
 
+              {/* Mobile Tab Switcher */}
+              {selectedComanda.status === 'open' && (
+                <div className="flex border-b border-border bg-muted/15 md:hidden flex-shrink-0">
+                  <button
+                    onClick={() => setModalTab('items')}
+                    className={cn(
+                      "flex-1 py-3 text-xs font-extrabold uppercase tracking-wider border-b-2 transition-all flex items-center justify-center gap-1.5",
+                      modalTab === 'items' 
+                        ? "border-primary text-primary bg-primary/5" 
+                        : "border-transparent text-muted-foreground hover:text-foreground"
+                    )}
+                  >
+                    <ShoppingBag className="h-4 w-4" />
+                    Consumo ({selectedComanda.items.reduce((sum, item) => sum + item.quantity, 0)})
+                  </button>
+                  <button
+                    onClick={() => setModalTab('catalog')}
+                    className={cn(
+                      "flex-1 py-3 text-xs font-extrabold uppercase tracking-wider border-b-2 transition-all flex items-center justify-center gap-1.5",
+                      modalTab === 'catalog' 
+                        ? "border-primary text-primary bg-primary/5" 
+                        : "border-transparent text-muted-foreground hover:text-foreground"
+                    )}
+                  >
+                    <Utensils className="h-4 w-4" />
+                    Cardápio
+                  </button>
+                </div>
+              )}
+
               {/* Body POS Split View */}
               <div className="flex-1 flex flex-col md:flex-row overflow-hidden min-h-0">
                 
                 {/* LEFT COLUMN: Consumption details list */}
-                <div className="flex-1 flex flex-col p-4 md:p-5 border-r border-border/50 overflow-y-auto min-h-0">
+                <div className={cn(
+                  "flex-1 flex flex-col p-4 md:p-5 border-r border-border/50 overflow-y-auto min-h-0",
+                  selectedComanda.status === 'open' && modalTab !== 'items' && 'hidden md:flex'
+                )}>
                   <h3 className="text-sm font-extrabold text-foreground uppercase tracking-wider mb-3 flex items-center justify-between">
                     <span>Itens Consumidos</span>
                     <span className="text-xs bg-muted text-muted-foreground px-2 py-0.5 rounded-full font-bold">
@@ -539,7 +595,10 @@ export default function ComandasPage() {
 
                 {/* RIGHT COLUMN: Product Catalog (Disabled if closed) */}
                 {selectedComanda.status === 'open' ? (
-                  <div className="w-full md:w-[45%] flex flex-col p-4 md:p-5 bg-muted/15 overflow-y-auto min-h-0">
+                  <div className={cn(
+                    "w-full md:w-[45%] flex flex-col p-4 md:p-5 bg-muted/15 overflow-y-auto min-h-0",
+                    modalTab !== 'catalog' && 'hidden md:flex'
+                  )}>
                     <h3 className="text-sm font-extrabold text-foreground uppercase tracking-wider mb-3">
                       Cardápio / Produtos
                     </h3>

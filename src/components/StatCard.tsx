@@ -68,7 +68,15 @@ export function StatCard({
       </div>
       
       <div className="space-y-1">
-        <p className="stat-value text-xl min-[400px]:text-2xl lg:text-3xl font-extrabold tracking-tight" title={String(value)}>
+        <p
+          className={cn(
+            'stat-value font-extrabold tracking-tight truncate',
+            String(value).length > 8
+              ? 'text-lg min-[400px]:text-xl lg:text-xl xl:text-2xl'
+              : 'text-xl min-[400px]:text-2xl lg:text-3xl'
+          )}
+          title={String(value)}
+        >
           {value}
         </p>
         

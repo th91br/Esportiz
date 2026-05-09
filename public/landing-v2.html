@@ -238,15 +238,210 @@ nav{position:fixed;top:0;left:0;right:0;z-index:1000;padding:0 24px;transition:b
 .cred-sep{color:rgba(255,255,255,.15);}
 @keyframes marquee{0%{transform:translateX(0);}100%{transform:translateX(-50%);}}
 
-/* COMO FUNCIONA */
-.steps-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:24px;}
-.step-card{padding:36px;position:relative;}
-.step-num{position:absolute;top:16px;right:20px;font-family:'Syne',sans-serif;font-weight:800;font-size:100px;color:rgba(255,255,255,.03);line-height:1;pointer-events:none;user-select:none;}
-.step-icon{width:48px;height:48px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:22px;margin-bottom:20px;}
-.step-icon.green{background:rgba(29,184,116,.15);}
-.step-icon.blue{background:rgba(55,138,221,.15);}
-.step-card h3{font-family:'Syne',sans-serif;font-weight:700;font-size:19px;margin-bottom:10px;color:#fff;}
-.step-card p{font-size:15px;font-weight:400;color:rgba(255,255,255,.62);line-height:1.75;}
+/* COMO FUNCIONA (STEPPER TIMELINE AND CARDS MATCHING IMAGE 2) */
+.steps-wrapper {
+  margin-top: 56px;
+  display: flex;
+  flex-direction: column;
+  gap: 48px;
+}
+
+/* Stepper horizontal timeline - aligned perfectly with the 3 columns of cards */
+.stepper-timeline {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+  position: relative;
+  width: 100%;
+}
+.stepper-line-bg {
+  position: absolute;
+  top: 24px;
+  left: 12%;
+  right: 12%;
+  height: 2px;
+  background-image: linear-gradient(to right, rgba(255,255,255,0.08) 50%, transparent 50%);
+  background-size: 8px 2px;
+  z-index: 1;
+}
+.stepper-node {
+  display: flex;
+  align-items: center;
+  justify-content: center; /* Centering node (circle + text) above the card */
+  position: relative;
+  z-index: 2;
+}
+.stepper-circle {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: #0A1628; /* Solid background matching page background to cover line */
+  border: 2px solid rgba(29, 184, 116, 0.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--green);
+  box-shadow: 0 0 15px rgba(29, 184, 116, 0.08);
+  transition: all 0.3s ease;
+  flex-shrink: 0;
+  position: relative;
+  z-index: 3;
+}
+.stepper-node:hover .stepper-circle {
+  border-color: var(--green);
+  background: rgba(29, 184, 116, 0.15);
+  transform: scale(1.05);
+  box-shadow: 0 0 25px rgba(29, 184, 116, 0.2);
+}
+.stepper-label {
+  font-family: 'Syne', sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: rgba(255, 255, 255, 0.85);
+  margin-left: 12px;
+  flex-shrink: 0;
+  background: #0A1628; /* Solid background matching page background to cover line */
+  padding-right: 12px;
+  padding-left: 8px;
+  position: relative;
+  z-index: 3;
+}
+.stepper-label span {
+  color: var(--green);
+}
+
+/* Steps Cards Grid */
+.steps-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+}
+.step-card {
+  background: rgba(13, 31, 60, 0.35);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1.5px solid rgba(29, 184, 116, 0.15);
+  border-radius: 20px;
+  padding: 36px 30px;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  min-height: 380px;
+}
+.step-card::before {
+  display: none !important;
+}
+.step-card:hover {
+  border-color: rgba(29, 184, 116, 0.5);
+  transform: translateY(-6px);
+  box-shadow: 0 20px 40px rgba(29, 184, 116, 0.1);
+}
+.step-card h3 {
+  font-family: 'Syne', sans-serif;
+  font-weight: 700;
+  font-size: 21px;
+  color: #fff;
+  margin-bottom: 12px;
+  letter-spacing: -0.3px;
+}
+.step-card p {
+  font-size: 14.5px;
+  line-height: 1.65;
+  color: rgba(255, 255, 255, 0.65);
+  margin-bottom: auto !important; /* Push pill and bullet to bottom */
+}
+
+/* Step Badges/Pills */
+.step-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: 100px;
+  font-size: 12px;
+  font-weight: 500;
+  background: rgba(29, 184, 116, 0.08);
+  color: var(--green);
+  border: 1px solid rgba(29, 184, 116, 0.2);
+  width: fit-content;
+  margin-top: 24px;
+  margin-bottom: 18px;
+}
+
+/* Step Divider */
+.step-card-divider {
+  height: 1px;
+  background: rgba(255, 255, 255, 0.06);
+  margin-bottom: 16px;
+  width: 100%;
+}
+
+/* Bullet item */
+.step-bullet {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.85);
+}
+.step-bullet-check {
+  width: 14px;
+  height: 14px;
+  color: var(--green);
+  flex-shrink: 0;
+}
+
+/* Rocket CTA layout */
+.rocket-cta-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  margin-top: 48px;
+}
+.btn-rocket {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--green);
+  color: #030814;
+  font-family: 'Syne', sans-serif;
+  font-weight: 700;
+  font-size: 16.5px;
+  padding: 18px 44px;
+  border-radius: 100px;
+  text-decoration: none;
+  box-shadow: 0 8px 24px rgba(29, 184, 116, 0.25);
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.btn-rocket:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 12px 32px rgba(29, 184, 116, 0.45);
+  background: #25d384;
+}
+.btn-rocket svg {
+  width: 18px;
+  height: 18px;
+  transition: transform 0.3s ease;
+}
+.btn-rocket:hover svg {
+  transform: translate(2px, -2px) scale(1.1);
+}
+.rocket-subtext {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: rgba(255,255,255,0.45);
+  font-weight: 500;
+}
+.rocket-subtext svg {
+  color: var(--green);
+}
 
 /* FUNCIONALIDADES */
 .feat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;}
@@ -361,6 +556,7 @@ footer{padding:60px 0 30px;border-top:1px solid rgba(255,255,255,.06);background
 
   /* Steps / Features */
   .steps-grid,.feat-grid{grid-template-columns:1fr;}
+  .stepper-timeline{display:none !important;}
 
   /* For Whom */
   .who-grid{grid-template-columns:1fr;}
@@ -472,19 +668,230 @@ footer{padding:60px 0 30px;border-top:1px solid rgba(255,255,255,.06);background
 .zebra-mockup-bar { background: rgba(255,255,255,0.03); padding: 14px 18px; display: flex; align-items: center; gap: 8px; border-bottom: 1px solid rgba(255,255,255,0.06); }
 @media(max-width: 992px) { .zebra-row { flex-direction: column !important; gap: 40px; margin-bottom: 80px; } .zebra-title { font-size: 28px; } }
 
-/* PROBLEM SECTION */
-.problem-section{padding:100px 0 80px;position:relative;}
-.problem-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:24px;margin-top:48px;}
-.problem-card{padding:36px;text-align:center;border:1px solid rgba(255,77,77,.08);background:rgba(255,77,77,.02);}
-.problem-card:hover{border-color:rgba(255,77,77,.2);background:rgba(255,77,77,.04);transform:translateY(-4px);}
-.problem-card::before{background:linear-gradient(90deg,transparent,rgba(255,77,77,.3),transparent);}
-.problem-card:hover::before{opacity:1;}
-.problem-icon{width:56px;height:56px;border-radius:14px;display:flex;align-items:center;justify-content:center;margin:0 auto 20px;background:rgba(255,77,77,.08);}
-.problem-icon svg{width:26px;height:26px;color:#ff6b6b;opacity:.9;}
-.problem-card h3{font-family:'Syne',sans-serif;font-weight:700;font-size:18px;margin-bottom:10px;color:#fff;}
-.problem-card p{font-size:14px;color:rgba(255,255,255,.55);line-height:1.7;}
-.problem-transition{text-align:center;margin-top:56px;font-family:'Syne',sans-serif;font-size:clamp(20px,3vw,28px);font-weight:700;color:#fff;}
-@media(max-width:768px){.problem-grid{grid-template-columns:1fr;max-width:400px;margin:48px auto 0;}}
+/* ═══════════════════════════════════════════════════════════════
+   PROBLEM SECTION (REVOLUTIONIZED DESIGN MATCHING IMAGE 2)
+   ═══════════════════════════════════════════════════════════════ */
+.problem-section {
+  padding: 100px 0 80px;
+  position: relative;
+}
+.problem-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+  margin-top: 48px;
+}
+.problem-card.card {
+  background: rgba(13, 31, 60, 0.45);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 20px;
+  padding: 36px 28px;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  overflow: hidden;
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  min-height: 520px;
+}
+.problem-card.card::before {
+  display: none !important;
+}
+
+/* Bottom colored indicator glow lines */
+.problem-card.card.card-sport {
+  border-bottom: 3px solid #FF5F57;
+}
+.problem-card.card.card-sport:hover {
+  border-color: #FF5F57;
+  transform: translateY(-6px);
+  box-shadow: 0 24px 48px rgba(255, 95, 87, 0.12);
+}
+.problem-card.card.card-arena {
+  border-bottom: 3px solid #F59E0B;
+}
+.problem-card.card.card-arena:hover {
+  border-color: #F59E0B;
+  transform: translateY(-6px);
+  box-shadow: 0 24px 48px rgba(245, 158, 11, 0.12);
+}
+.problem-card.card.card-other {
+  border-bottom: 3px solid #378ADD;
+}
+.problem-card.card.card-other:hover {
+  border-color: #378ADD;
+  transform: translateY(-6px);
+  box-shadow: 0 24px 48px rgba(55, 138, 221, 0.12);
+}
+
+/* Number watermark */
+.problem-num {
+  position: absolute;
+  top: 10px;
+  right: 20px;
+  font-family: 'Syne', sans-serif;
+  font-weight: 800;
+  font-size: 84px;
+  line-height: 1;
+  pointer-events: none;
+  user-select: none;
+  opacity: 0.03;
+  transition: opacity 0.3s ease, transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.problem-card:hover .problem-num {
+  opacity: 0.09;
+  transform: scale(1.05) translateY(-2px);
+}
+.problem-card.card-sport .problem-num { color: #FF5F57; }
+.problem-card.card-arena .problem-num { color: #F59E0B; }
+.problem-card.card-other .problem-num { color: #378ADD; }
+
+/* Icon Square Badges */
+.problem-badge {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 24px;
+  transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  flex-shrink: 0;
+}
+.problem-card:hover .problem-badge {
+  transform: scale(1.1) rotate(-4deg);
+}
+.problem-badge.pink {
+  background: rgba(255, 95, 87, 0.12);
+  color: #FF5F57;
+  border: 1px solid rgba(255, 95, 87, 0.25);
+}
+.problem-badge.gold {
+  background: rgba(245, 158, 11, 0.12);
+  color: #F59E0B;
+  border: 1px solid rgba(245, 158, 11, 0.25);
+}
+.problem-badge.sky {
+  background: rgba(55, 138, 221, 0.12);
+  color: #378ADD;
+  border: 1px solid rgba(55, 138, 221, 0.25);
+}
+.problem-badge svg {
+  width: 22px;
+  height: 22px;
+}
+
+.problem-card h3 {
+  font-family: 'Syne', sans-serif;
+  font-weight: 700;
+  font-size: 20px;
+  color: #fff;
+  margin-bottom: 12px;
+  letter-spacing: -0.3px;
+}
+.problem-card p {
+  font-size: 14px;
+  line-height: 1.65;
+  color: rgba(255, 255, 255, 0.65);
+  margin-bottom: auto !important; /* Pushes pills and solve box to the bottom */
+}
+
+/* Severity Pill styling */
+.problem-severity-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: 100px;
+  font-size: 11.5px;
+  font-weight: 500;
+  margin-top: 24px;
+  margin-bottom: 20px;
+  width: fit-content;
+  border: 1px solid transparent;
+}
+.problem-severity-pill svg {
+  flex-shrink: 0;
+}
+.problem-severity-pill.red {
+  background: rgba(255, 95, 87, 0.08);
+  color: #FF5F57;
+  border-color: rgba(255, 95, 87, 0.2);
+}
+.problem-severity-pill.orange {
+  background: rgba(245, 158, 11, 0.08);
+  color: #F59E0B;
+  border-color: rgba(245, 158, 11, 0.2);
+}
+.problem-severity-pill.blue {
+  background: rgba(55, 138, 221, 0.08);
+  color: #378ADD;
+  border-color: rgba(55, 138, 221, 0.2);
+}
+
+/* Divider & Solve styling */
+.problem-divider {
+  height: 1px;
+  background: rgba(255, 255, 255, 0.06);
+  margin-bottom: 18px;
+  width: 100%;
+}
+.solve-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--green);
+  font-size: 13.5px;
+  font-weight: 700;
+  margin-bottom: 6px;
+  letter-spacing: 0.2px;
+}
+.solve-check {
+  width: 14px;
+  height: 14px;
+  color: var(--green);
+}
+.solve-desc {
+  font-size: 13px;
+  line-height: 1.5;
+  color: rgba(255, 255, 255, 0.85);
+  text-align: left;
+}
+
+/* Transition text & bouncing arrows */
+.problem-transition {
+  text-align: center;
+  margin-top: 56px;
+  font-size: 15px;
+  color: rgba(255, 255, 255, 0.45);
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+.problem-transition svg {
+  animation: bounceSlow 2s infinite;
+  color: var(--green);
+}
+@keyframes bounceSlow {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(4px); }
+}
+
+@media(max-width: 1024px) {
+  .problem-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+@media(max-width: 768px) {
+  .problem-grid {
+    grid-template-columns: 1fr;
+    max-width: 440px;
+    margin: 48px auto 0;
+  }
+}
 
 /* CTA INLINE */
 .cta-inline{text-align:center;padding:64px 0;margin:20px 0 60px;position:relative;}
@@ -941,6 +1348,212 @@ footer{padding:60px 0 30px;border-top:1px solid rgba(255,255,255,.06);background
   .ms-actions { width: 100%; justify-content: space-between; }
 }
 
+/* ═══════════════════════════════════════════════════════════════
+   PREMIUM INTERACTIVE DEMO & COMPONENTS (UX CAMALEÃO)
+   ═══════════════════════════════════════════════════════════════ */
+.niche-selector-tabs {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 24px;
+  justify-content: flex-start;
+  flex-wrap: wrap;
+}
+.niche-tab {
+  background: rgba(13, 31, 60, 0.45);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 100px;
+  padding: 10px 20px;
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 13.5px;
+  font-weight: 500;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+.niche-tab:hover {
+  border-color: rgba(255, 255, 255, 0.15);
+  color: #fff;
+  transform: translateY(-2px);
+}
+.niche-tab.active {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: var(--demo-accent, var(--green));
+  color: #fff;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25), inset 0 1px 1px rgba(255,255,255,0.1);
+}
+.niche-tab.active .tab-dot {
+  transform: scale(1.3);
+  box-shadow: 0 0 10px var(--demo-accent, var(--green));
+}
+.tab-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  transition: all 0.3s ease;
+}
+
+/* CSS variables for mockup states */
+.mockup {
+  --demo-accent: var(--green);
+  --demo-accent-bg: rgba(29, 184, 116, 0.1);
+  --demo-welcome-bg: linear-gradient(135deg, rgba(29, 184, 116, 0.15) 0%, rgba(55, 138, 221, 0.1) 100%);
+  transition: border-color 0.4s ease, box-shadow 0.4s ease;
+}
+.mockup.demo-sport {
+  --demo-accent: var(--green);
+  --demo-accent-bg: rgba(29, 184, 116, 0.1);
+  --demo-welcome-bg: linear-gradient(135deg, rgba(29, 184, 116, 0.15) 0%, rgba(55, 138, 221, 0.1) 100%);
+  border-color: rgba(29, 184, 116, 0.2);
+}
+.mockup.demo-arena {
+  --demo-accent: #378ADD;
+  --demo-accent-bg: rgba(55, 138, 221, 0.1);
+  --demo-welcome-bg: linear-gradient(135deg, rgba(55, 138, 221, 0.15) 0%, rgba(29, 184, 116, 0.05) 100%);
+  border-color: rgba(55, 138, 221, 0.2);
+}
+.mockup.demo-other {
+  --demo-accent: #F59E0B;
+  --demo-accent-bg: rgba(245, 158, 11, 0.1);
+  --demo-welcome-bg: linear-gradient(135deg, rgba(245, 158, 11, 0.15) 0%, rgba(29, 184, 116, 0.03) 100%);
+  border-color: rgba(245, 158, 11, 0.2);
+}
+
+/* Lupa Search bar inside Mockup */
+.ms-search-wrap {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: #F3F4F6;
+  border-radius: 8px;
+  padding: 4px 10px;
+  border: 1px solid #E5E7EB;
+  transition: all 0.3s ease;
+}
+.ms-search-wrap:focus-within {
+  border-color: #1DB874;
+  background: #fff;
+  box-shadow: 0 0 0 2px rgba(29, 184, 116, 0.1);
+}
+.ms-search-icon {
+  color: #9CA3AF;
+  flex-shrink: 0;
+}
+.ms-search-input {
+  border: none !important;
+  outline: none !important;
+  background: transparent !important;
+  font-size: 10px !important;
+  width: 90px !important;
+  color: #374151 !important;
+  padding: 0 !important;
+  font-family: inherit;
+}
+
+/* Interactive Drawer Slide-Over (PWA Notification Sheet) inside mockup */
+.mockup-sys {
+  position: relative;
+  overflow: hidden;
+}
+.ms-drawer-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0,0,0,0.4);
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
+  z-index: 90;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.38s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.ms-drawer-overlay.open {
+  opacity: 1;
+  pointer-events: auto;
+}
+.ms-drawer-sheet {
+  position: absolute;
+  top: 0;
+  right: -280px;
+  bottom: 0;
+  width: 260px;
+  background: #fff;
+  box-shadow: -4px 0 24px rgba(0,0,0,0.15);
+  z-index: 100;
+  transition: transform 0.38s cubic-bezier(0.16, 1, 0.3, 1);
+  display: flex;
+  flex-direction: column;
+}
+.ms-drawer-sheet.open {
+  transform: translateX(-280px);
+}
+.ms-drawer-header {
+  padding: 16px;
+  border-bottom: 1px solid #F3F4F6;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.ms-drawer-title {
+  font-size: 13px;
+  font-weight: 800;
+  color: #111827;
+}
+.ms-drawer-close {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #6B7280;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
+  border-radius: 50%;
+  transition: background 0.2s;
+}
+.ms-drawer-close:hover {
+  background: #F3F4F6;
+}
+.ms-drawer-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 12px;
+}
+.ms-drawer-section-title {
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: #9CA3AF;
+  letter-spacing: 0.5px;
+  margin-bottom: 10px;
+  padding: 0 4px;
+}
+
+/* SMART-SORT CHRONO DISPLAY */
+.chrono-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: rgba(29,184,116,0.1);
+  color: var(--green);
+  border: 1px solid rgba(29,184,116,0.2);
+  padding: 2px 8px;
+  border-radius: 100px;
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  margin-top: 4px;
+}
+
+
+@media(max-width: 1024px) {
+  .niche-selector-tabs {
+    justify-content: center;
+  }
+}
 </style>
 </head>
 <body>
@@ -1017,17 +1630,31 @@ footer{padding:60px 0 30px;border-top:1px solid rgba(255,255,255,.06);background
       </div>
     </div>
     <div class="mockup-wrap reveal" style="max-width: 82%; margin-left: auto; perspective: 1500px;">
-      <div class="mockup">
+      
+      <!-- Seletor Interativo UX Camaleão -->
+      <div class="niche-selector-tabs">
+        <button class="niche-tab active" data-niche="sport" style="--demo-accent: var(--green);">
+          <span class="tab-dot" style="background: var(--green);"></span>Escola Esportiva
+        </button>
+        <button class="niche-tab" data-niche="arena" style="--demo-accent: var(--blue-light);">
+          <span class="tab-dot" style="background: var(--blue-light);"></span>Arena / CT
+        </button>
+        <button class="niche-tab" data-niche="other" style="--demo-accent: #F59E0B;">
+          <span class="tab-dot" style="background: #F59E0B;"></span>Escola / Cursos
+        </button>
+      </div>
+
+      <div class="mockup demo-sport" id="heroMockup">
         <!-- Window bar -->
         <div class="mockup-bar">
           <span class="dot-r"></span><span class="dot-y"></span><span class="dot-g"></span>
-          <div class="url-bar">esportiz.com.br/dashboard</div>
+          <div class="url-bar" id="mockupUrl">esportiz.com.br/dashboard</div>
         </div>
         <!-- Dashboard HTML -->
         <div class="hero-db" style="flex-direction: row;">
           <!-- Sidebar -->
           <div style="width: 60px; background: #081020; border-right: 1px solid rgba(255,255,255,0.05); display: flex; flex-direction: column; align-items: center; padding: 12px 0; gap: 12px;">
-            <div style="width: 24px; height: 24px; background: var(--green); border-radius: 6px; margin-bottom: 12px;"></div>
+            <div id="sidebarAccentIcon" style="width: 24px; height: 24px; background: var(--demo-accent, var(--green)); border-radius: 6px; margin-bottom: 12px; transition: background 0.4s ease;"></div>
             <div style="width: 20px; height: 20px; background: rgba(255,255,255,0.05); border-radius: 4px;"></div>
             <div style="width: 20px; height: 20px; background: rgba(255,255,255,0.05); border-radius: 4px;"></div>
             <div style="width: 20px; height: 20px; background: rgba(255,255,255,0.05); border-radius: 4px;"></div>
@@ -1036,45 +1663,48 @@ footer{padding:60px 0 30px;border-top:1px solid rgba(255,255,255,.06);background
           <!-- Main Content -->
           <div style="flex: 1; display: flex; flex-direction: column;">
             <div class="hero-db-nav">
-              <div class="hero-db-logo">esport<span>iz</span></div>
+              <div class="hero-db-logo">esport<span id="logoAccentText" style="color:var(--demo-accent, var(--green)); transition: color 0.4s ease;">iz</span></div>
               <div class="hero-db-user">UA</div>
             </div>
             <div class="hero-db-main">
-              <div class="hero-db-welcome">
-                <h4>Bom dia, Professor!</h4>
-                <p>CT Pro</p>
+              <div class="hero-db-welcome" id="demoWelcome" style="background: var(--demo-welcome-bg); transition: background 0.4s ease;">
+                <h4 id="demoGreeting">Bom dia, Professor!</h4>
+                <p id="demoSub">CT Pro</p>
               </div>
               <div class="hero-db-grid">
                 <div class="hero-db-card">
-                  <div class="hero-db-label">Alunos Ativos</div>
-                  <div class="hero-db-val green">48</div>
+                  <div class="hero-db-label" id="demoLabel1">Alunos Ativos</div>
+                  <div class="hero-db-val" id="demoVal1" style="color: var(--demo-accent, var(--green)); transition: color 0.4s ease;">48</div>
                 </div>
                 <div class="hero-db-card">
-                  <div class="hero-db-label">Receita (Mês)</div>
-                  <div class="hero-db-val">R$ 6.240</div>
+                  <div class="hero-db-label" id="demoLabel2">Receita (Mês)</div>
+                  <div class="hero-db-val" id="demoVal2">R$ 6.240</div>
                 </div>
                 <div class="hero-db-card">
-                  <div class="hero-db-label">Presença</div>
-                  <div class="hero-db-val">94%</div>
+                  <div class="hero-db-label" id="demoLabel3">Presença</div>
+                  <div class="hero-db-val" id="demoVal3">94%</div>
                 </div>
                 <div class="hero-db-card">
-                  <div class="hero-db-label">Inadimplentes</div>
-                  <div class="hero-db-val" style="color:#FF5F57">3</div>
+                  <div class="hero-db-label" id="demoLabel4">Inadimplentes</div>
+                  <div class="hero-db-val" id="demoVal4" style="color:#FF5F57">3</div>
                 </div>
               </div>
               <div class="hero-db-list">
-                <div class="hero-db-list-title">Agenda de Hoje</div>
-                <div class="hero-db-item">
-                  <div class="hero-db-item-name">Lucas Andrade</div>
-                  <div class="hero-db-status paid">Pago</div>
-                </div>
-                <div class="hero-db-item">
-                  <div class="hero-db-item-name">Marina Costa</div>
-                  <div class="hero-db-status pend">Pendente</div>
-                </div>
-                <div class="hero-db-item">
-                  <div class="hero-db-item-name">Pedro Souza</div>
-                  <div class="hero-db-status paid">Pago</div>
+                <div class="hero-db-list-title" id="demoListTitle">Agenda de Hoje</div>
+                <div id="demoListItems">
+                  <!-- Staggered mockup list items -->
+                  <div class="hero-db-item">
+                    <div class="hero-db-item-name" id="demoItemName1">Lucas Andrade</div>
+                    <div class="hero-db-status paid" id="demoItemStatus1" style="background: var(--demo-accent-bg); color: var(--demo-accent, var(--green)); transition: all 0.4s ease;">Pago</div>
+                  </div>
+                  <div class="hero-db-item">
+                    <div class="hero-db-item-name" id="demoItemName2">Marina Costa</div>
+                    <div class="hero-db-status pend" id="demoItemStatus2">Pendente</div>
+                  </div>
+                  <div class="hero-db-item">
+                    <div class="hero-db-item-name" id="demoItemName3">Pedro Souza</div>
+                    <div class="hero-db-status paid" id="demoItemStatus3" style="background: var(--demo-accent-bg); color: var(--demo-accent, var(--green)); transition: all 0.4s ease;">Pago</div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -1199,39 +1829,94 @@ footer{padding:60px 0 30px;border-top:1px solid rgba(255,255,255,.06);background
 <section class="problem-section" id="problema">
   <div class="container">
     <div class="section-header" style="margin-bottom: 20px;">
-      <h2 class="reveal">Você ainda gerencia sua escola <span style="color:#ff6b6b;">assim?</span></h2>
+      <h2 class="reveal">Você ainda gerencia sua escola <span style="color:#FF5F57; background: linear-gradient(120deg, #FF5F57 0%, #FF8F6B 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">assim?</span></h2>
     </div>
     <div class="problem-grid">
-      <div class="card problem-card reveal">
-        <div class="problem-icon">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+      
+      <!-- CARD 1 -->
+      <div class="card problem-card card-sport reveal">
+        <div class="problem-num">01</div>
+        <div class="problem-badge pink">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
         </div>
         <h3>Planilha caótica</h3>
-        <p>Dados espalhados entre WhatsApp, caderno e Excel. Zero visão de conjunto.</p>
+        <p>Dados espalhados entre WhatsApp, caderno e Excel. Nenhuma visão de conjunto. Você gerencia na sorte.</p>
+        
+        <div class="problem-severity-pill red">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>
+          Risco alto de perda de dados
+        </div>
+        
+        <div class="problem-divider"></div>
+        <div class="solve-box">
+          <div class="solve-header">
+            <svg class="solve-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+            Esportiz resolve
+          </div>
+          <div class="solve-desc">Tudo centralizado em um painel único, seguro e organizado.</div>
+        </div>
       </div>
-      <div class="card problem-card reveal" style="transition-delay: 100ms;">
-        <div class="problem-icon">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
+      
+      <!-- CARD 2 -->
+      <div class="card problem-card card-arena reveal" style="transition-delay: 100ms;">
+        <div class="problem-num">02</div>
+        <div class="problem-badge gold">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/><path d="M6 14h2M10 14h4"/></svg>
         </div>
         <h3>Cobrança constrangedora</h3>
-        <p>Perguntar 'pagou?' no meio do treino. Inadimplência sem controle.</p>
+        <p>Perguntar "pagou?" no meio do treino. Inadimplência sem controle. Dinheiro saindo e você não sabe por quê.</p>
+        
+        <div class="problem-severity-pill orange">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><path d="M16 12l-4-4-4 4M12 8v8"/></svg>
+          Inadimplência invisível
+        </div>
+        
+        <div class="problem-divider"></div>
+        <div class="solve-box">
+          <div class="solve-header">
+            <svg class="solve-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+            Esportiz resolve
+          </div>
+          <div class="solve-desc">Alertas e notificações automáticas de cobrança amigável via WhatsApp.</div>
+        </div>
       </div>
-      <div class="card problem-card reveal" style="transition-delay: 200ms;">
-        <div class="problem-icon">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>
+      
+      <!-- CARD 3 -->
+      <div class="card problem-card card-other reveal" style="transition-delay: 200ms;">
+        <div class="problem-num">03</div>
+        <div class="problem-badge sky">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/><path d="M9 6h6M9 10h6"/></svg>
         </div>
         <h3>Sem sistema mobile</h3>
-        <p>Gerenciar da quadra ou da areia usando o celular? Impossível.</p>
+        <p>Gerenciar da quadra ou da areia usando o celular? Impossível. Você depende do computador para tudo.</p>
+        
+        <div class="problem-severity-pill blue">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18.36 6.64a9 9 0 1 1-12.73 0"/><line x1="12" y1="2" x2="12" y2="12"/></svg>
+          Preso ao desktop
+        </div>
+        
+        <div class="problem-divider"></div>
+        <div class="solve-box">
+          <div class="solve-header">
+            <svg class="solve-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+            Esportiz resolve
+          </div>
+          <div class="solve-desc">PWA — aplicativo leve que funciona de forma impecável no celular.</div>
+        </div>
       </div>
+      
     </div>
-    <div class="problem-transition reveal" style="transition-delay: 300ms;">
-      O Esportiz foi feito para resolver exatamente isso.
+    
+    <div class="problem-transition reveal" style="transition-delay: 300ms; margin-top: 50px;">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/></svg>
+      Veja como o Esportiz resolve cada um desses problemas
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/></svg>
     </div>
   </div>
 </section>
 
 <!-- COMO FUNCIONA (3 PASSOS) -->
-<section class="section" id="como-funciona" style="background: rgba(255,255,255,0.01); border-top: 1px solid rgba(255,255,255,0.03);">
+<section class="section" id="como-funciona" style="background: rgba(255,255,255,0.01); border-top: 1px solid rgba(255,255,255,0.03); overflow: hidden;">
   <div class="container">
     <div class="section-header">
       <div class="badge reveal">Simplicidade</div>
@@ -1239,31 +1924,100 @@ footer{padding:60px 0 30px;border-top:1px solid rgba(255,255,255,.06);background
       <p class="reveal">De zero a controle total em menos de 5 minutos. Feito para quem não tem tempo a perder.</p>
     </div>
     
-    <div class="steps-grid">
-      <div class="card step-card reveal">
-        <div class="step-num">01</div>
-        <div class="step-icon green"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div>
-        <h3>Crie sua conta</h3>
-        <p>Faça seu cadastro em menos de 1 minuto. Você ganha 30 dias de acesso total sem precisar cadastrar cartão.</p>
+    <div class="steps-wrapper">
+      <!-- Stepper horizontal timeline -->
+      <div class="stepper-timeline reveal">
+        <div class="stepper-line-bg"></div>
+        
+        <div class="stepper-node">
+          <div class="stepper-circle">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></svg>
+          </div>
+          <div class="stepper-label">PASSO <span>01</span></div>
+        </div>
+        
+        <div class="stepper-node">
+          <div class="stepper-circle">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+          </div>
+          <div class="stepper-label">PASSO <span>02</span></div>
+        </div>
+        
+        <div class="stepper-node">
+          <div class="stepper-circle">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
+          </div>
+          <div class="stepper-label">PASSO <span>03</span></div>
+        </div>
       </div>
       
-      <div class="card step-card reveal">
-        <div class="step-num">02</div>
-        <div class="step-icon blue"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg></div>
-        <h3>Configure sua escola</h3>
-        <p>Adicione suas modalidades (Futevôlei, BT, etc), turmas e planos. Nossa interface guia você em cada etapa.</p>
-      </div>
-      
-      <div class="card step-card reveal">
-        <div class="step-num">03</div>
-        <div class="step-icon green"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></div>
-        <h3>Gerencie e Cresça</h3>
-        <p>Registre presenças, controle pagamentos e veja seu faturamento crescer com uma gestão profissional.</p>
+      <!-- Cards grid -->
+      <div class="steps-grid">
+        
+        <!-- CARD 1 -->
+        <div class="card step-card reveal">
+          <h3>Crie sua conta</h3>
+          <p>Faça seu cadastro em menos de 1 minuto. 30 dias de acesso total sem precisar cadastrar cartão.</p>
+          
+          <div class="step-pill">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            Menos de 1 min
+          </div>
+          
+          <div class="step-card-divider"></div>
+          <div class="step-bullet">
+            <svg class="step-bullet-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+            <span>Sem cartão de crédito</span>
+          </div>
+        </div>
+        
+        <!-- CARD 2 -->
+        <div class="card step-card reveal" style="transition-delay: 100ms;">
+          <h3>Configure sua escola</h3>
+          <p>Adicione modalidades, turmas e planos. Nossa interface guia você em cada etapa — sem manual.</p>
+          
+          <div class="step-pill">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            Menos de 5 min
+          </div>
+          
+          <div class="step-card-divider"></div>
+          <div class="step-bullet">
+            <svg class="step-bullet-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+            <span>Onboarding guiado passo a passo</span>
+          </div>
+        </div>
+        
+        <!-- CARD 3 -->
+        <div class="card step-card reveal" style="transition-delay: 200ms;">
+          <h3>Gerencie e cresça</h3>
+          <p>Registre presenças, controle pagamentos e acompanhe seu faturamento crescer com gestão profissional.</p>
+          
+          <div class="step-pill">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+            A partir de agora
+          </div>
+          
+          <div class="step-card-divider"></div>
+          <div class="step-bullet">
+            <svg class="step-bullet-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+            <span>Resultados desde o primeiro dia</span>
+          </div>
+        </div>
+        
       </div>
     </div>
     
-    <div style="text-align: center; margin-top: 48px;" class="reveal">
-      <a href="/login" class="btn btn-primary">Começar agora →</a>
+    <!-- CTA Section -->
+    <div class="rocket-cta-container reveal" style="transition-delay: 300ms;">
+      <a href="/login" class="btn-rocket">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 16.5c-1.5 1.25-2.5 3.5-2.5 3.5s2.25-1 3.5-2.5M12 12l2.5 2.5M19 5l-7.5 7.5M19 5a2 2 0 1 1-2.83-2.83L5 13.34V19h5.66L19 5z"/></svg>
+        Começar agora — é grátis
+      </a>
+      <div class="rocket-subtext">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+        30 dias grátis · Sem cartão · Cancele quando quiser
+      </div>
     </div>
   </div>
 </section>
@@ -1509,7 +2263,50 @@ footer{padding:60px 0 30px;border-top:1px solid rgba(255,255,255,.06);background
             <span class="dot-r"></span><span class="dot-y"></span><span class="dot-g"></span>
           </div>
           <!-- MOCKUP SYSTEM REPLICA -->
-            <div class="mockup-sys">
+            <div class="mockup-sys" id="paymentsMockupSys">
+              <!-- Overlay & Drawer simulation -->
+              <div class="ms-drawer-overlay" id="msDrawerOverlay"></div>
+              <div class="ms-drawer-sheet" id="msDrawerSheet">
+                <div class="ms-drawer-header">
+                  <span class="ms-drawer-title">Notificações</span>
+                  <button class="ms-drawer-close" id="msDrawerClose" aria-label="Fechar">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                  </button>
+                </div>
+                <div class="ms-drawer-content">
+                  <div class="ms-drawer-section-title">Alertas Críticos</div>
+                  
+                  <div class="ms-notif-item" style="border: 1px solid #FEE2E2; background: #FEF2F2; border-radius: 8px; padding: 10px; margin-bottom: 10px; display: flex; gap: 8px;">
+                    <div style="color: #EF4444; flex-shrink: 0;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg></div>
+                    <div style="flex:1;">
+                      <div style="font-size:10.5px; font-weight:700; color:#991B1B;">Mensalidade Atrasada</div>
+                      <div style="font-size:9.5px; color:#7F1D1D; margin-top:2px;"><b>Arthur Silva</b> venceu há 3 dias (R$ 150).</div>
+                      <div style="font-size:9.5px; font-weight:700; color:#B91C1C; margin-top:6px; cursor:pointer;" onclick="alert('Simulação: Abrindo WhatsApp para cobrança automatizada de Arthur!')">Cobrar via WhatsApp →</div>
+                    </div>
+                  </div>
+
+                  <div class="ms-drawer-section-title" style="margin-top: 16px;">Hoje</div>
+                  
+                  <div class="ms-notif-item" style="border: 1px solid #E0F2FE; background: #F0F9FF; border-radius: 8px; padding: 10px; margin-bottom: 10px; display: flex; gap: 8px;">
+                    <div style="color: #0284C7; flex-shrink: 0;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div>
+                    <div style="flex:1;">
+                      <div style="font-size:10.5px; font-weight:700; color:#0369A1;">Próximo Vencimento</div>
+                      <div style="font-size:9.5px; color:#0C4A6E; margin-top:2px;"><b>Juliana Santos</b> vence hoje (R$ 180).</div>
+                    </div>
+                  </div>
+
+                  <div class="ms-notif-item" style="border: 1px solid #ECFDF5; background: #F0FDF4; border-radius: 8px; padding: 10px; display: flex; gap: 8px;">
+                    <div style="color: #10B981; flex-shrink: 0;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 21v-8a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8"/><path d="M4 16s.5-1 2-1 2.5 2 4 2 2.5-2 4-2 2.5 2 4 2 2-1 2-1"/><path d="M2 21h20"/><path d="M7 8v3"/><path d="M12 8v3"/><path d="M17 8v3"/><path d="M7 4h.01"/><path d="M12 4h.01"/><path d="M17 4h.01"/></svg></div>
+                    <div style="flex:1;">
+                      <div style="font-size:10.5px; font-weight:700; color:#047857;">Aniversário de Aluno</div>
+                      <div style="font-size:9.5px; color:#064E3B; margin-top:2px;"><b>Felipe Melo</b> faz aniversário hoje!</div>
+                      <div style="font-size:9.5px; font-weight:700; color:#059669; margin-top:6px; cursor:pointer;" onclick="alert('Simulação: Mensagem de parabéns enviada via WhatsApp!')">Enviar parabéns →</div>
+                    </div>
+                  </div>
+
+                </div>
+              </div>
+
               <div class="ms-nav">
                 <div class="ms-logo">
                   <div class="ms-logo-icon">
@@ -1540,7 +2337,7 @@ footer{padding:60px 0 30px;border-top:1px solid rgba(255,255,255,.06);background
                     <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
                     Baixar App
                   </div>
-                  <div class="ms-icon-btn ms-badge-dot"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg></div>
+                  <div class="ms-icon-btn ms-badge-dot" id="msNotifTrigger" style="cursor: pointer;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg></div>
                   <div class="ms-icon-btn"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></div>
                   <div class="ms-icon-btn"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg></div>
                   <div class="ms-icon-btn"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg></div>
@@ -1548,13 +2345,16 @@ footer{padding:60px 0 30px;border-top:1px solid rgba(255,255,255,.06);background
               </div>
 
               <div class="ms-content">
-                <div class="ms-header">
+                <div class="ms-header" style="flex-wrap: wrap; gap: 12px;">
                   <div class="ms-title">
                     <h2>Pagamentos</h2>
                     <p>Controle de pagamentos mensais dos alunos</p>
                   </div>
-                  <div class="ms-filters">
-                    <div class="ms-icon-btn"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></div>
+                  <div class="ms-filters" style="gap:8px;">
+                    <div class="ms-search-wrap">
+                      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="ms-search-icon"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                      <input type="text" class="ms-search-input" id="msSearchInput" placeholder="Buscar aluno..." />
+                    </div>
                     <div class="ms-filter">Abril <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></div>
                     <div class="ms-filter">2026 <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></div>
                   </div>
@@ -2290,6 +3090,181 @@ if (stickyCta) {
       stickyCta.classList.remove('visible');
     }
   }, { passive: true });
+}
+
+// ═══════════════════════════════════════════════════════════════
+// DYNAMIC MOCKUP INTERACTIVE SCRIPTS
+// ═══════════════════════════════════════════════════════════════
+
+// 1. UX Camaleão Switcher (Hero Mockup)
+const mockupData = {
+  sport: {
+    url: 'esportiz.com.br/dashboard',
+    greeting: 'Bom dia, Professor!',
+    sub: 'CT Pro',
+    label1: 'Alunos Ativos',
+    val1: '48',
+    label2: 'Receita (Mês)',
+    val2: 'R$ 6.240',
+    label3: 'Presença',
+    val3: '94%',
+    label4: 'Inadimplentes',
+    val4: '3',
+    listTitle: 'Agenda de Hoje',
+    items: [
+      { name: 'Lucas Andrade', status: 'Pago', class: 'paid' },
+      { name: 'Marina Costa', status: 'Pendente', class: 'pend' },
+      { name: 'Pedro Souza', status: 'Pago', class: 'paid' }
+    ]
+  },
+  arena: {
+    url: 'esportiz.com.br/arena',
+    greeting: 'Bom dia, Gestor!',
+    sub: 'Arena Beach',
+    label1: 'Clientes Ativos',
+    val1: '124',
+    label2: 'Faturamento',
+    val2: 'R$ 15.800',
+    label3: 'Check-ins',
+    val3: '89%',
+    label4: 'Reservas Hoje',
+    val4: '14',
+    listTitle: 'Reservas de Quadra (Hoje)',
+    items: [
+      { name: 'Quadra BT 1 — 18h', status: 'Confirmado', class: 'paid' },
+      { name: 'Quadra Futevôlei — 19h', status: 'Pendente', class: 'pend' },
+      { name: 'Quadra BT 2 — 20h', status: 'Confirmado', class: 'paid' }
+    ]
+  },
+  other: {
+    url: 'esportiz.com.br/escola',
+    greeting: 'Bom dia, Diretor!',
+    sub: 'Escola de Cursos',
+    label1: 'Estudantes',
+    val1: '76',
+    label2: 'Caixa Geral',
+    val2: 'R$ 9.450',
+    label3: 'Frequência',
+    val3: '91%',
+    label4: 'Turmas Ativas',
+    val4: '8',
+    listTitle: 'Diário de Classe (Aulas Hoje)',
+    items: [
+      { name: 'Inglês Kids — Turma A', status: 'Realizada', class: 'paid' },
+      { name: 'Violão Iniciante', status: 'Pendente', class: 'pend' },
+      { name: 'Espanhol Adulto', status: 'Realizada', class: 'paid' }
+    ]
+  }
+};
+
+document.querySelectorAll('.niche-tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    // Switch active button class
+    document.querySelectorAll('.niche-tab').forEach(t => t.classList.remove('active'));
+    tab.classList.add('active');
+
+    // Switch theme mockup class
+    const niche = tab.dataset.niche;
+    const mockup = document.getElementById('heroMockup');
+    mockup.className = `mockup demo-${niche}`;
+
+    // Get niche details
+    const data = mockupData[niche];
+    if (!data) return;
+
+    // Fade out-in content animation
+    const dbMain = mockup.querySelector('.hero-db');
+    dbMain.style.opacity = '0.3';
+    dbMain.style.transform = 'scale(0.99)';
+    dbMain.style.transition = 'all 0.25s ease';
+
+    setTimeout(() => {
+      // Apply updates
+      document.getElementById('mockupUrl').textContent = data.url;
+      document.getElementById('demoGreeting').textContent = data.greeting;
+      document.getElementById('demoSub').textContent = data.sub;
+      document.getElementById('demoLabel1').textContent = data.label1;
+      document.getElementById('demoVal1').textContent = data.val1;
+      document.getElementById('demoLabel2').textContent = data.label2;
+      document.getElementById('demoVal2').textContent = data.val2;
+      document.getElementById('demoLabel3').textContent = data.label3;
+      document.getElementById('demoVal3').textContent = data.val3;
+      document.getElementById('demoLabel4').textContent = data.label4;
+      document.getElementById('demoVal4').textContent = data.val4;
+      document.getElementById('demoListTitle').textContent = data.listTitle;
+
+      // Update list items
+      const listContainer = document.getElementById('demoListItems');
+      listContainer.innerHTML = '';
+      data.items.forEach(item => {
+        const itemDiv = document.createElement('div');
+        itemDiv.className = 'hero-db-item';
+        
+        const nameDiv = document.createElement('div');
+        nameDiv.className = 'hero-db-item-name';
+        nameDiv.textContent = item.name;
+
+        const statusDiv = document.createElement('div');
+        statusDiv.className = `hero-db-status ${item.class}`;
+        statusDiv.textContent = item.status;
+        if (item.class === 'paid') {
+          statusDiv.style.background = 'var(--demo-accent-bg)';
+          statusDiv.style.color = 'var(--demo-accent)';
+        }
+
+        itemDiv.appendChild(nameDiv);
+        itemDiv.appendChild(statusDiv);
+        listContainer.appendChild(itemDiv);
+      });
+
+      // Fade back in
+      dbMain.style.opacity = '1';
+      dbMain.style.transform = 'scale(1)';
+    }, 250);
+  });
+});
+
+// 2. Interactive Notification Drawer (PWA Drawer/Sheet overlay inside mockup)
+const msNotifTrigger = document.getElementById('msNotifTrigger');
+const msDrawerOverlay = document.getElementById('msDrawerOverlay');
+const msDrawerSheet = document.getElementById('msDrawerSheet');
+const msDrawerClose = document.getElementById('msDrawerClose');
+
+function openDrawer() {
+  if (msDrawerOverlay && msDrawerSheet) {
+    msDrawerOverlay.classList.add('open');
+    msDrawerSheet.classList.add('open');
+  }
+}
+
+function closeDrawer() {
+  if (msDrawerOverlay && msDrawerSheet) {
+    msDrawerOverlay.classList.remove('open');
+    msDrawerSheet.classList.remove('open');
+  }
+}
+
+if (msNotifTrigger) msNotifTrigger.addEventListener('click', openDrawer);
+if (msDrawerClose) msDrawerClose.addEventListener('click', closeDrawer);
+if (msDrawerOverlay) msDrawerOverlay.addEventListener('click', closeDrawer);
+
+// 3. Search input live filter inside Payments Mockup
+const msSearchInput = document.getElementById('msSearchInput');
+if (msSearchInput) {
+  msSearchInput.addEventListener('input', (e) => {
+    const q = e.target.value.toLowerCase();
+    document.querySelectorAll('#paymentsMockupSys .ms-list .ms-item').forEach(item => {
+      const nameEl = item.querySelector('.ms-name');
+      if (nameEl) {
+        const nameText = nameEl.textContent.toLowerCase();
+        if (nameText.includes(q)) {
+          item.style.display = 'flex';
+        } else {
+          item.style.display = 'none';
+        }
+      }
+    });
+  });
 }
 </script>
 </body>

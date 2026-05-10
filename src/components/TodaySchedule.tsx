@@ -13,7 +13,8 @@ export function TodaySchedule() {
   const { students } = useStudents();
   const { labels } = useBusinessContext();
   
-  const today = new Date().toISOString().split('T')[0];
+  const now = new Date();
+  const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
   const todayTrainings = trainings.filter(t => t.date === today).sort((a, b) => a.time.localeCompare(b.time));
 
   if (loadingTrainings) return <div className="card-elevated p-6 animate-pulse bg-muted/20 h-[300px] rounded-2xl"></div>;

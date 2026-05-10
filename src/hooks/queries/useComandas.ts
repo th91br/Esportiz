@@ -274,6 +274,25 @@ export function useComandas() {
           .insert(salesToInsert);
 
         if (salesErr) throw salesErr;
+
+        // 2.5. Decrement stock for tracked products
+        for (const item of items) {
+          if (item.product_id) {
+            const { data: prod, error: prodErr } = await supabase
+              .from('products')
+              .select('track_stock, stock_quantity')
+              .eq('id', item.product_id)
+              .maybeSingle();
+
+            if (!prodErr && prod && prod.track_stock) {
+              const newQty = Math.max(0, Number(prod.stock_quantity || 0) - Number(item.quantity));
+              await supabase
+                .from('products')
+                .update({ stock_quantity: newQty })
+                .eq('id', item.product_id);
+            }
+          }
+        }
       }
 
       // 3. Mark comanda as closed
@@ -291,6 +310,7 @@ export function useComandas() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['comandas'] });
       queryClient.invalidateQueries({ queryKey: ['sales'] });
+      queryClient.invalidateQueries({ queryKey: ['products'] });
       toast.success('Comanda fechada e venda registrada no caixa com sucesso!');
     },
     onError: (error: any) => {
@@ -303,7 +323,35 @@ export function useComandas() {
     mutationFn: async (comandaId: string) => {
       if (!user?.id) throw new Error('Not authenticated');
 
-      // 1. Delete associated sales records so we don't double report revenue
+      // 1. Fetch sales associated with this comanda before deleting them
+      const { data: sales, error: salesFetchErr } = await supabase
+        .from('sales')
+        .select('product_id, quantity')
+        .eq('comanda_id', comandaId)
+        .eq('user_id', user.id);
+
+      if (!salesFetchErr && sales && sales.length > 0) {
+        // Restore stock for tracked products before deleting the sales records
+        for (const sale of sales) {
+          if (sale.product_id) {
+            const { data: prod, error: prodErr } = await supabase
+              .from('products')
+              .select('track_stock, stock_quantity')
+              .eq('id', sale.product_id)
+              .maybeSingle();
+
+            if (!prodErr && prod && prod.track_stock) {
+              const newQty = Number(prod.stock_quantity || 0) + Number(sale.quantity);
+              await supabase
+                .from('products')
+                .update({ stock_quantity: newQty })
+                .eq('id', sale.product_id);
+            }
+          }
+        }
+      }
+
+      // 2. Delete associated sales records so we don't double report revenue
       const { error: salesErr } = await supabase
         .from('sales')
         .delete()
@@ -312,7 +360,7 @@ export function useComandas() {
 
       if (salesErr) throw salesErr;
 
-      // 2. Update comanda status back to open and reset closed_at
+      // 3. Update comanda status back to open and reset closed_at
       const { error: comandaErr } = await supabase
         .from('comandas')
         .update({
@@ -327,6 +375,7 @@ export function useComandas() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['comandas'] });
       queryClient.invalidateQueries({ queryKey: ['sales'] });
+      queryClient.invalidateQueries({ queryKey: ['products'] });
       toast.success('Comanda reaberta! O faturamento anterior foi estornado com sucesso.');
     },
     onError: (error: any) => {

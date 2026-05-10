@@ -26,6 +26,7 @@ import { useAttendance } from '@/hooks/queries/useAttendance';
 import { usePayments } from '@/hooks/queries/usePayments';
 import { useExpenses } from '@/hooks/queries/useExpenses';
 import { useSales } from '@/hooks/queries/useSales';
+import { useProducts } from '@/hooks/queries/useProducts';
 import { useReservations } from '@/hooks/queries/useReservations';
 import { usePrivacyMode } from '@/hooks/usePrivacyMode';
 import { useBusinessContext } from '@/hooks/useBusinessContext';
@@ -47,7 +48,13 @@ export default function Index() {
   const { payments, loadingPayments } = usePayments();
   const { expenses, loadingExpenses } = useExpenses();
   const { sales } = useSales();
+  const { activeProducts } = useProducts();
   const { reservations, loadingReservations } = useReservations();
+
+  const lowStockProducts = useMemo(() => {
+    if (!isArena) return [];
+    return activeProducts.filter((p) => p.trackStock && p.stockQuantity <= p.minStock);
+  }, [isArena, activeProducts]);
   const { groups, loadingGroups } = useGroups();
   const loading =
     loadingStudents ||
@@ -236,6 +243,37 @@ export default function Index() {
 
         {/* ── Overdue Alert ── */}
         <OverdueAlert privacyMode={privacyMode} />
+
+        {/* ── Low Stock Alert (Only if Arena & has low/out stock items) ── */}
+        {isArena && lowStockProducts.length > 0 && (
+          <section className="animate-fade-up">
+            <div className="bg-amber-500/10 border border-amber-500/20 rounded-2xl p-4 md:p-5 flex flex-col md:flex-row items-center justify-between gap-4 shadow-sm">
+              <div className="flex items-center gap-4 text-left">
+                <div className="bg-amber-500 text-white p-3 rounded-xl shadow-md shadow-amber-500/15 animate-pulse shrink-0">
+                  <ShoppingCart className="h-6 w-6" />
+                </div>
+                <div>
+                  <h3 className="font-display font-bold text-base text-amber-800 flex items-center gap-1.5">
+                    Alerta de Reposição de Estoque ⚠️
+                  </h3>
+                  <p className="text-sm text-amber-700/90 mt-0.5 leading-relaxed font-medium">
+                    {lowStockProducts.length === 1 ? (
+                      <span>O produto <strong>{lowStockProducts[0].name}</strong> está com estoque baixo ou zerado ({lowStockProducts[0].stockQuantity} un restante(s)).</span>
+                    ) : (
+                      <span>Você tem <strong>{lowStockProducts.length} produtos</strong> com estoque baixo ou zerado na cantina/bar.</span>
+                    )}
+                  </p>
+                </div>
+              </div>
+              <Button
+                onClick={() => window.location.href = '/produtos'}
+                className="w-full md:w-auto bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs px-4 h-9 shadow-sm shrink-0 rounded-xl"
+              >
+                Gerenciar Estoque
+              </Button>
+            </div>
+          </section>
+        )}
 
         {/* ── Aniversários de hoje (só sport_school) ── */}
         {isSportSchool && birthdaysToday.length > 0 && (

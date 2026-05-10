@@ -12,6 +12,9 @@ export interface Product {
   category: string;
   active: boolean;
   createdAt: string;
+  trackStock: boolean;
+  stockQuantity: number;
+  minStock: number;
 }
 
 function mapProduct(row: any): Product {
@@ -23,6 +26,9 @@ function mapProduct(row: any): Product {
     category: row.category || 'geral',
     active: row.active,
     createdAt: row.created_at,
+    trackStock: !!row.track_stock,
+    stockQuantity: Number(row.stock_quantity || 0),
+    minStock: Number(row.min_stock || 0),
   };
 }
 
@@ -49,7 +55,14 @@ export function useProducts() {
   });
 
   const addProductMutation = useMutation({
-    mutationFn: async (product: { name: string; price: number; category?: string }) => {
+    mutationFn: async (product: { 
+      name: string; 
+      price: number; 
+      category?: string;
+      trackStock?: boolean;
+      stockQuantity?: number;
+      minStock?: number;
+    }) => {
       if (!user?.id) throw new Error('Not authenticated');
       const businessType = profile?.business_type || 'sport_school';
       const { error } = await supabase.from('products').insert({
@@ -58,6 +71,9 @@ export function useProducts() {
         name: product.name,
         price: product.price,
         category: product.category || 'geral',
+        track_stock: product.trackStock ?? false,
+        stock_quantity: product.stockQuantity ?? 0,
+        min_stock: product.minStock ?? 0,
       });
       if (error) throw error;
     },
@@ -76,6 +92,10 @@ export function useProducts() {
       if (updates.price !== undefined) dbUpdates.price = updates.price;
       if (updates.category !== undefined) dbUpdates.category = updates.category;
       if (updates.active !== undefined) dbUpdates.active = updates.active;
+      if (updates.trackStock !== undefined) dbUpdates.track_stock = updates.trackStock;
+      if (updates.stockQuantity !== undefined) dbUpdates.stock_quantity = updates.stockQuantity;
+      if (updates.minStock !== undefined) dbUpdates.min_stock = updates.minStock;
+      
       const { error } = await supabase
         .from('products')
         .update(dbUpdates)

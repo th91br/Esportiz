@@ -626,19 +626,33 @@ export function StudentForm({ student, trigger }: StudentFormProps) {
                   ) : (
                     <div className="flex flex-wrap gap-2">
                       {[...groups].sort((a, b) => {
-                        const getFirstSlot = (g: any) => {
-                          if (!g.schedule || g.schedule.length === 0) return { day: 8, time: '24:00' };
-                          const sortedSlots = [...g.schedule].sort((sa, sb) => {
-                            const sortDay = (day: number) => day === 0 ? 7 : day;
-                            return sortDay(sa.dayOfWeek) - sortDay(sb.dayOfWeek) || sa.time.localeCompare(sb.time);
-                          });
-                          const first = sortedSlots[0];
-                          return { day: first.dayOfWeek === 0 ? 7 : first.dayOfWeek, time: first.time };
+                        const getDayPriority = (name: string) => {
+                          const n = name.toLowerCase();
+                          if (n.includes('segunda')) return 1;
+                          if (n.includes('terça')) return 2;
+                          if (n.includes('quarta')) return 3;
+                          if (n.includes('quinta')) return 4;
+                          if (n.includes('sexta')) return 5;
+                          if (n.includes('sáb') || n.includes('sabado')) return 6;
+                          if (n.includes('domingo')) return 7;
+                          return 999;
                         };
-                        const slotA = getFirstSlot(a);
-                        const slotB = getFirstSlot(b);
-                        if (slotA.day !== slotB.day) return slotA.day - slotB.day;
-                        if (slotA.time !== slotB.time) return slotA.time.localeCompare(slotB.time);
+
+                        const prioA = getDayPriority(a.name);
+                        const prioB = getDayPriority(b.name);
+
+                        if (prioA !== prioB) return prioA - prioB;
+
+                        const getFirstSlotTime = (g: any) => {
+                          if (!g.schedule || g.schedule.length === 0) return '24:00';
+                          const sortedSlots = [...g.schedule].sort((sa, sb) => sa.time.localeCompare(sb.time));
+                          return sortedSlots[0].time;
+                        };
+
+                        const timeA = getFirstSlotTime(a);
+                        const timeB = getFirstSlotTime(b);
+                        if (timeA !== timeB) return timeA.localeCompare(timeB);
+
                         return a.name.localeCompare(b.name, 'pt-BR', { numeric: true, sensitivity: 'base' });
                       }).map(group => {
                         const isSelected = selectedGroups.includes(group.id);

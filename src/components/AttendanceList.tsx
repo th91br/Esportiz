@@ -22,7 +22,8 @@ export function AttendanceList({ selectedDate }: AttendanceListProps) {
   const { students } = useStudents();
   const { toggleAttendance, getAttendanceStatus } = useAttendance();
   const { labels } = useBusinessContext();
-  const today = new Date().toISOString().split('T')[0];
+  const now = new Date();
+  const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
   const activeDate = selectedDate || today;
 
   const dayTrainings = trainings.filter((t) => t.date === activeDate);

@@ -14,7 +14,8 @@ export function ArenaTodaySchedule() {
   const { courts, loadingCourts } = useCourts();
   const { students } = useStudents();
   
-  const today = new Date().toISOString().split('T')[0];
+  const now = new Date();
+  const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
   const todayReservations = reservations
     .filter(r => r.date === today && r.status !== 'cancelled')
     .sort((a, b) => a.time.localeCompare(b.time));

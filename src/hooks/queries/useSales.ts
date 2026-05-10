@@ -78,6 +78,8 @@ export function useSales() {
       if (!user?.id) throw new Error('Not authenticated');
       const total = sale.quantity * sale.unitPrice;
       const businessType = profile?.business_type || 'sport_school';
+      
+      // 1. Insert sale record
       const { error } = await supabase.from('sales').insert({
         user_id: user.id,
         business_type: businessType,
@@ -89,9 +91,27 @@ export function useSales() {
         payment_method: sale.paymentMethod || 'dinheiro',
       });
       if (error) throw error;
+
+      // 2. Decrement stock for tracked products
+      if (sale.productId) {
+        const { data: prod, error: prodErr } = await supabase
+          .from('products')
+          .select('track_stock, stock_quantity')
+          .eq('id', sale.productId)
+          .maybeSingle();
+
+        if (!prodErr && prod && prod.track_stock) {
+          const newQty = Math.max(0, Number(prod.stock_quantity || 0) - Number(sale.quantity));
+          await supabase
+            .from('products')
+            .update({ stock_quantity: newQty })
+            .eq('id', sale.productId);
+        }
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['sales', user?.id] });
+      queryClient.invalidateQueries({ queryKey: ['products', user?.id] });
       toast.success('Venda registrada com sucesso!');
     },
     onError: () => toast.error('Erro ao registrar venda.'),
@@ -100,6 +120,33 @@ export function useSales() {
   const deleteSaleMutation = useMutation({
     mutationFn: async (id: string) => {
       if (!user?.id) throw new Error('Not authenticated');
+      
+      // 1. Fetch sale details to know the product and quantity
+      const { data: sale, error: saleErr } = await supabase
+        .from('sales')
+        .select('product_id, quantity')
+        .eq('id', id)
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+      if (!saleErr && sale && sale.product_id) {
+        // 2. Fetch product info to check if stock is tracked
+        const { data: prod, error: prodErr } = await supabase
+          .from('products')
+          .select('track_stock, stock_quantity')
+          .eq('id', sale.product_id)
+          .maybeSingle();
+
+        if (!prodErr && prod && prod.track_stock) {
+          const newQty = Number(prod.stock_quantity || 0) + Number(sale.quantity);
+          await supabase
+            .from('products')
+            .update({ stock_quantity: newQty })
+            .eq('id', sale.product_id);
+        }
+      }
+
+      // 3. Delete sale record
       const { error } = await supabase
         .from('sales')
         .delete()
@@ -109,6 +156,7 @@ export function useSales() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['sales', user?.id] });
+      queryClient.invalidateQueries({ queryKey: ['products', user?.id] });
       toast.success('Venda removida.');
     },
     onError: () => toast.error('Erro ao remover venda.'),

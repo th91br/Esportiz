@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -13,7 +13,7 @@ import { Logo } from '@/components/Logo';
 type View = 'login' | 'signup' | 'forgot';
 
 export default function LoginPage() {
-  const { signIn, signUp } = useAuth();
+  const { signIn, signUp, resendConfirmation } = useAuth();
   const [view, setView] = useState<View>('login');
 
   // Campos
@@ -24,12 +24,53 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [forgotSent, setForgotSent] = useState(false);
 
+  // Estados adicionais para reenvio de confirmação de e-mail
+  const [unconfirmedEmail, setUnconfirmedEmail] = useState('');
+  const [resendCountdown, setResendCountdown] = useState(0);
+  const [resending, setResending] = useState(false);
+
+  useEffect(() => {
+    if (resendCountdown <= 0) return;
+    const timer = setInterval(() => {
+      setResendCountdown((prev) => prev - 1);
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [resendCountdown]);
+
   const resetFields = () => {
     setName(''); setEmail(''); setPassword('');
     setShowPassword(false); setForgotSent(false);
+    setUnconfirmedEmail('');
   };
 
   const goTo = (v: View) => { resetFields(); setView(v); };
+
+  // Reenviar e-mail de confirmação
+  const handleResendConfirmation = async () => {
+    if (!unconfirmedEmail) return;
+    setResending(true);
+    try {
+      const { error } = await resendConfirmation(unconfirmedEmail);
+      if (error) throw error;
+      toast({
+        title: 'E-mail enviado! ✉️',
+        description: 'Um novo link de confirmação foi enviado para seu e-mail.',
+      });
+      setResendCountdown(60); // Ativa o temporizador de segurança
+    } catch (err: any) {
+      let description = err.message;
+      if (err.message.includes('rate limit')) {
+        description = 'Muitas solicitações recentes. Aguarde um minuto antes de tentar novamente.';
+      }
+      toast({
+        title: 'Erro ao reenviar',
+        description,
+        variant: 'destructive',
+      });
+    } finally {
+      setResending(false);
+    }
+  };
 
   // ── LOGIN ─────────────────────────────────────────────────────────────────
   const handleLogin = async (e: React.FormEvent) => {
@@ -38,14 +79,25 @@ export default function LoginPage() {
       toast({ title: 'Preencha e-mail e senha', variant: 'destructive' }); return;
     }
     setLoading(true);
+    setUnconfirmedEmail('');
     try {
       const { error } = await signIn(email, password);
       if (error) throw error;
     } catch (err: any) {
+      let title = 'Erro ao entrar';
+      let description = err.message;
+
+      if (err.message === 'Invalid login credentials') {
+        description = 'E-mail ou senha incorretos.';
+      } else if (err.message === 'Email not confirmed') {
+        title = 'E-mail não verificado';
+        description = 'Sua conta foi criada, mas seu e-mail ainda não foi confirmado.';
+        setUnconfirmedEmail(email); // Ativa a exibição do banner para o e-mail digitado
+      }
+
       toast({
-        title: 'Erro ao entrar',
-        description: err.message === 'Invalid login credentials'
-          ? 'E-mail ou senha incorretos.' : err.message,
+        title,
+        description,
         variant: 'destructive',
       });
     } finally { setLoading(false); }
@@ -165,63 +217,96 @@ export default function LoginPage() {
 
             {/* ── VIEW: LOGIN ─────────────────────────────────────────────── */}
             {view === 'login' && (
-              <form onSubmit={handleLogin} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="login-email">E-mail</Label>
-                  <Input
-                    id="login-email"
-                    type="email"
-                    placeholder="seu@email.com"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    autoComplete="email"
-                    autoFocus
-                  />
-                </div>
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <Label htmlFor="login-password">Senha</Label>
-                    <button
-                      type="button"
-                      onClick={() => goTo('forgot')}
-                      className="text-xs text-primary hover:text-primary/80 transition-colors"
-                    >
-                      Esqueceu a senha?
-                    </button>
-                  </div>
-                  <div className="relative">
+              <div className="space-y-5">
+                <form onSubmit={handleLogin} className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="login-email">E-mail</Label>
                     <Input
-                      id="login-password"
-                      type={showPassword ? 'text' : 'password'}
-                      placeholder="••••••••"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      autoComplete="current-password"
-                      className="pr-10"
+                      id="login-email"
+                      type="email"
+                      placeholder="seu@email.com"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      autoComplete="email"
+                      autoFocus
                     />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-                      aria-label={showPassword ? 'Ocultar senha' : 'Mostrar senha'}
-                    >
-                      {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                    </button>
                   </div>
-                </div>
-                <Button type="submit" className="w-full btn-primary-gradient h-11" disabled={loading}>
-                  {loading
-                    ? <div className="h-5 w-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                    : <><LogIn className="h-4 w-4 mr-2" />Entrar</>
-                  }
-                </Button>
-                <p className="text-center text-sm text-muted-foreground pt-1">
-                  Não tem conta?{' '}
-                  <button type="button" onClick={() => goTo('signup')} className="text-primary font-medium hover:underline">
-                    Crie grátis
-                  </button>
-                </p>
-              </form>
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <Label htmlFor="login-password">Senha</Label>
+                      <button
+                        type="button"
+                        onClick={() => goTo('forgot')}
+                        className="text-xs text-primary hover:text-primary/80 transition-colors"
+                      >
+                        Esqueceu a senha?
+                      </button>
+                    </div>
+                    <div className="relative">
+                      <Input
+                        id="login-password"
+                        type={showPassword ? 'text' : 'password'}
+                        placeholder="••••••••"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        autoComplete="current-password"
+                        className="pr-10"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                        aria-label={showPassword ? 'Ocultar senha' : 'Mostrar senha'}
+                      >
+                        {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      </button>
+                    </div>
+                  </div>
+                  <Button type="submit" className="w-full btn-primary-gradient h-11" disabled={loading}>
+                    {loading
+                      ? <div className="h-5 w-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                      : <><LogIn className="h-4 w-4 mr-2" />Entrar</>
+                    }
+                  </Button>
+                  <p className="text-center text-sm text-muted-foreground pt-1">
+                    Não tem conta?{' '}
+                    <button type="button" onClick={() => goTo('signup')} className="text-primary font-medium hover:underline">
+                      Crie grátis
+                    </button>
+                  </p>
+                </form>
+
+                {unconfirmedEmail && (
+                  <div className="p-4 rounded-xl border border-amber-500/20 bg-amber-500/10 text-amber-500 backdrop-blur-md flex flex-col gap-3 animate-in fade-in slide-in-from-top-3 duration-300">
+                    <div className="flex gap-3 items-start">
+                      <Mail className="h-5 w-5 text-amber-500 shrink-0 mt-0.5 animate-pulse" />
+                      <div className="space-y-1">
+                        <h4 className="text-sm font-semibold text-amber-400">Verifique sua caixa de entrada</h4>
+                        <p className="text-xs text-white/70 leading-relaxed">
+                          Enviamos um e-mail de confirmação para <strong className="text-white">{unconfirmedEmail}</strong>. Verifique também sua pasta de spam ou lixo eletrônico.
+                        </p>
+                      </div>
+                    </div>
+                    
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={handleResendConfirmation}
+                      disabled={resending || resendCountdown > 0}
+                      className="w-full bg-amber-500/5 hover:bg-amber-500/20 text-amber-400 border-amber-500/30 hover:border-amber-500/50 hover:text-amber-300 text-xs font-semibold h-9 rounded-lg flex items-center justify-center gap-2 transition-all shadow-sm"
+                    >
+                      {resending ? (
+                        <div className="h-4 w-4 border-2 border-amber-500/30 border-t-amber-400 rounded-full animate-spin" />
+                      ) : resendCountdown > 0 ? (
+                        `Reenviar link em ${resendCountdown}s`
+                      ) : (
+                        "Reenviar e-mail de confirmação"
+                      )}
+                    </Button>
+                  </div>
+                )}
+              </div>
             )}
 
             {/* ── VIEW: CADASTRO ──────────────────────────────────────────── */}

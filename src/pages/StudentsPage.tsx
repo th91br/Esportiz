@@ -98,7 +98,7 @@ export default function StudentsPage() {
             }} disabled={loading || students.length === 0}>
               <Download className="h-4 w-4" /> Exportar (CSV)
             </Button>
-            {!isArena && (
+            {isOther && (
               <Button variant="outline" className="gap-2 bg-background hover:bg-muted border-primary/20 text-primary shrink-0" onClick={copyEnrollmentLink}>
                 <LinkIcon className="h-4 w-4 text-primary" /> Link de Matrícula
               </Button>

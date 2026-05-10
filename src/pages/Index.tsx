@@ -12,6 +12,7 @@ import {
   ShoppingCart,
   Landmark,
 } from 'lucide-react';
+import { cn } from '@/lib/utils';
 import { Header } from '@/components/Header';
 import { StatCard } from '@/components/StatCard';
 import { TodaySchedule } from '@/components/TodaySchedule';
@@ -396,27 +397,42 @@ export default function Index() {
           )}
 
           {/* ── Linha 2: Financeiro ── */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-4">
+          <div className={cn(
+            "grid gap-3 md:gap-4",
+            isSportSchool ? "grid-cols-1 md:grid-cols-2" : "grid-cols-1 md:grid-cols-3"
+          )}>
             <StatCard
               title="Faturamento Total"
               value={loading ? '...' : pv(formatCurrency(expectedRevenue))}
               icon={DollarSign}
               description={privacyMode ? '' : 'Total bruto esperado'}
             />
-            <StatCard
-              title="Recebido no Mês"
-              value={loading ? '...' : pv(formatCurrency(receivedRevenue))}
-              icon={CheckCircle}
-              variant="primary"
-              progress={privacyMode ? undefined : { value: revenueProgress, label: 'Meta Mensal' }}
-            />
-            <StatCard
-              title="Lucro Líquido"
-              value={loading ? '...' : pv(formatCurrency(netProfit))}
-              icon={netProfit >= 0 ? TrendingUp : TrendingDown}
-              variant="success"
-              description={privacyMode ? '' : `Despesas pagas: ${formatCurrency(totalExpensesPaid)}`}
-            />
+            {isSportSchool ? (
+              <StatCard
+                title="Recebido no Mês"
+                value={loading ? '...' : pv(formatCurrency(receivedRevenue))}
+                icon={CheckCircle}
+                variant="success"
+                progress={privacyMode ? undefined : { value: revenueProgress, label: 'Meta Mensal' }}
+              />
+            ) : (
+              <>
+                <StatCard
+                  title="Recebido no Mês"
+                  value={loading ? '...' : pv(formatCurrency(receivedRevenue))}
+                  icon={CheckCircle}
+                  variant="primary"
+                  progress={privacyMode ? undefined : { value: revenueProgress, label: 'Meta Mensal' }}
+                />
+                <StatCard
+                  title="Lucro Líquido"
+                  value={loading ? '...' : pv(formatCurrency(netProfit))}
+                  icon={netProfit >= 0 ? TrendingUp : TrendingDown}
+                  variant="success"
+                  description={privacyMode ? '' : `Despesas pagas: ${formatCurrency(totalExpensesPaid)}`}
+                />
+              </>
+            )}
           </div>
         </section>
 

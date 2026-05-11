@@ -55,6 +55,10 @@ function CourtFormDialog({ open, onOpenChange, court }: CourtFormProps) {
   const [daysOfWeek, setDaysOfWeek] = useState<number[]>(court?.daysOfWeek || [1, 2, 3, 4, 5, 6]);
   const [observations, setObservations] = useState(court?.observations || '');
   const [isActive, setIsActive] = useState(court?.isActive ?? true);
+  const [usePeakPricing, setUsePeakPricing] = useState(court?.usePeakPricing || false);
+  const [peakPrice, setPeakPrice] = useState(court?.peakPrice || 0);
+  const [peakStart, setPeakStart] = useState(court?.peakStart || '18:00');
+  const [peakEnd, setPeakEnd] = useState(court?.peakEnd || '22:00');
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -71,6 +75,10 @@ function CourtFormDialog({ open, onOpenChange, court }: CourtFormProps) {
       setDaysOfWeek(court?.daysOfWeek || [1, 2, 3, 4, 5, 6]);
       setObservations(court?.observations || '');
       setIsActive(court?.isActive ?? true);
+      setUsePeakPricing(court?.usePeakPricing || false);
+      setPeakPrice(court?.peakPrice || 0);
+      setPeakStart(court?.peakStart || '18:00');
+      setPeakEnd(court?.peakEnd || '22:00');
     }
   }, [court, open]);
 
@@ -85,6 +93,7 @@ function CourtFormDialog({ open, onOpenChange, court }: CourtFormProps) {
       const meta: CourtMetadata = {
         sportType, coverage, capacity, pricePerHour, extraHourPrice,
         openingTime, closingTime, daysOfWeek, observations, isActive,
+        usePeakPricing, peakPrice, peakStart, peakEnd,
       };
       if (isEditing && court) {
         await updateCourt({ id: court.id, name, color, metadata: meta });
@@ -211,6 +220,34 @@ function CourtFormDialog({ open, onOpenChange, court }: CourtFormProps) {
                 </button>
               ))}
             </div>
+          </div>
+
+          {/* Preço Diferenciado (Horário Nobre) */}
+          <div className="rounded-xl border border-border/50 bg-muted/10 p-3.5 space-y-3.5">
+            <div className="flex items-center justify-between">
+              <div className="space-y-0.5">
+                <p className="font-semibold text-sm">Preço de Horário Nobre / Pico</p>
+                <p className="text-xs text-muted-foreground">Cobrar tarifa diferenciada em horários específicos</p>
+              </div>
+              <Switch checked={usePeakPricing} onCheckedChange={setUsePeakPricing} className={cn(usePeakPricing ? "data-[state=checked]:bg-emerald-600" : "data-[state=unchecked]:bg-rose-600")} />
+            </div>
+
+            {usePeakPricing && (
+              <div className="grid grid-cols-3 gap-3 pt-1.5 animate-in fade-in-50 slide-in-from-top-1 duration-200">
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-bold text-muted-foreground uppercase">Preço (R$)</Label>
+                  <Input type="number" min={0} step={0.5} value={peakPrice} onChange={e => setPeakPrice(Number(e.target.value))} className="h-9 text-sm" />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-bold text-muted-foreground uppercase">Início</Label>
+                  <Input type="time" value={peakStart} onChange={e => setPeakStart(e.target.value)} className="h-9 text-sm" />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-bold text-muted-foreground uppercase">Término</Label>
+                  <Input type="time" value={peakEnd} onChange={e => setPeakEnd(e.target.value)} className="h-9 text-sm" />
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Observações */}
@@ -377,7 +414,7 @@ export default function CourtsPage() {
 
                     {/* Info grid */}
                     <div className="grid grid-cols-2 gap-3">
-                      <div className="bg-muted/30 rounded-lg p-2.5 text-center">
+                      <div className="bg-muted/30 rounded-lg p-2.5 text-center flex flex-col justify-center">
                         <div className="flex items-center justify-center gap-1 mb-0.5">
                           {court.coverage === 'covered' ? <Umbrella className="h-3 w-3 text-blue-500" /> : <Sun className="h-3 w-3 text-yellow-500" />}
                           <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
@@ -386,9 +423,26 @@ export default function CourtsPage() {
                         </div>
                         <p className="text-sm font-bold">{court.capacity} jogadores</p>
                       </div>
-                      <div className="bg-primary/5 border border-primary/10 rounded-lg p-2.5 text-center">
-                        <p className="text-[10px] font-bold uppercase tracking-wider text-primary/70 mb-0.5">Por hora</p>
-                        <p className="text-sm font-bold text-primary">{formatCurrency(court.pricePerHour)}</p>
+                      <div className="bg-primary/5 border border-primary/10 rounded-lg p-2.5 text-center flex flex-col justify-center">
+                        {court.usePeakPricing ? (
+                          <div className="space-y-1">
+                            <div>
+                              <p className="text-[9px] font-bold uppercase tracking-wider text-muted-foreground">☀️ Padrão</p>
+                              <p className="text-xs font-bold text-primary">{formatCurrency(court.pricePerHour)}</p>
+                            </div>
+                            <div className="border-t border-primary/10 pt-1">
+                              <p className="text-[9px] font-bold uppercase tracking-wider text-amber-600">
+                                🌙 Nobre ({court.peakStart}–{court.peakEnd})
+                              </p>
+                              <p className="text-xs font-bold text-amber-600">{formatCurrency(court.peakPrice || 0)}</p>
+                            </div>
+                          </div>
+                        ) : (
+                          <>
+                            <p className="text-[10px] font-bold uppercase tracking-wider text-primary/70 mb-0.5">Por hora</p>
+                            <p className="text-sm font-bold text-primary">{formatCurrency(court.pricePerHour)}</p>
+                          </>
+                        )}
                       </div>
                     </div>
 

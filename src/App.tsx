@@ -32,6 +32,7 @@ import ArenaAgendaPage from "./pages/ArenaAgendaPage";
 import ComandasPage from "./pages/ComandasPage";
 import EnrollmentPage from "./pages/EnrollmentPage";
 import StudentPortalPage from "./pages/StudentPortalPage";
+import OnlineBookingPage from "./pages/OnlineBookingPage";
 import { useProfile } from "./hooks/queries/useProfile";
 
 
@@ -81,6 +82,7 @@ function AppRoutes() {
       {/* Rota pública — landing page */}
       <Route path="/" element={<LandingPage />} />
       <Route path="/matricula" element={<EnrollmentPage />} />
+      <Route path="/agendar" element={<OnlineBookingPage />} />
       <Route path="/portal-aluno" element={<StudentPortalPage />} />
       {/* Auth */}
       <Route path="/login" element={user ? <Navigate to="/dashboard" replace /> : <LoginPage />} />

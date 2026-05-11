@@ -1,9 +1,17 @@
+import { useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 
 export type BusinessType = 'sport_school' | 'arena' | 'other';
+
+export interface NicheProfile {
+  ct_name?: string | null;
+  logo_url?: string | null;
+  pix_key?: string | null;
+  pix_receiver?: string | null;
+}
 
 export interface Profile {
   id: string;
@@ -19,6 +27,9 @@ export interface Profile {
   google_calendar_id?: string | null;
   sheets_spreadsheet_id?: string | null;
   sheets_webhook_active?: boolean;
+  pix_key?: string | null;
+  pix_receiver?: string | null;
+  niche_settings?: Record<string, NicheProfile> | null;
   created_at: string;
   updated_at: string;
 }
@@ -140,8 +151,25 @@ export function useProfile() {
     }
   });
 
+  const resolvedProfile = useMemo(() => {
+    const profile = profileQuery.data;
+    if (!profile) return null;
+
+    const activeNicheType = profile.business_type || 'sport_school';
+    const niche = profile.niche_settings?.[activeNicheType] || {};
+
+    return {
+      ...profile,
+      ct_name: niche.ct_name !== undefined && niche.ct_name !== null ? niche.ct_name : profile.ct_name,
+      logo_url: niche.logo_url !== undefined && niche.logo_url !== null ? niche.logo_url : profile.logo_url,
+      pix_key: niche.pix_key !== undefined && niche.pix_key !== null ? niche.pix_key : profile.pix_key,
+      pix_receiver: niche.pix_receiver !== undefined && niche.pix_receiver !== null ? niche.pix_receiver : profile.pix_receiver,
+    } as Profile;
+  }, [profileQuery.data]);
+
   return {
-    profile: profileQuery.data,
+    profile: resolvedProfile,
+    rawProfile: profileQuery.data,
     loadingProfile: profileQuery.isLoading,
     updateProfile: updateProfileMutation.mutateAsync,
     isUpdatingProfile: updateProfileMutation.isPending,

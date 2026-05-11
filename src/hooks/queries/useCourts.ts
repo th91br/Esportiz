@@ -31,6 +31,10 @@ export interface CourtMetadata {
   daysOfWeek: number[];
   observations: string;
   isActive: boolean;
+  usePeakPricing?: boolean;
+  peakPrice?: number;
+  peakStart?: string;
+  peakEnd?: string;
 }
 
 export interface Court {
@@ -49,6 +53,10 @@ export interface Court {
   daysOfWeek: number[];
   observations: string;
   isActive: boolean;
+  usePeakPricing?: boolean;
+  peakPrice?: number;
+  peakStart?: string;
+  peakEnd?: string;
 }
 
 const DEFAULT_META: CourtMetadata = {
@@ -62,6 +70,10 @@ const DEFAULT_META: CourtMetadata = {
   daysOfWeek: [1, 2, 3, 4, 5, 6, 0],
   observations: '',
   isActive: true,
+  usePeakPricing: false,
+  peakPrice: 0,
+  peakStart: '18:00',
+  peakEnd: '22:00',
 };
 
 function parseMeta(raw: any): CourtMetadata {

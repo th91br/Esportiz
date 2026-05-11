@@ -10,6 +10,7 @@ import { usePayments } from '@/hooks/queries/usePayments';
 import { getActiveMonthlyStudents, getInactiveStudents, getStudentsWithoutPlan } from '@/lib/studentHelpers';
 import { usePlans } from '@/hooks/queries/usePlans';
 import { useBusinessContext } from '@/hooks/useBusinessContext';
+import { useProfile } from '@/hooks/queries/useProfile';
 import { toast } from 'sonner';
 
 type Audience = 'all_active' | 'overdue' | 'due_7_days' | 'trial' | 'without_plan' | 'inactive';
@@ -19,6 +20,13 @@ export default function CommunicationPage() {
   const { payments, loadingPayments } = usePayments();
   const { plans, loadingPlans } = usePlans();
   const { labels } = useBusinessContext();
+  const { profile } = useProfile();
+  
+  // Nome dinâmico do negócio com fallbacks personalizados por modalidade
+  const businessName = profile?.ct_name || (
+    profile?.business_type === 'sport_school' ? 'Sportiz Sport' :
+    profile?.business_type === 'other' ? 'Esportiz Club' : 'Esportiz Arena'
+  );
   
   const [audience, setAudience] = useState<Audience>('all_active');
   const [messageTemplate, setMessageTemplate] = useState(`Olá {nome}, tudo bem? Aqui é da {escola}! 😊`);
@@ -48,14 +56,14 @@ export default function CommunicationPage() {
       case 'overdue': {
         // Encontrar alunos com pagamentos atrasados (vencidos e não pagos)
         const overduePayments = payments.filter(p => !p.paid && p.dueDate < todayStr);
-        const overdueUserIds = new Set(overduePayments.map(p => p.userId));
-        return students.filter(s => overdueUserIds.has(s.id));
+        const overdueStudentIds = new Set(overduePayments.map(p => p.studentId));
+        return students.filter(s => overdueStudentIds.has(s.id));
       }
       case 'due_7_days': {
         // Encontrar alunos com pagamentos vencendo nos próximos 7 dias
         const duePayments = payments.filter(p => !p.paid && p.dueDate >= todayStr && p.dueDate <= sevenDaysStr);
-        const dueUserIds = new Set(duePayments.map(p => p.userId));
-        return students.filter(s => dueUserIds.has(s.id));
+        const dueStudentIds = new Set(duePayments.map(p => p.studentId));
+        return students.filter(s => dueStudentIds.has(s.id));
       }
       default:
         return [];
@@ -90,8 +98,16 @@ export default function CommunicationPage() {
     const personalizedMessage = messageTemplate
       .replace(/{nome}/g, firstName)
       .replace(/{nome_completo}/g, studentName)
-      .replace(/{escola}/g, labels.ctLabelShort);
-    const encodedMessage = encodeURIComponent(personalizedMessage);
+      .replace(/{escola}/g, businessName)
+      .replace(/{chave_pix}/g, profile?.pix_key || '')
+      .replace(/{beneficiario_pix}/g, profile?.pix_receiver || '');
+
+    let finalMessage = personalizedMessage;
+    if ((audience === 'overdue' || audience === 'due_7_days') && profile?.pix_key && !messageTemplate.includes('{chave_pix}')) {
+      finalMessage += `\n\n📌 *Dados para pagamento via Pix:*\n🔑 *Chave Pix:* ${profile.pix_key}${profile.pix_receiver ? `\n👤 *Beneficiário:* ${profile.pix_receiver}` : ''}`;
+    }
+
+    const encodedMessage = encodeURIComponent(finalMessage);
 
     const url = `https://wa.me/${whatsappPhone}?text=${encodedMessage}`;
     window.open(url, '_blank');
@@ -142,8 +158,8 @@ export default function CommunicationPage() {
 
               <div className="space-y-2 pt-4">
                 <Label className="text-base font-bold">2. Mensagem</Label>
-                <p className="text-sm text-muted-foreground mb-3">
-                  Variáveis: <code className="bg-muted px-1 py-0.5 rounded text-primary">{`{nome}`}</code> para o nome do {labels.studentLabelSingular.toLowerCase()} e <code className="bg-muted px-1 py-0.5 rounded text-primary">{`{escola}`}</code> para o nome do negócio.
+                <p className="text-sm text-muted-foreground mb-3 leading-relaxed">
+                  Variáveis: <code className="bg-muted px-1 py-0.5 rounded text-primary">{`{nome}`}</code> para o nome do {labels.studentLabelSingular.toLowerCase()}, <code className="bg-muted px-1 py-0.5 rounded text-primary">{`{escola}`}</code> para o negócio, <code className="bg-muted px-1 py-0.5 rounded text-primary">{`{chave_pix}`}</code> para a chave Pix e <code className="bg-muted px-1 py-0.5 rounded text-primary">{`{beneficiario_pix}`}</code> para o recebedor do Pix.
                 </p>
                 <Textarea 
                   className="min-h-[150px] resize-none bg-background border-border/50" 

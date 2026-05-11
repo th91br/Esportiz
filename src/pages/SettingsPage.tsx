@@ -36,24 +36,39 @@ const GOOGLE_REDIRECT_URI = window.location.origin + '/configuracoes';
 const GOOGLE_SCOPES = 'https://www.googleapis.com/auth/calendar.events https://www.googleapis.com/auth/spreadsheets';
 
 export default function SettingsPage() {
-  const { profile, updateProfile, uploadLogo, isUpdatingProfile, isUploadingLogo } = useProfile();
+  const { profile, rawProfile, updateProfile, uploadLogo, isUpdatingProfile, isUploadingLogo } = useProfile();
   const { user } = useAuth();
   const { labels } = useBusinessContext();
   const [selectedBusinessType, setSelectedBusinessType] = useState<BusinessType>('sport_school');
+  const [businessTypeInitialized, setBusinessTypeInitialized] = useState(false);
 
   const [ctName, setCtName] = useState('');
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [isDeletingLogo, setIsDeletingLogo] = useState(false);
   const [isConnectingGoogle, setIsConnectingGoogle] = useState(false);
+  const [pixKey, setPixKey] = useState('');
+  const [pixReceiver, setPixReceiver] = useState('');
 
+  // Initialize active business type once from raw profile
   useEffect(() => {
-    if (profile) {
-      setCtName(profile.ct_name || '');
-      setLogoPreview(profile.logo_url || null);
-      setSelectedBusinessType(profile.business_type || 'sport_school');
+    if (rawProfile && !businessTypeInitialized) {
+      setSelectedBusinessType(rawProfile.business_type || 'sport_school');
+      setBusinessTypeInitialized(true);
     }
-  }, [profile]);
+  }, [rawProfile, businessTypeInitialized]);
+
+  // Load niche-specific settings or fallbacks when selected business type changes
+  useEffect(() => {
+    if (rawProfile) {
+      const activeNiche = rawProfile.niche_settings?.[selectedBusinessType] || {};
+      
+      setCtName(activeNiche.ct_name !== undefined && activeNiche.ct_name !== null ? activeNiche.ct_name : (rawProfile.ct_name || ''));
+      setLogoPreview(activeNiche.logo_url !== undefined && activeNiche.logo_url !== null ? activeNiche.logo_url : (rawProfile.logo_url || null));
+      setPixKey(activeNiche.pix_key !== undefined && activeNiche.pix_key !== null ? activeNiche.pix_key : (rawProfile.pix_key || ''));
+      setPixReceiver(activeNiche.pix_receiver !== undefined && activeNiche.pix_receiver !== null ? activeNiche.pix_receiver : (rawProfile.pix_receiver || ''));
+    }
+  }, [rawProfile, selectedBusinessType]);
 
   // Handle Google OAuth Redirect
   useEffect(() => {
@@ -124,7 +139,22 @@ export default function SettingsPage() {
   const handleRemoveLogo = async () => {
     setIsDeletingLogo(true);
     try {
-      await updateProfile({ ct_name: ctName, logo_url: null });
+      const currentNicheSettings = rawProfile?.niche_settings || {};
+      const updatedNicheSettings = {
+        ...currentNicheSettings,
+        [selectedBusinessType]: {
+          ...(currentNicheSettings[selectedBusinessType] || {}),
+          logo_url: null
+        }
+      };
+
+      const isSavingActiveNiche = selectedBusinessType === rawProfile?.business_type;
+
+      await updateProfile({
+        logo_url: isSavingActiveNiche ? null : rawProfile?.logo_url,
+        niche_settings: updatedNicheSettings
+      });
+
       setLogoFile(null);
       setLogoPreview(null);
       // Reset file input
@@ -141,7 +171,9 @@ export default function SettingsPage() {
 
   const handleCancelLogo = () => {
     setLogoFile(null);
-    setLogoPreview(profile?.logo_url || null);
+    const activeNiche = rawProfile?.niche_settings?.[selectedBusinessType] || {};
+    const fallbackLogo = activeNiche.logo_url !== undefined && activeNiche.logo_url !== null ? activeNiche.logo_url : (rawProfile?.logo_url || null);
+    setLogoPreview(fallbackLogo);
     const input = document.getElementById('logo-input') as HTMLInputElement;
     if (input) input.value = '';
   };
@@ -153,7 +185,7 @@ export default function SettingsPage() {
     }
 
     try {
-      let logoUrl = profile?.logo_url || null;
+      let logoUrl = logoPreview; // Use current preview
 
       if (logoFile) {
         try {
@@ -164,9 +196,27 @@ export default function SettingsPage() {
         }
       }
 
+      const currentNicheSettings = rawProfile?.niche_settings || {};
+      const updatedNicheSettings = {
+        ...currentNicheSettings,
+        [selectedBusinessType]: {
+          ct_name: ctName,
+          logo_url: logoUrl,
+          pix_key: pixKey,
+          pix_receiver: pixReceiver
+        }
+      };
+
+      const isSavingActiveNiche = selectedBusinessType === rawProfile?.business_type;
+
       await updateProfile({
-        ct_name: ctName,
-        logo_url: logoUrl,
+        // Also save business_type to keep settings active
+        business_type: selectedBusinessType,
+        ct_name: isSavingActiveNiche ? ctName : rawProfile?.ct_name,
+        logo_url: isSavingActiveNiche ? logoUrl : rawProfile?.logo_url,
+        pix_key: isSavingActiveNiche ? pixKey : rawProfile?.pix_key,
+        pix_receiver: isSavingActiveNiche ? pixReceiver : rawProfile?.pix_receiver,
+        niche_settings: updatedNicheSettings
       });
 
       setLogoFile(null);
@@ -285,6 +335,33 @@ export default function SettingsPage() {
                   value={ctName}
                   onChange={(e) => setCtName(e.target.value)}
                 />
+              </div>
+
+              <div className="border-t border-border/30 pt-4 space-y-4">
+                <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Configuração de Recebimentos (Pix)</p>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="pix-key">Chave Pix do CT (Opcional)</Label>
+                    <Input
+                      id="pix-key"
+                      placeholder="Ex: CNPJ, E-mail, Celular, etc."
+                      value={pixKey}
+                      onChange={(e) => setPixKey(e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="pix-receiver">Beneficiário do Pix (Nome Completo)</Label>
+                    <Input
+                      id="pix-receiver"
+                      placeholder="Ex: Nome do Dono ou Razão Social"
+                      value={pixReceiver}
+                      onChange={(e) => setPixReceiver(e.target.value)}
+                    />
+                  </div>
+                </div>
+                <p className="text-[10px] text-muted-foreground">
+                  Se configurados, estes dados serão incluídos automaticamente nas mensagens de cobrança enviadas aos clientes.
+                </p>
               </div>
 
               {/* Logo Section */}

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -61,7 +61,17 @@ export function ReservationModal({
   const [saving, setSaving] = useState(false);
 
   const selectedCourt = courts.find(c => c.id === courtId);
-  const basePrice = selectedCourt ? (selectedCourt.pricePerHour * duration) / 60 : 0;
+  const basePrice = useMemo(() => {
+    if (!selectedCourt) return 0;
+    let hourlyPrice = selectedCourt.pricePerHour;
+    if (selectedCourt.usePeakPricing && selectedCourt.peakPrice && selectedCourt.peakStart && selectedCourt.peakEnd) {
+      if (time >= selectedCourt.peakStart && time < selectedCourt.peakEnd) {
+        hourlyPrice = selectedCourt.peakPrice;
+      }
+    }
+    return (hourlyPrice * duration) / 60;
+  }, [selectedCourt, duration, time]);
+
   const finalPrice = reservationType === 'experimental' ? 0 : Math.max(0, basePrice - discount);
 
   useEffect(() => {

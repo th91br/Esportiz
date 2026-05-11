@@ -28,6 +28,7 @@ export interface ReservationMeta {
   paymentMethod: PaymentMethod;
   paymentStatus: 'paid' | 'pending';
   status: ReservationStatus;
+  online?: boolean;
 }
 
 export interface Reservation {
@@ -46,6 +47,7 @@ export interface Reservation {
   paymentMethod: PaymentMethod;
   paymentStatus: 'paid' | 'pending';
   status: ReservationStatus;
+  online?: boolean;
 }
 
 const DEFAULT_META: ReservationMeta = {

@@ -11,6 +11,16 @@ export interface NicheProfile {
   logo_url?: string | null;
   pix_key?: string | null;
   pix_receiver?: string | null;
+  templates?: {
+    mass_all_active?: string;
+    mass_overdue?: string;
+    mass_due_7_days?: string;
+    mass_trial?: string;
+    mass_without_plan?: string;
+    mass_inactive?: string;
+    booking_confirmation?: string;
+    payment_reminder?: string;
+  } | null;
 }
 
 export interface Profile {

@@ -271,46 +271,15 @@ export function StudentForm({ student, trigger }: StudentFormProps) {
       const { supabase } = await import('@/integrations/supabase/client');
       await supabase.rpc('cleanup_student_future_trainings', { p_student_id: schedulePromptData.studentId });
 
-      // 2. Generate future dates for the next 3 months for the selected days of week
-      const todayStr = new Date().toISOString().split('T')[0];
-      
-      const getFutureDatesForDayOfWeek = (dayOfWeek: number, monthsAhead: number): string[] => {
-        const date = new Date(todayStr + 'T12:00:00');
-        const startYear = date.getFullYear();
-        const startMonth = date.getMonth();
-        const endDate = new Date(startYear, startMonth + monthsAhead, date.getDate()); 
-        const dates: string[] = [];
-        
-        const currentIterDate = new Date(startYear, startMonth, date.getDate());
-        while (currentIterDate <= endDate) {
-          if (currentIterDate.getDay() === dayOfWeek) {
-            dates.push(currentIterDate.toISOString().split('T')[0]);
-          }
-          currentIterDate.setDate(currentIterDate.getDate() + 1);
-        }
-        return dates;
-      };
+      // 2. Generate future dates for the next 3 months via backend
+      const { error } = await supabase.rpc('generate_student_schedule', {
+        p_user_id: user?.id,
+        p_student_id: schedulePromptData.studentId,
+        p_schedules: selectedSchedules,
+        p_months_ahead: 3
+      });
 
-      for (const schedule of selectedSchedules) {
-        const dates = getFutureDatesForDayOfWeek(schedule.dayOfWeek, 3);
-        for (const date of dates) {
-          const existing = trainings.find(t => t.date === date && t.time === schedule.time);
-          if (existing) {
-            if (!existing.studentIds.includes(schedulePromptData.studentId)) {
-              await updateTraining(existing.id, {
-                studentIds: [...existing.studentIds, schedulePromptData.studentId]
-              });
-            }
-          } else {
-            await addTraining({
-              date,
-              time: schedule.time as any,
-              location: "Esportiz",
-              studentIds: [schedulePromptData.studentId]
-            });
-          }
-        }
-      }
+      if (error) throw error;
 
       toast({ title: 'Agenda configurada!', description: `${labels.trainingLabel} gerados para os próximos 3 meses.` });
       setSchedulePromptOpen(false);

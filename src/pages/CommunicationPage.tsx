@@ -1,10 +1,10 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Header } from '@/components/Header';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { MessageCircle, Users, Check, AlertCircle } from 'lucide-react';
+import { MessageCircle, Users, Check, AlertCircle, Save, Loader2 } from 'lucide-react';
 import { useStudents } from '@/hooks/queries/useStudents';
 import { usePayments } from '@/hooks/queries/usePayments';
 import { getActiveMonthlyStudents, getInactiveStudents, getStudentsWithoutPlan } from '@/lib/studentHelpers';
@@ -20,7 +20,7 @@ export default function CommunicationPage() {
   const { payments, loadingPayments } = usePayments();
   const { plans, loadingPlans } = usePlans();
   const { labels } = useBusinessContext();
-  const { profile } = useProfile();
+  const { profile, updateProfile, isUpdatingProfile } = useProfile();
   
   // Nome dinâmico do negócio com fallbacks personalizados por modalidade
   const businessName = profile?.ct_name || (
@@ -31,6 +31,65 @@ export default function CommunicationPage() {
   const [audience, setAudience] = useState<Audience>('all_active');
   const [messageTemplate, setMessageTemplate] = useState(`Olá {nome}, tudo bem? Aqui é da {escola}! 😊`);
   const [sentTo, setSentTo] = useState<Set<string>>(new Set());
+
+  // Load audience-specific custom template on profile or audience change
+  useEffect(() => {
+    if (profile) {
+      const activeNicheType = profile.business_type || 'sport_school';
+      const templates = profile.niche_settings?.[activeNicheType]?.templates || {};
+      const templateKey = `mass_${audience}` as keyof typeof templates;
+      const customTemplate = templates[templateKey];
+      
+      if (customTemplate) {
+        setMessageTemplate(customTemplate);
+      } else {
+        // High quality default fallback per audience & niche type
+        const isClub = activeNicheType === 'other';
+
+        const fallbacks: Record<Audience, string> = {
+          all_active: `Olá {nome}, tudo bem? Aqui é da {escola}! 😊`,
+          overdue: `Olá {nome}, tudo bem? Passando para lembrar do acerto da sua mensalidade na {escola}. 🙏`,
+          due_7_days: `Olá {nome}, tudo bem? Lembrete amigável de que sua mensalidade na {escola} vence nos próximos dias. 😊`,
+          trial: isClub
+            ? `Olá {nome}, tudo bem? Aqui é da {escola}! Passando para saber o que achou da sua aula experimental? 📝✨`
+            : `Olá {nome}, tudo bem? Aqui é da {escola}! Passando para saber o que achou do seu treino experimental? 🎾🔥`,
+          without_plan: `Olá {nome}, tudo bem? Notamos que você está sem plano ativo na {escola}. Vamos escolher um? 🚀`,
+          inactive: isClub
+            ? `Olá {nome}, tudo bem? Estamos com saudades de você aqui na {escola}! Que tal voltar a estudar conosco? 📚🎓`
+            : `Olá {nome}, tudo bem? Estamos com saudades de você aqui na {escola}! Que tal voltar a treinar conosco? 🏆`
+        };
+        setMessageTemplate(fallbacks[audience] || `Olá {nome}, tudo bem? Aqui é da {escola}! 😊`);
+      }
+    }
+  }, [profile, audience]);
+
+  const handleSaveTemplate = async () => {
+    if (!profile) return;
+    const activeNicheType = profile.business_type || 'sport_school';
+    const templateKey = `mass_${audience}`;
+    
+    const currentNicheSettings = profile.niche_settings || {};
+    const updatedNicheSettings = {
+      ...currentNicheSettings,
+      [activeNicheType]: {
+        ...(currentNicheSettings[activeNicheType] || {}),
+        templates: {
+          ...(currentNicheSettings[activeNicheType]?.templates || {}),
+          [templateKey]: messageTemplate
+        }
+      }
+    };
+
+    try {
+      await updateProfile({
+        niche_settings: updatedNicheSettings
+      });
+      toast.success('Modelo de mensagem salvo como padrão para este público!');
+    } catch (err) {
+      console.error(err);
+      toast.error('Erro ao salvar o modelo de mensagem.');
+    }
+  };
 
   const loading = loadingStudents || loadingPayments || loadingPlans;
 
@@ -167,6 +226,19 @@ export default function CommunicationPage() {
                   value={messageTemplate}
                   onChange={(e) => setMessageTemplate(e.target.value)}
                 />
+                <Button 
+                  onClick={handleSaveTemplate}
+                  disabled={isUpdatingProfile}
+                  variant="outline"
+                  className="w-full mt-2 border-primary/20 hover:bg-primary/5 text-primary font-semibold flex items-center justify-center gap-2"
+                >
+                  {isUpdatingProfile ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Save className="h-4 w-4 text-primary" />
+                  )}
+                  Salvar Modelo como Padrão
+                </Button>
               </div>
 
               <div className="bg-primary/10 border border-primary/20 rounded-lg p-4 flex gap-3 mt-4">

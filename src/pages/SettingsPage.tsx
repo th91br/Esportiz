@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Textarea } from '@/components/ui/textarea';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -49,6 +50,8 @@ export default function SettingsPage() {
   const [isConnectingGoogle, setIsConnectingGoogle] = useState(false);
   const [pixKey, setPixKey] = useState('');
   const [pixReceiver, setPixReceiver] = useState('');
+  const [bookingConfirmationTemplate, setBookingConfirmationTemplate] = useState('');
+  const [paymentReminderTemplate, setPaymentReminderTemplate] = useState('');
 
   // Initialize active business type once from raw profile
   useEffect(() => {
@@ -67,6 +70,10 @@ export default function SettingsPage() {
       setLogoPreview(activeNiche.logo_url !== undefined && activeNiche.logo_url !== null ? activeNiche.logo_url : (rawProfile.logo_url || null));
       setPixKey(activeNiche.pix_key !== undefined && activeNiche.pix_key !== null ? activeNiche.pix_key : (rawProfile.pix_key || ''));
       setPixReceiver(activeNiche.pix_receiver !== undefined && activeNiche.pix_receiver !== null ? activeNiche.pix_receiver : (rawProfile.pix_receiver || ''));
+      
+      const templates = activeNiche.templates || {};
+      setBookingConfirmationTemplate(templates.booking_confirmation || '');
+      setPaymentReminderTemplate(templates.payment_reminder || '');
     }
   }, [rawProfile, selectedBusinessType]);
 
@@ -203,7 +210,12 @@ export default function SettingsPage() {
           ct_name: ctName,
           logo_url: logoUrl,
           pix_key: pixKey,
-          pix_receiver: pixReceiver
+          pix_receiver: pixReceiver,
+          templates: {
+            ...(currentNicheSettings[selectedBusinessType]?.templates || {}),
+            booking_confirmation: bookingConfirmationTemplate,
+            payment_reminder: paymentReminderTemplate
+          }
         }
       };
 
@@ -463,6 +475,45 @@ export default function SettingsPage() {
                   </div>
                 </div>
               </div>
+
+              {/* WhatsApp Message Templates Section (Only for Arena) */}
+              {selectedBusinessType === 'arena' && (
+                <div className="border-t border-border/30 pt-4 space-y-4">
+                  <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Modelos de Mensagem do WhatsApp</p>
+                  
+                  <div className="space-y-4">
+                    {/* Template Option A */}
+                    <div className="space-y-2">
+                      <Label htmlFor="booking-confirmation-template" className="font-bold">1. Confirmação de Horário (Opção A)</Label>
+                      <p className="text-xs text-muted-foreground leading-relaxed">
+                        Enviado ao fechar uma reserva. Variáveis: <code className="bg-muted px-1 py-0.5 rounded text-primary">{`{nome}`}</code>, <code className="bg-muted px-1 py-0.5 rounded text-primary">{`{escola}`}</code>, <code className="bg-muted px-1 py-0.5 rounded text-primary">{`{quadra}`}</code>, <code className="bg-muted px-1 py-0.5 rounded text-primary">{`{data}`}</code>, <code className="bg-muted px-1 py-0.5 rounded text-primary">{`{hora}`}</code>, <code className="bg-muted px-1 py-0.5 rounded text-primary">{`{valor}`}</code>.
+                      </p>
+                      <Textarea
+                        id="booking-confirmation-template"
+                        placeholder="Ex: Olá {nome}! Seu horário está confirmado..."
+                        className="min-h-[100px] resize-none bg-background border-border/50"
+                        value={bookingConfirmationTemplate}
+                        onChange={(e) => setBookingConfirmationTemplate(e.target.value)}
+                      />
+                    </div>
+
+                    {/* Template Option B */}
+                    <div className="space-y-2">
+                      <Label htmlFor="payment-reminder-template" className="font-bold">2. Lembrete de Cobrança / Recebimentos (Opção B)</Label>
+                      <p className="text-xs text-muted-foreground leading-relaxed">
+                        Enviado para faturas pendentes. Variáveis: <code className="bg-muted px-1 py-0.5 rounded text-primary">{`{nome}`}</code>, <code className="bg-muted px-1 py-0.5 rounded text-primary">{`{escola}`}</code>, <code className="bg-muted px-1 py-0.5 rounded text-primary">{`{valor}`}</code>, <code className="bg-muted px-1 py-0.5 rounded text-primary">{`{chave_pix}`}</code>, <code className="bg-muted px-1 py-0.5 rounded text-primary">{`{beneficiario_pix}`}</code>.
+                      </p>
+                      <Textarea
+                        id="payment-reminder-template"
+                        placeholder="Ex: Olá {nome}! Passando para lembrar do acerto do seu horário..."
+                        className="min-h-[100px] resize-none bg-background border-border/50"
+                        value={paymentReminderTemplate}
+                        onChange={(e) => setPaymentReminderTemplate(e.target.value)}
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
 
               <div className="pt-4 flex justify-end border-t">
                 <Button

@@ -59,6 +59,239 @@ export type Database = {
           },
         ]
       }
+      categories: {
+        Row: {
+          id: string
+          user_id: string
+          name: string
+          color: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          name: string
+          color?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          name?: string
+          color?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      comandas: {
+        Row: {
+          id: string
+          user_id: string
+          business_type: string
+          name: string
+          status: string
+          created_at: string
+          closed_at: string | null
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          business_type?: string
+          name: string
+          status?: string
+          created_at?: string
+          closed_at?: string | null
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          business_type?: string
+          name?: string
+          status?: string
+          created_at?: string
+          closed_at?: string | null
+        }
+        Relationships: []
+      }
+      comanda_items: {
+        Row: {
+          id: string
+          user_id: string
+          comanda_id: string | null
+          product_id: string | null
+          product_name: string
+          quantity: number
+          unit_price: number
+          total: number
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          comanda_id?: string | null
+          product_id?: string | null
+          product_name: string
+          quantity?: number
+          unit_price: number
+          total: number
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          comanda_id?: string | null
+          product_id?: string | null
+          product_name?: string
+          quantity?: number
+          unit_price?: number
+          total?: number
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "comanda_items_comanda_id_fkey"
+            columns: ["comanda_id"]
+            isOneToOne: false
+            referencedRelation: "comandas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "comanda_items_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      groups: {
+        Row: {
+          id: string
+          user_id: string
+          name: string
+          schedule: Json
+          location: string
+          modality_id: string | null
+          max_students: number | null
+          duration_minutes: number
+          color: string | null
+          active: boolean
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          name: string
+          schedule?: Json
+          location?: string
+          modality_id?: string | null
+          max_students?: number | null
+          duration_minutes?: number
+          color?: string | null
+          active?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          name?: string
+          schedule?: Json
+          location?: string
+          modality_id?: string | null
+          max_students?: number | null
+          duration_minutes?: number
+          color?: string | null
+          active?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "groups_modality_id_fkey"
+            columns: ["modality_id"]
+            isOneToOne: false
+            referencedRelation: "modalities"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      group_students: {
+        Row: {
+          id: string
+          group_id: string
+          student_id: string
+          user_id: string
+          joined_at: string
+        }
+        Insert: {
+          id?: string
+          group_id: string
+          student_id: string
+          user_id: string
+          joined_at?: string
+        }
+        Update: {
+          id?: string
+          group_id?: string
+          student_id?: string
+          user_id?: string
+          joined_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "group_students_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "groups"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "group_students_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      modalities: {
+        Row: {
+          id: string
+          user_id: string
+          name: string
+          color: string | null
+          business_type: string
+          metadata: Json | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          name: string
+          color?: string | null
+          business_type?: string
+          metadata?: Json | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          name?: string
+          color?: string | null
+          business_type?: string
+          metadata?: Json | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       payments: {
         Row: {
           amount: number
@@ -239,6 +472,9 @@ export type Database = {
           onboarding_completed: boolean | null
           created_at: string
           updated_at: string
+          pix_key: string | null
+          pix_receiver: string | null
+          niche_settings: Json | null
         }
         Insert: {
           id?: string
@@ -251,6 +487,9 @@ export type Database = {
           onboarding_completed?: boolean | null
           created_at?: string
           updated_at?: string
+          pix_key?: string | null
+          pix_receiver?: string | null
+          niche_settings?: Json | null
         }
         Update: {
           id?: string
@@ -263,6 +502,9 @@ export type Database = {
           onboarding_completed?: boolean | null
           created_at?: string
           updated_at?: string
+          pix_key?: string | null
+          pix_receiver?: string | null
+          niche_settings?: Json | null
         }
         Relationships: [
           {
@@ -345,6 +587,9 @@ export type Database = {
           is_trial: boolean
           trial_started_at: string | null
           trial_converted_at: string | null
+          category_id: string | null
+          modality_id: string | null
+          business_type: string
         }
         Insert: {
           active?: boolean
@@ -369,6 +614,9 @@ export type Database = {
           is_trial?: boolean
           trial_started_at?: string | null
           trial_converted_at?: string | null
+          category_id?: string | null
+          modality_id?: string | null
+          business_type?: string
         }
         Update: {
           active?: boolean
@@ -393,6 +641,9 @@ export type Database = {
           is_trial?: boolean
           trial_started_at?: string | null
           trial_converted_at?: string | null
+          category_id?: string | null
+          modality_id?: string | null
+          business_type?: string
         }
         Relationships: [
           {
@@ -448,6 +699,11 @@ export type Database = {
           updated_at: string
           user_id: string
           duration_minutes: number
+          business_type: string
+          category_id: string | null
+          modality_id: string | null
+          completed: boolean
+          metadata: Json | null
         }
         Insert: {
           created_at?: string
@@ -459,6 +715,11 @@ export type Database = {
           updated_at?: string
           user_id: string
           duration_minutes?: number
+          business_type?: string
+          category_id?: string | null
+          modality_id?: string | null
+          completed?: boolean
+          metadata?: Json | null
         }
         Update: {
           created_at?: string
@@ -470,6 +731,11 @@ export type Database = {
           updated_at?: string
           user_id?: string
           duration_minutes?: number
+          business_type?: string
+          category_id?: string | null
+          modality_id?: string | null
+          completed?: boolean
+          metadata?: Json | null
         }
         Relationships: []
       }

@@ -3,7 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 
-export type ReservationType = 'avulsa' | 'mensalista' | 'experimental';
+export type ReservationType = 'avulsa' | 'mensalista' | 'experimental' | 'blocked';
 export type PaymentMethod = 'pix' | 'cartao' | 'dinheiro' | 'a_receber';
 export type ReservationStatus = 'confirmed' | 'pending' | 'cancelled';
 
@@ -18,6 +18,7 @@ export const RESERVATION_TYPE_LABELS: Record<ReservationType, string> = {
   avulsa: 'Avulsa',
   mensalista: 'Mensalista',
   experimental: 'Experimental (Grátis)',
+  blocked: '🔒 Bloquear Horário / Fechar Quadra',
 };
 
 export interface ReservationMeta {

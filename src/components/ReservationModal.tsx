@@ -113,20 +113,21 @@ export function ReservationModal({
 
     setSaving(true);
     try {
+      const isBlocked = reservationType === 'blocked';
       const meta: ReservationMeta = {
-        price: basePrice,
-        discount,
-        finalPrice,
+        price: isBlocked ? 0 : basePrice,
+        discount: isBlocked ? 0 : discount,
+        finalPrice: isBlocked ? 0 : finalPrice,
         reservationType,
-        paymentMethod,
-        paymentStatus,
+        paymentMethod: isBlocked ? 'pix' : paymentMethod,
+        paymentStatus: isBlocked ? 'paid' : paymentStatus,
         status: 'confirmed',
       };
       const input = {
         date,
         time,
         courtId,
-        reservanteIds: reservanteId ? [reservanteId] : [],
+        reservanteIds: isBlocked ? [] : (reservanteId ? [reservanteId] : []),
         durationMinutes: duration,
         notes,
         meta,
@@ -229,60 +230,6 @@ export function ReservationModal({
             </div>
           </div>
 
-          {/* Reservante */}
-          <div className="space-y-2">
-            <Label className="flex items-center gap-2 text-sm font-semibold">
-              <User className="h-4 w-4 text-primary" /> Reservante
-            </Label>
-            {selectedReservante ? (
-              <div className="flex items-center justify-between p-3 rounded-lg border border-primary/30 bg-primary/5">
-                <div>
-                  <p className="font-semibold text-sm">{selectedReservante.name}</p>
-                  <p className="text-xs text-muted-foreground">{selectedReservante.phone}</p>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => { setReservanteId(''); setReservanteSearch(''); }}
-                  className="text-xs text-destructive hover:underline"
-                >
-                  Remover
-                </button>
-              </div>
-            ) : (
-              <div className="space-y-2">
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    placeholder="Buscar reservante..."
-                    value={reservanteSearch}
-                    onChange={e => setReservanteSearch(e.target.value)}
-                    className="pl-9"
-                  />
-                </div>
-                {reservanteSearch && filteredStudents.length > 0 && (
-                  <div className="border rounded-lg divide-y shadow-md bg-background">
-                    {filteredStudents.map(s => (
-                      <button
-                        key={s.id}
-                        type="button"
-                        onClick={() => { setReservanteId(s.id); setReservanteSearch(''); }}
-                        className="w-full text-left px-3 py-2.5 hover:bg-muted/50 transition-colors"
-                      >
-                        <p className="text-sm font-medium">{s.name}</p>
-                        <p className="text-xs text-muted-foreground">{s.phone}</p>
-                      </button>
-                    ))}
-                  </div>
-                )}
-                {reservanteSearch && filteredStudents.length === 0 && (
-                  <p className="text-xs text-muted-foreground text-center py-2">
-                    Nenhum reservante encontrado. Cadastre-o em Reservantes.
-                  </p>
-                )}
-              </div>
-            )}
-          </div>
-
           {/* Tipo de Reserva */}
           <div className="space-y-2">
             <Label className="text-sm font-semibold">Tipo de Reserva</Label>
@@ -298,8 +245,64 @@ export function ReservationModal({
             </Select>
           </div>
 
+          {/* Reservante */}
+          {reservationType !== 'blocked' && (
+            <div className="space-y-2">
+              <Label className="flex items-center gap-2 text-sm font-semibold">
+                <User className="h-4 w-4 text-primary" /> Reservante
+              </Label>
+              {selectedReservante ? (
+                <div className="flex items-center justify-between p-3 rounded-lg border border-primary/30 bg-primary/5">
+                  <div>
+                    <p className="font-semibold text-sm">{selectedReservante.name}</p>
+                    <p className="text-xs text-muted-foreground">{selectedReservante.phone}</p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => { setReservanteId(''); setReservanteSearch(''); }}
+                    className="text-xs text-destructive hover:underline"
+                  >
+                    Remover
+                  </button>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      placeholder="Buscar reservante..."
+                      value={reservanteSearch}
+                      onChange={e => setReservanteSearch(e.target.value)}
+                      className="pl-9"
+                    />
+                  </div>
+                  {reservanteSearch && filteredStudents.length > 0 && (
+                    <div className="border rounded-lg divide-y shadow-md bg-background">
+                      {filteredStudents.map(s => (
+                        <button
+                          key={s.id}
+                          type="button"
+                          onClick={() => { setReservanteId(s.id); setReservanteSearch(''); }}
+                          className="w-full text-left px-3 py-2.5 hover:bg-muted/50 transition-colors"
+                        >
+                          <p className="text-sm font-medium">{s.name}</p>
+                          <p className="text-xs text-muted-foreground">{s.phone}</p>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                  {reservanteSearch && filteredStudents.length === 0 && (
+                    <p className="text-xs text-muted-foreground text-center py-2">
+                      Nenhum reservante encontrado. Cadastre-o em Reservantes.
+                    </p>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+
           {/* Financeiro */}
-          {reservationType !== 'experimental' && (
+          {reservationType !== 'experimental' && reservationType !== 'blocked' && (
             <div className="p-4 rounded-xl border border-border/60 bg-muted/20 space-y-3">
               <p className="text-sm font-semibold flex items-center gap-2">
                 <DollarSign className="h-4 w-4 text-primary" /> Financeiro
@@ -359,11 +362,13 @@ export function ReservationModal({
 
           {/* Observações */}
           <div className="space-y-2">
-            <Label className="text-sm font-semibold">Observações</Label>
+            <Label className="text-sm font-semibold">
+              {reservationType === 'blocked' ? 'Motivo do Bloqueio' : 'Observações'}
+            </Label>
             <Textarea
               value={notes}
               onChange={e => setNotes(e.target.value)}
-              placeholder="Anotações adicionais..."
+              placeholder={reservationType === 'blocked' ? 'Descreva o motivo do bloqueio (ex: Feriado, Manutenção)...' : 'Anotações adicionais...'}
               rows={2}
             />
           </div>

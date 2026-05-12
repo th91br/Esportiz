@@ -13,9 +13,13 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
+import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import {
   ChevronLeft, ChevronRight, Plus, Calendar, CheckCircle, XCircle,
-  Clock, User, DollarSign, Pencil, Trash2, Globe, MessageCircle, Copy, Send,
+  Clock, User, DollarSign, Pencil, Trash2, Globe, MessageCircle, Copy, Send, Lock,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { formatCurrency } from '@/lib/formatCurrency';
@@ -52,6 +56,7 @@ interface ReservationDetailPanelProps {
 }
 
 function ReservationDetailPanel({ reservation, students, courts, profile, onClose, onEdit, onDelete }: ReservationDetailPanelProps) {
+  const isBlocked = reservation.reservationType === 'blocked';
   const reservante = students.find(s => reservation.reservanteIds.includes(s.id));
   const court = courts.find(c => c.id === reservation.courtId);
   const arenaName = profile?.ct_name || 'Esportiz Arena';
@@ -70,6 +75,17 @@ function ReservationDetailPanel({ reservation, students, courts, profile, onClos
     const paymentStatusLabel = reservation.paymentStatus === 'paid' ? 'Pago ✅' : 'Pendente ⏳';
     const pixDetails = (reservation.paymentStatus === 'pending' && profile?.pix_key) ? 
                        `\n🔑 *Chave Pix:* ${profile.pix_key}${profile.pix_receiver ? `\n👤 *Beneficiário:* ${profile.pix_receiver}` : ''}\n` : '';
+
+    const customTemplate = profile?.niche_settings?.arena?.templates?.booking_confirmation;
+    if (customTemplate) {
+      return customTemplate
+        .replace(/{nome}/g, clientName)
+        .replace(/{escola}/g, arenaName)
+        .replace(/{quadra}/g, courtName)
+        .replace(/{data}/g, dateFormatted)
+        .replace(/{hora}/g, `${reservation.time} (${durationLabel})`)
+        .replace(/{valor}/g, priceLabel);
+    }
 
     return `━━━━━━━━━━━━━━━━━━━━━━━━
 🏆 *COMPROVANTE DE RESERVA* 🏆
@@ -105,30 +121,40 @@ _Agradecemos a preferência. Bom jogo!_ 🎾🔥
   return (
     <div className="fixed inset-y-0 right-0 w-80 bg-background border-l shadow-2xl z-50 flex flex-col animate-in slide-in-from-right duration-300">
       <div className="p-5 border-b flex items-center justify-between">
-        <h3 className="font-display font-bold text-lg">Detalhes da Reserva</h3>
+        <h3 className="font-display font-bold text-lg">
+          {isBlocked ? 'Detalhes do Bloqueio' : 'Detalhes da Reserva'}
+        </h3>
         <Button variant="ghost" size="icon" onClick={onClose}><XCircle className="h-5 w-5" /></Button>
       </div>
       <div className="p-5 space-y-4 flex-1 overflow-y-auto">
         <div className="flex items-center gap-2">
-          <span className={cn(
-            'px-2.5 py-1 rounded-full text-xs font-bold',
-            reservation.status === 'confirmed' ? 'bg-green-100 text-green-700' :
-            reservation.status === 'pending' ? 'bg-yellow-100 text-yellow-700' :
-            'bg-red-100 text-red-700'
-          )}>
-            {reservation.status === 'confirmed' ? '✅ Confirmada' :
-             reservation.status === 'pending' ? '⏳ Pendente' : '❌ Cancelada'}
-          </span>
-          <span className={cn(
-            'px-2.5 py-1 rounded-full text-xs font-bold',
-            reservation.paymentStatus === 'paid' ? 'bg-emerald-100 text-emerald-700' : 'bg-orange-100 text-orange-700'
-          )}>
-            {reservation.paymentStatus === 'paid' ? '💰 Pago' : '⏳ A Receber'}
-          </span>
-          {reservation.online && (
-            <span className="px-2.5 py-1 rounded-full text-xs font-bold bg-indigo-100 text-indigo-700 flex items-center gap-1 shrink-0">
-              <Globe className="h-3 w-3 animate-pulse" /> Web
+          {isBlocked ? (
+            <span className="px-2.5 py-1 rounded-full text-xs font-bold bg-zinc-100 text-zinc-700 dark:bg-zinc-950 dark:text-zinc-300 flex items-center gap-1.5 border border-zinc-200 dark:border-zinc-800">
+              <Lock className="h-3 w-3" /> Bloqueado / Fechado
             </span>
+          ) : (
+            <>
+              <span className={cn(
+                'px-2.5 py-1 rounded-full text-xs font-bold',
+                reservation.status === 'confirmed' ? 'bg-green-100 text-green-700' :
+                reservation.status === 'pending' ? 'bg-yellow-100 text-yellow-700' :
+                'bg-red-100 text-red-700'
+              )}>
+                {reservation.status === 'confirmed' ? '✅ Confirmada' :
+                 reservation.status === 'pending' ? '⏳ Pendente' : '❌ Cancelada'}
+              </span>
+              <span className={cn(
+                'px-2.5 py-1 rounded-full text-xs font-bold',
+                reservation.paymentStatus === 'paid' ? 'bg-emerald-100 text-emerald-700' : 'bg-orange-100 text-orange-700'
+              )}>
+                {reservation.paymentStatus === 'paid' ? '💰 Pago' : '⏳ A Receber'}
+              </span>
+              {reservation.online && (
+                <span className="px-2.5 py-1 rounded-full text-xs font-bold bg-indigo-100 text-indigo-700 flex items-center gap-1 shrink-0">
+                  <Globe className="h-3 w-3 animate-pulse" /> Web
+                </span>
+              )}
+            </>
           )}
         </div>
 
@@ -143,7 +169,7 @@ _Agradecemos a preferência. Bom jogo!_ 🎾🔥
             </div>
           </div>
 
-          {reservante && (
+          {!isBlocked && reservante && (
             <div className="flex items-center gap-3 p-3 rounded-xl bg-muted/40">
               <User className="h-4 w-4 text-primary shrink-0" />
               <div>
@@ -154,7 +180,7 @@ _Agradecemos a preferência. Bom jogo!_ 🎾🔥
             </div>
           )}
 
-          {reservation.finalPrice > 0 && (
+          {!isBlocked && reservation.finalPrice > 0 && (
             <div className="flex items-center gap-3 p-3 rounded-xl bg-primary/5 border border-primary/10">
               <DollarSign className="h-4 w-4 text-primary shrink-0" />
               <div>
@@ -170,35 +196,39 @@ _Agradecemos a preferência. Bom jogo!_ 🎾🔥
 
           {reservation.notes && (
             <div className="p-3 rounded-xl bg-muted/40">
-              <p className="text-xs text-muted-foreground mb-1">Observações</p>
+              <p className="text-xs text-muted-foreground mb-1">
+                {isBlocked ? 'Motivo do Bloqueio' : 'Observações'}
+              </p>
               <p className="text-sm">{reservation.notes}</p>
             </div>
           )}
 
           {/* Comprovante WhatsApp */}
-          <div className="p-4 border border-border/50 bg-muted/10 rounded-xl space-y-3">
-            <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
-              <MessageCircle className="h-4 w-4 text-emerald-500 shrink-0" /> Comprovante de Reserva
-            </p>
-            <div className="flex gap-2">
-              <Button 
-                variant="outline" 
-                size="sm"
-                className="flex-1 text-xs gap-1.5 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 hover:text-emerald-700 border-emerald-500/20 font-bold transition-all"
-                onClick={handleShareWhatsApp}
-              >
-                <Send className="h-3.5 w-3.5 shrink-0" /> Enviar
-              </Button>
-              <Button 
-                variant="outline" 
-                size="sm"
-                className="flex-1 text-xs gap-1.5 font-bold transition-all"
-                onClick={handleCopyVoucher}
-              >
-                <Copy className="h-3.5 w-3.5 shrink-0" /> Copiar
-              </Button>
+          {!isBlocked && (
+            <div className="p-4 border border-border/50 bg-muted/10 rounded-xl space-y-3">
+              <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
+                <MessageCircle className="h-4 w-4 text-emerald-500 shrink-0" /> Comprovante de Reserva
+              </p>
+              <div className="flex gap-2">
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  className="flex-1 text-xs gap-1.5 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 hover:text-emerald-700 border-emerald-500/20 font-bold transition-all"
+                  onClick={handleShareWhatsApp}
+                >
+                  <Send className="h-3.5 w-3.5 shrink-0" /> Enviar
+                </Button>
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  className="flex-1 text-xs gap-1.5 font-bold transition-all"
+                  onClick={handleCopyVoucher}
+                >
+                  <Copy className="h-3.5 w-3.5 shrink-0" /> Copiar
+                </Button>
+              </div>
             </div>
-          </div>
+          )}
         </div>
       </div>
       <div className="p-5 border-t flex gap-2">
@@ -210,7 +240,7 @@ _Agradecemos a preferência. Bom jogo!_ 🎾🔥
           className="flex-1 gap-1 text-sm text-destructive hover:text-destructive"
           onClick={onDelete}
         >
-          <Trash2 className="h-3.5 w-3.5" /> Cancelar
+          <Trash2 className="h-3.5 w-3.5" /> {isBlocked ? 'Desbloquear' : 'Cancelar'}
         </Button>
       </div>
     </div>
@@ -221,7 +251,7 @@ export default function ArenaAgendaPage() {
   const { user } = useAuth();
   const { courts } = useCourts();
   const { profile } = useProfile();
-  const { reservations, deleteReservation, updateReservation } = useReservations();
+  const { reservations, deleteReservation, updateReservation, addReservation } = useReservations();
   const { students } = useStudents();
 
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
@@ -234,11 +264,67 @@ export default function ArenaAgendaPage() {
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [pendingPaymentsOpen, setPendingPaymentsOpen] = useState(false);
 
+  // States for block entire day feature
+  const [blockDayOpen, setBlockDayOpen] = useState(false);
+  const [blockDayCourtId, setBlockDayCourtId] = useState<string>('all');
+  const [blockDayReason, setBlockDayReason] = useState<string>('');
+  const [blockingDay, setBlockingDay] = useState(false);
+
+  const handleBlockDay = async () => {
+    if (!blockDayReason.trim()) {
+      return toast.error('Informe o motivo do bloqueio (ex: Feriado).');
+    }
+
+    setBlockingDay(true);
+    try {
+      const courtsToBlock = blockDayCourtId === 'all' ? activeCourts : activeCourts.filter(c => c.id === blockDayCourtId);
+      
+      if (courtsToBlock.length === 0) {
+        return toast.error('Nenhuma quadra ativa disponível para bloqueio.');
+      }
+
+      for (const court of courtsToBlock) {
+        await addReservation({
+          date: selectedDate,
+          time: '07:00',
+          courtId: court.id,
+          durationMinutes: 960, // 16h total coverage
+          notes: blockDayReason,
+          meta: {
+            price: 0,
+            discount: 0,
+            finalPrice: 0,
+            reservationType: 'blocked',
+            paymentMethod: 'pix',
+            paymentStatus: 'paid',
+            status: 'confirmed',
+          },
+          reservanteIds: [],
+        });
+      }
+
+      toast.success(blockDayCourtId === 'all' ? 'Todas as quadras foram bloqueadas para este dia!' : 'A quadra selecionada foi bloqueada para este dia!');
+      setBlockDayOpen(false);
+      setBlockDayReason('');
+    } catch (err) {
+      console.error(err);
+      toast.error('Erro ao bloquear o dia.');
+    } finally {
+      setBlockingDay(false);
+    }
+  };
+
   const pendingReservations = useMemo(() => 
     reservations.filter(r => r.paymentStatus === 'pending' && r.status !== 'cancelled'),
     [reservations]
   );
   const pendingCount = pendingReservations.length;
+
+  const deleteTargetIsBlocked = useMemo(() => {
+    if (!deleteId) return false;
+    const res = reservations.find(r => r.id === deleteId);
+    return res?.reservationType === 'blocked';
+  }, [deleteId, reservations]);
 
   const activeCourts = courts.filter(c => c.isActive);
   const displayedCourts = courtFilter === 'all' ? activeCourts : activeCourts.filter(c => c.id === courtFilter);
@@ -247,6 +333,33 @@ export default function ArenaAgendaPage() {
     reservations.filter(r => r.date === selectedDate && r.status !== 'cancelled'),
     [reservations, selectedDate]
   );
+
+  const reservationsBySlot = useMemo(() => {
+    const map = new Map<string, Reservation>();
+    todayReservations.forEach(r => {
+      const startH = parseInt(r.time.split(':')[0]);
+      const startM = parseInt(r.time.split(':')[1]);
+      const duration = r.durationMinutes || 60;
+      
+      // Calculate which hours this reservation overlaps
+      for (let hour = 0; hour < 24; hour++) {
+        const slotStart = hour * 60;
+        const slotEnd = slotStart + 60;
+        const endTotalMin = startH * 60 + startM + duration;
+        
+        if (startH * 60 + startM < slotEnd && endTotalMin > slotStart) {
+          map.set(`${r.courtId}_${hour}`, r);
+        }
+      }
+    });
+    return map;
+  }, [todayReservations]);
+
+  const studentMap = useMemo(() => {
+    const map = new Map<string, any>();
+    students.forEach(s => map.set(s.id, s));
+    return map;
+  }, [students]);
 
   const navigateDate = (delta: number) => {
     const d = new Date(selectedDate + 'T12:00:00');
@@ -305,15 +418,19 @@ export default function ArenaAgendaPage() {
     const pixDetails = profile?.pix_key ? 
                        `\n🔑 *Chave Pix:* ${profile.pix_key}${profile.pix_receiver ? `\n👤 *Beneficiário:* ${profile.pix_receiver}` : ''}` : '';
 
-    const text = `Olá, ${reservante?.name || 'Cliente'}! Tudo bem? 
-
-Passando para lembrar do acerto do seu horário reservado na *${arenaName}*:
-🏟 *Quadra:* ${court?.name || 'Quadra Principal'}
-📅 *Data:* ${dateFormatted} às ${r.time}
-💰 *Valor:* ${formatCurrency(r.finalPrice)}
-${pixDetails}
-
-Se preferir, você pode efetuar o pagamento via Pix. Muito obrigado! 🎾🔥`;
+    const customTemplate = profile?.niche_settings?.arena?.templates?.payment_reminder;
+    let text = '';
+    
+    if (customTemplate) {
+      text = customTemplate
+        .replace(/{nome}/g, reservante?.name || 'Cliente')
+        .replace(/{escola}/g, arenaName)
+        .replace(/{valor}/g, formatCurrency(r.finalPrice))
+        .replace(/{chave_pix}/g, profile?.pix_key || '')
+        .replace(/{beneficiario_pix}/g, profile?.pix_receiver || '');
+    } else {
+      text = `Olá, ${reservante?.name || 'Cliente'}! Tudo bem? \n\nPassando para lembrar do acerto do seu horário reservado na *${arenaName}*:\n🏟 *Quadra:* ${court?.name || 'Quadra Principal'}\n📅 *Data:* ${dateFormatted} às ${r.time}\n💰 *Valor:* ${formatCurrency(r.finalPrice)}\n${pixDetails}\n\nSe preferir, você pode efetuar o pagamento via Pix. Muito obrigado! 🎾🔥`;
+    }
 
     const cleanPhone = reservante?.phone ? reservante.phone.replace(/\D/g, '') : '';
     const waPhone = cleanPhone.length >= 10 && !cleanPhone.startsWith('55') ? `55${cleanPhone}` : cleanPhone;
@@ -351,6 +468,13 @@ Se preferir, você pode efetuar o pagamento via Pix. Muito obrigado! 🎾🔥`;
                   {pendingCount}
                 </span>
               )}
+            </Button>
+            <Button
+              variant="outline"
+              className="gap-2 border-zinc-500/20 text-zinc-700 bg-zinc-500/5 hover:bg-zinc-500/10 dark:text-zinc-300 dark:bg-zinc-500/10 w-full sm:w-auto shrink-0 font-semibold"
+              onClick={() => setBlockDayOpen(true)}
+            >
+              <Lock className="h-4 w-4 text-zinc-500" /> Bloquear Dia
             </Button>
             <Button
               className="btn-primary-gradient gap-2 w-full sm:w-auto shrink-0"
@@ -467,12 +591,10 @@ Se preferir, você pode efetuar o pagamento via Pix. Muito obrigado! 🎾🔥`;
 
                 {/* Court cells */}
                 {displayedCourts.map(court => {
-                  const reservation = todayReservations.find(r =>
-                    r.courtId === court.id && isReservationInSlot(r, hour)
-                  );
+                  const reservation = reservationsBySlot.get(`${court.id}_${hour}`);
                   const isStart = reservation && isReservationStartingInSlot(reservation, hour);
-                  const reservante = reservation
-                    ? students.find(s => reservation.reservanteIds.includes(s.id))
+                  const reservante = reservation && reservation.reservanteIds && reservation.reservanteIds.length > 0
+                    ? studentMap.get(reservation.reservanteIds[0])
                     : null;
 
                   return (
@@ -482,20 +604,38 @@ Se preferir, você pode efetuar o pagamento via Pix. Muito obrigado! 🎾🔥`;
                           className={cn(
                             'w-full h-full min-h-[56px] p-2 text-left transition-all hover:opacity-90 flex flex-col justify-center',
                             isStart ? 'rounded-t-lg' : '',
-                            reservation.paymentStatus === 'paid' ? 'bg-emerald-500/20 border-l-2 border-emerald-500' : 'bg-primary/20 border-l-2 border-primary'
+                            reservation.reservationType === 'blocked'
+                              ? 'bg-zinc-100 dark:bg-zinc-900/40 border-l-2 border-zinc-400/60 text-zinc-500 dark:text-zinc-400 [background-image:repeating-linear-gradient(45deg,transparent,transparent_8px,rgba(0,0,0,0.03)_8px,rgba(0,0,0,0.03)_16px)] dark:[background-image:repeating-linear-gradient(45deg,transparent,transparent_8px,rgba(255,255,255,0.015)_8px,rgba(255,255,255,0.015)_16px)]'
+                              : reservation.paymentStatus === 'paid'
+                                ? 'bg-emerald-500/20 border-l-2 border-emerald-500'
+                                : 'bg-primary/20 border-l-2 border-primary'
                           )}
                           onClick={() => setSelectedReservation(reservation)}
                         >
                           {isStart && (
-                            <>
-                              <p className="text-xs font-bold truncate flex items-center gap-1" style={{ color: court.color }}>
-                                {reservation.online && <Globe className="h-3.5 w-3.5 shrink-0 text-primary animate-pulse" />}
-                                {reservante?.name || 'Reservado'}
-                              </p>
-                              <p className="text-[10px] text-muted-foreground">
-                                {reservation.time} · {reservation.durationMinutes / 60}h · {formatCurrency(reservation.finalPrice)}
-                              </p>
-                            </>
+                            reservation.reservationType === 'blocked' ? (
+                              <>
+                                <p className="text-xs font-bold truncate flex items-center gap-1.5 text-zinc-600 dark:text-zinc-300">
+                                  <Lock className="h-3.5 w-3.5 shrink-0" />
+                                  Bloqueado
+                                </p>
+                                {reservation.notes && (
+                                  <p className="text-[10px] text-muted-foreground truncate font-medium">
+                                    {reservation.notes}
+                                  </p>
+                                )}
+                              </>
+                            ) : (
+                              <>
+                                <p className="text-xs font-bold truncate flex items-center gap-1" style={{ color: court.color }}>
+                                  {reservation.online && <Globe className="h-3.5 w-3.5 shrink-0 text-primary animate-pulse" />}
+                                  {reservante?.name || 'Reservado'}
+                                </p>
+                                <p className="text-[10px] text-muted-foreground">
+                                  {reservation.time} · {reservation.durationMinutes / 60}h · {formatCurrency(reservation.finalPrice)}
+                                </p>
+                              </>
+                            )
                           )}
                           {!isStart && (
                             <div className="h-full w-2 rounded-sm mx-auto opacity-30" style={{ backgroundColor: court.color }} />
@@ -649,22 +789,85 @@ Se preferir, você pode efetuar o pagamento via Pix. Muito obrigado! 🎾🔥`;
       <AlertDialog open={!!deleteId} onOpenChange={o => !o && setDeleteId(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Cancelar reserva?</AlertDialogTitle>
+            <AlertDialogTitle>
+              {deleteTargetIsBlocked ? 'Desbloquear horário?' : 'Cancelar reserva?'}
+            </AlertDialogTitle>
             <AlertDialogDescription>
-              A reserva será removida e o horário ficará disponível novamente.
+              {deleteTargetIsBlocked
+                ? 'O bloqueio será removido e a quadra ficará disponível para reservas novamente.'
+                : 'A reserva será removida e o horário ficará disponível novamente.'}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Voltar</AlertDialogCancel>
             <AlertDialogAction
-              className="bg-destructive text-destructive-foreground"
+              className="bg-destructive text-destructive-foreground font-semibold"
               onClick={() => { deleteReservation(deleteId!); setDeleteId(null); }}
             >
-              Cancelar Reserva
+              {deleteTargetIsBlocked ? 'Desbloquear' : 'Cancelar Reserva'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Block Day Dialog */}
+      <Dialog open={blockDayOpen} onOpenChange={setBlockDayOpen}>
+        <DialogContent className="sm:max-w-md bg-background border shadow-2xl p-6">
+          <DialogHeader>
+            <DialogTitle className="font-display text-xl font-bold flex items-center gap-2 text-foreground">
+              <Lock className="h-5 w-5 text-zinc-500" /> Bloquear Funcionamento
+            </DialogTitle>
+            <DialogDescription className="text-sm text-muted-foreground mt-1">
+              Feche as quadras para feriados, manutenções ou folgas gerais neste dia.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-3">
+            <div className="space-y-2">
+              <Label htmlFor="block-court" className="text-sm font-semibold">Quadra a ser Bloqueada</Label>
+              <Select value={blockDayCourtId} onValueChange={setBlockDayCourtId}>
+                <SelectTrigger id="block-court">
+                  <SelectValue placeholder="Selecione a quadra" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">🌐 Todas as Quadras Ativas</SelectItem>
+                  {activeCourts.map(c => (
+                    <SelectItem key={c.id} value={c.id}>
+                      <div className="flex items-center gap-2">
+                        <span className="h-2.5 w-2.5 rounded-full shrink-0" style={{ backgroundColor: c.color }} />
+                        {c.name}
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="block-reason" className="text-sm font-semibold">Motivo do Fechamento *</Label>
+              <Input
+                id="block-reason"
+                placeholder="Ex: Feriado, Manutenção da rede, Natal..."
+                value={blockDayReason}
+                onChange={e => setBlockDayReason(e.target.value)}
+              />
+            </div>
+          </div>
+
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button variant="outline" className="flex-1" onClick={() => setBlockDayOpen(false)}>
+              Cancelar
+            </Button>
+            <Button className="flex-1 btn-primary-gradient font-bold" onClick={handleBlockDay} disabled={blockingDay}>
+              {blockingDay ? (
+                <div className="h-4 w-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+              ) : (
+                'Confirmar Bloqueio'
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

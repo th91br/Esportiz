@@ -79,35 +79,18 @@ export function useSales() {
       const total = sale.quantity * sale.unitPrice;
       const businessType = profile?.business_type || 'sport_school';
       
-      // 1. Insert sale record
-      const { error } = await supabase.from('sales').insert({
-        user_id: user.id,
-        business_type: businessType,
-        product_id: sale.productId || null,
-        product_name: sale.productName,
-        quantity: sale.quantity,
-        unit_price: sale.unitPrice,
-        total,
-        payment_method: sale.paymentMethod || 'dinheiro',
+      // 1. Insert sale and automatically decrement stock atomically via RPC
+      const { error } = await supabase.rpc('process_sale', {
+        p_user_id: user.id,
+        p_business_type: businessType,
+        p_product_id: sale.productId || null,
+        p_product_name: sale.productName,
+        p_quantity: sale.quantity,
+        p_unit_price: sale.unitPrice,
+        p_total: total,
+        p_payment_method: sale.paymentMethod || 'dinheiro'
       });
       if (error) throw error;
-
-      // 2. Decrement stock for tracked products
-      if (sale.productId) {
-        const { data: prod, error: prodErr } = await supabase
-          .from('products')
-          .select('track_stock, stock_quantity')
-          .eq('id', sale.productId)
-          .maybeSingle();
-
-        if (!prodErr && prod && prod.track_stock) {
-          const newQty = Math.max(0, Number(prod.stock_quantity || 0) - Number(sale.quantity));
-          await supabase
-            .from('products')
-            .update({ stock_quantity: newQty })
-            .eq('id', sale.productId);
-        }
-      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['sales', user?.id] });
@@ -121,37 +104,10 @@ export function useSales() {
     mutationFn: async (id: string) => {
       if (!user?.id) throw new Error('Not authenticated');
       
-      // 1. Fetch sale details to know the product and quantity
-      const { data: sale, error: saleErr } = await supabase
-        .from('sales')
-        .select('product_id, quantity')
-        .eq('id', id)
-        .eq('user_id', user.id)
-        .maybeSingle();
-
-      if (!saleErr && sale && sale.product_id) {
-        // 2. Fetch product info to check if stock is tracked
-        const { data: prod, error: prodErr } = await supabase
-          .from('products')
-          .select('track_stock, stock_quantity')
-          .eq('id', sale.product_id)
-          .maybeSingle();
-
-        if (!prodErr && prod && prod.track_stock) {
-          const newQty = Number(prod.stock_quantity || 0) + Number(sale.quantity);
-          await supabase
-            .from('products')
-            .update({ stock_quantity: newQty })
-            .eq('id', sale.product_id);
-        }
-      }
-
-      // 3. Delete sale record
-      const { error } = await supabase
-        .from('sales')
-        .delete()
-        .eq('id', id)
-        .eq('user_id', user.id);
+      const { error } = await supabase.rpc('delete_sale_and_restore_stock', {
+        p_sale_id: id,
+        p_user_id: user.id
+      });
       if (error) throw error;
     },
     onSuccess: () => {

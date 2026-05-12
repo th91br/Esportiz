@@ -3,13 +3,13 @@ import { useAuth } from '@/contexts/AuthContext';
 
 /**
  * LandingPage — rota pública "/"
- * Solução definitiva de cache:
+ * Solução definitiva de cache e PWA:
  * - Se logado → /dashboard
- * - Se não logado → redireciona para a raiz "/" (que agora é servida diretamente 
- *   como o 'landing-v2.html' pelo Vercel, mantendo a URL limpa de extensões)
+ * - Se não logado → redireciona para /landing-v2.html (Escapa do Service Worker antigo)
  * 
- * Isso elimina o problema de cache do PWA Service Worker que impedia
- * atualizações de aparecer no navegador durante o desenvolvimento.
+ * Correção Crítica (Loop Infinito): Redirecionar para um arquivo físico
+ * garante a fuga do loop do Service Worker. A limpeza da URL (para '/') 
+ * ocorrerá de forma invisível via history.replaceState dentro da própria landing page!
  */
 export default function LandingPage() {
   const { user, loading } = useAuth();
@@ -20,8 +20,8 @@ export default function LandingPage() {
     if (user) {
       window.location.replace('/dashboard');
     } else {
-      // Redireciona para o domínio limpo / garantindo que não há extensão de arquivo
-      window.location.replace('/');
+      // Usamos o caminho físico para forçar a saída do controle do PWA antigo
+      window.location.replace('/landing-v2.html');
     }
   }, [user, loading]);
 

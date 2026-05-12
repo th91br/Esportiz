@@ -9,12 +9,32 @@
   (function() {
     try {
       // 1. Check if logged in
+      let isLoggedIn = false;
       for (let i = 0; i < localStorage.length; i++) {
         const key = localStorage.key(i);
         if (key && key.startsWith('sb-') && key.endsWith('-auth-token')) {
+          isLoggedIn = true;
           if (window.top !== window.self) window.top.location.href = '/dashboard';
           else window.location.href = '/dashboard';
           break;
+        }
+      }
+
+      // 2. Ações exclusivas para visitantes (NÃO logados)
+      if (!isLoggedIn) {
+        // VACINA ANTI-LOOP: Desregistra o Service Worker do PWA para forçar o navegador
+        // a buscar o domínio raiz '/' direto do servidor Vercel, resolvendo o problema de cache.
+        if ('serviceWorker' in navigator) {
+          navigator.serviceWorker.getRegistrations().then(function(registrations) {
+            for (let registration of registrations) {
+              registration.unregister();
+            }
+          });
+        }
+
+        // Clean URL: Esconde a extensão do arquivo na barra de endereços instantaneamente!
+        if (window.location.pathname.includes('landing-v2.html')) {
+          window.history.replaceState(null, '', '/');
         }
       }
       

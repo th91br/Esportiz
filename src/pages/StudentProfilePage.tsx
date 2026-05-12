@@ -21,6 +21,7 @@ import { formatCurrency } from '@/lib/formatCurrency';
 import { cn } from '@/lib/utils';
 import { getDayName } from '@/data/mockData';
 import { useBusinessContext } from '@/hooks/useBusinessContext';
+import { getLocalTodayDate } from '@/lib/dateUtils';
 
 export default function StudentProfilePage() {
   const { id } = useParams();
@@ -48,7 +49,7 @@ export default function StudentProfilePage() {
   const studentPayments = payments.filter(p => p.studentId === student?.id).sort((a, b) => b.monthRef.localeCompare(a.monthRef));
   
   // Trainings & Attendance Logic
-  const today = new Date().toISOString().split('T')[0];
+  const today = getLocalTodayDate();
   const studentTrainings = trainings
     .filter(t => t.studentIds.includes(student?.id || '') && t.date <= today)
     .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());

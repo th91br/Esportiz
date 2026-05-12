@@ -5,8 +5,8 @@ import { useAuth } from '@/contexts/AuthContext';
  * LandingPage — rota pública "/"
  * Solução definitiva de cache:
  * - Se logado → /dashboard
- * - Se não logado → redireciona para /landing-v2.html (fora do React bundle,
- *   portanto fora do controle do Service Worker de desenvolvimento)
+ * - Se não logado → redireciona para a raiz "/" (que agora é servida diretamente 
+ *   como o 'landing-v2.html' pelo Vercel, mantendo a URL limpa de extensões)
  * 
  * Isso elimina o problema de cache do PWA Service Worker que impedia
  * atualizações de aparecer no navegador durante o desenvolvimento.
@@ -20,9 +20,8 @@ export default function LandingPage() {
     if (user) {
       window.location.replace('/dashboard');
     } else {
-      // Redireciona para a landing page estática totalmente fora do React
-      // garantindo que não há interferência do Service Worker
-      window.location.replace('/landing-v2.html');
+      // Redireciona para o domínio limpo / garantindo que não há extensão de arquivo
+      window.location.replace('/');
     }
   }, [user, loading]);
 

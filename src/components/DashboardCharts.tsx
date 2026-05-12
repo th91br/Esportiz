@@ -3,6 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import type { Payment, Attendance } from '@/data/mockData';
 import { useTheme } from 'next-themes';
 import { formatCurrency } from '@/lib/formatCurrency';
+import { toLocalDateString } from '@/lib/dateUtils';
 
 interface DashboardChartsProps {
     payments: Payment[];
@@ -75,7 +76,7 @@ export function DashboardCharts({
     const last7Days = Array.from({ length: 7 }).map((_, i) => {
         const d = new Date();
         d.setDate(d.getDate() - (6 - i));
-        return d.toISOString().split('T')[0];
+        return toLocalDateString(d);
     });
 
     const secondChartData = last7Days.map(date => {

@@ -18,6 +18,7 @@ import type { Student } from '@/data/mockData';
 import { formatCurrency } from '@/lib/formatCurrency';
 import { supabase } from '@/integrations/supabase/client';
 import { useModalities } from '@/hooks/queries/useModalities';
+import { getLocalTodayDate } from '@/lib/dateUtils';
 
 interface StudentCardProps {
   student: Student;
@@ -48,7 +49,7 @@ export function StudentCard({ student, onClick }: StudentCardProps) {
   const plan = student.planId ? plans.find((p) => p.id === student.planId) : undefined;
   const studentGroups = groups.filter(g => student.groupIds?.includes(g.id));
 
-  const today = new Date().toISOString().split('T')[0];
+  const today = getLocalTodayDate();
 
   // Find first training for this student (experimental or not)
   const firstTraining = trainings

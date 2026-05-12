@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Header } from '@/components/Header';
+import { getLocalTodayDate, toLocalDateString } from '@/lib/dateUtils';
 import { StatCard } from '@/components/StatCard';
 import { Button } from '@/components/ui/button';
 import { useCourts, type Court, SPORT_LABELS, type CourtMetadata } from '@/hooks/queries/useCourts';
@@ -286,7 +287,7 @@ function CourtFormDialog({ open, onOpenChange, court }: CourtFormProps) {
 
 function CourtStatusBadge({ court, reservations }: { court: Court; reservations: any[] }) {
   const now = new Date();
-  const todayStr = now.toISOString().split('T')[0];
+  const todayStr = toLocalDateString(now);
   const currentTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
 
   const isOccupied = reservations.some(r => {
@@ -317,9 +318,9 @@ export default function CourtsPage() {
   const [selectedCourtForReservation, setSelectedCourtForReservation] = useState<string | undefined>();
   const [deleteId, setDeleteId] = useState<string | null>(null);
 
-  const todayStr = new Date().toISOString().split('T')[0];
+  const todayStr = getLocalTodayDate();
   const currentTime = `${String(new Date().getHours()).padStart(2, '0')}:${String(new Date().getMinutes()).padStart(2, '0')}`;
-  const currentMonthStr = new Date().toISOString().slice(0, 7);
+  const currentMonthStr = getLocalTodayDate().slice(0, 7);
 
   const activeCourts = courts.filter(c => c.isActive);
 

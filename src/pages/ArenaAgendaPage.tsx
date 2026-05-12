@@ -23,6 +23,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { formatCurrency } from '@/lib/formatCurrency';
+import { getLocalTodayDate, toLocalDateString } from '@/lib/dateUtils';
 import { PAYMENT_METHOD_LABELS } from '@/hooks/queries/useReservations';
 
 const HOURS = Array.from({ length: 16 }, (_, i) => i + 7); // 7 → 22
@@ -254,7 +255,7 @@ export default function ArenaAgendaPage() {
   const { reservations, deleteReservation, updateReservation, addReservation } = useReservations();
   const { students } = useStudents();
 
-  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
+  const [selectedDate, setSelectedDate] = useState(getLocalTodayDate());
   const [courtFilter, setCourtFilter] = useState<string>('all');
   const [reservationModalOpen, setReservationModalOpen] = useState(false);
   const [editingReservationId, setEditingReservationId] = useState<string | undefined>();
@@ -364,10 +365,10 @@ export default function ArenaAgendaPage() {
   const navigateDate = (delta: number) => {
     const d = new Date(selectedDate + 'T12:00:00');
     d.setDate(d.getDate() + delta);
-    setSelectedDate(d.toISOString().split('T')[0]);
+    setSelectedDate(toLocalDateString(d));
   };
 
-  const isToday = selectedDate === new Date().toISOString().split('T')[0];
+  const isToday = selectedDate === getLocalTodayDate();
 
   const openNewReservation = (courtId: string, hour: number) => {
     setEditingReservationId(undefined);
@@ -500,7 +501,7 @@ export default function ArenaAgendaPage() {
               <ChevronRight className="h-4 w-4" />
             </Button>
             {!isToday && (
-              <Button variant="ghost" size="sm" className="text-xs h-8" onClick={() => setSelectedDate(new Date().toISOString().split('T')[0])}>
+              <Button variant="ghost" size="sm" className="text-xs h-8" onClick={() => setSelectedDate(getLocalTodayDate())}>
                 Hoje
               </Button>
             )}

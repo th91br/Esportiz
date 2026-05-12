@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { useProfile } from '@/hooks/queries/useProfile';
+import { getLocalTodayDate } from '@/lib/dateUtils';
 
 export interface Expense {
   id: string;
@@ -75,7 +76,7 @@ export function useExpenses() {
         description: expense.description,
         amount: expense.amount,
         category: expense.category || 'geral',
-        date: expense.date || new Date().toISOString().split('T')[0],
+        date: expense.date || getLocalTodayDate(),
         recurrence: expense.recurrence || 'none',
         notes: expense.notes || null,
       });

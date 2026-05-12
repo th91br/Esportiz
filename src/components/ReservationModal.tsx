@@ -12,6 +12,7 @@ import { useReservations, type ReservationMeta, PAYMENT_METHOD_LABELS, RESERVATI
 import { toast } from 'sonner';
 import { CalendarDays, Clock, User, DollarSign, Search } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { getLocalTodayDate } from '@/lib/dateUtils';
 
 const DURATION_OPTIONS = [
   { value: 60, label: '1h' },
@@ -45,7 +46,7 @@ export function ReservationModal({
   const isEditing = !!reservationId;
   const existing = reservations.find(r => r.id === reservationId);
 
-  const today = new Date().toISOString().split('T')[0];
+  const today = getLocalTodayDate();
 
   const [courtId, setCourtId] = useState(prefilledCourtId || '');
   const [date, setDate] = useState(prefilledDate || today);

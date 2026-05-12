@@ -13,6 +13,7 @@ import {
 } from '@/data/mockData';
 import { useTrainings } from '@/hooks/queries/useTrainings';
 import { useStudents } from '@/hooks/queries/useStudents';
+import { getLocalTodayDate } from '@/lib/dateUtils';
 
 const periodIcons = {
   manhã: Sun,
@@ -31,7 +32,7 @@ export function WeeklyCalendar() {
   const { students } = useStudents();
   const [weekOffset, setWeekOffset] = useState(0);
   const weekDates = useMemo(() => getWeekDatesArray(weekOffset), [weekOffset]);
-  const today = new Date().toISOString().split('T')[0];
+  const today = getLocalTodayDate();
 
   const weekStart = weekDates[0];
   const weekStartDate = new Date(weekStart + 'T12:00:00');

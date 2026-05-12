@@ -1,3 +1,5 @@
+import { getLocalTodayDate } from '@/lib/dateUtils';
+
 export function exportToCSV(data: any[], filename: string) {
   if (!data || !data.length) {
     console.error('No data to export');
@@ -41,7 +43,7 @@ export function exportToCSV(data: any[], filename: string) {
   const url = URL.createObjectURL(blob);
   
   link.setAttribute('href', url);
-  link.setAttribute('download', `${filename}_${new Date().toISOString().split('T')[0]}.csv`);
+  link.setAttribute('download', `${filename}_${getLocalTodayDate()}.csv`);
   link.style.visibility = 'hidden';
   
   document.body.appendChild(link);

@@ -49,6 +49,7 @@ import {
   Repeat,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { getLocalTodayDate } from '@/lib/dateUtils';
 import { useBusinessContext } from '@/hooks/useBusinessContext';
 
 const DEFAULT_EXPENSE_CATEGORIES = [
@@ -118,7 +119,7 @@ export default function ExpensesPage() {
   const [formDescription, setFormDescription] = useState('');
   const [formAmount, setFormAmount] = useState('');
   const [formCategory, setFormCategory] = useState('Geral');
-  const [formDate, setFormDate] = useState(new Date().toISOString().split('T')[0]);
+  const [formDate, setFormDate] = useState(getLocalTodayDate());
   const [formRecurrence, setFormRecurrence] = useState('none');
   const [formNotes, setFormNotes] = useState('');
 
@@ -142,7 +143,7 @@ export default function ExpensesPage() {
     setFormDescription('');
     setFormAmount('');
     setFormCategory('Geral');
-    setFormDate(new Date().toISOString().split('T')[0]);
+    setFormDate(getLocalTodayDate());
     setFormRecurrence('none');
     setFormNotes('');
     setEditingExpense(null);

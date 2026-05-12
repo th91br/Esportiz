@@ -1,6 +1,14 @@
 {
   "rewrites": [
     {
+      "source": "/",
+      "destination": "/landing-v2.html"
+    },
+    {
+      "source": "/landing-v2.html",
+      "destination": "/landing-v2.html"
+    },
+    {
       "source": "/(.*)",
       "destination": "/index.html"
     }

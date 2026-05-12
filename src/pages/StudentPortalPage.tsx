@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { formatCurrency } from '@/lib/formatCurrency';
 import { cn } from '@/lib/utils';
+import { getLocalTodayDate } from '@/lib/dateUtils';
 
 interface AttendanceLog {
   date: string;
@@ -394,7 +395,7 @@ export default function StudentPortalPage() {
                 <div className="space-y-2.5 max-h-[350px] overflow-y-auto pr-1">
                   {payments.map((p) => {
                     const isPartial = !p.paid && p.paid_amount > 0;
-                    const isOverdue = !p.paid && p.due_date < new Date().toISOString().split('T')[0];
+                    const isOverdue = !p.paid && p.due_date < getLocalTodayDate();
                     const remainingToPay = p.amount - (p.paid_amount || 0);
 
                     return (

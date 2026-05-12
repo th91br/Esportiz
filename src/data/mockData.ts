@@ -1,4 +1,5 @@
 // Types only - no more mock data
+import { toLocalDateString } from '@/lib/dateUtils';
 
 export interface Plan {
   id: string;
@@ -118,7 +119,7 @@ export const getWeekDatesArray = (weekOffset = 0) => {
   for (let i = 0; i < 7; i++) {
     const date = new Date(monday);
     date.setDate(monday.getDate() + i);
-    dates.push(date.toISOString().split('T')[0]);
+    dates.push(toLocalDateString(date));
   }
   return dates;
 };

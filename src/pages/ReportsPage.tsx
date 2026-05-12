@@ -17,6 +17,7 @@ import { formatCurrency } from '@/lib/formatCurrency';
 import { cn } from '@/lib/utils';
 import { getActiveMonthlyStudents } from '@/lib/studentHelpers';
 import { useBusinessContext } from '@/hooks/useBusinessContext';
+import { getLocalTodayDate, toLocalDateString } from '@/lib/dateUtils';
 import {
   BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell, Legend
@@ -213,7 +214,7 @@ export default function ReportsPage() {
   let receivedRevenue = 0;
   let overdueRevenue = 0;
   
-  const todayDateStr = new Date().toISOString().split('T')[0];
+  const todayDateStr = getLocalTodayDate();
 
   // 1. Mensalidades / Planos (Comum a todos, se houver)
   filteredPayments.forEach(p => {
@@ -272,7 +273,7 @@ export default function ReportsPage() {
         days.push(new Date(d));
       }
       return days.map(d => {
-        const dateStr = d.toISOString().split('T')[0];
+        const dateStr = toLocalDateString(d);
         const attInDay = attendance.filter(a => a.date === dateStr);
         const p = attInDay.filter(a => a.present).length;
         const f = attInDay.filter(a => !a.present).length;
@@ -356,7 +357,7 @@ export default function ReportsPage() {
         days.push(new Date(d));
       }
       return days.map(d => {
-        const dateStr = d.toISOString().split('T')[0];
+        const dateStr = toLocalDateString(d);
         
         // 1. Pagamentos
         let expected = payments

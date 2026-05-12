@@ -12,6 +12,7 @@ import { usePlans } from '@/hooks/queries/usePlans';
 import { useBusinessContext } from '@/hooks/useBusinessContext';
 import { useProfile } from '@/hooks/queries/useProfile';
 import { toast } from 'sonner';
+import { getLocalTodayDate, toLocalDateString } from '@/lib/dateUtils';
 
 type Audience = 'all_active' | 'overdue' | 'due_7_days' | 'trial' | 'without_plan' | 'inactive';
 
@@ -98,10 +99,10 @@ export default function CommunicationPage() {
     if (!students || students.length === 0) return [];
 
     const activeMonthly = getActiveMonthlyStudents(students, plans);
-    const todayStr = new Date().toISOString().split('T')[0];
+    const todayStr = getLocalTodayDate();
     const sevenDaysFromNow = new Date();
     sevenDaysFromNow.setDate(sevenDaysFromNow.getDate() + 7);
-    const sevenDaysStr = sevenDaysFromNow.toISOString().split('T')[0];
+    const sevenDaysStr = toLocalDateString(sevenDaysFromNow);
 
     switch (audience) {
       case 'all_active':

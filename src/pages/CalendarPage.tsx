@@ -25,6 +25,7 @@ import {
 import { useBusinessContext } from '@/hooks/useBusinessContext';
 
 import { toast } from '@/hooks/use-toast';
+import { getLocalTodayDate, toLocalDateString } from '@/lib/dateUtils';
 import { useStudents } from '@/hooks/queries/useStudents';
 import { useTrainings } from '@/hooks/queries/useTrainings';
 import { useModalities } from '@/hooks/queries/useModalities';
@@ -73,7 +74,7 @@ function TrainingFormDialog({
     const currentIterDate = new Date(startYear, startMonth, 1);
     while (currentIterDate <= endDate) {
       if (currentIterDate.getDay() === dayOfWeek) {
-        dates.push(currentIterDate.toISOString().split('T')[0]);
+        dates.push(toLocalDateString(currentIterDate));
       }
       currentIterDate.setDate(currentIterDate.getDate() + 1);
     }
@@ -288,7 +289,7 @@ function AnnualCalendar({ year, trainings, students, onDayClick }: { year: numbe
           const startDayOfWeek = firstDay.getDay() === 0 ? 6 : firstDay.getDay() - 1;
           const days = Array.from({ length: daysInMonth }, (_, i) => i + 1);
           const today = new Date();
-          const todayStr = today.toISOString().split('T')[0];
+          const todayStr = getLocalTodayDate();
 
           return (
             <div key={month} className="rounded-xl border border-border/50 p-3 bg-card">
@@ -359,7 +360,7 @@ export default function CalendarPage() {
   const { students } = useStudents();
   const { trainings, deleteTraining } = useTrainings();
   const today = new Date();
-  const todayStr = today.toISOString().split('T')[0];
+  const todayStr = getLocalTodayDate();
 
   const [weekOffset, setWeekOffset] = useState(0);
   const [selectedDate, setSelectedDate] = useState(todayStr);

@@ -14,9 +14,10 @@ import {
 } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { useBusinessContext } from '@/hooks/useBusinessContext';
+import { getLocalTodayDate } from '@/lib/dateUtils';
 
 export default function AttendancePage() {
-  const today = new Date().toISOString().split('T')[0];
+  const today = getLocalTodayDate();
   const [selectedDate, setSelectedDate] = useState(today);
   const { labels } = useBusinessContext();
 

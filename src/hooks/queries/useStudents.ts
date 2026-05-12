@@ -3,6 +3,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useProfile } from '@/hooks/queries/useProfile';
+import { getLocalTodayDate } from '@/lib/dateUtils';
 
 export interface Student {
   id: string;
@@ -113,7 +114,7 @@ export function useStudents() {
           is_trial: data.isTrial ?? false,
           trial_started_at: data.trialStartedAt || null,
           trial_converted_at: data.trialConvertedAt || null,
-          join_date: new Date().toISOString().split('T')[0],
+          join_date: getLocalTodayDate(),
           discount_type: data.discountType || null,
           discount_value: data.discountValue || 0,
           discount_duration_months: data.discountDurationMonths || null,

@@ -10,6 +10,7 @@ import { useAttendance } from '@/hooks/queries/useAttendance';
 import { getEndTime } from '@/data/mockData';
 import { Link } from 'react-router-dom';
 import { toast } from '@/hooks/use-toast';
+import { getLocalTodayDate, toLocalDateString } from '@/lib/dateUtils';
 
 // ── localStorage dismiss (only for manual "X" dismiss, NOT for completed status) ──
 type DismissedNotifications = {
@@ -25,7 +26,7 @@ function getDismissed(): DismissedNotifications {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (raw) {
       const parsed = JSON.parse(raw);
-      const today = new Date().toISOString().split('T')[0];
+      const today = getLocalTodayDate();
       // Reset dismissals if they're from a different day
       if (parsed.dismissDate !== today) {
         return { trainings: [], overduePayments: false, dismissDate: today };
@@ -33,7 +34,7 @@ function getDismissed(): DismissedNotifications {
       return { ...parsed, dismissDate: today };
     }
   } catch {}
-  return { trainings: [], overduePayments: false, dismissDate: new Date().toISOString().split('T')[0] };
+  return { trainings: [], overduePayments: false, dismissDate: getLocalTodayDate() };
 }
 
 function saveDismissed(d: DismissedNotifications) {
@@ -54,7 +55,7 @@ export function NotificationBell() {
   const [dismissed, setDismissed] = useState<DismissedNotifications>(getDismissed);
   const [tab, setTab] = useState<'all' | 'trainings' | 'payments' | 'birthdays'>('all');
 
-  const today = new Date().toISOString().split('T')[0];
+  const today = getLocalTodayDate();
   const now = new Date();
   const currentMinutes = now.getHours() * 60 + now.getMinutes();
 
@@ -90,7 +91,7 @@ export function NotificationBell() {
   const tomorrow = useMemo(() => {
     const d = new Date();
     d.setDate(d.getDate() + 1);
-    return d.toISOString().split('T')[0];
+    return toLocalDateString(d);
   }, []);
 
   const upcomingPayments = useMemo(
@@ -115,7 +116,7 @@ export function NotificationBell() {
 
   // ── Reset dismissals when the day changes (via dismissDate field) ──
   useEffect(() => {
-    const currentDate = new Date().toISOString().split('T')[0];
+    const currentDate = getLocalTodayDate();
     if (dismissed.dismissDate !== currentDate) {
       const reset: DismissedNotifications = { trainings: [], overduePayments: false, dismissDate: currentDate };
       setDismissed(reset);

@@ -141,12 +141,21 @@ export default function ReportsPage() {
   }, [trainings, range]);
 
   const filteredPayments = useMemo(() => {
-    if (!range) return payments;
-    return payments.filter((p) => {
-      // Filtragem estrita por competência (data de vencimento) para alinhar 100% com a página de Pagamentos
-      return p.dueDate >= range.start && p.dueDate <= range.end;
-    });
-  }, [payments, range]);
+    if (period === 'month' || period === 'year' || period === 'all') {
+      if (!monthRefs) return payments;
+      // Filtragem por competência (monthRef) para alinhar 100% com o Dashboard
+      return payments.filter((p) => monthRefs.includes(p.monthRef));
+    } else {
+      if (!range) return payments;
+      // Para "Dia" e "Semana", a visão é de CAIXA (Cashflow).
+      // Entra o que vence no período OR o que foi pago no período.
+      return payments.filter((p) => {
+        const isDueInRange = p.dueDate >= range.start && p.dueDate <= range.end;
+        const isPaidInRange = p.paidAt && p.paidAt.slice(0, 10) >= range.start && p.paidAt.slice(0, 10) <= range.end;
+        return isDueInRange || isPaidInRange;
+      });
+    }
+  }, [payments, monthRefs, range, period]);
 
   const filteredSales = useMemo(() => {
     if (!range) return sales;
@@ -218,13 +227,28 @@ export default function ReportsPage() {
 
   // 1. Mensalidades / Planos (Comum a todos, se houver)
   filteredPayments.forEach(p => {
-    expectedRevenue += p.amount;
-    const paidAmt = p.paidAmount || 0;
-    receivedRevenue += paidAmt;
-    if (!p.paid) {
-      const remaining = p.amount - paidAmt;
-      if (p.dueDate < todayDateStr) {
-        overdueRevenue += remaining;
+    const isMonthlyView = period === 'month' || period === 'year' || period === 'all';
+    
+    if (isMonthlyView) {
+      // Visão de Competência (Dashboard): Soma tudo do mês
+      expectedRevenue += p.amount;
+      receivedRevenue += (p.paidAmount || 0);
+      if (!p.paid && p.dueDate < todayDateStr) {
+        overdueRevenue += (p.amount - (p.paidAmount || 0));
+      }
+    } else {
+      // Visão de Caixa (Dia/Semana): Separa o que vence hoje do que foi pago hoje
+      const isDueInRange = range && p.dueDate >= range.start && p.dueDate <= range.end;
+      const isPaidInRange = range && p.paidAt && p.paidAt.slice(0, 10) >= range.start && p.paidAt.slice(0, 10) <= range.end;
+
+      if (isDueInRange) {
+        expectedRevenue += p.amount;
+        if (!p.paid && p.dueDate < todayDateStr) {
+          overdueRevenue += (p.amount - (p.paidAmount || 0));
+        }
+      }
+      if (isPaidInRange) {
+        receivedRevenue += (p.paidAmount || 0);
       }
     }
   });
@@ -356,16 +380,19 @@ export default function ReportsPage() {
       for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
         days.push(new Date(d));
       }
+
+      // Usa filteredPayments (filtrados por monthRef, igual aos KPIs) para que
+      // o total do gráfico bata com os cards. Distribui visualmente pelo dueDate.
       return days.map(d => {
         const dateStr = toLocalDateString(d);
         
-        // 1. Pagamentos
-        let expected = payments
+        // 1. Pagamentos — mesma base dos KPIs (filteredPayments por monthRef)
+        let expected = filteredPayments
           .filter(p => p.dueDate === dateStr)
           .reduce((acc, curr) => acc + curr.amount, 0);
           
-        let received = payments
-          .filter(p => p.dueDate === dateStr)
+        let received = filteredPayments
+          .filter(p => p.paidAt ? p.paidAt.slice(0, 10) === dateStr : (p.dueDate === dateStr && p.paid))
           .reduce((acc, curr) => acc + (curr.paidAmount || 0), 0);
 
         // 2. Vendas de Produtos
@@ -398,7 +425,7 @@ export default function ReportsPage() {
         };
       });
     }
-  }, [payments, sales, reservations, expenses, isArena, period, range]);
+  }, [payments, filteredPayments, sales, reservations, expenses, isArena, period, range]);
 
   // Retention Data (Funnel)
   const retentionData = useMemo(() => {
@@ -465,7 +492,7 @@ export default function ReportsPage() {
         {/* KPIs Premium */}
         <section className={cn(
           "grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-4 xl:gap-3 animate-fade-in",
-          isSportSchool ? "xl:grid-cols-6" : "xl:grid-cols-7"
+          isSportSchool ? "xl:grid-cols-5" : "xl:grid-cols-7"
         )}>
           <StatCard 
             title={`${labels.studentLabel} Base`} 
@@ -509,13 +536,15 @@ export default function ReportsPage() {
               description={privacyMode ? '' : 'Total de despesas pagas'}
             />
           )}
-          <StatCard 
-            title="Resultado Líquido" 
-            value={privacyMode ? '••••' : formatCurrency(netProfit)} 
-            icon={TrendingUp} 
-            variant="success"
-            description={privacyMode ? '' : netProfit >= 0 ? 'Saldo positivo (Superávit)' : 'Saldo negativo (Déficit)'}
-          />
+          {!isSportSchool && (
+            <StatCard 
+              title="Resultado Líquido" 
+              value={privacyMode ? '••••' : formatCurrency(netProfit)} 
+              icon={TrendingUp} 
+              variant="success"
+              description={privacyMode ? '' : netProfit >= 0 ? 'Saldo positivo (Superávit)' : 'Saldo negativo (Déficit)'}
+            />
+          )}
         </section>
 
         {/* Charts Grid */}

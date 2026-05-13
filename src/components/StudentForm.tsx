@@ -26,6 +26,7 @@ import { useTrainings } from '@/hooks/queries/useTrainings';
 import { useAuth } from '@/contexts/AuthContext';
 import { getDayName } from '@/data/mockData';
 import { useBusinessContext } from '@/hooks/useBusinessContext';
+import { getLocalTodayDate, toLocalDateString } from '@/lib/dateUtils';
 
 const studentSchema = z.object({
   name: z.string().min(3, "Nome deve ter no mínimo 3 caracteres"),
@@ -68,7 +69,7 @@ export function StudentForm({ student, trigger }: StudentFormProps) {
   const [photoPreview, setPhotoPreview] = useState<string | null>(student?.photo || null);
   const [isTrial, setIsTrial] = useState(student?.isTrial ?? false);
   const { generateMonthlyPayments, syncStudentPayments } = usePayments();
-  const [billingStartMonth, setBillingStartMonth] = useState(new Date().toLocaleDateString('en-CA').slice(0, 7));
+  const [billingStartMonth, setBillingStartMonth] = useState(getLocalTodayDate().slice(0, 7));
   const { groups } = useGroups();
   const [selectedGroups, setSelectedGroups] = useState<string[]>(student?.groupIds || []);
   const { labels, isOther, isArena } = useBusinessContext();
@@ -99,7 +100,7 @@ export function StudentForm({ student, trigger }: StudentFormProps) {
       discountType: student?.discountType || 'none',
       discountValue: student?.discountValue ? String(student.discountValue) : '',
       discountDurationMonths: student?.discountDurationMonths ? String(student.discountDurationMonths) : 'none',
-      discountStartMonth: student?.discountStartMonth || new Date().toLocaleDateString('en-CA').slice(0, 7),
+      discountStartMonth: student?.discountStartMonth || getLocalTodayDate().slice(0, 7),
     },
   });
 
@@ -124,7 +125,7 @@ export function StudentForm({ student, trigger }: StudentFormProps) {
           discountType: student.discountType || 'none',
           discountValue: student.discountValue ? String(student.discountValue) : '',
           discountDurationMonths: student.discountDurationMonths ? String(student.discountDurationMonths) : 'none',
-          discountStartMonth: student.discountStartMonth || new Date().toLocaleDateString('en-CA').slice(0, 7),
+          discountStartMonth: student.discountStartMonth || getLocalTodayDate().slice(0, 7),
         });
         setPhotoPreview(student.photo || null);
         setIsTrial(student.isTrial ?? false);
@@ -133,7 +134,7 @@ export function StudentForm({ student, trigger }: StudentFormProps) {
         form.reset({
           name: '', phone: '', email: '', level: '', planId: 'none', paymentDueDay: '', birthDate: '', modalityId: 'none',
           cpf: '', rg: '', address: '', city: '', state: '', zipCode: '',
-          discountType: 'none', discountValue: '', discountDurationMonths: 'none', discountStartMonth: new Date().toLocaleDateString('en-CA').slice(0, 7),
+          discountType: 'none', discountValue: '', discountDurationMonths: 'none', discountStartMonth: getLocalTodayDate().slice(0, 7),
         });
         setPhotoPreview(null);
         setIsTrial(false);
@@ -692,7 +693,7 @@ export function StudentForm({ student, trigger }: StudentFormProps) {
                       {Array.from({ length: 6 }).map((_, i) => {
                         const d = new Date();
                         d.setMonth(d.getMonth() + i);
-                        const val = d.toLocaleDateString('en-CA').slice(0, 7);
+                        const val = toLocalDateString(d).slice(0, 7);
                         const label = d.toLocaleString('pt-BR', { month: 'long', year: 'numeric' });
                         return (
                           <SelectItem key={val} value={val} className="capitalize">
@@ -801,7 +802,7 @@ export function StudentForm({ student, trigger }: StudentFormProps) {
                               {Array.from({ length: 6 }).map((_, i) => {
                                 const d = new Date();
                                 d.setMonth(d.getMonth() + i);
-                                const val = d.toLocaleDateString('en-CA').slice(0, 7);
+                                const val = toLocalDateString(d).slice(0, 7);
                                 const label = d.toLocaleString('pt-BR', { month: 'long', year: 'numeric' });
                                 return (
                                   <SelectItem key={val} value={val} className="capitalize">

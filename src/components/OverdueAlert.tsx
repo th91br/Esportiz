@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 import { usePayments } from '@/hooks/queries/usePayments';
 import { useStudents } from '@/hooks/queries/useStudents';
 import { formatCurrency } from '@/lib/formatCurrency';
+import { getLocalTodayDate } from '@/lib/dateUtils';
 
 interface OverdueAlertProps {
   privacyMode?: boolean;
@@ -12,7 +13,7 @@ interface OverdueAlertProps {
 export function OverdueAlert({ privacyMode = false }: OverdueAlertProps) {
   const { payments } = usePayments();
   const { students } = useStudents();
-  const today = new Date().toLocaleDateString('en-CA');
+  const today = getLocalTodayDate();
   const monthNames = ['', 'Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
 
   const overduePayments = useMemo(

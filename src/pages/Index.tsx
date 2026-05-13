@@ -29,6 +29,7 @@ import { useExpenses } from '@/hooks/queries/useExpenses';
 import { useSales } from '@/hooks/queries/useSales';
 import { useProducts } from '@/hooks/queries/useProducts';
 import { useReservations } from '@/hooks/queries/useReservations';
+import { useCourts } from '@/hooks/queries/useCourts';
 import { usePrivacyMode } from '@/hooks/usePrivacyMode';
 import { useBusinessContext } from '@/hooks/useBusinessContext';
 import { getActiveMonthlyStudents, getTotalStudents } from '@/lib/studentHelpers';
@@ -51,6 +52,7 @@ export default function Index() {
   const { sales } = useSales();
   const { activeProducts } = useProducts();
   const { reservations, loadingReservations } = useReservations();
+  const { courts, loadingCourts } = useCourts();
 
   const lowStockProducts = useMemo(() => {
     if (!isArena) return [];
@@ -65,7 +67,8 @@ export default function Index() {
     loadingPayments ||
     loadingExpenses ||
     loadingGroups ||
-    (isArena && loadingReservations);
+    (isArena && loadingReservations) ||
+    (isArena && loadingCourts);
 
   const [privacyMode, togglePrivacyMode] = usePrivacyMode();
   const { profile } = useProfile();
@@ -90,6 +93,14 @@ export default function Index() {
 
   // ── Treinos / Reservas / Aulas ──
   const todayTrainings = trainings.filter((t) => t.date === todayDateStr).length;
+
+  // ── Reservas de Hoje (Arena) — conta reservas reais, não treinos ──
+  const todayReservationsCount = isArena
+    ? reservations.filter((r) => r.date === todayDateStr && r.status !== 'cancelled').length
+    : 0;
+
+  // ── Quadras Ativas (Arena) ──
+  const activeCourtsCount = isArena ? courts.filter((c) => c.isActive).length : 0;
 
   // ── Presença ──
   const attendanceRate =
@@ -350,12 +361,12 @@ export default function Index() {
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
               <StatCard
                 title="Quadras Ativas"
-                value={loading ? '...' : pv(modalities.length)}
+                value={loading ? '...' : pv(activeCourtsCount)}
                 icon={Landmark}
               />
               <StatCard
                 title="Reservas de Hoje"
-                value={loading ? '...' : pv(todayTrainings)}
+                value={loading ? '...' : pv(todayReservationsCount)}
                 icon={Calendar}
                 variant="primary"
               />

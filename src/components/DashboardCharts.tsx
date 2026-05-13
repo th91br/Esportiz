@@ -28,16 +28,24 @@ export function DashboardCharts({
     const revenueMap: Record<string, { expected: number; paid: number }> = {};
 
     if (isArena) {
-        // Arena: Bookings (Reservations) + Product Sales
+        // Arena: Reservas + Mensalistas + Vendas (Sincronia com Dashboard KPIs)
         reservations.forEach(r => {
             if (r.status !== 'cancelled') {
-                const month = r.date.slice(0, 7); // e.g., "2026-03"
+                const month = r.date.slice(0, 7);
                 if (!revenueMap[month]) revenueMap[month] = { expected: 0, paid: 0 };
                 revenueMap[month].expected += r.finalPrice;
                 if (r.paymentStatus === 'paid') {
                     revenueMap[month].paid += r.finalPrice;
                 }
             }
+        });
+
+        // Mensalistas (Pacotes Mensais) — eram invisíveis no gráfico
+        payments.forEach(payment => {
+            const month = payment.monthRef;
+            if (!revenueMap[month]) revenueMap[month] = { expected: 0, paid: 0 };
+            revenueMap[month].expected += payment.amount;
+            revenueMap[month].paid += payment.paidAmount || 0;
         });
 
         sales.forEach(s => {
@@ -47,12 +55,13 @@ export function DashboardCharts({
             revenueMap[month].paid += s.total;
         });
     } else {
-        // School / Other: Monthly plan payments + Product Sales
+        // Escola / Curso: Mensalidades + Vendas (Sincronia com Dashboard KPIs)
         payments.forEach(payment => {
             const month = payment.monthRef;
             if (!revenueMap[month]) revenueMap[month] = { expected: 0, paid: 0 };
             revenueMap[month].expected += payment.amount;
-            if (payment.paid) revenueMap[month].paid += payment.amount;
+            // Usa paidAmount para incluir pagamentos parciais (antes usava boolean paid)
+            revenueMap[month].paid += payment.paidAmount || 0;
         });
 
         sales.forEach(s => {

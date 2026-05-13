@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { Header } from '@/components/Header';
 import { useStudents } from '@/hooks/queries/useStudents';
 import { usePlans } from '@/hooks/queries/usePlans';
@@ -23,6 +23,7 @@ import {
   Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter
 } from '@/components/ui/dialog';
 import { useBusinessContext } from '@/hooks/useBusinessContext';
+import { getLocalTodayDate } from '@/lib/dateUtils';
 
 const monthNames = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
 
@@ -46,16 +47,20 @@ export default function PaymentsPage() {
   const [selectedYear, setSelectedYear] = useState(now.getFullYear());
   const [selectedMonth, setSelectedMonth] = useState(now.getMonth() + 1);
   const monthRef = `${selectedYear}-${String(selectedMonth).padStart(2, '0')}`;
-  const todayStr = now.toLocaleDateString('en-CA');
+  const todayStr = getLocalTodayDate();
 
   // Month reference using local time
-  const currentMonthRef = now.toLocaleDateString('en-CA').slice(0, 7);
+  const currentMonthRef = todayStr.slice(0, 7);
+
+  // Guarda quais meses já foram gerados nesta sessão para evitar loop se apagar pagamento
+  const generatedMonthsRef = useRef<Set<string>>(new Set([currentMonthRef]));
 
   useEffect(() => {
-    if (!loadingPayments && monthRef !== currentMonthRef) {
+    if (!loadingPayments && monthRef !== currentMonthRef && !generatedMonthsRef.current.has(monthRef)) {
+      generatedMonthsRef.current.add(monthRef);
       generateMonthlyPayments(monthRef);
     }
-  }, [monthRef, loadingPayments, currentMonthRef]);
+  }, [monthRef, loadingPayments, currentMonthRef, generateMonthlyPayments]);
 
   // --- Monthly Payments (Pacotes) filtering ---
   const monthPayments = useMemo(() => {

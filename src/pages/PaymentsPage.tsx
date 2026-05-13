@@ -9,6 +9,7 @@ import { usePrivacyMode } from '@/hooks/usePrivacyMode';
 import { formatCurrency } from '@/lib/formatCurrency';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Check, X, DollarSign, AlertTriangle, Clock, TrendingUp, Eye, EyeOff, Percent, Trash2, Download, Search, CalendarDays } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -30,7 +31,7 @@ const monthNames = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 
 export default function PaymentsPage() {
   const { students } = useStudents();
   const { plans } = usePlans();
-  const { payments, generateMonthlyPayments, markAsPaid, markAsUnpaid, deletePayment, loadingPayments } = usePayments();
+  const { payments, generateMonthlyPayments, markAsPaid, markAsUnpaid, markBatchAsPaid, markBatchAsUnpaid, deletePayment, loadingPayments } = usePayments();
   const { reservations, loadingReservations, updateReservation } = useReservations();
   const { courts } = useCourts();
   const [privacyMode, togglePrivacyMode] = usePrivacyMode();
@@ -42,6 +43,12 @@ export default function PaymentsPage() {
   
   // Tab selector for Arena mode: 'pacotes' (monthly plans) vs 'reservas' (single court rentals)
   const [activeSubTab, setActiveSubTab] = useState<'pacotes' | 'reservas'>('pacotes');
+
+  // Seleção em lote (Batch Payments)
+  const [selectedPayments, setSelectedPayments] = useState<string[]>([]);
+  useEffect(() => {
+    setSelectedPayments([]);
+  }, [searchTerm, activeSubTab]);
 
   const now = new Date();
   const [selectedYear, setSelectedYear] = useState(now.getFullYear());
@@ -80,6 +87,20 @@ export default function PaymentsPage() {
         return nameA.localeCompare(nameB, 'pt-BR');
       });
   }, [monthPayments, students, searchTerm]);
+
+  const handleSelectAll = () => {
+    if (selectedPayments.length === filteredPayments.length) {
+      setSelectedPayments([]);
+    } else {
+      setSelectedPayments(filteredPayments.map(p => p.id));
+    }
+  };
+
+  const toggleSelectPayment = (id: string) => {
+    setSelectedPayments(prev => 
+      prev.includes(id) ? prev.filter(item => item !== id) : [...prev, id]
+    );
+  };
 
   // --- Single Reservations (Locações) filtering ---
   const monthReservations = useMemo(() => {
@@ -413,6 +434,50 @@ export default function PaymentsPage() {
             </div>
           ) : (
             <div className="space-y-3">
+              {/* Barra de Ações em Lote */}
+              <div className="flex flex-wrap items-center justify-between gap-3 p-3 bg-muted/40 rounded-xl border border-border/50">
+                <div className="flex items-center gap-2.5">
+                  <Checkbox 
+                    checked={selectedPayments.length === filteredPayments.length && filteredPayments.length > 0}
+                    onCheckedChange={handleSelectAll}
+                    id="select-all"
+                  />
+                  <label htmlFor="select-all" className="text-xs font-semibold cursor-pointer text-foreground select-none">
+                    Selecionar Todos ({filteredPayments.length})
+                  </label>
+                  {selectedPayments.length > 0 && (
+                    <Badge variant="secondary" className="text-xs ml-1 font-bold">
+                      {selectedPayments.length} selecionado(s)
+                    </Badge>
+                  )}
+                </div>
+                {selectedPayments.length > 0 && (
+                  <div className="flex items-center gap-2">
+                    <Button
+                      size="sm"
+                      className="btn-primary-gradient text-xs font-bold"
+                      onClick={async () => {
+                        await markBatchAsPaid(selectedPayments);
+                        setSelectedPayments([]);
+                      }}
+                    >
+                      <Check className="h-3.5 w-3.5 mr-1" /> Marcar como Pagos
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="text-muted-foreground text-xs font-semibold"
+                      onClick={async () => {
+                        await markBatchAsUnpaid(selectedPayments);
+                        setSelectedPayments([]);
+                      }}
+                    >
+                      <X className="h-3.5 w-3.5 mr-1" /> Desmarcar
+                    </Button>
+                  </div>
+                )}
+              </div>
+
               {filteredPayments.map(payment => {
                 const student = students.find(s => s.id === payment.studentId);
                 const plan = plans.find(p => p.id === payment.planId);
@@ -421,9 +486,16 @@ export default function PaymentsPage() {
                 if (!student) return null;
 
                 return (
-                  <div key={payment.id} className="card-elevated p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
+                  <div key={payment.id} className={cn("card-elevated p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 transition-all", selectedPayments.includes(payment.id) && "border-primary/40 ring-1 ring-primary/20 bg-primary/[0.02]")}>
+                    <div className="flex-1 min-w-0 flex items-start gap-3">
+                      <div className="pt-1">
+                        <Checkbox 
+                          checked={selectedPayments.includes(payment.id)} 
+                          onCheckedChange={() => toggleSelectPayment(payment.id)} 
+                        />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
                         <span className="font-semibold text-foreground truncate">{student.name}</span>
                         {isPartial ? (
                           <Badge className="text-xs bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 flex items-center gap-1">
@@ -471,7 +543,8 @@ export default function PaymentsPage() {
                         )}
                       </div>
                     </div>
-                    <div className="flex items-center gap-2">
+                  </div>
+                  <div className="flex items-center gap-2">
                       {payment.paid ? (
                         <Button
                           variant="outline"
@@ -593,3 +666,4 @@ export default function PaymentsPage() {
     </div>
   );
 }
+// Final de arquivo - PaymentsPage

@@ -206,11 +206,54 @@ export function usePayments() {
         }
     });
 
+    const markBatchAsPaidMutation = useMutation({
+        mutationFn: async (paymentIds: string[]) => {
+            await Promise.all(paymentIds.map(async (id) => {
+                const { data: payRow } = await supabase.from('payments').select('amount').eq('id', id).single();
+                if (payRow) {
+                    await supabase.from('payments').update({
+                        paid: true,
+                        paid_amount: payRow.amount,
+                        paid_at: new Date().toISOString()
+                    }).eq('id', id);
+                }
+            }));
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['payments'] });
+            toast({ title: 'Pagamentos em lote', description: 'Pagamentos marcados como pagos com sucesso.' });
+        },
+        onError: (error: Error) => {
+            toast({ title: 'Erro em lote', description: error.message, variant: 'destructive' });
+        }
+    });
+
+    const markBatchAsUnpaidMutation = useMutation({
+        mutationFn: async (paymentIds: string[]) => {
+            await Promise.all(paymentIds.map(async (id) => {
+                await supabase.from('payments').update({
+                    paid: false,
+                    paid_amount: 0,
+                    paid_at: null
+                }).eq('id', id);
+            }));
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['payments'] });
+            toast({ title: 'Pagamentos em lote', description: 'Pagamentos desmarcados com sucesso.' });
+        },
+        onError: (error: Error) => {
+            toast({ title: 'Erro em lote', description: error.message, variant: 'destructive' });
+        }
+    });
+
     return {
         payments,
         loadingPayments,
         markAsPaid: async (id: string, paidAmount?: number) => markAsPaidMutation.mutateAsync({ paymentId: id, paidAmount }),
         markAsUnpaid: async (id: string) => markAsUnpaidMutation.mutateAsync(id),
+        markBatchAsPaid: async (ids: string[]) => markBatchAsPaidMutation.mutateAsync(ids),
+        markBatchAsUnpaid: async (ids: string[]) => markBatchAsUnpaidMutation.mutateAsync(ids),
         deletePayment: async (id: string) => deletePaymentMutation.mutateAsync(id),
         generateMonthlyPayments: async (monthRef: string) =>
             generateMonthlyPaymentsMutation.mutateAsync(monthRef),

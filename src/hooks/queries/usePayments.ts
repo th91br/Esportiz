@@ -27,14 +27,22 @@ export function usePayments() {
             const businessType = profile?.business_type || 'sport_school';
             const { data, error } = await supabase
                 .from('payments')
-                .select('*')
+                // Inclui o status do aluno para filtrar pagamentos pendentes de alunos inativos
+                .select('*, students(active)')
                 .eq('user_id', user.id)
                 .eq('business_type', businessType)
                 .order('due_date', { ascending: true });
             if (error) throw error;
 
             return data
-                .filter((p: any) => Number(p.full_price) !== -1) // Esconde pagamentos deletados (soft-delete)
+                .filter((p: any) => {
+                    // 1. Oculta pagamentos apagados via soft-delete
+                    if (Number(p.full_price) === -1) return false;
+                    // 2. Correção retroativa: oculta pagamentos PENDENTES de alunos INATIVOS
+                    //    (cobre alunos desativados antes desta versão do sistema)
+                    if (!p.paid && p.students && p.students.active === false) return false;
+                    return true;
+                })
                 .map((p: any) => ({
                 id: p.id,
                 userId: p.user_id,

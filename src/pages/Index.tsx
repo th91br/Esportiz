@@ -138,8 +138,16 @@ export default function Index() {
         receivedRevenue += s.total; // Vendas são sempre recebidas no ato
       }
     });
+  } else if (isSportSchool) {
+    // Escola Esportiva: Apenas Mensalidades dos Alunos (Sem Cantina/Vendas)
+    payments.forEach((p) => {
+      if (p.monthRef === currentMonthStr) {
+        expectedRevenue += p.amount;
+        receivedRevenue += p.paidAmount || 0;
+      }
+    });
   } else {
-    // Escolinhas e outros nichos: Mensalidades dos Alunos + Vendas
+    // Outros nichos: Mensalidades dos Alunos + Vendas
     payments.forEach((p) => {
       if (p.monthRef === currentMonthStr) {
         expectedRevenue += p.amount;
@@ -416,7 +424,7 @@ export default function Index() {
               title="Faturamento Total"
               value={loading ? '...' : pv(formatCurrency(expectedRevenue))}
               icon={DollarSign}
-              description={privacyMode ? '' : 'Total bruto esperado'}
+              description={privacyMode ? '' : isSportSchool ? 'Mensalidades do mês' : 'Mensalidades + Vendas do mês'}
             />
             {isSportSchool ? (
               <StatCard

@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { Phone, Mail, Award, Pencil, Trash2, DollarSign, CalendarDays, MapPin, FileText, Beaker, UsersRound, Percent, ExternalLink } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -45,6 +46,7 @@ export function StudentCard({ student, onClick }: StudentCardProps) {
   const { groups } = useGroups();
   const { labels, isArena } = useBusinessContext();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const modality = student.modalityId ? modalities.find(m => m.id === student.modalityId) : undefined;
   const plan = student.planId ? plans.find((p) => p.id === student.planId) : undefined;
   const studentGroups = groups.filter(g => student.groupIds?.includes(g.id));
@@ -104,15 +106,43 @@ export function StudentCard({ student, onClick }: StudentCardProps) {
   };
 
   const handleDeactivate = async () => {
-    // Clean up future trainings
+    // 1. Limpa treinos futuros do calendário (RPC existente)
     await supabase.rpc('cleanup_student_future_trainings', { p_student_id: student.id });
-    
+
+    // 2. [NOVO] Soft-delete de todos os pagamentos PENDENTES do aluno.
+    //    Usa o mesmo mecanismo seguro já existente (full_price = -1).
+    //    Pagamentos já pagos são preservados intactos no histórico.
+    await supabase
+      .from('payments')
+      .update({ amount: 0, paid_amount: 0, paid: true, full_price: -1 })
+      .eq('student_id', student.id)
+      .eq('paid', false);
+
+    // 3. [NOVO] Remove o aluno de todas as Turmas (group_students)
+    await supabase
+      .from('group_students')
+      .delete()
+      .eq('student_id', student.id);
+
+    // 4. Marca o aluno como inativo
     await updateStudent(student.id, { active: false });
+
+    // 5. Invalida os caches para atualizar a UI imediatamente
+    queryClient.invalidateQueries({ queryKey: ['payments'] });
+    queryClient.invalidateQueries({ queryKey: ['groups'] });
+    queryClient.invalidateQueries({ queryKey: ['students'] });
+
+    // 6. Toast informativo completo
+    const descParts: string[] = [];
+    if (futureTrainingsCount > 0)
+      descParts.push(`${futureTrainingsCount} treino${futureTrainingsCount !== 1 ? 's' : ''} futuro${futureTrainingsCount !== 1 ? 's' : ''} removido${futureTrainingsCount !== 1 ? 's' : ''}`);
+    if (studentGroups.length > 0)
+      descParts.push(`removido de ${studentGroups.length} turma${studentGroups.length !== 1 ? 's' : ''}`);
+    descParts.push('cobranças em aberto canceladas');
+
     toast({
-      title: 'Aluno desativado',
-      description: futureTrainingsCount > 0
-        ? `${student.name} foi desativado e removido de ${futureTrainingsCount} treino${futureTrainingsCount !== 1 ? 's' : ''} futuro${futureTrainingsCount !== 1 ? 's' : ''}.`
-        : `${student.name} foi desativado.`,
+      title: `${student.name} desativado`,
+      description: descParts.join(' • ') + '.',
     });
   };
 
@@ -290,12 +320,15 @@ export function StudentCard({ student, onClick }: StudentCardProps) {
                 <AlertDialogDescription>
                   {futureTrainingsCount > 0 ? (
                     <>
-                      Ao desativar, <strong>{futureTrainingsCount} treino{futureTrainingsCount !== 1 ? 's' : ''} futuro{futureTrainingsCount !== 1 ? 's' : ''}</strong> ser{futureTrainingsCount !== 1 ? 'ão' : 'á'} removido{futureTrainingsCount !== 1 ? 's' : ''} do calendário.
-                      {' '}Para reagendar, ative o(a) {labels.studentLabelSingular.toLowerCase()} novamente e crie novos treinos.
+                      Ao desativar, <strong>{futureTrainingsCount} treino{futureTrainingsCount !== 1 ? 's' : ''} futuro{futureTrainingsCount !== 1 ? 's' : ''}</strong> ser{futureTrainingsCount !== 1 ? 'ão' : 'á'} removido{futureTrainingsCount !== 1 ? 's' : ''} do calendário.{' '}
                     </>
-                  ) : (
-                    <>O(A) {labels.studentLabelSingular.toLowerCase()} será marcado(a) como inativo(a). Para reativá-lo(a), clique em "Ativar".</>
-                  )}
+                  ) : null}
+                  {studentGroups.length > 0 ? (
+                    <>
+                      O(A) {labels.studentLabelSingular.toLowerCase()} será removido(a) de <strong>{studentGroups.length} turma{studentGroups.length !== 1 ? 's' : ''}</strong>.{' '}
+                    </>
+                  ) : null}
+                  Todas as <strong>cobranças em aberto</strong> serão canceladas. Para reagendar, ative o(a) {labels.studentLabelSingular.toLowerCase()} novamente.
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>

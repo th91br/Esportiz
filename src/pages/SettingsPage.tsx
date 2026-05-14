@@ -29,7 +29,6 @@ import { cn } from '@/lib/utils';
 const BUSINESS_OPTIONS: { type: BusinessType; title: string; description: string; emoji: string }[] = [
   { type: 'sport_school', title: 'Escola Esportiva', description: 'Esportiz Sport — Futevôlei, Vôlei, Futebol, Artes Marciais...', emoji: '🏐' },
   { type: 'arena', title: 'Arena / CT de Quadras', description: 'Esportiz Arena — Locação de quadras, Day Use, Eventos esportivos...', emoji: '🏟️' },
-  { type: 'other', title: 'Escola / Curso Livre', description: 'Esportiz Club — Idiomas, Música, Cursos livres, Dança...', emoji: '📚' },
 ];
 
 const GOOGLE_CLIENT_ID = '101916210739-8dd7avpijkt4oc5t053fg7tqtahfakdr.apps.googleusercontent.com';

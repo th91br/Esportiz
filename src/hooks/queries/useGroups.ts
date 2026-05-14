@@ -36,7 +36,7 @@ export function useGroups() {
       const businessType = profile?.business_type || 'sport_school';
       const { data, error } = await supabase
         .from('groups')
-        .select('*, group_students(student_id)')
+        .select('*, group_students(student_id, students(active))')
         .eq('user_id', user.id)
         .eq('business_type', businessType)
         .order('name');
@@ -54,7 +54,9 @@ export function useGroups() {
         color: g.color || '#6366f1',
         active: g.active ?? true,
         createdAt: g.created_at,
-        studentIds: (g.group_students || []).map((gs: any) => gs.student_id),
+        studentIds: (g.group_students || [])
+          .filter((gs: any) => gs.students?.active !== false)
+          .map((gs: any) => gs.student_id),
       })) as Group[];
     },
     enabled: !!user,

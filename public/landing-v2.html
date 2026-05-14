@@ -1297,41 +1297,35 @@ footer{padding:60px 0 30px;border-top:1px solid rgba(255,255,255,.06);background
 .ms-mod-btn { width: 100%; text-align: center; padding: 8px; border-radius: 6px; font-size: 10px; font-weight: 700; text-transform: uppercase; border: 1px solid #E5E7EB; color: #4B5563; }
 
 /* MULTI-NICHO ECOSSISTEMA */
-.niche-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; margin-top: 40px; }
+.niche-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 24px; margin: 40px auto 0; max-width: 1000px; }
 .niche-card { background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.05); border-radius: 16px; padding: 32px 24px; transition: all 0.3s ease; display: flex; flex-direction: column; align-items: center; text-align: center; position: relative; overflow: hidden; }
 .niche-card:hover { transform: translateY(-5px); background: rgba(255, 255, 255, 0.04); border-color: rgba(255, 255, 255, 0.1); }
 .niche-card::before { content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 4px; opacity: 0.8; transition: opacity 0.3s; }
 .niche-card.sport::before { background: #1DB874; }
-.niche-card.edu::before { background: #3B82F6; }
-.niche-card.art::before { background: #F59E0B; }
+.niche-card.arena::before { background: #3B82F6; }
 .niche-icon { width: 64px; height: 64px; border-radius: 16px; display: flex; align-items: center; justify-content: center; margin-bottom: 20px; transition: transform 0.3s; }
 .niche-card:hover .niche-icon { transform: scale(1.1); }
 .niche-card.sport .niche-icon { background: rgba(29, 184, 116, 0.1); color: #1DB874; }
-.niche-card.edu .niche-icon { background: rgba(59, 130, 246, 0.1); color: #3B82F6; }
-.niche-card.art .niche-icon { background: rgba(245, 158, 11, 0.1); color: #F59E0B; }
+.niche-card.arena .niche-icon { background: rgba(59, 130, 246, 0.1); color: #3B82F6; }
 .niche-card h3 { font-size: 20px; color: #fff; margin-bottom: 12px; font-weight: 700; }
 .niche-card p { color: #9CA3AF; font-size: 14px; line-height: 1.6; }
 
 /* UX CAMALEÃO — COMPARAÇÃO DE PERSONAS */
 .cameleon-section { padding: 100px 0; background: rgba(255,255,255,0.01); border-top: 1px solid rgba(255,255,255,0.04); }
-.cameleon-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-top: 48px; }
+.cameleon-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 24px; margin: 48px auto 0; max-width: 1000px; }
 .cameleon-card { border-radius: 20px; overflow: hidden; border: 1px solid rgba(255,255,255,0.06); transition: all 0.4s ease; position: relative; }
 .cameleon-card:hover { transform: translateY(-8px); box-shadow: 0 32px 64px rgba(0,0,0,0.4); }
 .cameleon-card.sport { border-color: rgba(29,184,116,0.2); }
 .cameleon-card.sport:hover { border-color: rgba(29,184,116,0.5); }
 .cameleon-card.arena { border-color: rgba(55,138,221,0.2); }
 .cameleon-card.arena:hover { border-color: rgba(55,138,221,0.5); }
-.cameleon-card.other { border-color: rgba(245,158,11,0.2); }
-.cameleon-card.other:hover { border-color: rgba(245,158,11,0.5); }
 /* Card header / mockup nav */
 .cam-nav { padding: 12px 16px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid rgba(255,255,255,0.05); }
 .cam-nav.sport { background: rgba(29,184,116,0.08); }
 .cam-nav.arena { background: rgba(55,138,221,0.08); }
-.cam-nav.other { background: rgba(245,158,11,0.08); }
 .cam-badge { font-size: 10px; font-weight: 700; padding: 3px 10px; border-radius: 100px; }
 .cam-badge.sport { background: rgba(29,184,116,0.15); color: #1DB874; border: 1px solid rgba(29,184,116,0.3); }
 .cam-badge.arena { background: rgba(55,138,221,0.15); color: #378ADD; border: 1px solid rgba(55,138,221,0.3); }
-.cam-badge.other { background: rgba(245,158,11,0.15); color: #F59E0B; border: 1px solid rgba(245,158,11,0.3); }
 .cam-title { font-family: 'Syne', sans-serif; font-size: 13px; font-weight: 800; color: #fff; }
 /* Vocabulary items */
 .cam-body { padding: 20px; background: rgba(13,31,60,0.6); }
@@ -1631,7 +1625,7 @@ footer{padding:60px 0 30px;border-top:1px solid rgba(255,255,255,.06);background
   </div>
   <div class="hero-content">
     <div class="hero-text">
-      <div class="badge reveal"><span class="dot"></span> Arenas · Escolas · CTs · Cursos</div>
+      <div class="badge reveal"><span class="dot"></span> Escolas Esportivas · Arenas · CTs</div>
       <h1 class="reveal">Sua escola.<br><span class="grad">Organizada.</span><br>Agora.</h1>
       <p class="reveal">Alunos, presença, cobranças e comunicação em um só lugar. Sem planilha. Direto do celular.</p>
       <div class="btn-group reveal">
@@ -1658,9 +1652,6 @@ footer{padding:60px 0 30px;border-top:1px solid rgba(255,255,255,.06);background
         </button>
         <button class="niche-tab" data-niche="arena" style="--demo-accent: var(--blue-light);">
           <span class="tab-dot" style="background: var(--blue-light);"></span>Arena / CT
-        </button>
-        <button class="niche-tab" data-niche="other" style="--demo-accent: #F59E0B;">
-          <span class="tab-dot" style="background: #F59E0B;"></span>Escola / Cursos
         </button>
       </div>
 
@@ -2675,33 +2666,25 @@ footer{padding:60px 0 30px;border-top:1px solid rgba(255,255,255,.06);background
 <section class="section" id="para-quem">
   <div class="container">
     <div class="section-header">
-      <div class="badge reveal">Ecossistema 3 em 1</div>
-      <h2 class="reveal">Uma plataforma. <span class="grad">Três universos.</span></h2>
-      <p class="reveal" style="max-width: 700px; margin: 16px auto 0;">O Esportiz possui <strong>Isolação Multi-Nicho</strong>. O sistema se adapta inteligentemente ao vocabulário e à lógica de negócios da sua escola, oferecendo um ecossistema isolado e perfeito para você.</p>
+      <div class="badge reveal">Foco 100% Esportivo</div>
+      <h2 class="reveal">Uma plataforma. <span class="grad">Dois universos.</span></h2>
+      <p class="reveal" style="max-width: 700px; margin: 16px auto 0;">O Esportiz possui <strong>Isolação Multi-Nicho</strong> com foco exclusivo no esporte. O sistema se adapta inteligentemente ao vocabulário e à lógica de negócios da sua estrutura, oferecendo um ecossistema perfeito para você.</p>
     </div>
     <div class="niche-grid">
       <div class="niche-card sport reveal">
         <div class="niche-icon">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="32" height="32"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></svg>
         </div>
-        <h3>Esportivo</h3>
-        <p>Perfeito para <strong>Arenas, CTs e Escolas Esportivas</strong>. Gestão ágil de turmas de areia, quadras, treinos diários e controle de presenças por chamada rápida.</p>
+        <h3>Escola Esportiva</h3>
+        <p>Perfeito para <strong>Escolas de Futebol, Vôlei, Tênis, Natação, Lutas e Esportes em geral</strong>. Gestão ágil de turmas, planos de treino, controle de presenças e evolução dos atletas em tempo real.</p>
       </div>
       
-      <div class="niche-card edu reveal" style="transition-delay: 100ms;">
+      <div class="niche-card arena reveal" style="transition-delay: 100ms;">
         <div class="niche-icon">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="32" height="32"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
         </div>
-        <h3>Educacional</h3>
-        <p>Ideal para <strong>Escolas de Idiomas e Cursos Livres</strong>. Controle de notas, diário de classe, boletins, rematrículas e comunicação direta com responsáveis.</p>
-      </div>
-
-      <div class="niche-card art reveal" style="transition-delay: 200ms;">
-        <div class="niche-icon">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="32" height="32"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
-        </div>
-        <h3>Artístico</h3>
-        <p>Feito para <strong>Escolas de Música, Dança e Artes</strong>. Agendamento de estúdios, gestão de aulas individuais e acompanhamento da evolução do aluno.</p>
+        <h3>Arena / CT Quadra</h3>
+        <p>Ideal para <strong>Arenas de Beach Tennis, Futevôlei, Padel e Complexos Esportivos</strong>. Controle total de locação de quadras, agendamento de horários, day use e faturamento integrado.</p>
       </div>
     </div>
   </div>
@@ -2713,7 +2696,7 @@ footer{padding:60px 0 30px;border-top:1px solid rgba(255,255,255,.06);background
     <div class="section-header">
       <div class="badge reveal">UX Camaleão</div>
       <h2 class="reveal">O sistema que <span class="grad">fala a sua língua.</span></h2>
-      <p class="reveal" style="max-width: 680px; margin: 16px auto 0;">Mais do que um software genérico: o Esportiz detecta o tipo de negócio e <strong>adapta completamente o vocabulário, os módulos e a interface</strong> para a realidade de cada escola.</p>
+      <p class="reveal" style="max-width: 680px; margin: 16px auto 0;">Mais do que um software genérico: o Esportiz detecta o tipo de negócio e <strong>adapta completamente o vocabulário, os módulos e a interface</strong> para a realidade de cada estrutura esportiva.</p>
     </div>
     <div class="cameleon-grid">
 
@@ -2805,52 +2788,6 @@ footer{padding:60px 0 30px;border-top:1px solid rgba(255,255,255,.06);background
             <span class="cam-module arena">Produtos</span>
             <span class="cam-module arena">Vendas</span>
             <span class="cam-module arena">Relatórios</span>
-          </div>
-        </div>
-      </div>
-
-      <!-- ESCOLA / CURSOS -->
-      <div class="cameleon-card other reveal" style="transition-delay: 200ms;">
-        <div class="cam-nav other">
-          <div class="cam-title">esport<span style="color:#F59E0B;">iz</span></div>
-          <div class="cam-badge other">Escola / Cursos</div>
-        </div>
-        <div class="cam-body">
-          <div class="cam-sep">Vocabulário do sistema</div>
-          <div class="cam-vocab">
-            <div class="cam-vocab-item">
-              <span class="cam-vocab-label">Membros</span>
-              <span class="cam-vocab-value other">Alunos</span>
-            </div>
-            <div class="cam-vocab-item">
-              <span class="cam-vocab-label">Atividades</span>
-              <span class="cam-vocab-value other">Aulas</span>
-            </div>
-            <div class="cam-vocab-item">
-              <span class="cam-vocab-label">Grupos</span>
-              <span class="cam-vocab-value other">Turmas</span>
-            </div>
-            <div class="cam-vocab-item">
-              <span class="cam-vocab-label">Espaços</span>
-              <span class="cam-vocab-value other">Cursos</span>
-            </div>
-            <div class="cam-vocab-item">
-              <span class="cam-vocab-label">Local</span>
-              <span class="cam-vocab-value other">Sala</span>
-            </div>
-          </div>
-          <div class="cam-sep">Módulos ativos</div>
-          <div class="cam-modules">
-            <span class="cam-module other">Dashboard</span>
-            <span class="cam-module other">Calendário</span>
-            <span class="cam-module other">Alunos</span>
-            <span class="cam-module other">Turmas</span>
-            <span class="cam-module other">Presença</span>
-            <span class="cam-module other">Planos</span>
-            <span class="cam-module other">Pagamentos</span>
-            <span class="cam-module other">Despesas</span>
-            <span class="cam-module other">Comunicação</span>
-            <span class="cam-module other">Relatórios</span>
           </div>
         </div>
       </div>
@@ -3154,25 +3091,6 @@ const mockupData = {
       { name: 'Quadra BT 1 — 18h', status: 'Confirmado', class: 'paid' },
       { name: 'Quadra Futevôlei — 19h', status: 'Pendente', class: 'pend' },
       { name: 'Quadra BT 2 — 20h', status: 'Confirmado', class: 'paid' }
-    ]
-  },
-  other: {
-    url: 'esportiz.com.br/escola',
-    greeting: 'Bom dia, Diretor!',
-    sub: 'Escola de Cursos',
-    label1: 'Estudantes',
-    val1: '76',
-    label2: 'Caixa Geral',
-    val2: 'R$ 9.450',
-    label3: 'Frequência',
-    val3: '91%',
-    label4: 'Turmas Ativas',
-    val4: '8',
-    listTitle: 'Diário de Classe (Aulas Hoje)',
-    items: [
-      { name: 'Inglês Kids — Turma A', status: 'Realizada', class: 'paid' },
-      { name: 'Violão Iniciante', status: 'Pendente', class: 'pend' },
-      { name: 'Espanhol Adulto', status: 'Realizada', class: 'paid' }
     ]
   }
 };

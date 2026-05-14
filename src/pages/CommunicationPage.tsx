@@ -25,8 +25,7 @@ export default function CommunicationPage() {
   
   // Nome dinâmico do negócio com fallbacks personalizados por modalidade
   const businessName = profile?.ct_name || (
-    profile?.business_type === 'sport_school' ? 'Sportiz Sport' :
-    profile?.business_type === 'other' ? 'Esportiz Club' : 'Esportiz Arena'
+    profile?.business_type === 'sport_school' ? 'Sportiz Sport' : 'Esportiz Arena'
   );
   
   const [audience, setAudience] = useState<Audience>('all_active');
@@ -45,19 +44,13 @@ export default function CommunicationPage() {
         setMessageTemplate(customTemplate);
       } else {
         // High quality default fallback per audience & niche type
-        const isClub = activeNicheType === 'other';
-
         const fallbacks: Record<Audience, string> = {
           all_active: `Olá {nome}, tudo bem? Aqui é da {escola}! 😊`,
           overdue: `Olá {nome}, tudo bem? Passando para lembrar do acerto da sua mensalidade na {escola}. 🙏`,
           due_7_days: `Olá {nome}, tudo bem? Lembrete amigável de que sua mensalidade na {escola} vence nos próximos dias. 😊`,
-          trial: isClub
-            ? `Olá {nome}, tudo bem? Aqui é da {escola}! Passando para saber o que achou da sua aula experimental? 📝✨`
-            : `Olá {nome}, tudo bem? Aqui é da {escola}! Passando para saber o que achou do seu treino experimental? 🎾🔥`,
+          trial: `Olá {nome}, tudo bem? Aqui é da {escola}! Passando para saber o que achou do seu treino experimental? 🎾🔥`,
           without_plan: `Olá {nome}, tudo bem? Notamos que você está sem plano ativo na {escola}. Vamos escolher um? 🚀`,
-          inactive: isClub
-            ? `Olá {nome}, tudo bem? Estamos com saudades de você aqui na {escola}! Que tal voltar a estudar conosco? 📚🎓`
-            : `Olá {nome}, tudo bem? Estamos com saudades de você aqui na {escola}! Que tal voltar a treinar conosco? 🏆`
+          inactive: `Olá {nome}, tudo bem? Estamos com saudades de você aqui na {escola}! Que tal voltar a treinar conosco? 🏆`
         };
         setMessageTemplate(fallbacks[audience] || `Olá {nome}, tudo bem? Aqui é da {escola}! 😊`);
       }

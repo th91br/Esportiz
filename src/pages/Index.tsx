@@ -491,35 +491,6 @@ export default function Index() {
           </section>
         )}
 
-        {/* ── Turmas — other ── */}
-        {isOther && activeGroups.length > 0 && (
-          <section className="animate-fade-up" style={{ animationDelay: '0.05s' }}>
-            <div className="flex items-center gap-2 mb-4 px-1">
-              <Tag className="h-4 w-4 text-primary" />
-              <h2 className="font-display font-bold text-lg">Suas {labels.groupLabel}</h2>
-            </div>
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-              {activeGroups.map((group) => (
-                <div
-                  key={group.id}
-                  className="card-interactive p-3 flex items-center gap-3 border-primary/5 hover:border-primary/20 transition-all cursor-pointer"
-                  onClick={() => (window.location.href = '/turmas')}
-                >
-                  <div
-                    className="w-2.5 h-2.5 rounded-full shadow-sm shrink-0"
-                    style={{ backgroundColor: group.color }}
-                  />
-                  <div className="min-w-0 flex-1">
-                    <p className="text-sm font-bold truncate">{group.name}</p>
-                    <p className="text-[10px] text-muted-foreground uppercase font-bold tracking-tight">
-                      {group.studentIds.length} {labels.studentLabel.toLowerCase()}
-                    </p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </section>
-        )}
 
         {/* ── Charts ── */}
         <section className="animate-fade-up" style={{ animationDelay: '0.1s' }}>
@@ -549,3 +520,4 @@ export default function Index() {
     </div>
   );
 }
+// HMR trigger: force clean cache reload

@@ -25,13 +25,6 @@ const BUSINESS_OPTIONS: { type: BusinessType; icon: typeof Volleyball; title: st
     description: 'Esportiz Arena — Locação de quadras, Day Use, Eventos esportivos...',
     emoji: '🏟️',
   },
-  {
-    type: 'other',
-    icon: GraduationCap,
-    title: 'Escola / Curso Livre',
-    description: 'Esportiz Club — Idiomas, Música, Cursos livres, Dança...',
-    emoji: '📚',
-  },
 ];
 
 export default function OnboardingPage() {

@@ -248,12 +248,12 @@ export default function LoginPage() {
   const copy = VIEW_COPY[view];
 
   return (
-    <div className="min-h-screen flex items-center justify-center relative overflow-hidden">
+    <div className="min-h-screen flex items-center justify-center relative overflow-y-auto py-12 px-4">
       <div
-        className="absolute inset-0 bg-cover bg-center bg-no-repeat"
+        className="absolute inset-0 bg-cover bg-center bg-no-repeat fixed"
         style={{ backgroundImage: `url(${loginBg})` }}
       />
-      <div className="absolute inset-0 bg-gradient-to-br from-[hsl(222,47%,11%,0.9)] via-[hsl(222,47%,15%,0.8)] to-[hsl(24,95%,20%,0.65)]" />
+      <div className="absolute inset-0 bg-gradient-to-br from-[hsl(222,47%,11%,0.9)] via-[hsl(222,47%,15%,0.8)] to-[hsl(24,95%,20%,0.65)] fixed" />
 
       <Link
         to="/"
@@ -264,9 +264,9 @@ export default function LoginPage() {
         <span className="sm:hidden">Voltar</span>
       </Link>
 
-      <div className="relative z-10 w-full max-w-md mx-4">
+      <div className="relative z-10 w-full max-w-md my-auto">
         <div className="bg-card/95 backdrop-blur-xl rounded-2xl border border-border/30 shadow-2xl overflow-hidden">
-          <div className="px-8 pt-8 pb-6 flex flex-col items-center border-b border-border/20">
+          <div className="px-5 sm:px-8 pt-8 pb-6 flex flex-col items-center border-b border-border/20">
             <div className="bg-background/50 p-5 rounded-2xl border border-border/30 shadow-lg mb-4 backdrop-blur-sm">
               <Logo size="lg" showTagline />
             </div>
@@ -295,12 +295,12 @@ export default function LoginPage() {
             </button>
           </div>
 
-          <div className="px-8 py-7">
-            <div className="mb-6 space-y-2">
+          <div className="px-5 sm:px-8 py-7">
+            <div className="mb-6 space-y-2 text-center">
               <h1 className="text-2xl font-display">{copy.title}</h1>
               <p className="text-sm text-muted-foreground leading-relaxed">{copy.description}</p>
               {view === "signup" && (
-                <div className="inline-flex items-center rounded-full border border-primary/20 bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
+                <div className="inline-flex items-center justify-center rounded-full border border-primary/20 bg-primary/10 px-4 py-1.5 text-xs font-medium text-primary mt-3 w-fit mx-auto shadow-sm">
                   30 dias gratis, sem cartao e com acesso completo
                 </div>
               )}

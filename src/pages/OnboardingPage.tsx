@@ -1,13 +1,14 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useProfile, type BusinessType } from '@/hooks/queries/useProfile';
+import { getOnboardingGoalPath, type OnboardingGoal } from '@/lib/authRouting';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Logo } from '@/components/Logo';
 import { toast } from 'sonner';
-import { UploadCloud, CheckCircle, ArrowRight, Volleyball, Landmark, GraduationCap } from 'lucide-react';
+import { UploadCloud, CheckCircle, ArrowRight, Volleyball, Landmark, Users, Calendar, CreditCard } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const BUSINESS_OPTIONS: { type: BusinessType; icon: typeof Volleyball; title: string; description: string; emoji: string }[] = [
@@ -27,17 +28,39 @@ const BUSINESS_OPTIONS: { type: BusinessType; icon: typeof Volleyball; title: st
   },
 ];
 
+const GOAL_OPTIONS: { goal: OnboardingGoal; title: string; description: string; emoji: string }[] = [
+  {
+    goal: 'students',
+    title: 'Organizar alunos / clientes',
+    description: 'Cadastrar alunos, matrículas, turmas e acompanhamento.',
+    emoji: '👥',
+  },
+  {
+    goal: 'schedule',
+    title: 'Organizar agenda / reservas',
+    description: 'Controlar calendário de aulas, horários de quadra e treinos.',
+    emoji: '📅',
+  },
+  {
+    goal: 'billing',
+    title: 'Organizar cobranças / financeiro',
+    description: 'Acompanhar mensalidades, pagamentos e recebimentos.',
+    emoji: '💳',
+  },
+];
+
 export default function OnboardingPage() {
-  const { updateProfile, uploadLogo, isUpdatingProfile, isUploadingLogo } = useProfile();
+  const { profile, rawProfile, updateProfile, uploadLogo, isUpdatingProfile, isUploadingLogo } = useProfile();
   const navigate = useNavigate();
   
   const [step, setStep] = useState(1);
   const [ctName, setCtName] = useState('');
   const [businessType, setBusinessType] = useState<BusinessType>('sport_school');
+  const [onboardingGoal, setOnboardingGoal] = useState<OnboardingGoal>('schedule');
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
 
-  const totalSteps = 3;
+  const totalSteps = 4;
 
   const handleNextStep = () => {
     if (step === 1) {
@@ -48,6 +71,8 @@ export default function OnboardingPage() {
       setStep(2);
     } else if (step === 2) {
       setStep(3);
+    } else if (step === 3) {
+      setStep(4);
     }
   };
 
@@ -75,15 +100,25 @@ export default function OnboardingPage() {
         }
       }
 
+      const existingNicheSettings = rawProfile?.niche_settings || {};
+      const activeNiche = existingNicheSettings[businessType] || {};
+
       await updateProfile({
         ct_name: ctName,
-        logo_url: logoUrl,
+        logo_url: logoUrl !== null ? logoUrl : profile?.logo_url || null,
         business_type: businessType,
         onboarding_completed: true,
+        niche_settings: {
+          ...existingNicheSettings,
+          [businessType]: {
+            ...activeNiche,
+            onboarding_goal: onboardingGoal,
+          }
+        }
       });
 
       toast.success('Configuração concluída com sucesso!');
-      navigate('/');
+      navigate(getOnboardingGoalPath(businessType, onboardingGoal));
     } catch (error) {
       console.error(error);
       toast.error('Ocorreu um erro ao finalizar a configuração.');
@@ -94,7 +129,8 @@ export default function OnboardingPage() {
     switch (step) {
       case 1: return 'Bem-vindo ao Esportiz!';
       case 2: return 'Qual é o seu negócio?';
-      case 3: return 'Adicione sua logo';
+      case 3: return 'Qual é o seu objetivo inicial?';
+      case 4: return 'Adicione sua logo';
       default: return '';
     }
   };
@@ -103,7 +139,8 @@ export default function OnboardingPage() {
     switch (step) {
       case 1: return 'Para começarmos, qual é o nome do seu negócio?';
       case 2: return 'Escolha o tipo que melhor representa sua atividade. O sistema se adaptará automaticamente.';
-      case 3: return 'Personalize o sistema com a marca do seu negócio (opcional)';
+      case 3: return 'Isso nos ajuda a te levar diretamente para a área mais importante do seu dia a dia.';
+      case 4: return 'Personalize o sistema com a marca do seu negócio (opcional)';
       default: return '';
     }
   };
@@ -155,7 +192,6 @@ export default function OnboardingPage() {
           ) : step === 2 ? (
             <div className="space-y-3">
               {BUSINESS_OPTIONS.map((option) => {
-                const Icon = option.icon;
                 const isSelected = businessType === option.type;
                 return (
                   <button
@@ -200,6 +236,52 @@ export default function OnboardingPage() {
               })}
             </div>
           ) : step === 3 ? (
+            <div className="space-y-3">
+              {GOAL_OPTIONS.map((option) => {
+                const isSelected = onboardingGoal === option.goal;
+                return (
+                  <button
+                    key={option.goal}
+                    onClick={() => setOnboardingGoal(option.goal)}
+                    className={cn(
+                      'w-full flex items-center gap-4 p-4 rounded-xl border-2 transition-all duration-200 text-left group',
+                      isSelected
+                        ? 'border-primary bg-primary/5 shadow-md shadow-primary/10'
+                        : 'border-border hover:border-primary/40 hover:bg-muted/50'
+                    )}
+                  >
+                    <div className={cn(
+                      'flex items-center justify-center h-12 w-12 rounded-xl text-2xl shrink-0 transition-all',
+                      isSelected ? 'bg-primary/10 scale-110' : 'bg-muted group-hover:bg-primary/5'
+                    )}>
+                      {option.emoji}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className={cn(
+                        'font-semibold text-sm transition-colors',
+                        isSelected ? 'text-primary' : 'text-foreground'
+                      )}>
+                        {option.title}
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-0.5 truncate">
+                        {option.description}
+                      </p>
+                    </div>
+                    <div className={cn(
+                      'h-5 w-5 rounded-full border-2 shrink-0 flex items-center justify-center transition-all',
+                      isSelected
+                        ? 'border-primary bg-primary'
+                        : 'border-muted-foreground/30'
+                    )}>
+                      {isSelected && (
+                        <CheckCircle className="h-3 w-3 text-primary-foreground" />
+                      )}
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          ) : step === 4 ? (
             <div className="space-y-6">
               <div className="flex flex-col items-center justify-center border-2 border-dashed border-muted-foreground/25 rounded-xl p-8 transition-colors hover:border-primary/50 bg-muted/10">
                 {logoPreview ? (

@@ -1,5 +1,7 @@
 import { useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
+import { useProfile } from '@/hooks/queries/useProfile';
+import { getAuthenticatedHomePath } from '@/lib/authRouting';
 
 /**
  * LandingPage — rota pública "/"
@@ -13,17 +15,18 @@ import { useAuth } from '@/contexts/AuthContext';
  */
 export default function LandingPage() {
   const { user, loading } = useAuth();
+  const { profile, loadingProfile } = useProfile();
 
   useEffect(() => {
-    if (loading) return;
+    if (loading || (user && loadingProfile)) return;
 
     if (user) {
-      window.location.replace('/dashboard');
+      window.location.replace(getAuthenticatedHomePath(profile));
     } else {
       // Usamos o caminho físico para forçar a saída do controle do PWA antigo
       window.location.replace('/landing-v2.html');
     }
-  }, [user, loading]);
+  }, [user, loading, loadingProfile, profile]);
 
   // Tela de loading enquanto verifica autenticação
   return (

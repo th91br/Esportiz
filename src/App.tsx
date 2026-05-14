@@ -3,7 +3,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { PWABadge } from "@/components/PWABadge";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { AppProvider } from "@/contexts/AppContext";
 import LoginPage from "./pages/LoginPage";
@@ -34,49 +34,61 @@ import EnrollmentPage from "./pages/EnrollmentPage";
 import StudentPortalPage from "./pages/StudentPortalPage";
 import OnlineBookingPage from "./pages/OnlineBookingPage";
 import { useProfile } from "./hooks/queries/useProfile";
+import { getAuthenticatedHomePath } from "./lib/authRouting";
 
 
 const queryClient = new QueryClient();
-function ProtectedRoute({ children }: { children: React.ReactNode }) {
+function FullScreenLoader() {
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-background">
+      <div className="h-8 w-8 border-4 border-primary/30 border-t-primary rounded-full animate-spin" />
+    </div>
+  );
+}
+
+function LoginRoute() {
   const { user, loading: authLoading } = useAuth();
   const { profile, loadingProfile } = useProfile();
 
   if (authLoading || (user && loadingProfile)) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="h-8 w-8 border-4 border-primary/30 border-t-primary rounded-full animate-spin" />
-      </div>
-    );
+    return <FullScreenLoader />;
+  }
+
+  if (user) {
+    return <Navigate to={getAuthenticatedHomePath(profile)} replace />;
+  }
+
+  return <LoginPage />;
+}
+
+function ProtectedRoute({ children }: { children: React.ReactNode }) {
+  const location = useLocation();
+  const { user, loading: authLoading } = useAuth();
+  const { profile, loadingProfile } = useProfile();
+
+  if (authLoading || (user && loadingProfile)) {
+    return <FullScreenLoader />;
   }
 
   if (!user) {
-    return <Navigate to="/login" replace />;
+    return <Navigate to="/login?mode=login" replace />;
   }
 
-  // Redirect to onboarding if not completed and not already on onboarding
-  if (!profile?.onboarding_completed && window.location.pathname !== '/onboarding') {
+  const isOnboardingRoute = location.pathname === "/onboarding";
+  const homePath = getAuthenticatedHomePath(profile);
+
+  if (homePath === "/onboarding" && !isOnboardingRoute) {
     return <Navigate to="/onboarding" replace />;
   }
 
-  // Redirect to dashboard if onboarding is completed but user tries to access onboarding
-  if (profile?.onboarding_completed && window.location.pathname === '/onboarding') {
-    return <Navigate to="/dashboard" replace />;
+  if (homePath !== "/onboarding" && isOnboardingRoute) {
+    return <Navigate to={homePath} replace />;
   }
 
   return <>{children}</>;
 }
 
 function AppRoutes() {
-  const { user, loading } = useAuth();
-
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="h-8 w-8 border-4 border-primary/30 border-t-primary rounded-full animate-spin" />
-      </div>
-    );
-  }
-
   return (
     <Routes>
       {/* Rota pública — landing page */}
@@ -85,7 +97,7 @@ function AppRoutes() {
       <Route path="/agendar" element={<OnlineBookingPage />} />
       <Route path="/portal-aluno" element={<StudentPortalPage />} />
       {/* Auth */}
-      <Route path="/login" element={user ? <Navigate to="/dashboard" replace /> : <LoginPage />} />
+      <Route path="/login" element={<LoginRoute />} />
       <Route path="/reset-password" element={<ResetPasswordPage />} />
       {/* App protegido */}
       <Route path="/dashboard" element={<ProtectedRoute><Index /></ProtectedRoute>} />

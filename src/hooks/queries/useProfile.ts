@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
+import type { OnboardingGoal } from '@/lib/authRouting';
 
 export type BusinessType = 'sport_school' | 'arena' | 'other';
 
@@ -11,6 +12,7 @@ export interface NicheProfile {
   logo_url?: string | null;
   pix_key?: string | null;
   pix_receiver?: string | null;
+  onboarding_goal?: OnboardingGoal | null;
   templates?: {
     mass_all_active?: string;
     mass_overdue?: string;

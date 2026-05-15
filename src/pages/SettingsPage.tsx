@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Header } from '@/components/Header';
 import { useProfile } from '@/hooks/queries/useProfile';
 import { Button } from '@/components/ui/button';

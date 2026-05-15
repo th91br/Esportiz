@@ -25,10 +25,10 @@ export function PWABadge() {
     },
   });
 
-  const close = () => {
+  const close = useCallback(() => {
     setOfflineReady(false);
     setNeedRefresh(false);
-  };
+  }, [setOfflineReady, setNeedRefresh]);
 
   useEffect(() => {
     if (offlineReady) {
@@ -39,7 +39,7 @@ export function PWABadge() {
         },
       });
     }
-  }, [offlineReady]);
+  }, [offlineReady, close]);
 
   if (!needRefresh) return null;
 

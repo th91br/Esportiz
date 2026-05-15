@@ -44,7 +44,7 @@ export default function ComandasPage() {
     if (selectedComanda) {
       setModalTab('items');
     }
-  }, [selectedComanda?.id]);
+  }, [selectedComanda]);
 
   // Update selectedComanda state in real-time when the lists refresh
   useEffect(() => {
@@ -56,7 +56,7 @@ export default function ComandasPage() {
         setSelectedComanda(null);
       }
     }
-  }, [comandas]);
+  }, [comandas, selectedComanda]);
 
   // Categories of products
   const categories = useMemo(() => {

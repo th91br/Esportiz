@@ -49,7 +49,9 @@ export function ModalityManager() {
       await addModality({ name: newName, color: newColor });
       setNewName('');
       setIsAdding(false);
-    } catch (error) {}
+    } catch (error) {
+      console.error('Error processing modality operation:', error);
+    }
   };
 
   const handleStartEdit = (modality: Modality) => {
@@ -63,7 +65,9 @@ export function ModalityManager() {
     try {
       await updateModality(id, { name: editName, color: editColor });
       setEditingId(null);
-    } catch (error) {}
+    } catch (error) {
+      console.error('Error processing modality operation:', error);
+    }
   };
 
   return (

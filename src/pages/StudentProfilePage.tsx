@@ -232,7 +232,7 @@ export default function StudentProfilePage() {
                               <span className="font-semibold text-sm">{group.name}</span>
                             </div>
                             <div className="flex flex-wrap gap-1.5">
-                              {group.schedule.map((slot: any, i: number) => (
+                              {group.schedule.map((slot, i: number) => (
                                 <span key={i} className="text-xs bg-background border px-2 py-1 rounded-md text-muted-foreground">
                                   {getDayName(slot.dayOfWeek)} - {slot.time}
                                 </span>

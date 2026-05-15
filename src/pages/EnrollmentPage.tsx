@@ -219,7 +219,7 @@ export default function EnrollmentPage() {
           <CardFooter className="flex flex-col gap-2 p-6 pt-2">
             <Button 
               className="w-full btn-primary-gradient py-6 font-semibold"
-              onClick={() => navigate(`/portal-aluno?token=${successData.studentId}`)}
+              onClick={() => navigate('/portal-aluno')}
             >
               Acessar Meu Portal do Aluno <ArrowRight className="ml-2 h-4 w-4" />
             </Button>

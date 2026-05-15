@@ -90,7 +90,7 @@ export default function OnlineBookingPage() {
           setArenaName(data.arena_name || 'Esportiz Arena');
           
           // Map DB Modalities into Court objects
-          const mappedCourts = (data.courts || []).map((c: any) => {
+          const mappedCourts = (data.courts || []).map((c: Record<string, any>) => {
             let meta = {
               sportType: 'futevolei',
               coverage: 'open',
@@ -136,8 +136,9 @@ export default function OnlineBookingPage() {
 
           setReservations(data.reservations || []);
         }
-      } catch (err: any) {
-        console.error('Erro ao buscar dados da arena:', err);
+      } catch (err: unknown) {
+        const error = err as Error;
+        console.error('Erro ao buscar dados da arena:', error);
         toast.error('Erro ao carregar dados do CT.');
       } finally {
         setLoading(false);

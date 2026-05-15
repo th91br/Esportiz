@@ -120,10 +120,10 @@ export default function PaymentsPage() {
       });
   }, [monthReservations, students, searchTerm]);
 
-  const getStatus = (p: typeof monthPayments[0]): 'paid' | 'pending' | 'overdue' => {
+  const getStatus = useCallback((p: typeof monthPayments[0]): 'paid' | 'pending' | 'overdue' => {
     if (p.paid) return 'paid';
     return p.dueDate < todayStr ? 'overdue' : 'pending';
-  };
+  }, [todayStr]);
 
   // --- Dynamic Stats calculation depending on active sub-tab ---
   const showReservationsTab = isArena && activeSubTab === 'reservas';
@@ -149,7 +149,7 @@ export default function PaymentsPage() {
       return monthReservations.filter(r => r.paymentStatus === 'pending' && r.date < todayStr).length;
     }
     return monthPayments.filter(p => getStatus(p) === 'overdue').length;
-  }, [showReservationsTab, monthReservations, monthPayments, todayStr]);
+  }, [showReservationsTab, monthReservations, monthPayments, todayStr, getStatus]);
 
   const handleToggleReservationPayment = async (reservation: typeof reservations[0]) => {
     try {

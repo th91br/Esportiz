@@ -33,7 +33,9 @@ function getDismissed(): DismissedNotifications {
       }
       return { ...parsed, dismissDate: today };
     }
-  } catch {}
+  } catch (err) {
+    console.error('Error reading dismissed notifications:', err);
+  }
   return { trainings: [], overduePayments: false, dismissDate: getLocalTodayDate() };
 }
 
@@ -48,9 +50,9 @@ export function NotificationBell() {
   const { payments } = usePayments();
   const { attendance } = useAttendance();
 
-  const refreshData = async () => {
+  const refreshData = useCallback(async () => {
     await queryClient.invalidateQueries();
-  };
+  }, [queryClient]);
   const [open, setOpen] = useState(false);
   const [dismissed, setDismissed] = useState<DismissedNotifications>(getDismissed);
   const [tab, setTab] = useState<'all' | 'trainings' | 'payments' | 'birthdays'>('all');
@@ -122,7 +124,7 @@ export function NotificationBell() {
       setDismissed(reset);
       saveDismissed(reset);
     }
-  }, [todayTrainings]);
+  }, [todayTrainings, dismissed.dismissDate]);
 
 
 

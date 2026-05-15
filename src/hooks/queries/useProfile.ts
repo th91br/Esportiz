@@ -34,8 +34,6 @@ export interface Profile {
   secondary_color: string | null;
   business_type: BusinessType;
   onboarding_completed: boolean;
-  google_access_token?: string | null;
-  google_refresh_token?: string | null;
   google_calendar_id?: string | null;
   sheets_spreadsheet_id?: string | null;
   sheets_webhook_active?: boolean;
@@ -57,7 +55,24 @@ export function useProfile() {
 
       const { data, error } = await supabase
         .from('profiles')
-        .select('*')
+        .select(`
+          id,
+          user_id,
+          ct_name,
+          logo_url,
+          primary_color,
+          secondary_color,
+          business_type,
+          onboarding_completed,
+          google_calendar_id,
+          sheets_spreadsheet_id,
+          sheets_webhook_active,
+          pix_key,
+          pix_receiver,
+          niche_settings,
+          created_at,
+          updated_at
+        `)
         .eq('user_id', user.id)
         .single();
 

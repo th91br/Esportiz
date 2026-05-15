@@ -437,7 +437,7 @@ export default function ReportsPage() {
       { name: `${labels.trainingLabel} Experimentais`, value: experimentais, color: COLORS.warning },
       { name: 'Inativos (Churn)', value: inativos, color: COLORS.destructive },
     ];
-  }, [students]);
+  }, [students, labels.studentLabel, labels.trainingLabel]);
 
   const churnRate = useMemo(() => {
     const total = students.length;

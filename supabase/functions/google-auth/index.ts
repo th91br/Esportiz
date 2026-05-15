@@ -36,6 +36,10 @@ serve(async (req) => {
     const client_secret = Deno.env.get('GOOGLE_CLIENT_SECRET')
     const redirect_uri = Deno.env.get('GOOGLE_REDIRECT_URI') || 'http://localhost:8080/configuracoes'
 
+    if (!client_id || !client_secret) {
+      throw new Error('Google configuration missing')
+    }
+
     // Exchange code for tokens
     const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
       method: 'POST',
@@ -55,12 +59,6 @@ serve(async (req) => {
       console.error('Google Token Error:', tokens)
       throw new Error(tokens.error_description || tokens.error)
     }
-
-    // Initialize Supabase Client
-    const supabaseClient = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-    )
 
     // Update profile with tokens
     const { error: updateError } = await supabaseClient

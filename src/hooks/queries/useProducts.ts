@@ -17,15 +17,15 @@ export interface Product {
   minStock: number;
 }
 
-function mapProduct(row: any): Product {
+function mapProduct(row: Record<string, unknown>): Product {
   return {
-    id: row.id,
-    userId: row.user_id,
-    name: row.name,
+    id: String(row.id),
+    userId: String(row.user_id),
+    name: String(row.name),
     price: Number(row.price),
-    category: row.category || 'geral',
-    active: row.active,
-    createdAt: row.created_at,
+    category: String(row.category || 'geral'),
+    active: !!row.active,
+    createdAt: String(row.created_at),
     trackStock: !!row.track_stock,
     stockQuantity: Number(row.stock_quantity || 0),
     minStock: Number(row.min_stock || 0),
@@ -87,7 +87,7 @@ export function useProducts() {
   const updateProductMutation = useMutation({
     mutationFn: async ({ id, ...updates }: Partial<Product> & { id: string }) => {
       if (!user?.id) throw new Error('Not authenticated');
-      const dbUpdates: any = {};
+      const dbUpdates: Record<string, unknown> = {};
       if (updates.name !== undefined) dbUpdates.name = updates.name;
       if (updates.price !== undefined) dbUpdates.price = updates.price;
       if (updates.category !== undefined) dbUpdates.category = updates.category;

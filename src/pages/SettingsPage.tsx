@@ -84,9 +84,9 @@ export default function SettingsPage() {
     if (code && user && !isConnectingGoogle) {
       handleGoogleCallback(code);
     }
-  }, [user]);
+  }, [user, isConnectingGoogle, handleGoogleCallback]);
 
-  const handleGoogleCallback = async (code: string) => {
+  const handleGoogleCallback = useCallback(async (code: string) => {
     setIsConnectingGoogle(true);
     const toastId = toast.loading('Finalizando conexão com Google...');
     
@@ -116,7 +116,7 @@ export default function SettingsPage() {
     } finally {
       setIsConnectingGoogle(false);
     }
-  };
+  }, [user?.id, labels.studentLabel]);
 
   const handleConnectGoogle = () => {
     const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?` + 

@@ -101,7 +101,7 @@ export function ReservationModal({
       setDiscount(0);
       setNotes('');
     }
-  }, [open]);
+  }, [open, isEditing, existing, prefilledCourtId, courts, prefilledDate, today, prefilledTime]);
 
   const filteredStudents = students.filter(s =>
     s.active && s.name.toLowerCase().includes(reservanteSearch.toLowerCase())

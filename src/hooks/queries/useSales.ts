@@ -30,7 +30,7 @@ export function getPaymentMethodLabel(method: PaymentMethod): string {
   return PAYMENT_METHOD_LABELS[method] || method;
 }
 
-function mapSale(row: any): Sale {
+function mapSale(row: Record<string, any>): Sale {
   return {
     id: row.id,
     userId: row.user_id,
@@ -82,13 +82,13 @@ export function useSales() {
       // 1. Insert sale and automatically decrement stock atomically via RPC
       const { error } = await supabase.rpc('process_sale', {
         p_user_id: user.id,
-        p_business_type: businessType,
         p_product_id: sale.productId || null,
         p_product_name: sale.productName,
         p_quantity: sale.quantity,
         p_unit_price: sale.unitPrice,
         p_total: total,
-        p_payment_method: sale.paymentMethod || 'dinheiro'
+        p_payment_method: sale.paymentMethod || 'dinheiro',
+        p_business_type: businessType
       });
       if (error) throw error;
     },

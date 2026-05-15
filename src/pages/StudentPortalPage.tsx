@@ -30,11 +30,35 @@ interface PaymentLog {
   month_ref: string;
 }
 
+interface StudentPortalData {
+  id: string;
+  name: string;
+  school_name: string;
+  plan_name: string;
+}
+
+interface GroupPortalData {
+  id: string;
+  name: string;
+  location?: string;
+  schedule: Array<{
+    day: string;
+    startTime: string;
+    endTime: string;
+  }>;
+}
+
+interface AttendanceStats {
+  percent: number;
+  total_classes: number;
+  presences: number;
+  absences: number;
+}
+
 const monthNames = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
 
 export default function StudentPortalPage() {
   const [searchParams, setSearchParams] = useSearchParams();
-  const magicToken = searchParams.get('token');
 
   const [loading, setLoading] = useState(true);
   const [authenticating, setAuthenticating] = useState(false);
@@ -45,18 +69,17 @@ export default function StudentPortalPage() {
   const [birthDate, setBirthDate] = useState('');
 
   // Portal Data State
-  const [student, setStudent] = useState<any | null>(null);
-  const [groups, setGroups] = useState<any[]>([]);
-  const [attendanceStats, setAttendanceStats] = useState<any | null>(null);
+  const [student, setStudent] = useState<StudentPortalData | null>(null);
+  const [groups, setGroups] = useState<GroupPortalData[]>([]);
+  const [attendanceStats, setAttendanceStats] = useState<AttendanceStats | null>(null);
   const [attendanceLogs, setAttendanceLogs] = useState<AttendanceLog[]>([]);
   const [payments, setPayments] = useState<PaymentLog[]>([]);
 
-  // Authenticate student either via token or credentials
-  const authenticate = async (studentId?: string, forceCpf?: string, forceBirthDate?: string) => {
+  // Authenticate student via credentials
+  const authenticate = async (forceCpf?: string, forceBirthDate?: string) => {
     setAuthenticating(true);
     try {
       const { data, error } = await supabase.rpc('get_student_portal_data', {
-        p_student_id: studentId || null,
         p_cpf: forceCpf || null,
         p_birth_date: forceBirthDate || null,
       });
@@ -70,16 +93,8 @@ export default function StudentPortalPage() {
         setAttendanceLogs(data.attendance_logs || []);
         setPayments(data.payments || []);
         setAuthenticated(true);
-        if (!studentId) {
-          // If logged in via credentials, add student id to URL search params quietly for bookmarking
-          setSearchParams({ token: data.student.id });
-        }
       } else {
-        if (!studentId) {
-          toast.error('Dados incorretos. CPF ou Data de Nascimento inválidos.');
-        } else {
-          toast.error('Link mágico expirado ou inválido.');
-        }
+        toast.error('Dados incorretos. CPF ou Data de Nascimento inválidos.');
       }
     } catch (err: any) {
       console.error('Erro de autenticação no portal:', err);
@@ -91,12 +106,8 @@ export default function StudentPortalPage() {
   };
 
   useEffect(() => {
-    if (magicToken) {
-      authenticate(magicToken);
-    } else {
-      setLoading(false);
-    }
-  }, [magicToken]);
+    setLoading(false);
+  }, []);
 
   // Mask CPF
   const handleCpfChange = (val: string) => {
@@ -114,7 +125,7 @@ export default function StudentPortalPage() {
       toast.error('Preencha o CPF e a Data de Nascimento.');
       return;
     }
-    authenticate(undefined, cpf, birthDate);
+    authenticate(cpf, birthDate);
   };
 
   const handleLogout = () => {
@@ -350,7 +361,7 @@ export default function StudentPortalPage() {
 
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
                         {Array.isArray(g.schedule) && g.schedule.length > 0 ? (
-                          g.schedule.map((slot: any, idx: number) => (
+                          g.schedule.map((slot, idx: number) => (
                             <div key={idx} className="flex items-center gap-3 bg-background border border-border/40 p-2.5 rounded-lg text-xs font-medium">
                               <Calendar className="h-4 w-4 text-primary shrink-0" />
                               <div>

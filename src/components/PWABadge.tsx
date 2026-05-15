@@ -1,6 +1,6 @@
 import { useRegisterSW } from "virtual:pwa-register/react";
 import { Button } from "@/components/ui/button";
-import { useEffect } from "react";
+import { useCallback, useEffect } from "react";
 import { toast } from "sonner";
 import { RefreshCw, X, DownloadCloud } from "lucide-react";
 

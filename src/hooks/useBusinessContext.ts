@@ -82,6 +82,7 @@ function buildNavModules(type: BusinessType, labels: BusinessLabels): NavModule[
     despesas: { label: 'Despesas', path: '/despesas' },
     relatorios: { label: 'Relatórios', path: '/relatorios' },
     comunicacao: { label: 'Comunicação', path: '/comunicacao' },
+    contratos: { label: 'Contratos Digitais', path: '/contratos' },
     produtos: { label: 'Produtos', path: '/produtos' },
     vendas: { label: 'Vendas', path: '/vendas' },
   };

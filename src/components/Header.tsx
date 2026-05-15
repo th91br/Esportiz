@@ -56,13 +56,13 @@ export function Header() {
         </Link>
 
         {/* Desktop Navigation — driven by navModules (business-type aware) */}
-        <nav className="hidden md:flex items-center gap-0.5 flex-1 mx-2 min-w-0 overflow-x-auto scrollbar-none">
+        <nav className="hidden md:flex items-center justify-center gap-0.5 lg:gap-1 flex-1 mx-2 min-w-0 flex-nowrap overflow-x-auto no-scrollbar">
           {navModules.map((item) => (
             <Link
               key={item.path}
               to={item.path}
               className={cn(
-                'px-2.5 py-1.5 rounded-lg text-[12.5px] font-medium transition-colors whitespace-nowrap shrink-0',
+                'px-2 py-1 lg:px-2.5 lg:py-1.5 rounded-lg text-xs lg:text-[13px] font-medium transition-colors whitespace-nowrap shrink-0',
                 location.pathname === item.path
                   ? 'text-primary bg-primary/10 font-semibold'
                   : 'text-muted-foreground hover:text-foreground hover:bg-muted'

@@ -40,6 +40,21 @@ export default function StudentProfilePage() {
 
   const [activeTab, setActiveTab] = useState('overview');
 
+  // Editable Contract Clauses State
+  const [contractTitle, setContractTitle] = useState('CONTRATO DE PRESTAÇÃO DE SERVIÇOS ESPORTIVOS');
+  const [clauseObject, setClauseObject] = useState('O objeto do presente contrato é a prestação de serviços esportivos, visando o desenvolvimento técnico, tático e físico do aluno nas instalações do CT.');
+  const [clauseRules, setClauseRules] = useState('É dever do CONTRATANTE zelar pelas instalações, equipamentos e respeitar rigorosamente os horários preestabelecidos para os treinos. Em caso de falta injustificada, não haverá direito a reposição de aula.');
+  const [clauseTerms, setClauseTerms] = useState('O CONTRATANTE autoriza, a título gratuito, o uso da imagem e voz do aluno em campanhas publicitárias, redes sociais e materiais de divulgação do Centro de Treinamento.');
+  const [contractCity, setContractCity] = useState(profile?.city || 'Balneário Camboriú');
+
+  const handleResetContract = () => {
+    setContractTitle('CONTRATO DE PRESTAÇÃO DE SERVIÇOS ESPORTIVOS');
+    setClauseObject('O objeto do presente contrato é a prestação de serviços esportivos, visando o desenvolvimento técnico, tático e físico do aluno nas instalações do CT.');
+    setClauseRules('É dever do CONTRATANTE zelar pelas instalações, equipamentos e respeitar rigorosamente os horários preestabelecidos para os treinos. Em caso de falta injustificada, não haverá direito a reposição de aula.');
+    setClauseTerms('O CONTRATANTE autoriza, a título gratuito, o uso da imagem e voz do aluno em campanhas publicitárias, redes sociais e materiais de divulgação do Centro de Treinamento.');
+    setContractCity(profile?.city || 'Balneário Camboriú');
+  };
+
   const student = students.find(s => s.id === id);
   const loading = loadingStudents;
 
@@ -361,122 +376,207 @@ export default function StudentProfilePage() {
             </TabsContent>
           )}
 
-          {/* DOCUMENTS/CONTRACTS TAB */}
+          {/* DOCUMENTS/CONTRACTS TAB (Exclusivo para sport_school) */}
           <TabsContent value="documents" className="mt-6 space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
-             <Card>
-                <CardHeader className="flex flex-row items-center justify-between">
-                  <CardTitle className="text-lg flex items-center gap-2"><FileSignature className="h-5 w-5 text-primary" /> Termo de Adesão</CardTitle>
-                  <Button onClick={handlePrintContract} className="btn-primary-gradient gap-2">
-                    <FileText className="h-4 w-4" /> Gerar Contrato
-                  </Button>
-                </CardHeader>
-                <CardContent>
-                  <div className="bg-muted/30 border rounded-lg p-6 font-serif text-sm leading-relaxed max-h-[500px] overflow-y-auto">
-                    <div className="flex flex-col items-center justify-center mb-8 border-b pb-6">
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+              
+              {/* PAINEL DE EDIÇÃO (Esquerda - 5 colunas) */}
+              <div className="lg:col-span-5 space-y-6">
+                <Card className="border-border/60 shadow-sm">
+                  <CardHeader className="pb-4 border-b bg-muted/20">
+                    <div className="flex items-center justify-between">
+                      <CardTitle className="text-base font-bold flex items-center gap-2 text-foreground">
+                        <Edit className="h-4 w-4 text-primary" /> Editor de Cláusulas
+                      </CardTitle>
+                      <Button variant="ghost" size="sm" onClick={handleResetContract} className="text-xs text-muted-foreground hover:text-primary">
+                        Restaurar Padrão
+                      </Button>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="p-5 space-y-5">
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Título do Documento</label>
+                      <input 
+                        type="text" 
+                        value={contractTitle} 
+                        onChange={(e) => setContractTitle(e.target.value)} 
+                        className="w-full bg-background border border-input rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50" 
+                      />
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Cláusula 1ª - Do Objeto</label>
+                      <textarea 
+                        rows={3} 
+                        value={clauseObject} 
+                        onChange={(e) => setClauseObject(e.target.value)} 
+                        className="w-full bg-background border border-input rounded-lg p-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 resize-y" 
+                      />
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Cláusula 3ª - Das Regras Gerais</label>
+                      <textarea 
+                        rows={3} 
+                        value={clauseRules} 
+                        onChange={(e) => setClauseRules(e.target.value)} 
+                        className="w-full bg-background border border-input rounded-lg p-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 resize-y" 
+                      />
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Cláusula 4ª - Direito de Imagem e Termos</label>
+                      <textarea 
+                        rows={3} 
+                        value={clauseTerms} 
+                        onChange={(e) => setClauseTerms(e.target.value)} 
+                        className="w-full bg-background border border-input rounded-lg p-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 resize-y" 
+                      />
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Local / Cidade de Emissão</label>
+                      <input 
+                        type="text" 
+                        value={contractCity} 
+                        onChange={(e) => setContractCity(e.target.value)} 
+                        className="w-full bg-background border border-input rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50" 
+                      />
+                    </div>
+
+                    <Button onClick={handlePrintContract} className="w-full btn-primary-gradient gap-2 py-5 text-base mt-2 shadow-md">
+                      <FileText className="h-5 w-5" /> Imprimir Contrato
+                    </Button>
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* PRÉ-VISUALIZAÇÃO DO CONTRATO (Direita - 7 colunas) */}
+              <div className="lg:col-span-7">
+                <Card className="border-border shadow-md overflow-hidden bg-white">
+                  <div className="bg-secondary text-secondary-foreground px-6 py-3 flex items-center justify-between border-b">
+                    <span className="text-xs font-semibold uppercase tracking-wider flex items-center gap-2">
+                      <FileSignature className="h-4 w-4 text-primary" /> Visualização do Documento (Papel Timbrado)
+                    </span>
+                    <span className="text-xs text-secondary-foreground/70">A4 / Formato de Impressão</span>
+                  </div>
+
+                  <CardContent className="p-8 md:p-12 font-serif text-black text-sm leading-relaxed max-h-[700px] overflow-y-auto bg-white selection:bg-primary/20">
+                    <div className="flex flex-col items-center justify-center mb-8 border-b-2 border-black/80 pb-6">
                       {profile?.logo_url && (
                         <img src={profile.logo_url} alt="Logo" className="h-16 w-auto object-contain mb-4 grayscale" />
                       )}
-                      <h2 className="text-xl font-bold text-center uppercase">CONTRATO DE PRESTAÇÃO DE SERVIÇOS ESPORTIVOS</h2>
+                      <h2 className="text-xl font-bold text-center tracking-wide uppercase">{contractTitle}</h2>
                     </div>
                     
-                    <p className="mb-4">
+                    <p className="mb-6 text-justify">
                       Pelo presente instrumento particular, de um lado, <strong>{profile?.ct_name || 'CENTRO DE TREINAMENTO ESPORTIZ'}</strong>, doravante denominado <strong>CONTRATADO</strong>, 
                       e de outro lado, <strong>{student.name.toUpperCase()}</strong>, portador(a) do CPF nº {student.cpf || '___________'}, 
                       RG nº {student.rg || '___________'}, residente e domiciliado(a) em {student.address ? `${student.address}, ${student.city || ''} - ${student.state || ''}` : '_________________________________________'}, 
                       doravante denominado(a) <strong>CONTRATANTE</strong>.
                     </p>
 
-                    <h3 className="font-bold mt-6 mb-2">CLÁUSULA 1ª - DO OBJETO</h3>
-                    <p className="mb-4">
-                      O objeto do presente contrato é a prestação de serviços esportivos na modalidade de {modality?.name || '__________'}, 
-                      no nível {student.level}, nas instalações do CONTRATADO.
+                    <h3 className="font-bold text-base mt-6 mb-2">CLÁUSULA 1ª - DO OBJETO E MODALIDADE</h3>
+                    <p className="mb-6 text-justify">
+                      A prestação de serviços abrange a modalidade de <strong>{modality?.name || '__________'}</strong> no nível <em>{student.level}</em>. {clauseObject}
                     </p>
 
-                    <h3 className="font-bold mt-6 mb-2">CLÁUSULA 2ª - DOS VALORES E {labels.planLabelSingular.toUpperCase()}</h3>
-                    <p className="mb-4">
+                    <h3 className="font-bold text-base mt-6 mb-2">CLÁUSULA 2ª - DOS VALORES E {labels.planLabelSingular.toUpperCase()}</h3>
+                    <p className="mb-6 text-justify">
                       O CONTRATANTE adere ao {labels.planLabelSingular.toLowerCase()} <strong>{plan?.name || '__________'}</strong>, comprometendo-se ao pagamento 
-                      do valor de {plan ? `R$ ${plan.price.toFixed(2)}` : '__________'}, com vencimento todo dia {student.paymentDueDay || '__'} de cada mês.
+                      do valor mensal de <strong>{plan ? `R$ ${plan.price.toFixed(2)}` : '__________'}</strong>, com vencimento todo dia <strong>{student.paymentDueDay || '__'}</strong> de cada mês.
                     </p>
 
-                    <h3 className="font-bold mt-6 mb-2">CLÁUSULA 3ª - DAS REGRAS DO CT</h3>
-                    <p className="mb-4">
-                      É dever do CONTRATANTE zelar pelas instalações, equipamentos e respeitar os horários preestabelecidos para os(as) {labels.trainingLabel.toLowerCase()} 
-                      {studentGroups.length > 0 ? ` (${labels.groupLabel}: ${studentGroups.map(g => g.name).join(', ')})` : ''}.
+                    <h3 className="font-bold text-base mt-6 mb-2">CLÁUSULA 3ª - DAS REGRAS GERAIS E HORÁRIOS</h3>
+                    <p className="mb-6 text-justify">
+                      Os horários preestabelecidos para os(as) {labels.trainingLabel.toLowerCase()} cadastrados são
+                      {studentGroups.length > 0 ? ` da(s) ${labels.groupLabel.toLowerCase()}: ${studentGroups.map(g => g.name).join(', ')}` : ' a definir no sistema'}. {clauseRules}
                     </p>
 
-                    <div className="mt-16 pt-8 border-t border-dashed grid grid-cols-2 gap-8 text-center">
+                    <h3 className="font-bold text-base mt-6 mb-2">CLÁUSULA 4ª - DO DIREITO DE IMAGEM E DISPOSIÇÕES FINAIS</h3>
+                    <p className="mb-6 text-justify">
+                      {clauseTerms}
+                    </p>
+
+                    <div className="mt-20 pt-8 border-t border-dashed border-black/30 grid grid-cols-2 gap-8 text-center">
                       <div>
                         <div className="w-full border-b border-black mb-2"></div>
-                        <p className="font-bold">{student.name}</p>
-                        <p className="text-xs text-muted-foreground">CONTRATANTE</p>
+                        <p className="font-bold text-xs uppercase">{student.name}</p>
+                        <p className="text-[11px] text-muted-foreground">CONTRATANTE</p>
                       </div>
                       <div>
                         <div className="w-full border-b border-black mb-2"></div>
-                        <p className="font-bold">{profile?.ct_name || 'Esportiz'}</p>
-                        <p className="text-xs text-muted-foreground">CONTRATADO</p>
+                        <p className="font-bold text-xs uppercase">{profile?.ct_name || 'Esportiz'}</p>
+                        <p className="text-[11px] text-muted-foreground">CONTRATADO</p>
                       </div>
                     </div>
                     
-                    <p className="text-right mt-8 text-xs text-muted-foreground">
-                      {profile?.city || 'Cidade'}, {new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' })}
+                    <p className="text-right mt-12 text-xs text-muted-foreground italic">
+                      {contractCity}, {new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' })}
                     </p>
-                  </div>
-                </CardContent>
-             </Card>
+                  </CardContent>
+                </Card>
+              </div>
+
+            </div>
           </TabsContent>
         </Tabs>
 
       </main>
 
       {/* Print-only layout for the contract */}
-      <div className="hidden print:block font-serif text-black p-8">
+      <div className="hidden print:block font-serif text-black p-8 bg-white">
         <div className="flex flex-col items-center justify-center mb-10 border-b-2 border-black pb-8">
           {profile?.logo_url && (
             <img src={profile.logo_url} alt="Logo" className="h-20 w-auto object-contain mb-6 grayscale" />
           )}
-          <h2 className="text-2xl font-bold text-center uppercase">CONTRATO DE PRESTAÇÃO DE SERVIÇOS ESPORTIVOS</h2>
+          <h2 className="text-2xl font-bold text-center tracking-wide uppercase">{contractTitle}</h2>
         </div>
         
-        <p className="mb-6 text-justify">
+        <p className="mb-6 text-justify text-base leading-relaxed">
           Pelo presente instrumento particular, de um lado, <strong>{profile?.ct_name || 'CENTRO DE TREINAMENTO ESPORTIZ'}</strong>, doravante denominado <strong>CONTRATADO</strong>, 
           e de outro lado, <strong>{student.name.toUpperCase()}</strong>, portador(a) do CPF nº {student.cpf || '___________'}, 
           RG nº {student.rg || '___________'}, residente e domiciliado(a) em {student.address ? `${student.address}, ${student.city || ''} - ${student.state || ''}` : '_________________________________________'}, 
           doravante denominado(a) <strong>CONTRATANTE</strong>.
         </p>
 
-        <h3 className="font-bold mt-6 mb-2">CLÁUSULA 1ª - DO OBJETO</h3>
-        <p className="mb-6 text-justify">
-          O objeto do presente contrato é a prestação de serviços esportivos na modalidade de {modality?.name || '__________'}, 
-          no nível {student.level}, nas instalações do CONTRATADO.
+        <h3 className="font-bold text-lg mt-8 mb-3">CLÁUSULA 1ª - DO OBJETO E MODALIDADE</h3>
+        <p className="mb-6 text-justify text-base leading-relaxed">
+          A prestação de serviços abrange a modalidade de <strong>{modality?.name || '__________'}</strong> no nível <em>{student.level}</em>. {clauseObject}
         </p>
 
-        <h3 className="font-bold mt-6 mb-2">CLÁUSULA 2ª - DOS VALORES E {labels.planLabelSingular.toUpperCase()}</h3>
-        <p className="mb-6 text-justify">
+        <h3 className="font-bold text-lg mt-8 mb-3">CLÁUSULA 2ª - DOS VALORES E {labels.planLabelSingular.toUpperCase()}</h3>
+        <p className="mb-6 text-justify text-base leading-relaxed">
           O CONTRATANTE adere ao {labels.planLabelSingular.toLowerCase()} <strong>{plan?.name || '__________'}</strong>, comprometendo-se ao pagamento 
-          do valor de {plan ? `R$ ${plan.price.toFixed(2)}` : '__________'}, com vencimento todo dia {student.paymentDueDay || '__'} de cada mês.
+          do valor mensal de <strong>{plan ? `R$ ${plan.price.toFixed(2)}` : '__________'}</strong>, com vencimento todo dia <strong>{student.paymentDueDay || '__'}</strong> de cada mês.
         </p>
 
-        <h3 className="font-bold mt-6 mb-2">CLÁUSULA 3ª - DAS REGRAS GERAIS</h3>
-        <p className="mb-6 text-justify">
-          É dever do CONTRATANTE zelar pelas instalações, equipamentos e respeitar os horários preestabelecidos para os(as) {labels.trainingLabel.toLowerCase()} 
-          {studentGroups.length > 0 ? ` (${labels.groupLabel}: ${studentGroups.map(g => g.name).join(', ')})` : ''}.
+        <h3 className="font-bold text-lg mt-8 mb-3">CLÁUSULA 3ª - DAS REGRAS GERAIS E HORÁRIOS</h3>
+        <p className="mb-6 text-justify text-base leading-relaxed">
+          Os horários preestabelecidos para os(as) {labels.trainingLabel.toLowerCase()} cadastrados são
+          {studentGroups.length > 0 ? ` da(s) ${labels.groupLabel.toLowerCase()}: ${studentGroups.map(g => g.name).join(', ')}` : ' a definir no sistema'}. {clauseRules}
         </p>
 
-        <div className="mt-32 pt-8 grid grid-cols-2 gap-16 text-center">
+        <h3 className="font-bold text-lg mt-8 mb-3">CLÁUSULA 4ª - DO DIREITO DE IMAGEM E DISPOSIÇÕES FINAIS</h3>
+        <p className="mb-6 text-justify text-base leading-relaxed">
+          {clauseTerms}
+        </p>
+
+        <div className="mt-32 pt-8 grid grid-cols-2 gap-16 text-center text-base">
           <div>
             <div className="w-full border-b border-black mb-2"></div>
-            <p className="font-bold">{student.name}</p>
+            <p className="font-bold uppercase">{student.name}</p>
             <p className="text-xs">CONTRATANTE</p>
           </div>
           <div>
             <div className="w-full border-b border-black mb-2"></div>
-            <p className="font-bold">{profile?.ct_name || 'Esportiz'}</p>
+            <p className="font-bold uppercase">{profile?.ct_name || 'Esportiz'}</p>
             <p className="text-xs">CONTRATADO</p>
           </div>
         </div>
         
-        <p className="text-right mt-16 text-sm">
-          {profile?.city || 'Cidade'}, {new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' })}
+        <p className="text-right mt-16 text-sm italic">
+          {contractCity}, {new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' })}
         </p>
       </div>
 

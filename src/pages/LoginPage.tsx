@@ -29,7 +29,7 @@ const VIEW_COPY: Record<View, { title: string; description: string }> = {
   },
   signup: {
     title: "Crie sua conta de teste",
-    description: "Comece com 30 dias gratis, sem cartao e com onboarding guiado.",
+    description: "Comece com 14 dias gratis, sem cartao e com onboarding guiado.",
   },
   forgot: {
     title: "Recupere seu acesso",
@@ -188,7 +188,7 @@ export default function LoginPage() {
 
       toast({
         title: "Conta criada",
-        description: "Confirme seu e-mail para liberar o teste de 30 dias.",
+        description: "Confirme seu e-mail para liberar o teste de 14 dias.",
       });
 
       setName("");
@@ -301,7 +301,7 @@ export default function LoginPage() {
               <p className="text-sm text-muted-foreground leading-relaxed">{copy.description}</p>
               {view === "signup" && (
                 <div className="inline-flex items-center justify-center rounded-full border border-primary/20 bg-primary/10 px-4 py-1.5 text-xs font-medium text-primary mt-3 w-fit mx-auto shadow-sm">
-                  30 dias gratis, sem cartao e com acesso completo
+                  14 dias gratis, sem cartao e com acesso completo
                 </div>
               )}
             </div>

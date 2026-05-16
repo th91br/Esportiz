@@ -86,7 +86,7 @@ strong{font-weight:500;}
 .badge{display:inline-flex;align-items:center;gap:8px;padding:6px 14px;border-radius:100px;background:rgba(29,184,116,.1);border:1px solid rgba(29,184,116,.3);font-size:13px;font-weight:500;color:var(--green);margin-bottom:20px;}
 .badge .dot{width:7px;height:7px;border-radius:50%;background:var(--green);animation:pulse 2s infinite;}
 @keyframes pulse{0%,100%{transform:scale(1);opacity:1;}50%{transform:scale(1.6);opacity:.5;}}
-.btn{display:inline-flex;align-items:center;gap:8px;padding:14px 28px;border-radius:10px;font-family:'DM Sans',sans-serif;font-weight:500;font-size:16px;cursor:pointer;border:none;transition:all .35s cubic-bezier(.4,0,.2,1);}
+.btn{display:inline-flex;align-items:center;gap:8px;padding:14px 28px;border-radius:10px;font-family:'DM Sans',sans-serif;font-weight:500;font-size:16px;cursor:pointer;border:none;transition:all .35s cubic-bezier(.4,0,.2,1);white-space:nowrap;}
 .btn-primary{background:var(--green);color:#fff;}
 .btn-primary:hover{background:var(--green-dark);transform:translateY(-2px);box-shadow:0 20px 40px rgba(29,184,116,.35);}
 .btn-outline{background:transparent;color:#fff;border:1.5px solid rgba(255,255,255,.2);}
@@ -140,7 +140,7 @@ nav{position:fixed;top:0;left:0;right:0;z-index:1000;padding:0 24px;transition:b
 .hero-content{max-width:1200px;margin:0 auto;display:grid;grid-template-columns:1fr 1fr;gap:80px;align-items:center;width:100%;}
 .hero-text .btn-group{display:flex;gap:16px;flex-wrap:wrap;margin:32px 0;}
 .hero-text h1{font-size:clamp(40px,6vw,76px);font-weight:800;line-height:1.05;letter-spacing:-2.5px;word-break:break-word;}
-.hero-text p{font-size:18px;font-weight:400;color:rgba(255,255,255,.68);line-height:1.75;margin-top:24px;max-width:480px;}
+.hero-text p{font-size:18px;font-weight:400;color:rgba(255,255,255,.68);line-height:1.75;margin-top:24px;max-width:580px;}
 .social-proof{display:flex;align-items:center;gap:14px;margin-top:8px;}
 .avatars{display:flex;}
 .avatar{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;border:2px solid var(--night);margin-left:-10px;font-family:'Syne',sans-serif;}
@@ -487,14 +487,17 @@ nav{position:fixed;top:0;left:0;right:0;z-index:1000;padding:0 24px;transition:b
 
 /* DEPOIMENTOS */
 .testi-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:24px;}
-.testi-card{padding:36px;}
-.stars{color:var(--green);font-size:16px;margin-bottom:18px;letter-spacing:2px;}
-.testi-card blockquote{font-size:15px;font-weight:400;font-style:italic;color:rgba(255,255,255,.78);line-height:1.8;margin-bottom:24px;}
-.testi-divider{height:1px;background:rgba(255,255,255,.06);margin-bottom:20px;}
+.testi-card{background:linear-gradient(135deg, #071220 0%, #0A1628 100%);border:1px solid rgba(29, 184, 116, 0.15);border-radius:24px;overflow:hidden;display:flex;flex-direction:column;transition:all 0.3s ease;}
+.testi-card:hover{transform:translateY(-4px);border-color:rgba(29, 184, 116, 0.4);box-shadow:0 10px 30px rgba(29, 184, 116, 0.1);}
+.testi-img{width:100%;height:280px;object-fit:cover;}
+.testi-content{padding:24px;display:flex;flex-direction:column;flex:1;}
+.stars{color:#1DB874;font-size:16px;margin-bottom:12px;letter-spacing:2px;}
+.testi-card blockquote{font-family:'DM Sans',sans-serif;font-size:15px;font-weight:400;color:rgba(255,255,255,0.72);line-height:1.7;margin-bottom:20px;flex:1;}
+.testi-divider{height:1px;background:rgba(255,255,255,.06);margin-bottom:16px;}
 .testi-author{display:flex;align-items:center;gap:12px;}
-.t-avatar{width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;flex-shrink:0;font-family:'Syne',sans-serif;}
-.t-name{font-weight:500;font-size:14px;}
-.t-role{font-size:13px;color:rgba(255,255,255,.45);}
+.t-avatar{width:36px;height:36px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0;font-family:'Syne',sans-serif;}
+.t-name{font-family:'Syne',sans-serif;font-weight:700;font-size:14px;color:#fff;}
+.t-role{font-size:12px;color:rgba(255,255,255,.45);margin-top:2px;}
 
 /* FAQ */
 .faq-list{max-width:720px;margin:0 auto;display:flex;flex-direction:column;gap:12px;}
@@ -543,7 +546,7 @@ footer{padding:60px 0 30px;border-top:1px solid rgba(255,255,255,.06);background
   .mockup-wrap{max-width:520px;margin:0 auto;}
   .who-grid{grid-template-columns:repeat(2,1fr);}
   .nums-grid{grid-template-columns:repeat(2,1fr);}
-  .testi-grid{grid-template-columns:1fr;max-width:560px;margin:0 auto;}
+  .testi-grid{grid-template-columns:repeat(2,1fr);max-width:100%;margin:0 auto;}
   .feat-grid{grid-template-columns:repeat(2,1fr);}
 }
 
@@ -575,7 +578,7 @@ footer{padding:60px 0 30px;border-top:1px solid rgba(255,255,255,.06);background
   .container{padding:0 20px;}
 
   /* Steps / Features */
-  .steps-grid,.feat-grid{grid-template-columns:1fr;}
+  .steps-grid,.feat-grid,.testi-grid{grid-template-columns:1fr;}
   .stepper-timeline{display:none !important;}
 
   /* For Whom */
@@ -1572,7 +1575,7 @@ footer{padding:60px 0 30px;border-top:1px solid rgba(255,255,255,.06);background
 /* --- SEÇÃO DE PLANOS --- */
 .plans-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 20px;
   margin-top: 48px;
 }
@@ -1581,12 +1584,11 @@ footer{padding:60px 0 30px;border-top:1px solid rgba(255,255,255,.06);background
   background: rgba(255, 255, 255, 0.02);
   border: 1px solid rgba(255, 255, 255, 0.05);
   border-radius: 20px;
-  padding: 36px 32px;
+  padding: 36px 20px;
   position: relative;
   display: flex;
   flex-direction: column;
   transition: transform 0.3s ease, border-color 0.3s ease;
-  overflow: hidden;
 }
 
 .plan-card:hover {
@@ -1606,10 +1608,19 @@ footer{padding:60px 0 30px;border-top:1px solid rgba(255,255,255,.06);background
 .plan-card::before {
   content: '';
   position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 3px;
+  top: -1px;
+  left: -1px;
+  right: -1px;
+  height: 4px;
+  border-top-left-radius: 20px;
+  border-top-right-radius: 20px;
+}
+
+.plan-card.popular::before,
+.plan-card.elite::before {
+  top: -2px;
+  left: -2px;
+  right: -2px;
 }
 
 .plan-card.sport::before { background: #378ADD; }
@@ -1654,9 +1665,25 @@ footer{padding:60px 0 30px;border-top:1px solid rgba(255,255,255,.06);background
 
 .plan-price {
   font-family: 'Syne', sans-serif;
-  font-size: 36px;
+  font-size: clamp(16px, 1.8vw, 24px);
   font-weight: 800;
   color: #fff;
+  white-space: nowrap;
+  display: flex;
+  align-items: baseline;
+  gap: 2px;
+  letter-spacing: -0.5px;
+}
+
+.price-symbol {
+  font-size: 0.6em;
+  font-weight: 700;
+}
+
+.plan-features-wrapper {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
 }
 
 .plan-period {
@@ -1850,74 +1877,7 @@ footer{padding:60px 0 30px;border-top:1px solid rgba(255,255,255,.06);background
   margin-top: 32px;
 }
 
-/* Accordion FAQ */
-.plans-faq {
-  max-width: 800px;
-  margin: 64px auto 0;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
 
-.faq-item {
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.07);
-  border-radius: 12px;
-  overflow: hidden;
-  transition: background 0.3s ease;
-}
-
-.faq-item:hover {
-  background: rgba(255, 255, 255, 0.05);
-}
-
-.faq-trigger {
-  width: 100%;
-  padding: 20px 24px;
-  background: none;
-  border: none;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  cursor: pointer;
-  text-align: left;
-}
-
-.faq-title {
-  font-family: 'Syne', sans-serif;
-  font-size: 16px;
-  font-weight: 700;
-  color: #fff;
-}
-
-.faq-icon {
-  color: #1DB874;
-  font-size: 20px;
-  transition: transform 0.3s ease;
-}
-
-.faq-item.open .faq-icon {
-  transform: rotate(45deg); /* + vira x */
-}
-
-.faq-content {
-  max-height: 0;
-  overflow: hidden;
-  transition: max-height 0.3s ease, padding 0.3s ease;
-}
-
-.faq-item.open .faq-content {
-  max-height: 200px; /* valor arbitrário grande o suficiente */
-  padding: 0 24px 20px 24px;
-}
-
-.faq-text {
-  font-family: 'DM Sans', sans-serif;
-  font-size: 14px;
-  font-weight: 300;
-  color: rgba(255, 255, 255, 0.6);
-  line-height: 1.6;
-}
 
 /* Responsividade */
 @media (max-width: 1024px) {
@@ -1960,6 +1920,7 @@ footer{padding:60px 0 30px;border-top:1px solid rgba(255,255,255,.06);background
       <a href="#integracoes">Integrações</a>
       <a href="#para-quem">Para quem</a>
       <a href="#depoimentos">Depoimentos</a>
+      <a href="#planos">Planos</a>
       <a href="#faq">Perguntas</a>
       <a href="/contato.html" class="nav-contact-link">Contato</a>
     </div>
@@ -1979,6 +1940,7 @@ footer{padding:60px 0 30px;border-top:1px solid rgba(255,255,255,.06);background
   <a href="#integracoes" class="mob-link">Integrações</a>
   <a href="#para-quem" class="mob-link">Para quem</a>
   <a href="#depoimentos" class="mob-link">Depoimentos</a>
+  <a href="#planos" class="mob-link">Planos</a>
   <a href="#faq" class="mob-link">Perguntas</a>
   <a href="/contato.html" class="mob-link">Contato</a>
   <a href="/login?mode=signup" class="btn btn-primary" style="margin-top:16px;">Começar grátis →</a>
@@ -1995,10 +1957,10 @@ footer{padding:60px 0 30px;border-top:1px solid rgba(255,255,255,.06);background
   <div class="hero-content">
     <div class="hero-text">
       <div class="badge reveal"><span class="dot"></span> Escolas Esportivas · Arenas · CTs</div>
-      <h1 class="reveal">Sua escola.<br><span class="grad">Organizada.</span><br>Agora.</h1>
-      <p class="reveal">Alunos, presença, cobranças e comunicação em um só lugar. Sem planilha. Direto do celular.</p>
+      <h1 class="reveal">Criado por professor.<br><span class="grad">Feito para quem vive da quadra.</span></h1>
+      <p class="reveal">Gestão descomplicada e profissional para escolas esportivas, arenas, CTs e professores controlarem alunos, horários, reservas, mensalidades e financeiro direto do celular — sem planilhas, sem bagunça no WhatsApp e sem improviso.</p>
       <div class="btn-group reveal">
-        <a href="/login?mode=signup" class="btn btn-primary" id="hero-cta">Começar 30 dias grátis →</a>
+        <a href="/login?mode=signup" class="btn btn-primary" id="hero-cta">Começar 14 dias grátis →</a>
         <a href="#como-funciona" class="btn btn-outline">Ver como funciona</a>
       </div>
       <p class="hero-microcopy reveal">Sem cartão de crédito. Cancele quando quiser.</p>
@@ -2147,10 +2109,10 @@ footer{padding:60px 0 30px;border-top:1px solid rgba(255,255,255,.06);background
     </div>
     <div class="cred-item"><span class="cred-sep">·</span></div>
     
-    <!-- Item 8: 30 dias grátis -->
+    <!-- Item 8: 14 dias grátis -->
     <div class="cred-item">
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
-      <strong>30 dias grátis</strong> — sem cartão
+      <strong>14 dias grátis</strong> — sem cartão
     </div>
     <div class="cred-item"><span class="cred-sep">·</span></div>
 
@@ -2199,7 +2161,7 @@ footer{padding:60px 0 30px;border-top:1px solid rgba(255,255,255,.06);background
     
     <div class="cred-item">
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
-      <strong>30 dias grátis</strong> — sem cartão
+      <strong>14 dias grátis</strong> — sem cartão
     </div>
     <div class="cred-item"><span class="cred-sep">·</span></div>
   </div>
@@ -2337,7 +2299,7 @@ footer{padding:60px 0 30px;border-top:1px solid rgba(255,255,255,.06);background
         <!-- CARD 1 -->
         <div class="card step-card reveal">
           <h3>Crie sua conta</h3>
-          <p>Faça seu cadastro em menos de 1 minuto. 30 dias de acesso total sem precisar cadastrar cartão.</p>
+          <p>Faça seu cadastro em menos de 1 minuto. 14 dias de acesso total sem precisar cadastrar cartão.</p>
           
           <div class="step-pill">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
@@ -2396,7 +2358,7 @@ footer{padding:60px 0 30px;border-top:1px solid rgba(255,255,255,.06);background
       </a>
       <div class="rocket-subtext">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-        30 dias grátis · Sem cartão · Cancele quando quiser
+        14 dias grátis · Sem cartão · Cancele quando quiser
       </div>
     </div>
   </div>
@@ -2838,12 +2800,14 @@ footer{padding:60px 0 30px;border-top:1px solid rgba(255,255,255,.06);background
     <!-- CENTRAL WHATSAPP -->
     <div class="zebra-row reveal">
       <div class="zebra-text">
-        <h3 class="zebra-title">Central WhatsApp</h3>
-        <p class="zebra-desc">Cobre mensalidades atrasadas ou envie avisos de turmas sem precisar digitar uma única palavra. Textos inteligentes que convertem.</p>
+        <h3 class="zebra-title">Comunicação inteligente via WhatsApp</h3>
+        <p class="zebra-desc">Envie cobranças, lembretes e avisos para alunos e turmas usando templates prontos e segmentação inteligente.</p>
         <ul class="zebra-list">
-          <li><svg class="zebra-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Mensagens pré-definidas com dados do aluno.</li>
-          <li><svg class="zebra-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Envio direto para o WhatsApp do aluno.</li>
-          <li><svg class="zebra-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Zero risco de banimento (envio assistido).</li>
+          <li><svg class="zebra-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Cobranças rápidas</li>
+          <li><svg class="zebra-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Avisos para turmas específicas</li>
+          <li><svg class="zebra-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Templates prontos</li>
+          <li><svg class="zebra-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Comunicação organizada</li>
+          <li><svg class="zebra-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Mais agilidade no dia a dia</li>
         </ul>
       </div>
       <div class="zebra-img-wrap">
@@ -2948,7 +2912,7 @@ footer{padding:60px 0 30px;border-top:1px solid rgba(255,255,255,.06);background
     <!-- CTA INTERMEDIÁRIO -->
     <div class="cta-inline reveal">
       <p>Quer ver tudo isso funcionando na prática?</p>
-      <a href="/login?mode=signup" class="btn btn-primary">Testar grátis por 30 dias →</a>
+      <a href="/login?mode=signup" class="btn btn-primary">Testar grátis por 14 dias →</a>
       <div class="microcopy">Sem compromisso. Sem cartão.</div>
     </div>
 
@@ -2958,7 +2922,7 @@ footer{padding:60px 0 30px;border-top:1px solid rgba(255,255,255,.06);background
       <div class="card compact-card reveal">
         <div class="c-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></div>
         <h3>Comunicação Inteligente</h3>
-        <p>Disparos assistidos via WhatsApp para alunos sem risco de banimento.</p>
+        <p>Envio de cobranças e avisos segmentados via WhatsApp.</p>
       </div>
       <!-- Exportação -->
       <div class="card compact-card reveal" style="transition-delay: 100ms;">
@@ -2979,18 +2943,16 @@ footer{padding:60px 0 30px;border-top:1px solid rgba(255,255,255,.06);background
         <p>Organize múltiplas modalidades, categorias e horários num só lugar.</p>
       </div>
     </div>
-
   </div>
 </section>
-
 
 <!-- INTEGRAÇÕES -->
 <section class="section" id="integracoes" style="background: rgba(255,255,255,0.01); border-top: 1px solid rgba(255,255,255,0.03);">
   <div class="container">
     <div class="section-header">
       <div class="badge reveal">Integrações</div>
-      <h2 class="reveal">Conecta com as ferramentas que você já usa.</h2>
-      <p class="reveal">O Esportiz integra nativamente com Google Agenda e planilhas. Zero fricção, zero retrabalho.</p>
+      <h2 class="reveal">Tudo conectado à rotina da sua operação.</h2>
+      <p class="reveal">O Esportiz foi criado para funcionar de forma prática, rápida e integrada ao dia a dia de escolas esportivas, arenas e CTs.</p>
     </div>
     
     <div class="integrations-grid">
@@ -2998,36 +2960,86 @@ footer{padding:60px 0 30px;border-top:1px solid rgba(255,255,255,.06);background
       <div class="int-card google reveal">
         <div class="int-badge">Disponível</div>
         <h3>Google Agenda</h3>
-        <p>Sincronize treinos e turmas automaticamente. Seus eventos do Esportiz aparecem direto na sua agenda Google — e vice-versa.</p>
-        <ul class="int-list">
-          <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg> Treinos sincronizados em tempo real</li>
-          <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg> Adicione alunos pelo e-mail da agenda</li>
-          <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg> Notificações automáticas de treinos</li>
-        </ul>
+        <p>Sincronize aulas, reservas e treinos automaticamente.</p>
         <div class="int-illus-new">
           <img src="/assets/integrations/calendar.png" alt="Integração Google Agenda" class="int-img" loading="lazy" />
           <div class="int-glow blue"></div>
         </div>
       </div>
 
-      <!-- Excel / Sheets -->
+      <!-- Google Sheets -->
       <div class="int-card excel reveal">
         <div class="int-badge">Disponível</div>
-        <h3>Excel & Google Sheets</h3>
-        <p>Exporte e sincronize pagamentos com sua planilha na nuvem. O sistema reconhece atualizações e reflete no financeiro em tempo real.</p>
-        <ul class="int-list">
-          <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg> Export direto para .xlsx</li>
-          <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg> Sincronização via Google Sheets</li>
-          <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg> Histórico financeiro completo</li>
-        </ul>
+        <h3>Google Sheets</h3>
+        <p>Exporte relatórios financeiros e operacionais em segundos.</p>
         <div class="int-illus-new">
-          <img src="/assets/integrations/sheets.png" alt="Integração Excel e Google Sheets" class="int-img" loading="lazy" />
+          <img src="/assets/integrations/sheets.png" alt="Integração Google Sheets" class="int-img" loading="lazy" />
           <div class="int-glow green"></div>
+        </div>
+      </div>
+
+      <!-- WhatsApp Inteligente -->
+      <div class="int-card whatsapp reveal">
+        <div class="int-badge">Disponível</div>
+        <h3>WhatsApp Inteligente</h3>
+        <p>Envie cobranças e comunicados usando templates prontos.</p>
+        <div class="int-illus-new" style="display: flex; flex-direction: column; gap: 8px; padding: 12px; height: 140px; justify-content: center; background: rgba(0,0,0,0.2); border-radius: 12px; margin-top: auto;">
+          <!-- Template Selector Chip -->
+          <div style="align-self: flex-start; background: rgba(29, 184, 116, 0.15); border: 1px solid rgba(29, 184, 116, 0.3); border-radius: 6px; padding: 4px 8px; font-size: 10px; font-weight: 700; color: #1DB874; text-transform: uppercase;">
+            Template: Cobrança
+          </div>
+          <!-- Chat Bubble -->
+          <div style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.05); border-radius: 10px; padding: 10px; font-size: 11px; color: rgba(255,255,255,0.8); max-width: 90%; align-self: flex-end; position: relative;">
+            Olá, <span style="color: #1DB874; font-weight: 600;">{aluno}</span>! ⚽️<br>
+            Sua mensalidade de <span style="color: #1DB874; font-weight: 600;">{mes}</span> está disponível.
+            <!-- Little tail for the bubble -->
+            <div style="position: absolute; right: -5px; top: 10px; width: 0; height: 0; border-top: 5px solid transparent; border-bottom: 5px solid transparent; border-left: 5px solid rgba(255,255,255,0.03);"></div>
+          </div>
+          <!-- Glow -->
+          <div class="int-glow green" style="opacity: 0.2; bottom: -20px; left: 50%; transform: translateX(-50%);"></div>
+        </div>
+      </div>
+
+      <!-- PWA Mobile -->
+      <div class="int-card pwa reveal">
+        <div class="int-badge">Disponível</div>
+        <h3>PWA Mobile</h3>
+        <p>Use diretamente no celular como aplicativo.</p>
+        <div class="int-illus-new" style="display: flex; justify-content: center; align-items: center; height: 140px; position: relative; margin-top: auto;">
+          <!-- Phone Frame -->
+          <div style="width: 70px; height: 120px; border: 2px solid rgba(255,255,255,0.15); border-radius: 14px; background: rgba(10, 22, 40, 0.6); padding: 6px; display: flex; flex-direction: column; gap: 4px; box-shadow: 0 10px 20px rgba(0,0,0,0.3);">
+            <!-- Speaker -->
+            <div style="width: 20px; height: 2px; background: rgba(255,255,255,0.15); border-radius: 1px; margin: 0 auto 4px;"></div>
+            <!-- Mini Chart -->
+            <div style="height: 30px; background: rgba(29, 184, 116, 0.1); border-radius: 4px; display: flex; align-items: flex-end; justify-content: space-around; padding: 2px;">
+              <div style="width: 6px; height: 10px; background: #1DB874; border-radius: 1px;"></div>
+              <div style="width: 6px; height: 18px; background: #1DB874; border-radius: 1px;"></div>
+              <div style="width: 6px; height: 14px; background: #1DB874; border-radius: 1px;"></div>
+              <div style="width: 6px; height: 22px; background: #1DB874; border-radius: 1px;"></div>
+            </div>
+            <!-- Mini List -->
+            <div style="display: flex; flex-direction: column; gap: 3px;">
+              <div style="height: 10px; background: rgba(255,255,255,0.03); border-radius: 2px; display: flex; align-items: center; justify-content: space-between; padding: 0 4px;">
+                <div style="width: 25px; height: 4px; background: rgba(255,255,255,0.2); border-radius: 1px;"></div>
+                <div style="width: 4px; height: 4px; background: #1DB874; border-radius: 50%;"></div>
+              </div>
+              <div style="height: 10px; background: rgba(255,255,255,0.03); border-radius: 2px; display: flex; align-items: center; justify-content: space-between; padding: 0 4px;">
+                <div style="width: 20px; height: 4px; background: rgba(255,255,255,0.2); border-radius: 1px;"></div>
+                <div style="width: 4px; height: 4px; background: #1DB874; border-radius: 50%;"></div>
+              </div>
+              <div style="height: 10px; background: rgba(255,255,255,0.03); border-radius: 2px; display: flex; align-items: center; justify-content: space-between; padding: 0 4px;">
+                <div style="width: 30px; height: 4px; background: rgba(255,255,255,0.2); border-radius: 1px;"></div>
+                <div style="width: 4px; height: 4px; background: #FF5F57; border-radius: 50%;"></div>
+              </div>
+            </div>
+          </div>
+          <!-- Glow -->
+          <div class="int-glow green" style="opacity: 0.2; bottom: -20px; left: 50%; transform: translateX(-50%);"></div>
         </div>
       </div>
     </div>
     
-    <p class="int-note">Mais integrações em breve — Stripe, WhatsApp Business e Mercado Pago.</p>
+    <p class="int-note" style="font-size: 13px; opacity: 0.5; text-align: center; margin-top: 32px;">Novas integrações financeiras estão em desenvolvimento.</p>
   </div>
 </section>
 
@@ -3186,8 +3198,8 @@ footer{padding:60px 0 30px;border-top:1px solid rgba(255,255,255,.06);background
         <div class="num-label">Para marcar chamada</div>
       </div>
       <div class="reveal" style="text-align:center;">
-        <div class="num-val">Zero</div>
-        <div class="num-label">Planilhas necessárias</div>
+        <div class="num-val">Sem</div>
+        <div class="num-label">Retrabalho manual</div>
       </div>
     </div>
   </div>
@@ -3201,40 +3213,105 @@ footer{padding:60px 0 30px;border-top:1px solid rgba(255,255,255,.06);background
       <h2 class="reveal">Quem usa, <span class="grad">não volta</span> para planilha nunca mais.</h2>
     </div>
     <div class="testi-grid">
-      <div class="card testi-card reveal">
-        <div class="stars">★★★★★</div>
-        <blockquote>"Antes eu passava horas no WhatsApp cobrando mensalidade. Agora o sistema avisa automaticamente. Recuperei meu fim de semana."</blockquote>
-        <div class="testi-divider"></div>
-        <div class="testi-author">
-          <div class="initials-avatar">RA</div>
-          <div><div class="t-name">Rodrigo Almeida</div><div class="t-role">Professor de Futevôlei · Porto Alegre</div></div>
+      <!-- CARD 1 -->
+      <div class="testi-card reveal">
+        <img src="/assets/testimonials/ricardo.jpg.png" alt="Ricardo Albuquerque" class="testi-img" loading="lazy">
+        <div class="testi-content">
+          <div class="stars">★★★★★</div>
+          <blockquote>“Organizar minha escola de futevôlei ficou muito mais fácil com o Esportiz. Hoje tenho controle total das turmas, alunos e finanças na palma da mão.”</blockquote>
+          <div class="testi-divider"></div>
+          <div class="testi-author">
+            <div class="t-avatar" style="background: rgba(29,184,116,0.1); color: #1DB874;">RA</div>
+            <div>
+              <div class="t-name">Ricardo Albuquerque</div>
+              <div class="t-role">Arena Futevôlei — São José / SC</div>
+            </div>
+          </div>
         </div>
       </div>
-      <div class="card testi-card reveal">
-        <div class="stars">★★★★★</div>
-        <blockquote>"Finalmente um sistema que entende de esporte. Fácil de usar no celular mesmo na beira da quadra, sem complicação."</blockquote>
-        <div class="testi-divider"></div>
-        <div class="testi-author">
-          <div class="initials-avatar" style="background: rgba(33,150,243,0.1); color: #2196f3;">FD</div>
-          <div><div class="t-name">Fernanda Duarte</div><div class="t-role">Escola de Beach Tennis · Florianópolis</div></div>
+
+      <!-- CARD 2 -->
+      <div class="testi-card reveal">
+        <img src="/assets/testimonials/juliana.jpg.png" alt="Juliana Ribeiro" class="testi-img" loading="lazy">
+        <div class="testi-content">
+          <div class="stars">★★★★★</div>
+          <blockquote>“O Esportiz transformou a gestão do nosso CT. As agendas, pagamentos e comunicados funcionam perfeitamente. Ganhamos tempo e profissionalizamos tudo.”</blockquote>
+          <div class="testi-divider"></div>
+          <div class="testi-author">
+            <div class="t-avatar" style="background: rgba(55,138,221,0.1); color: #378ADD;">JR</div>
+            <div>
+              <div class="t-name">Juliana Ribeiro</div>
+              <div class="t-role">CT Beach Tennis Cascavel — Cascavel / PR</div>
+            </div>
+          </div>
         </div>
       </div>
-      <div class="card testi-card reveal">
-        <div class="stars">★★★★★</div>
-        <blockquote>"Os relatórios me ajudaram a ver que duas turmas eram deficitárias. Reorganizei e aumentei o faturamento em 30%."</blockquote>
-        <div class="testi-divider"></div>
-        <div class="testi-author">
-          <div class="initials-avatar" style="background: rgba(255,152,0,0.1); color: #ff9800;">MO</div>
-          <div><div class="t-name">Marcos Oliveira</div><div class="t-role">CT Esportivo · São Paulo</div></div>
+
+      <!-- CARD 3 -->
+      <div class="testi-card reveal">
+        <img src="/assets/testimonials/andre.jpg.png" alt="André Souza" class="testi-img" loading="lazy">
+        <div class="testi-content">
+          <div class="stars">★★★★★</div>
+          <blockquote>“No nosso centro de lutas, o Esportiz trouxe ordem e agilidade. As matrículas, aulas experimentais e cobranças são automáticas. Simples e eficiente!”</blockquote>
+          <div class="testi-divider"></div>
+          <div class="testi-author">
+            <div class="t-avatar" style="background: rgba(255,152,0,0.1); color: #ff9800;">AS</div>
+            <div>
+              <div class="t-name">André Souza</div>
+              <div class="t-role">CT Samurai — Rio de Janeiro / RJ</div>
+            </div>
+          </div>
         </div>
       </div>
-      <div class="card testi-card reveal">
-        <div class="stars">★★★★★</div>
-        <blockquote>"Os relatórios me ajudaram a ver que duas turmas eram deficitárias. Reorganizei e aumentei o faturamento em 30%."</blockquote>
-        <div class="testi-divider"></div>
-        <div class="testi-author">
-          <div class="initials-avatar" style="background: rgba(255,152,0,0.1); color: #ff9800;">MO</div>
-          <div><div class="t-name">Marcos Oliveira</div><div class="t-role">CT Esportivo · São Paulo</div></div>
+
+      <!-- CARD 4 -->
+      <div class="testi-card reveal">
+        <img src="/assets/testimonials/bruno.jpg.png" alt="Bruno Marques" class="testi-img" loading="lazy">
+        <div class="testi-content">
+          <div class="stars">★★★★★</div>
+          <blockquote>“Com o Esportiz, nosso CT de futebol cresceu com estrutura. Controle financeiro, relatórios e dashboards que me ajudam a tomar decisões melhores todos os dias.”</blockquote>
+          <div class="testi-divider"></div>
+          <div class="testi-author">
+            <div class="t-avatar" style="background: rgba(33,150,243,0.1); color: #2196f3;">BM</div>
+            <div>
+              <div class="t-name">Bruno Marques</div>
+              <div class="t-role">CT BlackBox Football — São Paulo / SP</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- CARD 5 -->
+      <div class="testi-card reveal">
+        <img src="/assets/testimonials/carla.jpg.png" alt="Carla Menezes" class="testi-img" loading="lazy">
+        <div class="testi-content">
+          <div class="stars">★★★★★</div>
+          <blockquote>“A gestão da nossa escola de natação era caótica. Hoje o Esportiz cuida de tudo e eu consigo focar no que realmente importa: meus alunos.”</blockquote>
+          <div class="testi-divider"></div>
+          <div class="testi-author">
+            <div class="t-avatar" style="background: rgba(156,39,176,0.1); color: #9c27b0;">CM</div>
+            <div>
+              <div class="t-name">Carla Menezes</div>
+              <div class="t-role">Nado Livre Santos — Santos / SP</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- CARD 6 -->
+      <div class="testi-card reveal">
+        <img src="/assets/testimonials/felipe.jpg.png" alt="Felipe Andrade" class="testi-img" loading="lazy">
+        <div class="testi-content">
+          <div class="stars">★★★★★</div>
+          <blockquote>“O Esportiz é completo e pensado para quem tem escola ou CT. A plataforma é intuitiva e o suporte sempre atencioso. Recomendo de olhos fechados!”</blockquote>
+          <div class="testi-divider"></div>
+          <div class="testi-author">
+            <div class="t-avatar" style="background: rgba(29,184,116,0.1); color: #1DB874;">FA</div>
+            <div>
+              <div class="t-name">Felipe Andrade</div>
+              <div class="t-role">CT Vôlei Curitiba — Curitiba / PR</div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -3267,10 +3344,10 @@ footer{padding:60px 0 30px;border-top:1px solid rgba(255,255,255,.06);background
         
         <div class="plan-price-wrap">
           <div class="price-monthly">
-            <div class="plan-price">R$ 97,97<span class="plan-period">/mês</span></div>
+            <div class="plan-price"><span class="price-symbol">R$</span> <span class="price-value">97,97</span><span class="plan-period">/mês</span></div>
           </div>
           <div class="price-annual" style="display: none;">
-            <div class="plan-price">R$ 979,70<span class="plan-period">/ano</span></div>
+            <div class="plan-price"><span class="price-symbol">R$</span> <span class="price-value">979,70</span><span class="plan-period">/ano</span></div>
             <div class="plan-equiv">equivale a R$ 81,64/mês</div>
             <div class="plan-badge">Economia de R$ 195,94</div>
           </div>
@@ -3278,34 +3355,36 @@ footer{padding:60px 0 30px;border-top:1px solid rgba(255,255,255,.06);background
 
         <div class="plan-trial">14 dias grátis · sem cartão</div>
         
-        <div class="plan-features-title">Gestão de Alunos</div>
-        <ul class="plan-features">
-          <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1DB874" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg> Até 90 alunos ativos</li>
-          <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1DB874" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg> CRM completo com ficha individual</li>
-          <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1DB874" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg> Matrícula online pública (/matricula)</li>
-          <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1DB874" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg> Portal do aluno (/portal-aluno)</li>
-          <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1DB874" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg> Painel de aniversariantes</li>
-        </ul>
+        <div class="plan-features-wrapper">
+          <div class="plan-features-title">Gestão de Alunos</div>
+          <ul class="plan-features">
+            <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1DB874" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg> Até 90 alunos ativos</li>
+            <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1DB874" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg> CRM completo com ficha individual</li>
+            <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1DB874" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg> Matrícula online pública (/matricula)</li>
+            <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1DB874" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg> Portal do aluno (/portal-aluno)</li>
+            <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1DB874" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg> Painel de aniversariantes</li>
+          </ul>
 
-        <div class="plan-features-title">Operacional</div>
-        <ul class="plan-features">
-          <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1DB874" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg> Calendário de treinos e aulas</li>
-          <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1DB874" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg> Gestão de turmas e horários</li>
-          <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1DB874" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg> Chamada rápida mobile</li>
-          <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1DB874" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg> Controle de presença e histórico</li>
-          <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1DB874" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg> Gestão de modalidades</li>
-        </ul>
+          <div class="plan-features-title">Operacional</div>
+          <ul class="plan-features">
+            <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1DB874" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg> Calendário de treinos e aulas</li>
+            <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1DB874" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg> Gestão de turmas e horários</li>
+            <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1DB874" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg> Chamada rápida mobile</li>
+            <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1DB874" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg> Controle de presença e histórico</li>
+            <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1DB874" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg> Gestão de modalidades</li>
+          </ul>
 
-        <div class="plan-features-title">Financeiro</div>
-        <ul class="plan-features">
-          <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1DB874" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg> Planos e mensalidades recorrentes</li>
-          <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1DB874" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg> Controle de pagamentos</li>
-          <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1DB874" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg> Gestão de despesas operacionais</li>
-          <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1DB874" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg> Relatórios financeiros básicos</li>
-          <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1DB874" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg> Configuração de chave PIX</li>
-          <li class="not-included"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.2)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg> Contratos digitais</li>
-          <li class="not-included"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.2)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg> Comunicação em massa</li>
-        </ul>
+          <div class="plan-features-title">Financeiro</div>
+          <ul class="plan-features">
+            <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1DB874" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg> Planos e mensalidades recorrentes</li>
+            <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1DB874" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg> Controle de pagamentos</li>
+            <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1DB874" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg> Gestão de despesas operacionais</li>
+            <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1DB874" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg> Relatórios financeiros básicos</li>
+            <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1DB874" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg> Configuração de chave PIX</li>
+            <li class="not-included"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.2)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg> Contratos digitais</li>
+            <li class="not-included"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.2)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg> Comunicação em massa</li>
+          </ul>
+        </div>
 
         <a href="/login?mode=signup" class="plan-btn outline">Começar grátis</a>
       </div>
@@ -3319,10 +3398,10 @@ footer{padding:60px 0 30px;border-top:1px solid rgba(255,255,255,.06);background
         
         <div class="plan-price-wrap">
           <div class="price-monthly">
-            <div class="plan-price">R$ 147,97<span class="plan-period">/mês</span></div>
+            <div class="plan-price"><span class="price-symbol">R$</span> <span class="price-value">147,97</span><span class="plan-period">/mês</span></div>
           </div>
           <div class="price-annual" style="display: none;">
-            <div class="plan-price">R$ 1.479,70<span class="plan-period">/ano</span></div>
+            <div class="plan-price"><span class="price-symbol">R$</span> <span class="price-value">1.479,70</span><span class="plan-period">/ano</span></div>
             <div class="plan-equiv">equivale a R$ 123,31/mês</div>
             <div class="plan-badge">Economia de R$ 295,94</div>
           </div>
@@ -3330,33 +3409,35 @@ footer{padding:60px 0 30px;border-top:1px solid rgba(255,255,255,.06);background
 
         <div class="plan-trial">14 dias grátis · sem cartão</div>
         
-        <div class="plan-features-title">Gestão de Quadras</div>
-        <ul class="plan-features">
-          <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1DB874" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg> Quadras ilimitadas</li>
-          <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1DB874" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg> Agenda visual de ocupação</li>
-          <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1DB874" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg> Reserva online pública (/agendar)</li>
-          <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1DB874" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg> Mensalistas e avulsos integrados</li>
-          <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1DB874" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg> CRM completo de reservantes</li>
-        </ul>
+        <div class="plan-features-wrapper">
+          <div class="plan-features-title">Gestão de Quadras</div>
+          <ul class="plan-features">
+            <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1DB874" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg> Quadras ilimitadas</li>
+            <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1DB874" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg> Agenda visual de ocupação</li>
+            <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1DB874" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg> Reserva online pública (/agendar)</li>
+            <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1DB874" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg> Mensalistas e avulsos integrados</li>
+            <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1DB874" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg> CRM completo de reservantes</li>
+          </ul>
 
-        <div class="plan-features-title">Bar e Estoque</div>
-        <ul class="plan-features">
-          <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1DB874" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg> Controle de estoque com alertas</li>
-          <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1DB874" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg> PDV de balcão rápido (/vendas)</li>
-          <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1DB874" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg> Sistema de comandas</li>
-          <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1DB874" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg> Pagamentos parciais (rachar conta)</li>
-          <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1DB874" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg> Cálculo automático de custo e venda</li>
-        </ul>
+          <div class="plan-features-title">Bar e Estoque</div>
+          <ul class="plan-features">
+            <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1DB874" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg> Controle de estoque com alertas</li>
+            <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1DB874" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg> PDV de balcão rápido (/vendas)</li>
+            <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1DB874" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg> Sistema de comandas</li>
+            <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1DB874" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg> Pagamentos parciais (rachar conta)</li>
+            <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1DB874" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg> Cálculo automático de custo e venda</li>
+          </ul>
 
-        <div class="plan-features-title">Financeiro</div>
-        <ul class="plan-features">
-          <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1DB874" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg> Painel financeiro completo</li>
-          <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1DB874" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg> Controle de despesas e lucro real</li>
-          <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1DB874" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg> Relatórios de ocupação</li>
-          <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1DB874" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg> Configuração de chave PIX</li>
-          <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1DB874" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg> Contratos digitais ilimitados</li>
-          <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1DB874" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg> Comunicação em massa WhatsApp</li>
-        </ul>
+          <div class="plan-features-title">Financeiro</div>
+          <ul class="plan-features">
+            <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1DB874" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg> Painel financeiro completo</li>
+            <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1DB874" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg> Controle de despesas e lucro real</li>
+            <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1DB874" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg> Relatórios de ocupação</li>
+            <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1DB874" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg> Configuração de chave PIX</li>
+            <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1DB874" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg> Contratos digitais ilimitados</li>
+            <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1DB874" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg> Comunicação em massa WhatsApp</li>
+          </ul>
+        </div>
 
         <a href="/login?mode=signup" class="plan-btn filled">Começar grátis →</a>
       </div>
@@ -3369,10 +3450,10 @@ footer{padding:60px 0 30px;border-top:1px solid rgba(255,255,255,.06);background
         
         <div class="plan-price-wrap">
           <div class="price-monthly">
-            <div class="plan-price">R$ 197,97<span class="plan-period">/mês</span></div>
+            <div class="plan-price"><span class="price-symbol">R$</span> <span class="price-value">197,97</span><span class="plan-period">/mês</span></div>
           </div>
           <div class="price-annual" style="display: none;">
-            <div class="plan-price">R$ 1.979,70<span class="plan-period">/ano</span></div>
+            <div class="plan-price"><span class="price-symbol">R$</span> <span class="price-value">1.979,70</span><span class="plan-period">/ano</span></div>
             <div class="plan-equiv">equivale a R$ 164,98/mês</div>
             <div class="plan-badge">Economia de R$ 395,94</div>
             <div class="plan-badge" style="background: rgba(55,138,221,0.2); color: #378ADD;">Economia de R$48 vs planos separados</div>
@@ -3381,29 +3462,31 @@ footer{padding:60px 0 30px;border-top:1px solid rgba(255,255,255,.06);background
 
         <div class="plan-trial">14 dias grátis · sem cartão</div>
         
-        <div class="plan-features-title">Tudo do Sport +</div>
-        <ul class="plan-features">
-          <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1DB874" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg> Até 160 alunos ativos</li>
-          <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1DB874" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg> Matrícula online pública</li>
-          <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1DB874" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg> Portal do aluno completo</li>
-          <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1DB874" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg> Chamada rápida mobile</li>
-        </ul>
+        <div class="plan-features-wrapper">
+          <div class="plan-features-title">Tudo do Sport +</div>
+          <ul class="plan-features">
+            <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1DB874" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg> Até 160 alunos ativos</li>
+            <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1DB874" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg> Matrícula online pública</li>
+            <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1DB874" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg> Portal do aluno completo</li>
+            <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1DB874" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg> Chamada rápida mobile</li>
+          </ul>
 
-        <div class="plan-features-title">Tudo do Arena +</div>
-        <ul class="plan-features">
-          <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1DB874" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg> Quadras ilimitadas</li>
-          <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1DB874" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg> Reserva online pública</li>
-          <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1DB874" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg> Sistema de comandas completo</li>
-          <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1DB874" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg> Controle de estoque e PDV</li>
-        </ul>
+          <div class="plan-features-title">Tudo do Arena +</div>
+          <ul class="plan-features">
+            <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1DB874" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg> Quadras ilimitadas</li>
+            <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1DB874" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg> Reserva online pública</li>
+            <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1DB874" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg> Sistema de comandas completo</li>
+            <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1DB874" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg> Controle de estoque e PDV</li>
+          </ul>
 
-        <div class="plan-features-title">Exclusivo do Combo</div>
-        <ul class="plan-features">
-          <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1DB874" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg> Dashboard unificado Sport + Arena</li>
-          <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1DB874" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg> Contratos digitais ilimitados</li>
-          <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1DB874" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg> Comunicação em massa WhatsApp</li>
-          <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1DB874" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg> Relatórios cruzados Sport + Arena</li>
-        </ul>
+          <div class="plan-features-title">Exclusivo do Combo</div>
+          <ul class="plan-features">
+            <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1DB874" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg> Dashboard unificado Sport + Arena</li>
+            <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1DB874" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg> Contratos digitais ilimitados</li>
+            <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1DB874" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg> Comunicação em massa WhatsApp</li>
+            <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1DB874" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg> Relatórios cruzados Sport + Arena</li>
+          </ul>
+        </div>
 
         <a href="/login?mode=signup" class="plan-btn outline">Começar grátis</a>
       </div>
@@ -3417,10 +3500,10 @@ footer{padding:60px 0 30px;border-top:1px solid rgba(255,255,255,.06);background
         
         <div class="plan-price-wrap">
           <div class="price-monthly">
-            <div class="plan-price">R$ 397,97<span class="plan-period">/mês</span></div>
+            <div class="plan-price"><span class="price-symbol">R$</span> <span class="price-value">397,97</span><span class="plan-period">/mês</span></div>
           </div>
           <div class="price-annual" style="display: none;">
-            <div class="plan-price">R$ 3.979,70<span class="plan-period">/ano</span></div>
+            <div class="plan-price"><span class="price-symbol">R$</span> <span class="price-value">3.979,70</span><span class="plan-period">/ano</span></div>
             <div class="plan-equiv">equivale a R$ 331,64/mês</div>
             <div class="plan-badge">Economia de R$ 795,94</div>
           </div>
@@ -3428,30 +3511,32 @@ footer{padding:60px 0 30px;border-top:1px solid rgba(255,255,255,.06);background
 
         <div class="plan-trial">Acesso antecipado exclusivo</div>
         
-        <div class="plan-features-title">Tudo do Combo +</div>
-        <ul class="plan-features">
-          <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1DB874" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg> Alunos e reservantes ilimitados</li>
-          <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1DB874" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg> Múltiplas unidades no mesmo painel</li>
-          <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1DB874" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg> White Label por unidade</li>
-          <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1DB874" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg> Dashboard consolidado multi-unidade</li>
-          <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1DB874" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg> Relatórios por unidade e geral</li>
-        </ul>
+        <div class="plan-features-wrapper">
+          <div class="plan-features-title">Tudo do Combo +</div>
+          <ul class="plan-features">
+            <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1DB874" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg> Alunos e reservantes ilimitados</li>
+            <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1DB874" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg> Múltiplas unidades no mesmo painel</li>
+            <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1DB874" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg> White Label por unidade</li>
+            <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1DB874" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg> Dashboard consolidado multi-unidade</li>
+            <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1DB874" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg> Relatórios por unidade e geral</li>
+          </ul>
 
-        <div class="plan-features-title">Suporte Prioritário</div>
-        <ul class="plan-features">
-          <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1DB874" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg> Gerente de conta dedicado</li>
-          <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1DB874" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg> Onboarding guiado</li>
-          <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1DB874" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg> SLA de suporte garantido</li>
-          <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1DB874" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg> Treinamento da equipe incluído</li>
-          <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1DB874" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg> Acesso antecipado a novos módulos</li>
-        </ul>
+          <div class="plan-features-title">Suporte Prioritário</div>
+          <ul class="plan-features">
+            <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1DB874" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg> Gerente de conta dedicado</li>
+            <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1DB874" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg> Onboarding guiado</li>
+            <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1DB874" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg> SLA de suporte garantido</li>
+            <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1DB874" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg> Treinamento da equipe incluído</li>
+            <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1DB874" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg> Acesso antecipado a novos módulos</li>
+          </ul>
 
-        <div class="plan-features-title">Personalização</div>
-        <ul class="plan-features">
-          <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1DB874" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg> Customizações sob medida</li>
-          <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1DB874" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg> Relatórios personalizados por demanda</li>
-          <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1DB874" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg> Integração com sistemas externos</li>
-        </ul>
+          <div class="plan-features-title">Personalização</div>
+          <ul class="plan-features">
+            <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1DB874" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg> Customizações sob medida</li>
+            <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1DB874" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg> Relatórios personalizados por demanda</li>
+            <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1DB874" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg> Integração com sistemas externos</li>
+          </ul>
+        </div>
 
         <a href="#faq" class="plan-btn purple" id="btn-elite">Entrar na lista de espera</a>
       </div>
@@ -3461,49 +3546,7 @@ footer{padding:60px 0 30px;border-top:1px solid rgba(255,255,255,.06);background
     <!-- NOTA ABAIXO DOS CARDS -->
     <p class="plans-note">14 dias grátis em todos os planos · Sem cartão de crédito · Cancele quando quiser · Sem fidelidade</p>
 
-    <!-- FAQ DE PLANOS -->
-    <div class="plans-faq">
-      <!-- P1 -->
-      <div class="faq-item">
-        <button class="faq-trigger">
-          <span class="faq-title">Preciso de cartão de crédito para testar?</span>
-          <span class="faq-icon">+</span>
-        </button>
-        <div class="faq-content">
-          <p class="faq-text">Não. Os 14 dias grátis são totalmente gratuitos, sem necessidade de cartão. Você só cadastra o pagamento quando decidir continuar.</p>
-        </div>
-      </div>
-      <!-- P2 -->
-      <div class="faq-item">
-        <button class="faq-trigger">
-          <span class="faq-title">Posso mudar de plano depois?</span>
-          <span class="faq-icon">+</span>
-        </button>
-        <div class="faq-content">
-          <p class="faq-text">Sim. Você pode fazer upgrade ou downgrade a qualquer momento. A diferença é cobrada ou creditada proporcionalmente.</p>
-        </div>
-      </div>
-      <!-- P3 -->
-      <div class="faq-item">
-        <button class="faq-trigger">
-          <span class="faq-title">O que acontece após os 14 dias?</span>
-          <span class="faq-icon">+</span>
-        </button>
-        <div class="faq-content">
-          <p class="faq-text">Você recebe um aviso antes do período terminar. Se não contratar um plano, o acesso é pausado — mas seus dados ficam salvos por 30 dias.</p>
-        </div>
-      </div>
-      <!-- P4 -->
-      <div class="faq-item">
-        <button class="faq-trigger">
-          <span class="faq-title">O plano Elite já está disponível?</span>
-          <span class="faq-icon">+</span>
-        </button>
-        <div class="faq-content">
-          <p class="faq-text">O plano Elite está em desenvolvimento final. Entre na lista de espera e você será o primeiro a saber quando abrir — com condições especiais de lançamento.</p>
-        </div>
-      </div>
-    </div>
+
 
   </div>
 </section>
@@ -3538,7 +3581,7 @@ footer{padding:60px 0 30px;border-top:1px solid rgba(255,255,255,.06);background
       </details>
       <details class="reveal">
         <summary>Como funciona o período de teste?</summary>
-        <div class="faq-body">São 30 dias grátis com acesso completo a todas as funcionalidades — dashboard, comunicação, contratos, relatórios, tudo. Sem cartão de crédito, sem compromisso. Cancele quando quiser.</div>
+        <div class="faq-body">São 14 dias grátis com acesso completo a todas as funcionalidades — dashboard, comunicação, contratos, relatórios, tudo. Sem cartão de crédito, sem compromisso. Cancele quando quiser.</div>
       </details>
       <details class="reveal">
         <summary>Meus dados ficam seguros?</summary>
@@ -3547,6 +3590,18 @@ footer{padding:60px 0 30px;border-top:1px solid rgba(255,255,255,.06);background
       <details class="reveal">
         <summary>Consigo migrar de planilha para o Esportiz?</summary>
         <div class="faq-body">Sim. Nossa equipe te ajuda na migração gratuitamente. Você não perde nenhum dado histórico. Além disso, pode exportar tudo do Esportiz a qualquer momento.</div>
+      </details>
+      <details class="reveal">
+        <summary>Posso mudar de plano depois?</summary>
+        <div class="faq-body">Sim. Você pode fazer upgrade ou downgrade a qualquer momento direto pelo painel. A diferença de valor é cobrada ou creditada proporcionalmente.</div>
+      </details>
+      <details class="reveal">
+        <summary>O que acontece após os 14 dias?</summary>
+        <div class="faq-body">Você recebe um aviso antes do período terminar. Se não contratar um plano, o acesso é pausado — mas seus dados ficam salvos com segurança por 30 dias para você decidir.</div>
+      </details>
+      <details class="reveal">
+        <summary>O plano Elite já está disponível?</summary>
+        <div class="faq-body">O plano Elite está em desenvolvimento final. Você pode entrar na lista de espera clicando no botão do card e será o primeiro a saber quando abrir — com condições especiais de lançamento.</div>
       </details>
     </div>
   </div>
@@ -3561,7 +3616,7 @@ footer{padding:60px 0 30px;border-top:1px solid rgba(255,255,255,.06);background
     <h2 class="reveal">Sua escola.<br><span class="grad">Organizada. Agora.</span></h2>
     <p class="reveal">Tenha o controle total do seu negócio na palma da mão.<br>Comece agora, sem cadastrar cartão de crédito.</p>
     <div class="cta-buttons reveal">
-      <a href="/login?mode=signup" class="btn btn-primary" id="cta-main">Testar sistema por 30 dias →</a>
+      <a href="/login?mode=signup" class="btn btn-primary" id="cta-main">Testar sistema por 14 dias →</a>
     </div>
     <p class="cta-note reveal">Já usa outro sistema? Nossa equipe faz a migração dos seus dados de graça.</p>
   </div>
@@ -3569,7 +3624,7 @@ footer{padding:60px 0 30px;border-top:1px solid rgba(255,255,255,.06);background
 
 <!-- STICKY MOBILE CTA -->
 <div class="sticky-cta" id="stickyCta">
-  <a href="/login?mode=signup" class="btn btn-primary" style="width: 100%; font-size: 15px; padding: 12px; justify-content: center;">Testar grátis por 30 dias →</a>
+  <a href="/login?mode=signup" class="btn btn-primary" style="width: 100%; font-size: 15px; padding: 12px; justify-content: center;">Testar grátis por 14 dias →</a>
 </div>
 
 <!-- FOOTER -->
@@ -3866,24 +3921,7 @@ toggleBtns.forEach(btn => {
   });
 });
 
-// ACCORDION FAQ PLANOS
-const faqItems = document.querySelectorAll('.faq-item');
-faqItems.forEach(item => {
-  const trigger = item.querySelector('.faq-trigger');
-  trigger.addEventListener('click', () => {
-    const isOpen = item.classList.contains('open');
-    faqItems.forEach(i => {
-      i.classList.remove('open');
-      const content = i.querySelector('.faq-content');
-      if (content) content.style.maxHeight = null;
-    });
-    if (!isOpen) {
-      item.classList.add('open');
-      const content = item.querySelector('.faq-content');
-      if (content) content.style.maxHeight = content.scrollHeight + "px";
-    }
-  });
-});
+
 
 // Scroll suave para o botão Elite que aponta para o FAQ
 if (btnElite) {

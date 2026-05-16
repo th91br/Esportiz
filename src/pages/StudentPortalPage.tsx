@@ -308,7 +308,7 @@ export default function StudentPortalPage() {
             <span className="text-xs text-muted-foreground uppercase font-bold tracking-wider">Seja bem-vindo(a),</span>
             <h1 className="text-xl sm:text-2xl font-black font-display text-foreground tracking-tight">{student.name}</h1>
             <p className="text-sm text-muted-foreground">
-              Curso Ativo: <strong className="text-foreground font-semibold">{student.plan_name}</strong>
+              Plano Ativo: <strong className="text-foreground font-semibold">{student.plan_name}</strong>
             </p>
           </div>
 

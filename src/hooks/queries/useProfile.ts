@@ -5,7 +5,11 @@ import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import type { OnboardingGoal } from '@/lib/authRouting';
 
-export type BusinessType = 'sport_school' | 'arena' | 'other';
+export type BusinessType = 'sport_school' | 'arena';
+
+function normalizeBusinessType(value?: string | null): BusinessType {
+  return value === 'arena' ? 'arena' : 'sport_school';
+}
 
 export interface NicheProfile {
   ct_name?: string | null;
@@ -85,7 +89,12 @@ export function useProfile() {
         throw error;
       }
 
-      return data as Profile;
+      if (!data) return null;
+
+      return {
+        ...data,
+        business_type: normalizeBusinessType(data.business_type),
+      } as Profile;
     },
     enabled: !!user?.id,
   });
@@ -182,7 +191,7 @@ export function useProfile() {
     const profile = profileQuery.data;
     if (!profile) return null;
 
-    const activeNicheType = profile.business_type || 'sport_school';
+    const activeNicheType = normalizeBusinessType(profile.business_type);
     const niche = profile.niche_settings?.[activeNicheType] || {};
 
     return {

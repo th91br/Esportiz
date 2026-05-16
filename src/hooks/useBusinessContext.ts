@@ -56,22 +56,6 @@ const LABELS: Record<BusinessType, BusinessLabels> = {
     ctLabelShort: 'Arena',
     attendanceLabel: 'Ocupação',
   },
-  other: {
-    studentLabel: 'Alunos',
-    studentLabelSingular: 'Aluno',
-    trainingLabel: 'Aulas',
-    trainingLabelSingular: 'Aula',
-    planLabel: 'Cursos',
-    planLabelSingular: 'Curso',
-    modalityLabel: 'Disciplinas',
-    modalityLabelSingular: 'Disciplina',
-    groupLabel: 'Turmas',
-    groupLabelSingular: 'Turma',
-    locationLabel: 'Sala / Local',
-    ctLabel: 'Escola / Curso',
-    ctLabelShort: 'Escola',
-    attendanceLabel: 'Presença',
-  },
 };
 
 function buildNavModules(type: BusinessType, labels: BusinessLabels): NavModule[] {
@@ -118,20 +102,6 @@ function buildNavModules(type: BusinessType, labels: BusinessLabels): NavModule[
         shared.relatorios,
       ];
 
-    case 'other':
-      return [
-        shared.dashboard,
-        shared.calendario,
-        { label: labels.studentLabel, path: '/alunos' },
-        { label: labels.modalityLabel, path: '/modalidades' },
-        { label: labels.groupLabel, path: '/turmas' },
-        { label: labels.attendanceLabel, path: '/presenca' },
-        { label: labels.planLabel, path: '/planos' },
-        shared.pagamentos,
-        shared.despesas,
-        shared.relatorios,
-        shared.comunicacao,
-      ];
   }
 }
 
@@ -139,9 +109,7 @@ export function useBusinessContext() {
   const { profile } = useProfile();
 
   const rawBusinessType = profile?.business_type;
-  const businessType: BusinessType = (rawBusinessType === 'arena' || rawBusinessType === 'other') 
-    ? rawBusinessType 
-    : 'sport_school';
+  const businessType: BusinessType = rawBusinessType === 'arena' ? 'arena' : 'sport_school';
   const labels = useMemo(() => LABELS[businessType], [businessType]);
   const navModules = useMemo(() => buildNavModules(businessType, labels), [businessType, labels]);
 
@@ -151,6 +119,5 @@ export function useBusinessContext() {
     navModules,
     isSportSchool: businessType === 'sport_school',
     isArena: businessType === 'arena',
-    isOther: businessType === 'other',
   };
 }

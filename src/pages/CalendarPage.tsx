@@ -32,6 +32,7 @@ import { useModalities } from '@/hooks/queries/useModalities';
 
 const periodIcons = { manhã: Sun, tarde: Sunset, noite: Moon };
 const periodStyles = { manhã: 'bg-amber-500', tarde: 'bg-orange-500', noite: 'bg-indigo-500' };
+type RecurrenceMode = 'none' | 'month' | 'quarter';
 
 function TrainingFormDialog({
   open, onOpenChange, training, selectedDate, onSaved,
@@ -48,11 +49,11 @@ function TrainingFormDialog({
   const [formLocation, setFormLocation] = useState(training?.location || '');
   const [formModalityId, setFormModalityId] = useState(training?.modalityId || 'none');
   const [formStudentIds, setFormStudentIds] = useState<string[]>(training?.studentIds || []);
-  const [recurrence, setRecurrence] = useState<'none' | 'month' | 'quarter'>('none');
+  const [recurrence, setRecurrence] = useState<RecurrenceMode>('none');
   const [formDuration, setFormDuration] = useState(training?.durationMinutes?.toString() || '60');
   const { modalities } = useModalities();
   const [studentSearch, setStudentSearch] = useState('');
-  const { labels, isOther } = useBusinessContext();
+  const { labels } = useBusinessContext();
 
   const filteredStudents = activeStudents.filter((s) =>
     s.name.toLowerCase().includes(studentSearch.toLowerCase())
@@ -164,7 +165,7 @@ function TrainingFormDialog({
 
           <div className="space-y-2">
             <Label>Recorrência de {labels.trainingLabelSingular}</Label>
-            <Select value={recurrence} onValueChange={(value: any) => setRecurrence(value)}>
+            <Select value={recurrence} onValueChange={(value) => setRecurrence(value as RecurrenceMode)}>
               <SelectTrigger className="bg-muted/50 border-border/50">
                 <div className="flex items-center gap-2">
                   <Repeat className="h-4 w-4 text-primary" />
@@ -192,7 +193,7 @@ function TrainingFormDialog({
           </div>
           <div className="space-y-2">
             <Label>Local</Label>
-            <Input placeholder={isOther ? "Ex: Sala 101, Laboratório" : "Ex: Quadra 1, Arena Principal"} value={formLocation} onChange={(e) => setFormLocation(e.target.value)} />
+            <Input placeholder="Ex: Quadra 1, Arena Principal" value={formLocation} onChange={(e) => setFormLocation(e.target.value)} />
           </div>
 
           <div className="space-y-2">

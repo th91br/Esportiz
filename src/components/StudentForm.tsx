@@ -17,7 +17,7 @@ import { useStudents } from '@/hooks/queries/useStudents';
 import { usePlans } from '@/hooks/queries/usePlans';
 import { usePayments } from '@/hooks/queries/usePayments';
 import { useModalities } from '@/hooks/queries/useModalities';
-import { useGroups } from '@/hooks/queries/useGroups';
+import { useGroups, type Group } from '@/hooks/queries/useGroups';
 import type { Student } from '@/data/mockData';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
@@ -51,6 +51,10 @@ const studentSchema = z.object({
 
 type StudentFormValues = z.infer<typeof studentSchema>;
 
+function getErrorMessage(error: unknown) {
+  return error instanceof Error ? error.message : 'Erro inesperado';
+}
+
 interface StudentFormProps {
   student?: Student;
   trigger?: React.ReactNode;
@@ -72,7 +76,7 @@ export function StudentForm({ student, trigger }: StudentFormProps) {
   const [billingStartMonth, setBillingStartMonth] = useState(getLocalTodayDate().slice(0, 7));
   const { groups } = useGroups();
   const [selectedGroups, setSelectedGroups] = useState<string[]>(student?.groupIds || []);
-  const { labels, isOther, isArena } = useBusinessContext();
+  const { labels, isArena } = useBusinessContext();
 
   // Freq adjustment state
   const [schedulePromptOpen, setSchedulePromptOpen] = useState(false);
@@ -252,8 +256,8 @@ export function StudentForm({ student, trigger }: StudentFormProps) {
       }
       form.reset();
       setOpen(false);
-    } catch (err: any) {
-      toast({ title: 'Erro', description: err.message, variant: 'destructive' });
+    } catch (err: unknown) {
+      toast({ title: 'Erro', description: getErrorMessage(err), variant: 'destructive' });
     } finally {
       setSaving(false);
     }
@@ -284,8 +288,8 @@ export function StudentForm({ student, trigger }: StudentFormProps) {
 
       toast({ title: 'Agenda configurada!', description: `${labels.trainingLabel} gerados para os próximos 3 meses.` });
       setSchedulePromptOpen(false);
-    } catch (err: any) {
-      toast({ title: 'Erro ao configurar agenda', description: err.message, variant: 'destructive' });
+    } catch (err: unknown) {
+      toast({ title: 'Erro ao configurar agenda', description: getErrorMessage(err), variant: 'destructive' });
     } finally {
       setSavingSchedule(false);
     }
@@ -504,24 +508,9 @@ export function StudentForm({ student, trigger }: StudentFormProps) {
                           <SelectTrigger><SelectValue placeholder="Selecione o nível" /></SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          {isOther ? (
-                            <>
-                              <SelectItem value="sem_nível">Sem nível definido</SelectItem>
-                              <SelectItem value="básico 1">Básico 1</SelectItem>
-                              <SelectItem value="básico 2">Básico 2</SelectItem>
-                              <SelectItem value="pré-intermediário">Pré-Intermediário</SelectItem>
-                              <SelectItem value="intermediário">Intermediário</SelectItem>
-                              <SelectItem value="intermediário avançado">Intermediário Avançado</SelectItem>
-                              <SelectItem value="avançado">Avançado</SelectItem>
-                              <SelectItem value="fluente">Fluente / Concluinte</SelectItem>
-                            </>
-                          ) : (
-                            <>
-                              <SelectItem value="iniciante">Iniciante</SelectItem>
-                              <SelectItem value="intermediário">Intermediário</SelectItem>
-                              <SelectItem value="avançado">Avançado</SelectItem>
-                            </>
-                          )}
+                          <SelectItem value="iniciante">Iniciante</SelectItem>
+                          <SelectItem value="intermediário">Intermediário</SelectItem>
+                          <SelectItem value="avançado">Avançado</SelectItem>
                         </SelectContent>
                       </Select>
                       <FormMessage />
@@ -540,14 +529,8 @@ export function StudentForm({ student, trigger }: StudentFormProps) {
                           <SelectTrigger><SelectValue placeholder={`Selecione o(a) ${labels.planLabelSingular.toLowerCase()}`} /></SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          {!isOther ? (
-                            <>
-                              <SelectItem value="none">🧪 {labels.trainingLabelSingular} Experimental</SelectItem>
-                              <SelectItem value="no_plan">📋 Sem {labels.planLabelSingular} (Avulso eventual)</SelectItem>
-                            </>
-                          ) : (
-                            <SelectItem value="none">Selecione o(a) {labels.planLabelSingular.toLowerCase()}</SelectItem>
-                          )}
+                          <SelectItem value="none">🧪 {labels.trainingLabelSingular} Experimental</SelectItem>
+                          <SelectItem value="no_plan">📋 Sem {labels.planLabelSingular} (Avulso eventual)</SelectItem>
                           {plans.map((plan) => (
                             <SelectItem key={plan.id} value={plan.id}>
                               {plan.name} - R$ {plan.price.toFixed(2)}{plan.billingType === 'per_session' ? `/${labels.trainingLabelSingular.toLowerCase()}` : '/mês'}
@@ -613,7 +596,7 @@ export function StudentForm({ student, trigger }: StudentFormProps) {
 
                         if (prioA !== prioB) return prioA - prioB;
 
-                        const getFirstSlotTime = (g: any) => {
+                        const getFirstSlotTime = (g: Group) => {
                           if (!g.schedule || g.schedule.length === 0) return '24:00';
                           const sortedSlots = [...g.schedule].sort((sa, sb) => sa.time.localeCompare(sb.time));
                           return sortedSlots[0].time;

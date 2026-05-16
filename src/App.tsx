@@ -32,7 +32,7 @@ import CourtsPage from "./pages/CourtsPage";
 import ArenaAgendaPage from "./pages/ArenaAgendaPage";
 import ComandasPage from "./pages/ComandasPage";
 import ContractsPage from "./pages/ContractsPage";
-import EnrollmentPage from "./pages/EnrollmentPage";
+import EnrollmentUnavailablePage from "./pages/EnrollmentUnavailablePage";
 import StudentPortalPage from "./pages/StudentPortalPage";
 import OnlineBookingPage from "./pages/OnlineBookingPage";
 import { useProfile } from "./hooks/queries/useProfile";
@@ -48,12 +48,16 @@ function FullScreenLoader() {
   );
 }
 
+function getErrorMessage(error: unknown) {
+  return error instanceof Error ? error.message : 'Erro desconhecido';
+}
+
 function LoginRoute() {
   const { user, loading: authLoading } = useAuth();
   const { profile, loadingProfile, isErrorProfile, errorProfile } = useProfile();
 
   if (isErrorProfile) {
-    throw new Error(`Falha ao carregar o perfil: ${(errorProfile as any)?.message || 'Erro desconhecido'}`);
+    throw new Error(`Falha ao carregar o perfil: ${getErrorMessage(errorProfile)}`);
   }
 
   if (authLoading || (user && loadingProfile)) {
@@ -73,7 +77,7 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { profile, loadingProfile, isErrorProfile, errorProfile } = useProfile();
 
   if (isErrorProfile) {
-    throw new Error(`Falha ao carregar o perfil: ${(errorProfile as any)?.message || 'Erro desconhecido'}`);
+    throw new Error(`Falha ao carregar o perfil: ${getErrorMessage(errorProfile)}`);
   }
 
   if (authLoading || (user && loadingProfile)) {
@@ -103,7 +107,7 @@ function AppRoutes() {
     <Routes>
       {/* Rota pública — landing page */}
       <Route path="/" element={<LandingPage />} />
-      <Route path="/matricula" element={<EnrollmentPage />} />
+      <Route path="/matricula" element={<EnrollmentUnavailablePage />} />
       <Route path="/agendar" element={<OnlineBookingPage />} />
       <Route path="/agendamento" element={<OnlineBookingPage />} />
       <Route path="/portal-aluno" element={<StudentPortalPage />} />

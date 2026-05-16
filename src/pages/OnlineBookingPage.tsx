@@ -370,6 +370,10 @@ export default function OnlineBookingPage() {
       if (error) throw error;
 
       if (data && !data.success) {
+        if (data.conflict) {
+          setSelectedTimeSlot('');
+          setStep(1);
+        }
         toast.error(data.error || 'Erro ao realizar agendamento.');
         return;
       }

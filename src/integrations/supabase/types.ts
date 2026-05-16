@@ -819,6 +819,19 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      close_comanda_atomic: {
+        Args: {
+          p_comanda_id: string
+          p_payment_method: string
+          p_user_id: string
+        }
+        Returns: {
+          closed_at?: string
+          sales_count?: number
+          success: boolean
+          total_amount?: number
+        }
+      }
       cleanup_student_future_trainings: {
         Args: {
           p_student_id: string
@@ -879,20 +892,9 @@ export type Database = {
           p_user_id: string
         }
         Returns: {
-          groups: {
-            current_students: number
-            id: string
-            location: string
-            max_students: number | null
-            name: string
-            schedule: Json[]
-          }[]
-          plans: {
-            id: string
-            name: string
-            price: number
-          }[]
-          school_name: string
+          enabled: boolean
+          error?: string
+          success: boolean
         }
       }
       get_student_portal_data: {
@@ -962,6 +964,17 @@ export type Database = {
           success: boolean
         }
       }
+      reopen_comanda_atomic: {
+        Args: {
+          p_comanda_id: string
+          p_user_id: string
+        }
+        Returns: {
+          restored_quantity?: number
+          sales_count?: number
+          success: boolean
+        }
+      }
       is_valid_cpf: {
         Args: {
           p_cpf: string | null
@@ -980,9 +993,8 @@ export type Database = {
           p_user_id: string
         }
         Returns: {
+          enabled?: boolean
           error?: string
-          message?: string
-          student_id?: string
           success: boolean
         }
       }
@@ -999,6 +1011,7 @@ export type Database = {
           p_user_id: string
         }
         Returns: {
+          conflict?: boolean
           error?: string
           message?: string
           reservation_id?: string

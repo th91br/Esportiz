@@ -41,8 +41,23 @@ import { useGroups } from '@/hooks/queries/useGroups';
 import { Logo } from '@/components/Logo';
 import { useMemo } from 'react';
 
+type ArenaCourtMetadata = {
+  isActive?: boolean;
+};
+
+function parseArenaCourtMetadata(metadata: unknown): ArenaCourtMetadata {
+  if (!metadata) return {};
+
+  try {
+    const parsed = typeof metadata === 'string' ? JSON.parse(metadata) : metadata;
+    return parsed && typeof parsed === 'object' ? parsed as ArenaCourtMetadata : {};
+  } catch {
+    return {};
+  }
+}
+
 export default function Index() {
-  const { labels, isSportSchool, isArena, isOther } = useBusinessContext();
+  const { labels, isSportSchool, isArena } = useBusinessContext();
   const { students, loadingStudents } = useStudents();
   const { plans, loadingPlans } = usePlans();
   const { trainings, loadingTrainings } = useTrainings();
@@ -138,27 +153,12 @@ export default function Index() {
         receivedRevenue += s.total; // Vendas são sempre recebidas no ato
       }
     });
-  } else if (isSportSchool) {
+  } else {
     // Escola Esportiva: Apenas Mensalidades dos Alunos (Sem Cantina/Vendas)
     payments.forEach((p) => {
       if (p.monthRef === currentMonthStr) {
         expectedRevenue += p.amount;
         receivedRevenue += p.paidAmount || 0;
-      }
-    });
-  } else {
-    // Outros nichos: Mensalidades dos Alunos + Vendas
-    payments.forEach((p) => {
-      if (p.monthRef === currentMonthStr) {
-        expectedRevenue += p.amount;
-        receivedRevenue += p.paidAmount || 0;
-      }
-    });
-
-    sales.forEach((s) => {
-      if (s.soldAt.startsWith(currentMonthStr)) {
-        expectedRevenue += s.total;
-        receivedRevenue += s.total;
       }
     });
   }
@@ -206,10 +206,8 @@ export default function Index() {
   // ── Arena Specific Stats ──
   const occupancyRate = isArena ? (() => {
     const activeCourts = modalities.filter(c => {
-      try {
-        const meta = typeof (c as any).metadata === 'string' ? JSON.parse((c as any).metadata) : ((c as any).metadata || {});
-        return meta.isActive !== false;
-      } catch { return true; }
+      const meta = parseArenaCourtMetadata(c.metadata);
+      return meta.isActive !== false;
     });
     const totalHoursAvailable = activeCourts.length * 15 * new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).getDate();
     const monthReservations = reservations.filter(r => r.date.startsWith(currentMonthStr) && r.status !== 'cancelled');
@@ -389,28 +387,6 @@ export default function Index() {
                 value={loading ? '...' : pv(formatCurrency(todaySalesTotal))}
                 icon={DollarSign}
                 description={privacyMode ? '' : 'Consumo / Cantina'}
-              />
-            </div>
-          )}
-
-          {isOther && (
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-4">
-              <StatCard
-                title={`${labels.studentLabel} Ativos`}
-                value={loading ? '...' : pv(activeStudents)}
-                icon={Users}
-                description={privacyMode ? '' : `de ${totalStudents} total`}
-              />
-              <StatCard
-                title={`${labels.trainingLabel} de Hoje`}
-                value={loading ? '...' : pv(todayTrainings)}
-                icon={Calendar}
-                variant="primary"
-              />
-              <StatCard
-                title={`Taxa de ${labels.attendanceLabel}`}
-                value={loading ? '...' : pv(`${attendanceRate}%`)}
-                icon={CheckCircle}
               />
             </div>
           )}

@@ -125,7 +125,7 @@ export default function ReportsPage() {
   const { expenses } = useExpenses();
   const [period, setPeriod] = useState<FilterPeriod>('month');
   const [privacyMode, togglePrivacyMode] = usePrivacyMode();
-  const { labels, isArena, isOther, isSportSchool } = useBusinessContext();
+  const { labels, isArena, isSportSchool } = useBusinessContext();
 
   const range = useMemo(() => getDateRange(period), [period]);
   const monthRefs = useMemo(() => getMonthRefsForPeriod(period), [period]);
@@ -328,10 +328,11 @@ export default function ReportsPage() {
   ];
 
   const studentKey = labels.studentLabel.toLowerCase();
-  const planDistributionData = plans.filter(p => activeMonthly.some(s => s.planId === p.id)).map(plan => ({
+  type PlanDistributionDatum = { name: string } & Record<string, string | number>;
+  const planDistributionData: PlanDistributionDatum[] = plans.filter(p => activeMonthly.some(s => s.planId === p.id)).map(plan => ({
     name: plan.name,
     [studentKey]: activeMonthly.filter((s) => s.planId === plan.id).length,
-  })).sort((a: any, b: any) => b[studentKey] - a[studentKey]);
+  })).sort((a, b) => Number(b[studentKey]) - Number(a[studentKey]));
 
   // Historical Financial Data - Dynamic Evolution based on period
   const historicalFinancialData = useMemo(() => {
@@ -608,8 +609,8 @@ export default function ReportsPage() {
           {/* Demografia: Alunos por Nível */}
           {!isArena && (
             <div className="card-interactive p-4 md:p-6 lg:col-span-1 border-border/60">
-              <h3 className="font-display font-bold text-lg md:text-xl text-foreground mb-1">{isOther ? 'Perfil dos Alunos por Nível' : 'Perfil Técnico (Base Ativa)'}</h3>
-              <p className="text-sm text-muted-foreground mb-6">{isOther ? 'Distribuição dos alunos por nível de conhecimento' : 'Distribuição da base por nível'}</p>
+              <h3 className="font-display font-bold text-lg md:text-xl text-foreground mb-1">Perfil Técnico (Base Ativa)</h3>
+              <p className="text-sm text-muted-foreground mb-6">Distribuição da base por nível</p>
               <div className="h-[250px] w-full mt-2">
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>

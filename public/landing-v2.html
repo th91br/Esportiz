@@ -2368,13 +2368,74 @@ footer{padding:60px 0 30px;border-top:1px solid rgba(255,255,255,.06);background
 <!-- FUNCIONALIDADES ZEBRA -->
 <section class="section zebra-section" id="funcionalidades">
   <div class="container">
-    <div class="section-header" style="margin-bottom: 80px;">
+    <div class="section-header" style="margin-bottom: 40px;">
       <div class="badge reveal">Produto Real</div>
       <h2 class="reveal">Conheça o sistema <span class="grad">por dentro.</span></h2>
     </div>
 
+    <style>
+      .funcionalidades-tabs {
+        display: flex;
+        gap: 12px;
+        justify-content: center;
+        margin-bottom: 60px;
+      }
+      .func-tab {
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        color: rgba(255, 255, 255, 0.6);
+        padding: 12px 24px;
+        border-radius: 30px;
+        font-family: 'DM Sans', sans-serif;
+        font-size: 14px;
+        font-weight: 700;
+        cursor: pointer;
+        transition: all 0.3s ease;
+      }
+      .func-tab.active {
+        background: var(--demo-accent, #1DB874);
+        color: #0A1628;
+        border-color: var(--demo-accent, #1DB874);
+        box-shadow: 0 4px 15px rgba(29, 184, 116, 0.2);
+      }
+      .func-tab:hover:not(.active) {
+        background: rgba(255, 255, 255, 0.1);
+        color: #fff;
+      }
+      .zebra-row.hidden-niche {
+        display: none !important;
+      }
+    </style>
+
+    <div class="funcionalidades-tabs reveal">
+      <button class="func-tab active" data-view="sport" style="--demo-accent: #1DB874;">Escola Esportiva</button>
+      <button class="func-tab" data-view="arena" style="--demo-accent: #378ADD;">Arena / CT Quadra</button>
+    </div>
+
+    <script>
+      document.addEventListener('DOMContentLoaded', () => {
+        const tabs = document.querySelectorAll('.func-tab');
+        tabs.forEach(tab => {
+          tab.addEventListener('click', () => {
+            tabs.forEach(t => t.classList.remove('active'));
+            tab.classList.add('active');
+            const view = tab.dataset.view;
+            
+            document.querySelectorAll('#funcionalidades .zebra-row').forEach(row => {
+              const niche = row.dataset.nicheView;
+              if (!niche || niche === 'both' || niche === view) {
+                row.classList.remove('hidden-niche');
+              } else {
+                row.classList.add('hidden-niche');
+              }
+            });
+          });
+        });
+      });
+    </script>
+
     
-    <div class="zebra-row reveal">
+    <div class="zebra-row reveal" data-niche-view="sport">
       <div class="zebra-text">
         <h3 class="zebra-title">Dashboard Inteligente</h3>
         <p class="zebra-desc">Tenha a visão completa do seu Centro de Treinamento em uma única tela, com métricas que importam atualizadas em tempo real.</p>
@@ -2392,8 +2453,85 @@ footer{padding:60px 0 30px;border-top:1px solid rgba(255,255,255,.06);background
       </div>
     </div>
 
+    <!-- DASHBOARD ARENA -->
+    <div class="zebra-row reveal hidden-niche" data-niche-view="arena">
+      <div class="zebra-text">
+        <h3 class="zebra-title">Dashboard da Arena</h3>
+        <p class="zebra-desc">Tenha a visão completa da sua Arena em uma única tela. Monitore ocupação, faturamento e fluxo de clientes em tempo real.</p>
+        <ul class="zebra-list">
+          <li><svg class="zebra-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Acompanhe a taxa de ocupação das quadras.</li>
+          <li><svg class="zebra-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Monitore o faturamento diário e mensal.</li>
+          <li><svg class="zebra-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Visualize as próximas reservas e check-ins.</li>
+        </ul>
+      </div>
+      <div class="zebra-img-wrap">
+        <div class="zebra-mockup">
+          <div class="zebra-mockup-bar"><span class="dot-r"></span><span class="dot-y"></span><span class="dot-g"></span></div>
+          <div class="mockup-sys" style="aspect-ratio: 16/9; background:#F1F5F9; padding: 10px; display: flex; flex-direction: column; justify-content: space-between;">
+            
+            <!-- Banner Topo -->
+            <div style="background: #0D1F3C; color: #fff; padding: 10px; border-radius: 6px;">
+              <div style="font-size: 8px; opacity: 0.7;">Boa noite, seja bem-vindo(a) de volta!</div>
+              <div style="font-size: 14px; font-weight: 800; margin-top: 2px;">Arena</div>
+              <div style="background: rgba(255,255,255,0.1); font-size: 7px; padding: 3px 6px; border-radius: 4px; display: inline-block; margin-top: 6px;">📅 5 reservas hoje</div>
+            </div>
+
+            <!-- Grid de Cards -->
+            <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px;">
+              <div style="background: #fff; padding: 6px; border-radius: 4px; border: 1px solid #E2E8F0;">
+                <div style="font-size: 7px; color: #64748B;">Quadras Ativas</div>
+                <div style="font-size: 12px; font-weight: 800; color: #0F172A; margin-top: 2px;">4</div>
+              </div>
+              <div style="background: #0D1F3C; color: #fff; padding: 6px; border-radius: 4px;">
+                <div style="font-size: 7px; opacity: 0.7;">Reservas Hoje</div>
+                <div style="font-size: 12px; font-weight: 800; margin-top: 2px;">5</div>
+              </div>
+              <div style="background: #fff; padding: 6px; border-radius: 4px; border: 1px solid #E2E8F0;">
+                <div style="font-size: 7px; color: #64748B;">Ocupação</div>
+                <div style="font-size: 12px; font-weight: 800; color: #0F172A; margin-top: 2px;">65%</div>
+              </div>
+              <div style="background: #1DB874; color: #fff; padding: 6px; border-radius: 4px;">
+                <div style="font-size: 7px; opacity: 0.9;">Lucro Líquido</div>
+                <div style="font-size: 10px; font-weight: 800; margin-top: 2px;">R$ 1.250</div>
+              </div>
+            </div>
+
+            <!-- Gráficos -->
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 4px;">
+              <!-- Barras -->
+              <div style="background: #fff; padding: 6px; border-radius: 4px; border: 1px solid #E2E8F0;">
+                <div style="font-size: 7px; color: #64748B; margin-bottom: 4px;">Receita Mensal</div>
+                <div style="display: flex; align-items: flex-end; gap: 3px; height: 30px; justify-content: center;">
+                  <div style="width: 10px; height: 10px; background: #CBD5E1; border-radius: 2px;"></div>
+                  <div style="width: 10px; height: 18px; background: #CBD5E1; border-radius: 2px;"></div>
+                  <div style="width: 10px; height: 30px; background: #1DB874; border-radius: 2px;"></div>
+                </div>
+              </div>
+              <!-- Onda -->
+              <div style="background: #fff; padding: 6px; border-radius: 4px; border: 1px solid #E2E8F0;">
+                <div style="font-size: 7px; color: #64748B; margin-bottom: 4px;">Volume de Locações</div>
+                <div style="height: 30px; position: relative;">
+                  <svg viewBox="0 0 100 40" preserveAspectRatio="none" style="width: 100%; height: 100%;">
+                    <path d="M 0 40 Q 25 10 50 25 T 100 5" fill="none" stroke="#1DB874" stroke-width="2"/>
+                    <path d="M 0 40 Q 25 10 50 25 T 100 5 L 100 40 L 0 40 Z" fill="url(#wave-grad2)" opacity="0.1"/>
+                    <defs>
+                      <linearGradient id="wave-grad2" x1="0%" y1="0%" x2="0%" y2="100%">
+                        <stop offset="0%" stop-color="#1DB874" />
+                        <stop offset="100%" stop-color="#1DB874" stop-opacity="0" />
+                      </linearGradient>
+                    </defs>
+                  </svg>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- ASSISTENTE PROATIVO / NOTIFICAÇÕES -->
-    <div class="zebra-row reveal">
+    <div class="zebra-row reveal" data-niche-view="sport">
       <div class="zebra-text">
         <h3 class="zebra-title">Assistente Proativo</h3>
         <p class="zebra-desc">O sistema trabalha por você. Seja avisado sobre pagamentos atrasados, aniversários do dia e treinos pendentes em um painel único.</p>
@@ -2440,7 +2578,7 @@ footer{padding:60px 0 30px;border-top:1px solid rgba(255,255,255,.06);background
     </div>
 
     <!-- AGENDA ESPORTIVA -->
-    <div class="zebra-row reveal">
+    <div class="zebra-row reveal" data-niche-view="sport">
       <div class="zebra-text">
         <h3 class="zebra-title">Agenda Esportiva</h3>
         <p class="zebra-desc">Nunca mais perca o controle das suas turmas. Um calendário visual e intuitivo feito sob medida para escolas esportivas.</p>
@@ -2458,7 +2596,7 @@ footer{padding:60px 0 30px;border-top:1px solid rgba(255,255,255,.06);background
       </div>
     </div>
     <!-- GESTÃO MULTI-MODALIDADE -->
-    <div class="zebra-row reveal">
+    <div class="zebra-row reveal" data-niche-view="sport">
       <div class="zebra-text">
         <h3 class="zebra-title">Gestão Multi-Modalidade</h3>
         <p class="zebra-desc">Sua arena oferece mais de um esporte? Administre Futevôlei, Beach Tennis, Vôlei de Areia e muito mais no mesmo lugar.</p>
@@ -2514,7 +2652,7 @@ footer{padding:60px 0 30px;border-top:1px solid rgba(255,255,255,.06);background
     </div>
 
     <!-- GESTÃO DE ALUNOS -->
-    <div class="zebra-row reveal">
+    <div class="zebra-row reveal" data-niche-view="sport">
       <div class="zebra-text">
         <h3 class="zebra-title">Gestão de Alunos</h3>
         <p class="zebra-desc">Todos os dados dos seus alunos organizados, acessíveis e seguros. Fim das fichas de papel e planilhas confusas.</p>
@@ -2533,7 +2671,7 @@ footer{padding:60px 0 30px;border-top:1px solid rgba(255,255,255,.06);background
     </div>
 
     <!-- PERFIL 360 DO ALUNO -->
-    <div class="zebra-row reveal">
+    <div class="zebra-row reveal" data-niche-view="sport">
       <div class="zebra-text">
         <h3 class="zebra-title">Perfil 360º do Aluno</h3>
         <p class="zebra-desc">Tenha o histórico financeiro, frequência e evolução técnica em uma única tela. Decisões baseadas em dados, não em palpites.</p>
@@ -2571,7 +2709,7 @@ footer{padding:60px 0 30px;border-top:1px solid rgba(255,255,255,.06);background
     </div>
 
     <!-- CHAMADA RÁPIDA -->
-    <div class="zebra-row reveal">
+    <div class="zebra-row reveal" data-niche-view="sport">
       <div class="zebra-text">
         <h3 class="zebra-title">Chamada Rápida</h3>
         <p class="zebra-desc">Registre a presença dos alunos diretamente pelo celular ou tablet, na quadra ou na areia, em poucos segundos.</p>
@@ -2591,7 +2729,7 @@ footer{padding:60px 0 30px;border-top:1px solid rgba(255,255,255,.06);background
 
     
     
-    <div class="zebra-row reveal">
+    <div class="zebra-row reveal" data-niche-view="sport">
       <div class="zebra-text">
         <h3 class="zebra-title">Planos e Pagamentos</h3>
         <p class="zebra-desc">Controle financeiro automatizado para acabar com a inadimplência e o constrangimento das cobranças manuais.</p>
@@ -2798,7 +2936,7 @@ footer{padding:60px 0 30px;border-top:1px solid rgba(255,255,255,.06);background
     </div>
 
     <!-- CENTRAL WHATSAPP -->
-    <div class="zebra-row reveal">
+    <div class="zebra-row reveal" data-niche-view="sport">
       <div class="zebra-text">
         <h3 class="zebra-title">Comunicação inteligente via WhatsApp</h3>
         <p class="zebra-desc">Envie cobranças, lembretes e avisos para alunos e turmas usando templates prontos e segmentação inteligente.</p>
@@ -2851,7 +2989,7 @@ footer{padding:60px 0 30px;border-top:1px solid rgba(255,255,255,.06);background
     </div>
 
     <!-- PERSONALIZAÇÃO WHITE LABEL -->
-    <div class="zebra-row reveal">
+    <div class="zebra-row reveal" data-niche-view="both">
       <div class="zebra-text">
         <h3 class="zebra-title">Seu Sistema, Sua Marca</h3>
         <p class="zebra-desc">Fortaleça a autoridade da sua Arena. Personalize o sistema com seu logo e o nome da sua escola. Para o aluno, o sistema é seu.</p>
@@ -2902,6 +3040,91 @@ footer{padding:60px 0 30px;border-top:1px solid rgba(255,255,255,.06);background
                  <div style="width:60%; height:6px; background:#F3F4F6; border-radius:4px;"></div>
                </div>
              </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- GRADE DE OCUPAÇÃO (ARENA) -->
+    <div class="zebra-row reveal hidden-niche" data-niche-view="arena">
+      <div class="zebra-text">
+        <h3 class="zebra-title">Grade de Ocupação de Quadras</h3>
+        <p class="zebra-desc">O coração da sua Arena. Visualize e gerencie o uso das quadras em tempo real, evitando conflitos de horários e maximizando seu faturamento.</p>
+        <ul class="zebra-list">
+          <li><svg class="zebra-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Mapa visual de horários por quadra.</li>
+          <li><svg class="zebra-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Agendamento rápido de locações avulsas.</li>
+          <li><svg class="zebra-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Bloqueio de horários para manutenção ou eventos.</li>
+        </ul>
+      </div>
+      <div class="zebra-img-wrap">
+        <div class="zebra-mockup">
+          <div class="zebra-mockup-bar"><span class="dot-r"></span><span class="dot-y"></span><span class="dot-g"></span></div>
+          <div class="mockup-sys" style="aspect-ratio: 16/9; background:#F8FAFC; padding: 12px;">
+            <div style="font-size: 12px; font-weight: 800; color: #111827; margin-bottom: 8px;">Grade de Quadras</div>
+            <div style="display: grid; grid-template-columns: 50px 1fr 1fr; gap: 4px;">
+              <div style="font-size: 10px; color: #6B7280;">18:00</div>
+              <div style="background: #D1FAE5; color: #065F46; font-size: 10px; padding: 6px; border-radius: 4px; text-align: center;">Quadra 1<br><b>Ocupado</b></div>
+              <div style="background: #F3F4F6; color: #9CA3AF; font-size: 10px; padding: 6px; border-radius: 4px; text-align: center;">Quadra 2<br>Livre</div>
+              <div style="font-size: 10px; color: #6B7280; margin-top: 4px;">19:00</div>
+              <div style="background: #D1FAE5; color: #065F46; font-size: 10px; padding: 6px; border-radius: 4px; text-align: center; margin-top: 4px;">Quadra 1<br><b>Ocupado</b></div>
+              <div style="background: #DBEAFE; color: #1E40AF; font-size: 10px; padding: 6px; border-radius: 4px; text-align: center; margin-top: 4px;">Quadra 2<br><b>Locado</b></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- CONTROLE DE COMANDAS (ARENA) -->
+    <div class="zebra-row reveal hidden-niche" data-niche-view="arena">
+      <div class="zebra-text">
+        <h3 class="zebra-title">Controle de Comandas e Bar</h3>
+        <p class="zebra-desc">Gerencie o consumo dos clientes na sua arena. Abra comandas por quadra ou por cliente e feche a conta em segundos.</p>
+        <ul class="zebra-list">
+          <li><svg class="zebra-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Abertura de comanda vinculada à reserva.</li>
+          <li><svg class="zebra-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Lançamento rápido de produtos (bebidas, lanches).</li>
+          <li><svg class="zebra-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Fechamento de conta integrado ao financeiro.</li>
+        </ul>
+      </div>
+      <div class="zebra-img-wrap">
+        <div class="zebra-mockup">
+          <div class="zebra-mockup-bar"><span class="dot-r"></span><span class="dot-y"></span><span class="dot-g"></span></div>
+          <div class="mockup-sys" style="aspect-ratio: 16/9; background:#F8FAFC; padding: 12px;">
+            <div style="font-size: 12px; font-weight: 800; color: #111827; margin-bottom: 8px;">Comanda #1024 — Quadra 1</div>
+            <div style="background: #fff; padding: 8px; border-radius: 6px; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+              <div style="display: flex; justify-content: space-between; font-size: 10px; margin-bottom: 4px;"><span>1x Locação de Quadra</span><span>R$ 80,00</span></div>
+              <div style="display: flex; justify-content: space-between; font-size: 10px; margin-bottom: 4px;"><span>2x Água s/ Gás</span><span>R$ 10,00</span></div>
+              <div style="display: flex; justify-content: space-between; font-size: 10px; border-top: 1px solid #F3F4F6; pt: 4px; font-weight: 800;"><span>Total</span><span>R$ 90,00</span></div>
+            </div>
+            <div style="background: #10B981; color: #fff; font-size: 10px; text-align: center; padding: 6px; border-radius: 4px; margin-top: 8px; font-weight: 700;">Fechar Conta</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- LOCAÇÕES E MENSALISTAS (ARENA) -->
+    <div class="zebra-row reveal hidden-niche" data-niche-view="arena">
+      <div class="zebra-text">
+        <h3 class="zebra-title">Locações e Mensalistas</h3>
+        <p class="zebra-desc">Separe o joio do trigo. Diferencie locações avulsas de horários mensalistas e tenha controle absoluto das renovações.</p>
+        <ul class="zebra-list">
+          <li><svg class="zebra-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Cadastro de mensalistas com renovação automática.</li>
+          <li><svg class="zebra-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Gestão de horários fixos na semana.</li>
+          <li><svg class="zebra-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Controle de faltas e reposições de mensalistas.</li>
+        </ul>
+      </div>
+      <div class="zebra-img-wrap">
+        <div class="zebra-mockup">
+          <div class="zebra-mockup-bar"><span class="dot-r"></span><span class="dot-y"></span><span class="dot-g"></span></div>
+          <div class="mockup-sys" style="aspect-ratio: 16/9; background:#F8FAFC; padding: 12px;">
+            <div style="font-size: 12px; font-weight: 800; color: #111827; margin-bottom: 8px;">Mensalistas Ativos</div>
+            <div style="background: #fff; padding: 8px; border-radius: 6px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); margin-bottom: 6px;">
+              <div style="font-size: 10px; font-weight: 700;">Grupo Amigos do Futevôlei</div>
+              <div style="font-size: 9px; color: #6B7280;">Terças e Quintas — 19h</div>
+            </div>
+            <div style="background: #fff; padding: 8px; border-radius: 6px; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+              <div style="font-size: 10px; font-weight: 700;">Mensalista Beach Tennis</div>
+              <div style="font-size: 9px; color: #6B7280;">Sábados — 09h</div>
+            </div>
           </div>
         </div>
       </div>
@@ -3360,7 +3583,7 @@ footer{padding:60px 0 30px;border-top:1px solid rgba(255,255,255,.06);background
           <ul class="plan-features">
             <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1DB874" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg> Até 90 alunos ativos</li>
             <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1DB874" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg> CRM completo com ficha individual</li>
-            <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1DB874" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg> Matrícula online pública (/matricula)</li>
+            <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1DB874" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg> Cadastro interno de alunos</li>
             <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1DB874" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg> Portal do aluno (/portal-aluno)</li>
             <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1DB874" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg> Painel de aniversariantes</li>
           </ul>
@@ -3466,7 +3689,7 @@ footer{padding:60px 0 30px;border-top:1px solid rgba(255,255,255,.06);background
           <div class="plan-features-title">Tudo do Sport +</div>
           <ul class="plan-features">
             <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1DB874" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg> Até 160 alunos ativos</li>
-            <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1DB874" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg> Matrícula online pública</li>
+            <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1DB874" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg> Cadastro interno de alunos</li>
             <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1DB874" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg> Portal do aluno completo</li>
             <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1DB874" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg> Chamada rápida mobile</li>
           </ul>

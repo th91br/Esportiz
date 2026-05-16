@@ -12,11 +12,7 @@ type AuthFlowProfile = {
 } | null | undefined;
 
 function normalizeBusinessType(businessType?: string | null) {
-  if (businessType === "arena" || businessType === "other") {
-    return businessType;
-  }
-
-  return "sport_school";
+  return businessType === "arena" ? "arena" : "sport_school";
 }
 
 export function isOnboardingGoal(value: unknown): value is OnboardingGoal {

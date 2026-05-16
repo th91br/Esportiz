@@ -1,6 +1,8 @@
 import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip, Area, AreaChart, CartesianGrid } from 'recharts';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import type { Payment, Attendance } from '@/data/mockData';
+import type { Reservation } from '@/hooks/queries/useReservations';
+import type { Sale } from '@/hooks/queries/useSales';
 import { useTheme } from 'next-themes';
 import { formatCurrency } from '@/lib/formatCurrency';
 import { toLocalDateString } from '@/lib/dateUtils';
@@ -10,8 +12,8 @@ interface DashboardChartsProps {
     attendance: Attendance[];
     privacyMode: boolean;
     isArena?: boolean;
-    reservations?: any[];
-    sales?: any[];
+    reservations?: Reservation[];
+    sales?: Sale[];
 }
 
 export function DashboardCharts({ 
@@ -55,20 +57,13 @@ export function DashboardCharts({
             revenueMap[month].paid += s.total;
         });
     } else {
-        // Escola / Curso: Mensalidades + Vendas (Sincronia com Dashboard KPIs)
+        // Escola Esportiva: mensalidades dos alunos em sincronia com os KPIs.
         payments.forEach(payment => {
             const month = payment.monthRef;
             if (!revenueMap[month]) revenueMap[month] = { expected: 0, paid: 0 };
             revenueMap[month].expected += payment.amount;
             // Usa paidAmount para incluir pagamentos parciais (antes usava boolean paid)
             revenueMap[month].paid += payment.paidAmount || 0;
-        });
-
-        sales.forEach(s => {
-            const month = s.soldAt.slice(0, 7);
-            if (!revenueMap[month]) revenueMap[month] = { expected: 0, paid: 0 };
-            revenueMap[month].expected += s.total;
-            revenueMap[month].paid += s.total;
         });
     }
 

@@ -9,7 +9,12 @@ export interface Modality {
   user_id: string;
   name: string;
   color: string;
+  metadata?: unknown;
   created_at: string;
+}
+
+function getErrorMessage(error: unknown) {
+  return error instanceof Error ? error.message : 'Erro inesperado';
 }
 
 export function useModalities() {
@@ -58,8 +63,8 @@ export function useModalities() {
       queryClient.invalidateQueries({ queryKey: ['modalities'] });
       toast.success('Modalidade criada com sucesso');
     },
-    onError: (error: any) => {
-      toast.error('Erro ao criar modalidade: ' + error.message);
+    onError: (error: unknown) => {
+      toast.error('Erro ao criar modalidade: ' + getErrorMessage(error));
     }
   });
 
@@ -87,8 +92,8 @@ export function useModalities() {
       queryClient.invalidateQueries({ queryKey: ['modalities'] });
       toast.success('Modalidade atualizada');
     },
-    onError: (error: any) => {
-      toast.error('Erro ao atualizar modalidade: ' + error.message);
+    onError: (error: unknown) => {
+      toast.error('Erro ao atualizar modalidade: ' + getErrorMessage(error));
     }
   });
 
@@ -123,8 +128,8 @@ export function useModalities() {
       queryClient.invalidateQueries({ queryKey: ['modalities'] });
       toast.success('Modalidade removida');
     },
-    onError: (error: any) => {
-      toast.error(error.message);
+    onError: (error: unknown) => {
+      toast.error(getErrorMessage(error));
     }
   });
 

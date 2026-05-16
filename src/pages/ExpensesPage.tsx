@@ -70,7 +70,7 @@ const getMonthName = (month: number): string => {
 };
 
 export default function ExpensesPage() {
-  const { isOther, isArena } = useBusinessContext();
+  const { isArena } = useBusinessContext();
   const { expenses, loadingExpenses, addExpense, updateExpense, deleteExpense, markExpensePaid, markExpenseUnpaid, isAddingExpense } = useExpenses();
   const [monthOffset, setMonthOffset] = useState(0);
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -90,18 +90,6 @@ export default function ExpensesPage() {
         'Geral',
       ];
     }
-    if (isOther) {
-      return [
-        'Aluguel',
-        'Energia/Água',
-        'Salários de Professores',
-        'Material Didático',
-        'Marketing',
-        'Manutenção',
-        'Alimentação',
-        'Geral',
-      ];
-    }
     // sport_school
     return [
       'Aluguel',
@@ -113,7 +101,7 @@ export default function ExpensesPage() {
       'Alimentação',
       'Geral',
     ];
-  }, [isOther, isArena]);
+  }, [isArena]);
 
   // Form state
   const [formDescription, setFormDescription] = useState('');
@@ -179,7 +167,7 @@ export default function ExpensesPage() {
           amount,
           category: formCategory,
           date: formDate,
-          recurrence: formRecurrence as any,
+          recurrence: formRecurrence,
           notes: formNotes || undefined,
         });
         toast.success('Despesa atualizada!');
@@ -234,7 +222,7 @@ export default function ExpensesPage() {
                   <Label htmlFor="exp-description">Descrição *</Label>
                   <Input
                     id="exp-description"
-                    placeholder={isOther ? "Ex: Aluguel da sala, Energia, Livros..." : "Ex: Aluguel da quadra, Energia..."}
+                    placeholder="Ex: Aluguel da quadra, Energia..."
                     value={formDescription}
                     onChange={(e) => setFormDescription(e.target.value)}
                     autoFocus

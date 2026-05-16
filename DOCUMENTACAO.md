@@ -4,13 +4,13 @@
 ![Licença](https://img.shields.io/badge/Licen%C3%A7a-Propriet%C3%A1ria-red?style=for-the-badge)
 ![Versão](https://img.shields.io/badge/Vers%C3%A3o-2.5.0-green?style=for-the-badge)
 
-Esta é a documentação oficial, técnica e funcional do **Esportiz**, um ecossistema completo (ERP/SaaS) para gestão inteligente de escolas de esportes de alto rendimento e arenas esportivas multiuso (Beach Tennis, Futevôlei, Vôlei de Praia, Estúdios e Cursos).
+Esta é a documentação oficial, técnica e funcional do **Esportiz**, um ecossistema completo (ERP/SaaS) para gestão inteligente de escolas esportivas de alto rendimento e arenas esportivas multiuso (Beach Tennis, Futevôlei, Vôlei de Praia e centros esportivos).
 
 ---
 
 ## 🧭 1. Visão Geral e Propósito
 
-O **Esportiz** foi concebido sob a premissa de que a gestão esportiva e de quadras deve ser altamente dinâmica, acessível e focada na experiência mobile (mobile-first). O aplicativo unifica o controle operacional, o CRM de alunos/reservantes, o fluxo financeiro de mensalidades e locações, o PDV (Ponto de Venda) com controle rigoroso de estoque, e ferramentas inteligentes de atração (Portal do Aluno, Matrícula Online e Locação de Quadras Online) em uma interface Progressive Web App (PWA) de alto padrão estético.
+O **Esportiz** foi concebido sob a premissa de que a gestão esportiva e de quadras deve ser altamente dinâmica, acessível e focada na experiência mobile (mobile-first). O aplicativo unifica o controle operacional, o CRM de alunos/reservantes, o fluxo financeiro de mensalidades e locações, o PDV (Ponto de Venda) com controle rigoroso de estoque, o Portal do Aluno e a Reserva Online de quadras em uma interface Progressive Web App (PWA) de alto padrão estético.
 
 O sistema é altamente adaptativo, mudando sua interface e terminologia com base no perfil do negócio (Escola Esportiva ou Arena), garantindo uma experiência personalizada para cada tipo de cliente.
 
@@ -61,7 +61,7 @@ O sistema adapta dinamicamente seus textos, menus, painéis analíticos e funcio
 | **Termo Principal** | Aluno | Reservante / Cliente |
 | **Atividade** | Treinos / Aulas | Reservas de Quadra |
 | **Planos** | Mensalidades / Planos | Pacotes de Horas |
-| **Portais Públicos** | Matrícula Online (`/matricula`) | Reserva Online (`/agendar`, compatível também com `/agendamento`) |
+| **Portais Públicos** | Portal do Aluno (`/portal-aluno`) | Reserva Online (`/agendar`, compatível também com `/agendamento`) |
 
 ### 4.2. Labels Dinâmicas
 O sistema mapeia termos como:
@@ -94,7 +94,6 @@ O Dashboard principal se reconstrói dependendo do nicho de atuação:
 ---
 
 ### 🌐 6.2. Ecossistema "Self-Service": Portais e CRM
-- **🌐 Portal de Matrícula Online (`/matricula`):** Link público onde novos alunos selecionam suas turmas de segunda a sexta, aceitam os termos e geram a própria matrícula de forma autônoma.
 - **🎾 Portal de Reservas Online (`/agendar`, compatível também com `/agendamento`):** Motor público para locação de quadras. Clientes visualizam os blocos de horários livres da arena e realizam a reserva online, reduzindo o trabalho da secretaria.
 - **📱 Portal do Aluno (`/portal-aluno`):** Web-app privado onde o aluno gerencia faturas em aberto, acompanha sua taxa de presença e visualiza seu histórico.
 - **Ficha Integrada (CRM):** Perfil unificado do aluno/reservante no admin com foto, nível técnico, histórico de pagamentos, turmas vinculadas e atalhos rápidos para contato.

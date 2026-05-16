@@ -29,7 +29,7 @@ function GroupFormDialog({
   const { addGroup, updateGroup } = useGroups();
   const { students } = useStudents();
   const { modalities } = useModalities();
-  const { labels, isOther, isArena } = useBusinessContext();
+  const { labels, isArena } = useBusinessContext();
   const activeStudents = students.filter(s => s.active).sort((a, b) => a.name.localeCompare(b.name, 'pt-BR'));
   const isEditing = !!group;
 
@@ -62,7 +62,7 @@ function GroupFormDialog({
   // Schedule helpers
   const addSlot = () => setSchedule([...schedule, { dayOfWeek: 1, time: '18:00' }]);
   const removeSlot = (i: number) => setSchedule(schedule.filter((_, idx) => idx !== i));
-  const updateSlot = (i: number, field: keyof GroupScheduleSlot, value: any) => {
+  const updateSlot = (i: number, field: keyof GroupScheduleSlot, value: string) => {
     const updated = [...schedule];
     updated[i] = { ...updated[i], [field]: field === 'dayOfWeek' ? parseInt(value) : value };
     setSchedule(updated);
@@ -85,7 +85,7 @@ function GroupFormDialog({
         sortDay(a.dayOfWeek) - sortDay(b.dayOfWeek) || a.time.localeCompare(b.time)
       );
 
-      const data = {
+      const data: Omit<Group, 'id' | 'userId' | 'createdAt' | 'studentIds'> & { studentIds?: string[] } = {
         name: name.trim(),
         location: location.trim(),
         modalityId: modalityId !== 'none' ? modalityId : undefined,
@@ -99,7 +99,7 @@ function GroupFormDialog({
       if (isEditing) {
         await updateGroup(group.id, data);
       } else {
-        await addGroup(data as any);
+        await addGroup(data);
       }
       onOpenChange(false);
     } catch (err) {
@@ -126,7 +126,7 @@ function GroupFormDialog({
           <div className="flex gap-3">
             <div className="flex-1 space-y-2">
               <Label>Nome da {labels.groupLabelSingular} *</Label>
-              <Input placeholder={isOther ? "Ex: Turma A - Inglês Iniciante" : isArena ? "Ex: Quadra 1 - Noite" : "Ex: Sub-15 Noturno"} value={name} onChange={e => setName(e.target.value)} required />
+              <Input placeholder={isArena ? "Ex: Quadra 1 - Noite" : "Ex: Sub-15 Noturno"} value={name} onChange={e => setName(e.target.value)} required />
             </div>
             <div className="space-y-2">
               <Label>Cor</Label>
@@ -144,7 +144,7 @@ function GroupFormDialog({
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-2">
               <Label>Local</Label>
-              <Input placeholder={isOther ? "Ex: Sala 101" : isArena ? "Ex: Quadra Coberta" : "Ex: Arena Principal"} value={location} onChange={e => setLocation(e.target.value)} />
+              <Input placeholder={isArena ? "Ex: Quadra Coberta" : "Ex: Arena Principal"} value={location} onChange={e => setLocation(e.target.value)} />
             </div>
             <div className="space-y-2">
               <Label>Duração</Label>

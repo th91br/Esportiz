@@ -76,16 +76,6 @@ export default function SettingsPage() {
     }
   }, [rawProfile, selectedBusinessType]);
 
-  // Handle Google OAuth Redirect
-  useEffect(() => {
-    const urlParams = new URLSearchParams(window.location.search);
-    const code = urlParams.get('code');
-
-    if (code && user && !isConnectingGoogle) {
-      handleGoogleCallback(code);
-    }
-  }, [user, isConnectingGoogle, handleGoogleCallback]);
-
   const handleGoogleCallback = useCallback(async (code: string) => {
     setIsConnectingGoogle(true);
     const toastId = toast.loading('Finalizando conexão com Google...');
@@ -117,6 +107,16 @@ export default function SettingsPage() {
       setIsConnectingGoogle(false);
     }
   }, [user?.id, labels.studentLabel]);
+
+  // Handle Google OAuth Redirect
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const code = urlParams.get('code');
+
+    if (code && user && !isConnectingGoogle) {
+      handleGoogleCallback(code);
+    }
+  }, [user, isConnectingGoogle, handleGoogleCallback]);
 
   const handleConnectGoogle = () => {
     const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?` + 

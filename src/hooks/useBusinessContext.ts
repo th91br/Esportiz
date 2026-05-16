@@ -138,7 +138,10 @@ function buildNavModules(type: BusinessType, labels: BusinessLabels): NavModule[
 export function useBusinessContext() {
   const { profile } = useProfile();
 
-  const businessType: BusinessType = profile?.business_type ?? 'sport_school';
+  const rawBusinessType = profile?.business_type;
+  const businessType: BusinessType = (rawBusinessType === 'arena' || rawBusinessType === 'other') 
+    ? rawBusinessType 
+    : 'sport_school';
   const labels = useMemo(() => LABELS[businessType], [businessType]);
   const navModules = useMemo(() => buildNavModules(businessType, labels), [businessType, labels]);
 

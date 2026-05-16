@@ -49,7 +49,11 @@ function FullScreenLoader() {
 
 function LoginRoute() {
   const { user, loading: authLoading } = useAuth();
-  const { profile, loadingProfile } = useProfile();
+  const { profile, loadingProfile, isErrorProfile, errorProfile } = useProfile();
+
+  if (isErrorProfile) {
+    throw new Error(`Falha ao carregar o perfil: ${(errorProfile as any)?.message || 'Erro desconhecido'}`);
+  }
 
   if (authLoading || (user && loadingProfile)) {
     return <FullScreenLoader />;
@@ -65,7 +69,11 @@ function LoginRoute() {
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const location = useLocation();
   const { user, loading: authLoading } = useAuth();
-  const { profile, loadingProfile } = useProfile();
+  const { profile, loadingProfile, isErrorProfile, errorProfile } = useProfile();
+
+  if (isErrorProfile) {
+    throw new Error(`Falha ao carregar o perfil: ${(errorProfile as any)?.message || 'Erro desconhecido'}`);
+  }
 
   if (authLoading || (user && loadingProfile)) {
     return <FullScreenLoader />;

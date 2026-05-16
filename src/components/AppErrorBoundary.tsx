@@ -8,23 +8,48 @@ type AppErrorBoundaryProps = {
 
 type AppErrorBoundaryState = {
   hasError: boolean;
+  error: Error | null;
 };
 
 export class AppErrorBoundary extends Component<AppErrorBoundaryProps, AppErrorBoundaryState> {
-  state: AppErrorBoundaryState = { hasError: false };
+  state: AppErrorBoundaryState = { hasError: false, error: null };
 
-  static getDerivedStateFromError() {
-    return { hasError: true };
+  static getDerivedStateFromError(error: Error) {
+    return { hasError: true, error };
   }
 
   componentDidCatch(error: Error, info: ErrorInfo) {
     console.error('App render error:', error, info);
   }
 
+  handleRecovery = async () => {
+    sessionStorage.setItem('esportiz_recovery_attempted', 'true');
+
+    try {
+      // Limpar caches
+      if ('caches' in window) {
+        const keys = await caches.keys();
+        await Promise.all(keys.map(key => caches.delete(key)));
+      }
+
+      // Desregistrar service workers
+      if ('serviceWorker' in navigator) {
+        const registrations = await navigator.serviceWorker.getRegistrations();
+        await Promise.all(registrations.map(r => r.unregister()));
+      }
+    } catch (error) {
+      console.error('Error during recovery:', error);
+    } finally {
+      window.location.reload();
+    }
+  };
+
   render() {
     if (!this.state.hasError) {
       return this.props.children;
     }
+
+    const attempted = typeof window !== 'undefined' ? sessionStorage.getItem('esportiz_recovery_attempted') : null;
 
     return (
       <div className="min-h-screen bg-background flex items-center justify-center px-4">
@@ -33,18 +58,37 @@ export class AppErrorBoundary extends Component<AppErrorBoundaryProps, AppErrorB
             <AlertTriangle className="h-6 w-6" />
           </div>
           <h1 className="font-display text-xl font-bold text-foreground">
-            Nao foi possivel carregar esta tela
+            Não foi possível carregar esta tela
           </h1>
           <p className="mt-2 text-sm leading-6 text-muted-foreground">
-            Atualize o app para sincronizar a versao mais recente do Esportiz.
+            {attempted 
+              ? "Já tentamos recuperar o app automaticamente. Se o problema persistir, por favor, limpe os dados do navegador ou reinstale o PWA."
+              : "Ocorreu um erro inesperado. Clique abaixo para tentar corrigir e atualizar o app."}
           </p>
-          <Button
-            className="mt-5 w-full btn-primary-gradient gap-2"
-            onClick={() => window.location.reload()}
-          >
-            <RefreshCw className="h-4 w-4" />
-            Atualizar app
-          </Button>
+          
+          {this.state.error && (
+            <div className="mt-2 p-2 bg-destructive/5 rounded text-xs text-destructive font-mono text-left overflow-auto max-h-32">
+              {this.state.error.message}
+            </div>
+          )}
+          
+          {!attempted ? (
+            <Button
+              className="mt-5 w-full btn-primary-gradient gap-2"
+              onClick={this.handleRecovery}
+            >
+              <RefreshCw className="h-4 w-4" />
+              Corrigir e atualizar app
+            </Button>
+          ) : (
+            <Button
+              className="mt-5 w-full btn-primary-gradient gap-2"
+              onClick={() => window.location.reload()}
+            >
+              <RefreshCw className="h-4 w-4" />
+              Tentar recarregar
+            </Button>
+          )}
         </div>
       </div>
     );

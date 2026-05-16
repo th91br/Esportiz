@@ -34,7 +34,6 @@ export interface Profile {
   secondary_color: string | null;
   business_type: BusinessType;
   onboarding_completed: boolean;
-  google_calendar_id?: string | null;
   sheets_spreadsheet_id?: string | null;
   sheets_webhook_active?: boolean;
   pix_key?: string | null;
@@ -74,13 +73,9 @@ export function useProfile() {
           updated_at
         `)
         .eq('user_id', user.id)
-        .single();
+        .maybeSingle();
 
       if (error) {
-        if (error.code === 'PGRST116') {
-          // Profile doesn't exist yet, return null
-          return null;
-        }
         console.error('Error fetching profile:', error);
         throw error;
       }
@@ -198,6 +193,8 @@ export function useProfile() {
     profile: resolvedProfile,
     rawProfile: profileQuery.data,
     loadingProfile: profileQuery.isLoading,
+    isErrorProfile: profileQuery.isError,
+    errorProfile: profileQuery.error,
     updateProfile: updateProfileMutation.mutateAsync,
     isUpdatingProfile: updateProfileMutation.isPending,
     uploadLogo: uploadLogoMutation.mutateAsync,

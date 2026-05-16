@@ -7,6 +7,7 @@ type AuthFlowNicheSettings = {
 type AuthFlowProfile = {
   onboarding_completed?: boolean | null;
   business_type?: string | null;
+  ct_name?: string | null;
   niche_settings?: Record<string, AuthFlowNicheSettings> | null;
 } | null | undefined;
 
@@ -23,11 +24,21 @@ export function isOnboardingGoal(value: unknown): value is OnboardingGoal {
 }
 
 export function getAuthenticatedHomePath(profile?: AuthFlowProfile) {
-  if (!profile?.onboarding_completed) {
-    return "/onboarding";
+  if (profile?.onboarding_completed === true) {
+    return "/dashboard";
   }
 
-  return "/dashboard";
+  // Se já tem nome de CT configurado, provavelmente é um usuário existente
+  if (profile?.ct_name) {
+    return "/dashboard";
+  }
+
+  // Se possui configurações de nicho preenchidas, também é um usuário existente
+  if (profile?.niche_settings && Object.keys(profile.niche_settings).length > 0) {
+    return "/dashboard";
+  }
+
+  return "/onboarding";
 }
 
 export function getStoredOnboardingGoal(profile?: AuthFlowProfile) {

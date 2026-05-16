@@ -23,6 +23,8 @@ import { getDayName } from '@/data/mockData';
 import { useBusinessContext } from '@/hooks/useBusinessContext';
 import { getLocalTodayDate } from '@/lib/dateUtils';
 
+const DEFAULT_CONTRACT_CITY = 'Balneario Camboriu';
+
 export default function StudentProfilePage() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -45,14 +47,14 @@ export default function StudentProfilePage() {
   const [clauseObject, setClauseObject] = useState('O objeto do presente contrato é a prestação de serviços esportivos, visando o desenvolvimento técnico, tático e físico do aluno nas instalações do CT.');
   const [clauseRules, setClauseRules] = useState('É dever do CONTRATANTE zelar pelas instalações, equipamentos e respeitar rigorosamente os horários preestabelecidos para os treinos. Em caso de falta injustificada, não haverá direito a reposição de aula.');
   const [clauseTerms, setClauseTerms] = useState('O CONTRATANTE autoriza, a título gratuito, o uso da imagem e voz do aluno em campanhas publicitárias, redes sociais e materiais de divulgação do Centro de Treinamento.');
-  const [contractCity, setContractCity] = useState(profile?.city || 'Balneário Camboriú');
+  const [contractCity, setContractCity] = useState(DEFAULT_CONTRACT_CITY);
 
   const handleResetContract = () => {
     setContractTitle('CONTRATO DE PRESTAÇÃO DE SERVIÇOS ESPORTIVOS');
     setClauseObject('O objeto do presente contrato é a prestação de serviços esportivos, visando o desenvolvimento técnico, tático e físico do aluno nas instalações do CT.');
     setClauseRules('É dever do CONTRATANTE zelar pelas instalações, equipamentos e respeitar rigorosamente os horários preestabelecidos para os treinos. Em caso de falta injustificada, não haverá direito a reposição de aula.');
     setClauseTerms('O CONTRATANTE autoriza, a título gratuito, o uso da imagem e voz do aluno em campanhas publicitárias, redes sociais e materiais de divulgação do Centro de Treinamento.');
-    setContractCity(profile?.city || 'Balneário Camboriú');
+    setContractCity(DEFAULT_CONTRACT_CITY);
   };
 
   const student = students.find(s => s.id === id);

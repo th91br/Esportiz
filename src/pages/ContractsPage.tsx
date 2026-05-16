@@ -193,7 +193,7 @@ export default function ContractsPage() {
                     </div>
                     
                     <p className="text-right mt-8 text-xs text-muted-foreground">
-                      {profile?.city || 'Cidade'}, {new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' })}
+                      {student.city || 'Cidade'}, {new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' })}
                     </p>
                   </div>
                 </CardContent>
@@ -252,7 +252,7 @@ export default function ContractsPage() {
           </div>
           
           <p className="text-right mt-16 text-sm">
-            {profile?.city || 'Cidade'}, {new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' })}
+            {student.city || 'Cidade'}, {new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' })}
           </p>
         </div>
       )}

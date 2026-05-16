@@ -34,6 +34,9 @@ export interface Profile {
   secondary_color: string | null;
   business_type: BusinessType;
   onboarding_completed: boolean;
+  google_access_token?: string | null;
+  google_refresh_token?: string | null;
+  google_calendar_id?: string | null;
   sheets_spreadsheet_id?: string | null;
   sheets_webhook_active?: boolean;
   pix_key?: string | null;
@@ -63,6 +66,8 @@ export function useProfile() {
           secondary_color,
           business_type,
           onboarding_completed,
+          google_access_token,
+          google_refresh_token,
           google_calendar_id,
           sheets_spreadsheet_id,
           sheets_webhook_active,

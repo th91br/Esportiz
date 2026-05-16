@@ -13,6 +13,12 @@ import {
 import { formatCurrency } from '@/lib/formatCurrency';
 import { cn } from '@/lib/utils';
 import { getLocalTodayDate } from '@/lib/dateUtils';
+import {
+  formatCpf,
+  isTodayOrPastDate,
+  isValidCpf,
+  isValidUuid,
+} from '@/lib/publicPortalSecurity';
 
 interface AttendanceLog {
   date: string;
@@ -37,6 +43,11 @@ interface StudentPortalData {
   plan_name: string;
 }
 
+interface PaymentConfig {
+  pix_key: string | null;
+  pix_receiver: string | null;
+}
+
 interface GroupPortalData {
   id: string;
   name: string;
@@ -59,6 +70,9 @@ const monthNames = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 
 
 export default function StudentPortalPage() {
   const [searchParams, setSearchParams] = useSearchParams();
+  const ownerId = searchParams.get('ct');
+  const hasInvalidOwnerId = ownerId !== null && !isValidUuid(ownerId);
+  const scopedOwnerId = isValidUuid(ownerId) ? ownerId : null;
 
   const [loading, setLoading] = useState(true);
   const [authenticating, setAuthenticating] = useState(false);
@@ -74,14 +88,34 @@ export default function StudentPortalPage() {
   const [attendanceStats, setAttendanceStats] = useState<AttendanceStats | null>(null);
   const [attendanceLogs, setAttendanceLogs] = useState<AttendanceLog[]>([]);
   const [payments, setPayments] = useState<PaymentLog[]>([]);
+  const [paymentConfig, setPaymentConfig] = useState<PaymentConfig | null>(null);
 
   // Authenticate student via credentials
   const authenticate = async (forceCpf?: string, forceBirthDate?: string) => {
+    const loginCpf = forceCpf || cpf;
+    const loginBirthDate = forceBirthDate || birthDate;
+
+    if (hasInvalidOwnerId) {
+      toast.error('Link do portal invalido.');
+      return;
+    }
+
+    if (!isValidCpf(loginCpf)) {
+      toast.error('CPF invalido. Confira os numeros digitados.');
+      return;
+    }
+
+    if (!isTodayOrPastDate(loginBirthDate)) {
+      toast.error('Data de nascimento invalida.');
+      return;
+    }
+
     setAuthenticating(true);
     try {
       const { data, error } = await supabase.rpc('get_student_portal_data', {
-        p_cpf: forceCpf || null,
-        p_birth_date: forceBirthDate || null,
+        p_cpf: formatCpf(loginCpf),
+        p_birth_date: loginBirthDate,
+        p_user_id: scopedOwnerId,
       });
 
       if (error) throw error;
@@ -92,11 +126,12 @@ export default function StudentPortalPage() {
         setAttendanceStats(data.attendance_stats);
         setAttendanceLogs(data.attendance_logs || []);
         setPayments(data.payments || []);
+        setPaymentConfig(data.payment_config || null);
         setAuthenticated(true);
       } else {
         toast.error('Dados incorretos. CPF ou Data de Nascimento inválidos.');
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Erro de autenticação no portal:', err);
       toast.error('Ocorreu um erro ao conectar com o servidor.');
     } finally {
@@ -112,11 +147,7 @@ export default function StudentPortalPage() {
   // Mask CPF
   const handleCpfChange = (val: string) => {
     const clean = val.replace(/\D/g, '');
-    let formatted = clean;
-    if (clean.length > 3) formatted = clean.substring(0, 3) + '.' + clean.substring(3);
-    if (clean.length > 6) formatted = formatted.substring(0, 7) + '.' + clean.substring(6);
-    if (clean.length > 9) formatted = formatted.substring(0, 11) + '-' + clean.substring(9, 11);
-    setCpf(formatted.substring(0, 14));
+    setCpf(formatCpf(clean));
   };
 
   const handleManualLogin = (e: React.FormEvent) => {
@@ -135,13 +166,19 @@ export default function StudentPortalPage() {
     setAttendanceStats(null);
     setAttendanceLogs([]);
     setPayments([]);
-    setSearchParams({});
+    setPaymentConfig(null);
+    setSearchParams(scopedOwnerId ? { ct: scopedOwnerId } : {});
     setCpf('');
     setBirthDate('');
   };
 
   const copyPixKey = (amountStr: string) => {
-    navigator.clipboard.writeText('pix@esportiz.com'); // Example Pix Key placeholder
+    if (!paymentConfig?.pix_key) {
+      toast.info('Pix ainda nao configurado pela escola.');
+      return;
+    }
+
+    navigator.clipboard.writeText(paymentConfig.pix_key);
     toast.success(`Chave Pix copiada com sucesso! Insira o valor de ${amountStr}`);
   };
 
@@ -150,6 +187,29 @@ export default function StudentPortalPage() {
       <div className="min-h-screen flex flex-col items-center justify-center bg-background p-6">
         <div className="h-10 w-10 border-4 border-primary/30 border-t-primary rounded-full animate-spin mb-4" />
         <p className="text-muted-foreground font-medium animate-pulse">Carregando portal do aluno...</p>
+      </div>
+    );
+  }
+
+  if (hasInvalidOwnerId) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background p-6">
+        <Card className="max-w-md w-full border-border/80 card-elevated">
+          <CardHeader className="text-center space-y-2">
+            <div className="mx-auto w-12 h-12 bg-destructive/10 text-destructive rounded-full flex items-center justify-center mb-2">
+              <ShieldAlert className="h-6 w-6" />
+            </div>
+            <CardTitle className="text-xl font-bold font-display text-foreground">Link Invalido</CardTitle>
+            <CardDescription className="text-sm">
+              Este link do portal possui uma identificacao invalida. Solicite um novo link para a secretaria.
+            </CardDescription>
+          </CardHeader>
+          <CardFooter>
+            <Button className="w-full btn-primary-gradient" onClick={() => setSearchParams({})}>
+              Acessar Portal Manualmente
+            </Button>
+          </CardFooter>
+        </Card>
       </div>
     );
   }

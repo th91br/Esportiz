@@ -16,6 +16,7 @@ export type Database = {
     Tables: {
       attendance: {
         Row: {
+          business_type: string
           created_at: string
           date: string
           id: string
@@ -25,6 +26,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          business_type?: string
           created_at?: string
           date: string
           id?: string
@@ -34,6 +36,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          business_type?: string
           created_at?: string
           date?: string
           id?: string
@@ -295,6 +298,7 @@ export type Database = {
       payments: {
         Row: {
           amount: number
+          business_type: string
           created_at: string
           due_date: string
           full_price: number | null
@@ -302,6 +306,7 @@ export type Database = {
           is_prorata: boolean
           month_ref: string
           paid: boolean
+          paid_amount: number
           paid_at: string | null
           plan_id: string
           student_id: string
@@ -309,6 +314,7 @@ export type Database = {
         }
         Insert: {
           amount?: number
+          business_type?: string
           created_at?: string
           due_date: string
           full_price?: number | null
@@ -316,6 +322,7 @@ export type Database = {
           is_prorata?: boolean
           month_ref: string
           paid?: boolean
+          paid_amount?: number
           paid_at?: string | null
           plan_id: string
           student_id: string
@@ -323,6 +330,7 @@ export type Database = {
         }
         Update: {
           amount?: number
+          business_type?: string
           created_at?: string
           due_date?: string
           full_price?: number | null
@@ -330,6 +338,7 @@ export type Database = {
           is_prorata?: boolean
           month_ref?: string
           paid?: boolean
+          paid_amount?: number
           paid_at?: string | null
           plan_id?: string
           student_id?: string
@@ -355,6 +364,7 @@ export type Database = {
       plans: {
         Row: {
           billing_type: string
+          business_type: string
           created_at: string
           id: string
           name: string
@@ -365,6 +375,7 @@ export type Database = {
         }
         Insert: {
           billing_type?: string
+          business_type?: string
           created_at?: string
           id?: string
           name: string
@@ -375,6 +386,7 @@ export type Database = {
         }
         Update: {
           billing_type?: string
+          business_type?: string
           created_at?: string
           id?: string
           name?: string
@@ -389,6 +401,7 @@ export type Database = {
         Row: {
           id: string
           user_id: string
+          business_type: string
           description: string
           amount: number
           category: string
@@ -403,6 +416,7 @@ export type Database = {
         Insert: {
           id?: string
           user_id: string
+          business_type?: string
           description: string
           amount: number
           category?: string
@@ -417,6 +431,7 @@ export type Database = {
         Update: {
           id?: string
           user_id?: string
+          business_type?: string
           description?: string
           amount?: number
           category?: string
@@ -434,28 +449,40 @@ export type Database = {
         Row: {
           id: string
           user_id: string
+          business_type: string
           name: string
           price: number
           category: string
           active: boolean
+          track_stock: boolean
+          stock_quantity: number
+          min_stock: number
           created_at: string
         }
         Insert: {
           id?: string
           user_id: string
+          business_type?: string
           name: string
           price: number
           category?: string
           active?: boolean
+          track_stock?: boolean
+          stock_quantity?: number
+          min_stock?: number
           created_at?: string
         }
         Update: {
           id?: string
           user_id?: string
+          business_type?: string
           name?: string
           price?: number
           category?: string
           active?: boolean
+          track_stock?: boolean
+          stock_quantity?: number
+          min_stock?: number
           created_at?: string
         }
         Relationships: []
@@ -470,11 +497,16 @@ export type Database = {
           secondary_color: string | null
           business_type: string
           onboarding_completed: boolean | null
+          google_access_token: string | null
+          google_refresh_token: string | null
+          google_calendar_id: string | null
+          sheets_spreadsheet_id: string | null
+          sheets_webhook_active: boolean | null
           created_at: string
           updated_at: string
           pix_key: string | null
           pix_receiver: string | null
-          niche_settings: Json | null
+          niche_settings: Record<string, unknown> | null
         }
         Insert: {
           id?: string
@@ -485,11 +517,16 @@ export type Database = {
           secondary_color?: string | null
           business_type?: string
           onboarding_completed?: boolean | null
+          google_access_token?: string | null
+          google_refresh_token?: string | null
+          google_calendar_id?: string | null
+          sheets_spreadsheet_id?: string | null
+          sheets_webhook_active?: boolean | null
           created_at?: string
           updated_at?: string
           pix_key?: string | null
           pix_receiver?: string | null
-          niche_settings?: Json | null
+          niche_settings?: Record<string, unknown> | null
         }
         Update: {
           id?: string
@@ -500,11 +537,16 @@ export type Database = {
           secondary_color?: string | null
           business_type?: string
           onboarding_completed?: boolean | null
+          google_access_token?: string | null
+          google_refresh_token?: string | null
+          google_calendar_id?: string | null
+          sheets_spreadsheet_id?: string | null
+          sheets_webhook_active?: boolean | null
           created_at?: string
           updated_at?: string
           pix_key?: string | null
           pix_receiver?: string | null
-          niche_settings?: Json | null
+          niche_settings?: Record<string, unknown> | null
         }
         Relationships: [
           {
@@ -520,6 +562,8 @@ export type Database = {
         Row: {
           id: string
           user_id: string
+          business_type: string
+          comanda_id: string | null
           product_id: string | null
           product_name: string
           quantity: number
@@ -532,6 +576,8 @@ export type Database = {
         Insert: {
           id?: string
           user_id: string
+          business_type?: string
+          comanda_id?: string | null
           product_id?: string | null
           product_name: string
           quantity?: number
@@ -544,6 +590,8 @@ export type Database = {
         Update: {
           id?: string
           user_id?: string
+          business_type?: string
+          comanda_id?: string | null
           product_id?: string | null
           product_name?: string
           quantity?: number
@@ -566,84 +614,102 @@ export type Database = {
       students: {
         Row: {
           active: boolean
+          birth_date: string | null
+          business_type: string
+          category_id: string | null
           created_at: string
+          cpf: string | null
+          discount_duration_months: number | null
+          discount_start_month: string | null
+          discount_type: string | null
+          discount_value: number
           email: string
           id: string
+          is_trial: boolean
           join_date: string
           level: string
           name: string
           payment_due_day: number | null
+          payment_start_date: string | null
           phone: string
           photo: string | null
           plan_id: string | null
-          updated_at: string
-          user_id: string
-          cpf: string | null
+          modality_id: string | null
           rg: string | null
           address: string | null
           city: string | null
           state: string | null
           zip_code: string | null
-          is_trial: boolean
           trial_started_at: string | null
           trial_converted_at: string | null
-          category_id: string | null
-          modality_id: string | null
-          business_type: string
+          updated_at: string
+          user_id: string
         }
         Insert: {
           active?: boolean
+          birth_date?: string | null
+          business_type?: string
+          category_id?: string | null
           created_at?: string
+          cpf?: string | null
+          discount_duration_months?: number | null
+          discount_start_month?: string | null
+          discount_type?: string | null
+          discount_value?: number
           email?: string
           id?: string
+          is_trial?: boolean
           join_date?: string
           level?: string
           name: string
           payment_due_day?: number | null
+          payment_start_date?: string | null
           phone?: string
           photo?: string | null
           plan_id?: string | null
-          updated_at?: string
-          user_id: string
-          cpf?: string | null
+          modality_id?: string | null
           rg?: string | null
           address?: string | null
           city?: string | null
           state?: string | null
           zip_code?: string | null
-          is_trial?: boolean
           trial_started_at?: string | null
           trial_converted_at?: string | null
-          category_id?: string | null
-          modality_id?: string | null
-          business_type?: string
+          updated_at?: string
+          user_id: string
         }
         Update: {
           active?: boolean
+          birth_date?: string | null
+          business_type?: string
+          category_id?: string | null
           created_at?: string
+          cpf?: string | null
+          discount_duration_months?: number | null
+          discount_start_month?: string | null
+          discount_type?: string | null
+          discount_value?: number
           email?: string
           id?: string
+          is_trial?: boolean
           join_date?: string
           level?: string
           name?: string
           payment_due_day?: number | null
+          payment_start_date?: string | null
           phone?: string
           photo?: string | null
           plan_id?: string | null
-          updated_at?: string
-          user_id?: string
-          cpf?: string | null
+          modality_id?: string | null
           rg?: string | null
           address?: string | null
           city?: string | null
           state?: string | null
           zip_code?: string | null
-          is_trial?: boolean
           trial_started_at?: string | null
           trial_converted_at?: string | null
-          category_id?: string | null
-          modality_id?: string | null
-          business_type?: string
+          updated_at?: string
+          user_id?: string
         }
         Relationships: [
           {
@@ -660,16 +726,19 @@ export type Database = {
           id: string
           student_id: string
           training_id: string
+          user_id: string | null
         }
         Insert: {
           id?: string
           student_id: string
           training_id: string
+          user_id?: string | null
         }
         Update: {
           id?: string
           student_id?: string
           training_id?: string
+          user_id?: string | null
         }
         Relationships: [
           {
@@ -703,6 +772,8 @@ export type Database = {
           category_id: string | null
           modality_id: string | null
           completed: boolean
+          completed_at: string | null
+          google_event_id: string | null
           metadata: Json | null
         }
         Insert: {
@@ -719,6 +790,8 @@ export type Database = {
           category_id?: string | null
           modality_id?: string | null
           completed?: boolean
+          completed_at?: string | null
+          google_event_id?: string | null
           metadata?: Json | null
         }
         Update: {
@@ -735,6 +808,8 @@ export type Database = {
           category_id?: string | null
           modality_id?: string | null
           completed?: boolean
+          completed_at?: string | null
+          google_event_id?: string | null
           metadata?: Json | null
         }
         Relationships: []
@@ -744,7 +819,207 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      cleanup_student_future_trainings: {
+        Args: {
+          p_student_id: string
+        }
+        Returns: number
+      }
+      delete_sale_and_restore_stock: {
+        Args: {
+          p_sale_id: string
+          p_user_id: string
+        }
+        Returns: {
+          success: boolean
+        }
+      }
+      generate_monthly_payments: {
+        Args: {
+          p_month_ref: string
+        }
+        Returns: number
+      }
+      generate_student_schedule: {
+        Args: {
+          p_months_ahead?: number
+          p_schedules: Json
+          p_student_id: string
+          p_user_id: string
+        }
+        Returns: {
+          message?: string
+          success: boolean
+        }
+      }
+      get_public_arena_data: {
+        Args: {
+          p_user_id: string
+        }
+        Returns: {
+          arena_name: string
+          courts: {
+            color: string | null
+            id: string
+            metadata: Json | null
+            name: string
+          }[]
+          reservations: {
+            courtId: string
+            date: string
+            durationMinutes: number
+            id: string
+            status: string
+            time: string
+          }[]
+        }
+      }
+      get_public_enrollment_data: {
+        Args: {
+          p_user_id: string
+        }
+        Returns: {
+          groups: {
+            current_students: number
+            id: string
+            location: string
+            max_students: number | null
+            name: string
+            schedule: Json[]
+          }[]
+          plans: {
+            id: string
+            name: string
+            price: number
+          }[]
+          school_name: string
+        }
+      }
+      get_student_portal_data: {
+        Args: {
+          p_birth_date?: string | null
+          p_cpf?: string | null
+          p_user_id?: string | null
+        }
+        Returns: {
+          attendance_logs?: {
+            date: string
+            notes?: string | null
+            status: "present" | "absent"
+          }[]
+          attendance_stats?: {
+            absences: number
+            percent: number
+            presences: number
+            total_classes: number
+          }
+          authenticated: boolean
+          payment_config?: {
+            pix_key: string | null
+            pix_receiver: string | null
+          }
+          groups?: {
+            id: string
+            location?: string | null
+            name: string
+            schedule: {
+              day: string
+              endTime: string
+              startTime: string
+            }[]
+          }[]
+          payments?: {
+            amount: number
+            due_date: string
+            id: string
+            month_ref: string
+            paid: boolean
+            paid_amount: number
+            paid_at: string | null
+          }[]
+          student?: {
+            id: string
+            name: string
+            plan_name: string
+            school_name: string
+          }
+        }
+      }
+      process_sale: {
+        Args: {
+          p_business_type?: string
+          p_payment_method: string
+          p_product_id: string | null
+          p_product_name: string
+          p_quantity: number
+          p_total: number
+          p_unit_price: number
+          p_user_id: string
+        }
+        Returns: {
+          calculated_total?: number
+          sale_id?: string
+          success: boolean
+        }
+      }
+      is_valid_cpf: {
+        Args: {
+          p_cpf: string | null
+        }
+        Returns: boolean
+      }
+      submit_public_enrollment: {
+        Args: {
+          p_birth_date: string
+          p_cpf: string
+          p_email: string
+          p_group_id: string | null
+          p_name: string
+          p_phone: string
+          p_plan_id: string
+          p_user_id: string
+        }
+        Returns: {
+          error?: string
+          message?: string
+          student_id?: string
+          success: boolean
+        }
+      }
+      submit_public_reservation: {
+        Args: {
+          p_client_cpf: string
+          p_client_email: string
+          p_client_name: string
+          p_client_phone: string
+          p_court_id: string
+          p_date: string
+          p_duration_minutes: number
+          p_time: string
+          p_user_id: string
+        }
+        Returns: {
+          error?: string
+          message?: string
+          reservation_id?: string
+          success: boolean
+        }
+      }
+      sync_all_unpaid_payments_for_plan: {
+        Args: {
+          p_plan_id: string
+        }
+        Returns: void
+      }
+      sync_student_unpaid_payments: {
+        Args: {
+          p_new_due_day: number | null
+          p_new_plan_id: string | null
+          p_plan_changed: boolean
+          p_student_id: string
+        }
+        Returns: void
+      }
     }
     Enums: {
       [_ in never]: never

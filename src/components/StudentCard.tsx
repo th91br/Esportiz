@@ -20,6 +20,7 @@ import { formatCurrency } from '@/lib/formatCurrency';
 import { supabase } from '@/integrations/supabase/client';
 import { useModalities } from '@/hooks/queries/useModalities';
 import { getLocalTodayDate } from '@/lib/dateUtils';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface StudentCardProps {
   student: Student;
@@ -45,6 +46,7 @@ export function StudentCard({ student, onClick }: StudentCardProps) {
   const { trainings } = useTrainings();
   const { groups } = useGroups();
   const { labels, isArena } = useBusinessContext();
+  const { user } = useAuth();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const modality = student.modalityId ? modalities.find(m => m.id === student.modalityId) : undefined;
@@ -153,11 +155,13 @@ export function StudentCard({ student, onClick }: StudentCardProps) {
 
   const copyPortalLink = (e: React.MouseEvent) => {
     e.stopPropagation();
-    const url = `${window.location.origin}/portal-aluno?token=${student.id}`;
+    const url = user?.id
+      ? `${window.location.origin}/portal-aluno?ct=${user.id}`
+      : `${window.location.origin}/portal-aluno`;
     navigator.clipboard.writeText(url);
     toast({
       title: 'Portal do Aluno',
-      description: 'Link mágico de acesso copiado com sucesso!',
+      description: 'Link do portal copiado com sucesso.',
     });
   };
 
@@ -216,7 +220,7 @@ export function StudentCard({ student, onClick }: StudentCardProps) {
                     <Beaker className="h-2.5 w-2.5" />Experimental
                   </span>
                 )}
-                {student.discountType && student.discountType !== 'none' && (
+                {student.discountType && (
                   <span className="px-2 py-0.5 rounded-full text-[10px] uppercase font-bold tracking-wider bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20 flex items-center gap-1 shrink-0">
                     <Percent className="h-2.5 w-2.5" /> Bolsa {student.discountType === 'percentage' ? `${student.discountValue}%` : `R$ ${student.discountValue}`}
                   </span>

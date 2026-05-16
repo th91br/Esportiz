@@ -87,7 +87,7 @@ O **Esportiz** é uma plataforma SaaS (Software as a Service) de alta performanc
     Crie um arquivo `.env` na raiz do projeto com as chaves:
     ```env
     VITE_SUPABASE_URL=seu_url_do_supabase
-    VITE_SUPABASE_ANON_KEY=sua_chave_anon_do_supabase
+    VITE_SUPABASE_PUBLISHABLE_KEY=sua_chave_publicavel_do_supabase
     ```
 
 4.  **Iniciar o Servidor de Desenvolvimento**

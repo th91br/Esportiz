@@ -11,6 +11,17 @@ import {
   ArrowRight, ShieldCheck, Landmark, Clock, RefreshCw, Sparkles
 } from 'lucide-react';
 import { formatCurrency } from '@/lib/formatCurrency';
+import {
+  formatBrazilPhone,
+  formatCpf,
+  isTodayOrFutureDate,
+  isValidBrazilPhone,
+  isValidCpf,
+  isValidPublicEmail,
+  isValidUuid,
+  normalizePublicEmail,
+  normalizePublicName,
+} from '@/lib/publicPortalSecurity';
 
 interface Court {
   id: string;
@@ -37,17 +48,67 @@ interface DBReservation {
   status: string;
 }
 
+interface CourtMetadata {
+  sportType: string;
+  coverage: string;
+  pricePerHour: number;
+  openingTime: string;
+  closingTime: string;
+  daysOfWeek: number[];
+  usePeakPricing: boolean;
+  peakPrice: number;
+  peakStart: string;
+  peakEnd: string;
+}
+
+interface PublicCourtRecord {
+  id: string;
+  name: string;
+  color: string | null;
+  metadata: unknown;
+}
+
+interface BookingSuccessData {
+  courtName?: string;
+  date: string;
+  time: string;
+  price: number;
+}
+
+const isRecord = (value: unknown): value is Record<string, unknown> => (
+  typeof value === 'object' && value !== null && !Array.isArray(value)
+);
+
+const getStringValue = (value: unknown, fallback: string) => (
+  typeof value === 'string' && value.trim() ? value : fallback
+);
+
+const getNumberValue = (value: unknown, fallback: number) => {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : fallback;
+};
+
+const getBooleanValue = (value: unknown, fallback: boolean) => (
+  typeof value === 'boolean' ? value : fallback
+);
+
+const getNumberArrayValue = (value: unknown, fallback: number[]) => (
+  Array.isArray(value) ? value.filter((item): item is number => Number.isInteger(item)) : fallback
+);
+
 export default function OnlineBookingPage() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const ownerId = searchParams.get('ct');
+  const hasInvalidOwnerId = ownerId !== null && !isValidUuid(ownerId);
+  const scopedOwnerId = isValidUuid(ownerId) ? ownerId : null;
 
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [arenaName, setArenaName] = useState('Esportiz Arena');
   const [courts, setCourts] = useState<Court[]>([]);
   const [reservations, setReservations] = useState<DBReservation[]>([]);
-  const [successData, setSuccessData] = useState<any | null>(null);
+  const [successData, setSuccessData] = useState<BookingSuccessData | null>(null);
 
   // Booking Flow Steps: 1 = Court & Time Selection, 2 = Customer Registration
   const [step, setStep] = useState(1);
@@ -73,7 +134,7 @@ export default function OnlineBookingPage() {
 
   // Fetch Arena data publicly using RPC
   useEffect(() => {
-    if (!ownerId) {
+    if (!scopedOwnerId) {
       setLoading(false);
       return;
     }
@@ -81,7 +142,7 @@ export default function OnlineBookingPage() {
     async function loadData() {
       try {
         const { data, error } = await supabase.rpc('get_public_arena_data', {
-          p_user_id: ownerId
+          p_user_id: scopedOwnerId
         });
 
         if (error) throw error;
@@ -90,8 +151,8 @@ export default function OnlineBookingPage() {
           setArenaName(data.arena_name || 'Esportiz Arena');
           
           // Map DB Modalities into Court objects
-          const mappedCourts = (data.courts || []).map((c: Record<string, any>) => {
-            let meta = {
+          const mappedCourts = (data.courts || []).map((c: PublicCourtRecord) => {
+            let meta: CourtMetadata = {
               sportType: 'futevolei',
               coverage: 'open',
               pricePerHour: 80,
@@ -106,7 +167,20 @@ export default function OnlineBookingPage() {
             try {
               if (c.metadata) {
                 const parsed = typeof c.metadata === 'string' ? JSON.parse(c.metadata) : c.metadata;
-                meta = { ...meta, ...parsed };
+                if (isRecord(parsed)) {
+                  meta = {
+                    sportType: getStringValue(parsed.sportType, meta.sportType),
+                    coverage: getStringValue(parsed.coverage, meta.coverage),
+                    pricePerHour: getNumberValue(parsed.pricePerHour, meta.pricePerHour),
+                    openingTime: getStringValue(parsed.openingTime, meta.openingTime),
+                    closingTime: getStringValue(parsed.closingTime, meta.closingTime),
+                    daysOfWeek: getNumberArrayValue(parsed.daysOfWeek, meta.daysOfWeek),
+                    usePeakPricing: getBooleanValue(parsed.usePeakPricing, meta.usePeakPricing),
+                    peakPrice: getNumberValue(parsed.peakPrice, meta.peakPrice),
+                    peakStart: getStringValue(parsed.peakStart, meta.peakStart),
+                    peakEnd: getStringValue(parsed.peakEnd, meta.peakEnd),
+                  };
+                }
               }
             } catch (e) {
               console.error('Error parsing court metadata:', e);
@@ -115,7 +189,7 @@ export default function OnlineBookingPage() {
             return {
               id: c.id,
               name: c.name,
-              color: c.color,
+              color: c.color || '#1DB874',
               sportType: meta.sportType,
               coverage: meta.coverage,
               pricePerHour: Number(meta.pricePerHour || 80),
@@ -146,26 +220,16 @@ export default function OnlineBookingPage() {
     }
 
     loadData();
-  }, [ownerId]);
+  }, [scopedOwnerId]);
 
   // Mask CPF (999.999.999-99)
   const handleCpfChange = (val: string) => {
-    const clean = val.replace(/\D/g, '');
-    let formatted = clean;
-    if (clean.length > 3) formatted = clean.substring(0, 3) + '.' + clean.substring(3);
-    if (clean.length > 6) formatted = formatted.substring(0, 7) + '.' + clean.substring(6);
-    if (clean.length > 9) formatted = formatted.substring(0, 11) + '-' + clean.substring(9, 11);
-    setCpf(formatted.substring(0, 14));
+    setCpf(formatCpf(val));
   };
 
   // Mask Phone ((99) 99999-9999)
   const handlePhoneChange = (val: string) => {
-    const clean = val.replace(/\D/g, '');
-    let formatted = clean;
-    if (clean.length > 0) formatted = '(' + clean;
-    if (clean.length > 2) formatted = '(' + clean.substring(0, 2) + ') ' + clean.substring(2);
-    if (clean.length > 7) formatted = formatted.substring(0, 10) + '-' + clean.substring(7, 11);
-    setPhone(formatted.substring(0, 15));
+    setPhone(formatBrazilPhone(val));
   };
 
   // Helper: check time intervals overlaps
@@ -236,19 +300,55 @@ export default function OnlineBookingPage() {
       toast.error('Por favor, escolha uma quadra, data e horário livre.');
       return;
     }
+
+    if (!isTodayOrFutureDate(selectedDate)) {
+      toast.error('Escolha uma data valida para a reserva.');
+      return;
+    }
+
+    if (isSlotBusy(selectedCourtId, selectedDate, selectedTimeSlot, selectedDuration)) {
+      toast.error('Este horario acabou de ficar indisponivel. Escolha outro horario.');
+      setSelectedTimeSlot('');
+      return;
+    }
     setStep(2);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!ownerId) {
+    if (!scopedOwnerId) {
       toast.error('Link de agendamento incompleto ou inválido.');
       return;
     }
 
-    if (!name || !cpf || !email || !phone) {
+    const safeName = normalizePublicName(name);
+    const safeCpf = formatCpf(cpf);
+    const safeEmail = normalizePublicEmail(email);
+    const safePhone = formatBrazilPhone(phone);
+
+    if (!safeName || !safeCpf || !safeEmail || !safePhone) {
       toast.error('Por favor, preencha todos os campos obrigatórios.');
+      return;
+    }
+
+    if (!isTodayOrFutureDate(selectedDate)) {
+      toast.error('Escolha uma data valida para a reserva.');
+      return;
+    }
+
+    if (!isValidCpf(safeCpf)) {
+      toast.error('CPF invalido. Confira os numeros digitados.');
+      return;
+    }
+
+    if (!isValidPublicEmail(safeEmail)) {
+      toast.error('E-mail invalido.');
+      return;
+    }
+
+    if (!isValidBrazilPhone(safePhone)) {
+      toast.error('Celular invalido.');
       return;
     }
 
@@ -256,15 +356,15 @@ export default function OnlineBookingPage() {
 
     try {
       const { data, error } = await supabase.rpc('submit_public_reservation', {
-        p_user_id: ownerId,
+        p_user_id: scopedOwnerId,
         p_court_id: selectedCourtId,
         p_date: selectedDate,
         p_time: selectedTimeSlot,
         p_duration_minutes: selectedDuration,
-        p_client_name: name,
-        p_client_phone: phone,
-        p_client_email: email,
-        p_client_cpf: cpf,
+        p_client_name: safeName,
+        p_client_phone: safePhone,
+        p_client_email: safeEmail,
+        p_client_cpf: safeCpf,
       });
 
       if (error) throw error;
@@ -281,7 +381,7 @@ export default function OnlineBookingPage() {
         time: selectedTimeSlot,
         price: (getCalculatedPrice(selectedCourt, selectedTimeSlot) * selectedDuration) / 60,
       });
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Erro ao submeter agendamento:', err);
       toast.error('Ocorreu um erro ao processar sua reserva.');
     } finally {
@@ -298,7 +398,7 @@ export default function OnlineBookingPage() {
     );
   }
 
-  if (!ownerId) {
+  if (!ownerId || hasInvalidOwnerId) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background p-6">
         <Card className="max-w-md w-full border-border/80 card-elevated">
@@ -440,14 +540,14 @@ export default function OnlineBookingPage() {
                     {courts.map((court) => {
                       const isSelected = selectedCourtId === court.id;
                       return (
-                        <div
+                        <button
                           key={court.id}
                           type="button"
                           onClick={() => {
                             setSelectedCourtId(court.id);
                             setSelectedTimeSlot('');
                           }}
-                          className={`p-4 rounded-xl border transition-all cursor-pointer flex flex-col justify-between ${
+                          className={`p-4 rounded-xl border transition-all cursor-pointer text-left flex flex-col justify-between ${
                             isSelected 
                               ? 'border-primary bg-primary/5 shadow-md ring-2 ring-primary/20' 
                               : 'border-border/60 bg-background/50 hover:border-border hover:bg-muted/10'
@@ -467,7 +567,7 @@ export default function OnlineBookingPage() {
                               }
                             </span>
                           </div>
-                        </div>
+                        </button>
                       );
                     })}
                   </div>

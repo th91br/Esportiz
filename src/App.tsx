@@ -31,6 +31,7 @@ import NotFound from "./pages/NotFound";
 import CourtsPage from "./pages/CourtsPage";
 import ArenaAgendaPage from "./pages/ArenaAgendaPage";
 import ComandasPage from "./pages/ComandasPage";
+import ContractsPage from "./pages/ContractsPage";
 import EnrollmentPage from "./pages/EnrollmentPage";
 import StudentPortalPage from "./pages/StudentPortalPage";
 import OnlineBookingPage from "./pages/OnlineBookingPage";
@@ -104,6 +105,7 @@ function AppRoutes() {
       <Route path="/" element={<LandingPage />} />
       <Route path="/matricula" element={<EnrollmentPage />} />
       <Route path="/agendar" element={<OnlineBookingPage />} />
+      <Route path="/agendamento" element={<OnlineBookingPage />} />
       <Route path="/portal-aluno" element={<StudentPortalPage />} />
       {/* Auth */}
       <Route path="/login" element={<LoginRoute />} />
@@ -123,6 +125,7 @@ function AppRoutes() {
       <Route path="/aniversariantes" element={<ProtectedRoute><BirthdaysPage /></ProtectedRoute>} />
       <Route path="/relatorios" element={<ProtectedRoute><ReportsPage /></ProtectedRoute>} />
       <Route path="/comunicacao" element={<ProtectedRoute><CommunicationPage /></ProtectedRoute>} />
+      <Route path="/contratos" element={<ProtectedRoute><ContractsPage /></ProtectedRoute>} />
       <Route path="/modalidades" element={<ProtectedRoute><ModalitiesPage /></ProtectedRoute>} />
       <Route path="/turmas" element={<ProtectedRoute><GroupsPage /></ProtectedRoute>} />
       <Route path="/configuracoes" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />

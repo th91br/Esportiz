@@ -9,6 +9,17 @@ import { toast } from 'sonner';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Check, User, Mail, FileText, Phone, Calendar, ArrowRight, ShieldCheck, Dumbbell, Clock, School } from 'lucide-react';
 import { formatCurrency } from '@/lib/formatCurrency';
+import {
+  formatBrazilPhone,
+  formatCpf,
+  isTodayOrPastDate,
+  isValidBrazilPhone,
+  isValidCpf,
+  isValidPublicEmail,
+  isValidUuid,
+  normalizePublicEmail,
+  normalizePublicName,
+} from '@/lib/publicPortalSecurity';
 
 interface Plan {
   id: string;
@@ -19,23 +30,31 @@ interface Plan {
 interface Group {
   id: string;
   name: string;
-  schedule: any[];
+  schedule: unknown[];
   location: string;
   max_students: number | null;
   current_students: number;
+}
+
+interface EnrollmentSuccessData {
+  studentId?: string;
+  planName?: string;
+  groupName: string;
 }
 
 export default function EnrollmentPage() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const ownerId = searchParams.get('ct');
+  const hasInvalidOwnerId = ownerId !== null && !isValidUuid(ownerId);
+  const scopedOwnerId = isValidUuid(ownerId) ? ownerId : null;
 
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [schoolName, setSchoolName] = useState('Esportiz Club');
   const [plans, setPlans] = useState<Plan[]>([]);
   const [groups, setGroups] = useState<Group[]>([]);
-  const [successData, setSuccessData] = useState<any | null>(null);
+  const [successData, setSuccessData] = useState<EnrollmentSuccessData | null>(null);
 
   // Form State
   const [name, setName] = useState('');
@@ -47,7 +66,7 @@ export default function EnrollmentPage() {
   const [selectedGroupId, setSelectedGroupId] = useState('');
 
   useEffect(() => {
-    if (!ownerId) {
+    if (!scopedOwnerId) {
       setLoading(false);
       return;
     }
@@ -55,7 +74,7 @@ export default function EnrollmentPage() {
     async function loadData() {
       try {
         const { data, error } = await supabase.rpc('get_public_enrollment_data', {
-          p_user_id: ownerId
+          p_user_id: scopedOwnerId
         });
 
         if (error) throw error;
@@ -65,7 +84,7 @@ export default function EnrollmentPage() {
           setPlans(data.plans || []);
           setGroups(data.groups || []);
         }
-      } catch (err: any) {
+      } catch (err: unknown) {
         console.error('Erro ao buscar dados de matrícula:', err);
         toast.error('Erro ao carregar dados da escola.');
       } finally {
@@ -74,38 +93,53 @@ export default function EnrollmentPage() {
     }
 
     loadData();
-  }, [ownerId]);
+  }, [scopedOwnerId]);
 
   // Mask CPF (999.999.999-99)
   const handleCpfChange = (val: string) => {
-    const clean = val.replace(/\D/g, '');
-    let formatted = clean;
-    if (clean.length > 3) formatted = clean.substring(0, 3) + '.' + clean.substring(3);
-    if (clean.length > 6) formatted = formatted.substring(0, 7) + '.' + clean.substring(6);
-    if (clean.length > 9) formatted = formatted.substring(0, 11) + '-' + clean.substring(9, 11);
-    setCpf(formatted.substring(0, 14));
+    setCpf(formatCpf(val));
   };
 
   // Mask Phone ((99) 99999-9999)
   const handlePhoneChange = (val: string) => {
-    const clean = val.replace(/\D/g, '');
-    let formatted = clean;
-    if (clean.length > 0) formatted = '(' + clean;
-    if (clean.length > 2) formatted = '(' + clean.substring(0, 2) + ') ' + clean.substring(2);
-    if (clean.length > 7) formatted = formatted.substring(0, 10) + '-' + clean.substring(7, 11);
-    setPhone(formatted.substring(0, 15));
+    setPhone(formatBrazilPhone(val));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!ownerId) {
+    if (!scopedOwnerId) {
       toast.error('Link de matrícula inválido ou incompleto.');
       return;
     }
 
-    if (!name || !cpf || !birthDate || !email || !phone || !selectedPlanId) {
+    const safeName = normalizePublicName(name);
+    const safeCpf = formatCpf(cpf);
+    const safeEmail = normalizePublicEmail(email);
+    const safePhone = formatBrazilPhone(phone);
+
+    if (!safeName || !safeCpf || !birthDate || !safeEmail || !safePhone || !selectedPlanId) {
       toast.error('Por favor, preencha todos os campos obrigatórios.');
+      return;
+    }
+
+    if (!isValidCpf(safeCpf)) {
+      toast.error('CPF invalido. Confira os numeros digitados.');
+      return;
+    }
+
+    if (!isTodayOrPastDate(birthDate)) {
+      toast.error('Data de nascimento invalida.');
+      return;
+    }
+
+    if (!isValidPublicEmail(safeEmail)) {
+      toast.error('E-mail invalido.');
+      return;
+    }
+
+    if (!isValidBrazilPhone(safePhone)) {
+      toast.error('Celular invalido.');
       return;
     }
 
@@ -113,12 +147,12 @@ export default function EnrollmentPage() {
 
     try {
       const { data, error } = await supabase.rpc('submit_public_enrollment', {
-        p_user_id: ownerId,
-        p_name: name,
-        p_cpf: cpf,
+        p_user_id: scopedOwnerId,
+        p_name: safeName,
+        p_cpf: safeCpf,
         p_birth_date: birthDate,
-        p_email: email,
-        p_phone: phone,
+        p_email: safeEmail,
+        p_phone: safePhone,
         p_plan_id: selectedPlanId,
         p_group_id: selectedGroupId || null,
       });
@@ -136,7 +170,7 @@ export default function EnrollmentPage() {
         planName: plans.find(p => p.id === selectedPlanId)?.name,
         groupName: groups.find(g => g.id === selectedGroupId)?.name || 'Sem turma no momento',
       });
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Erro ao submeter matrícula:', err);
       toast.error('Ocorreu um erro ao processar sua inscrição.');
     } finally {
@@ -153,7 +187,7 @@ export default function EnrollmentPage() {
     );
   }
 
-  if (!ownerId) {
+  if (!ownerId || hasInvalidOwnerId) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background p-6">
         <Card className="max-w-md w-full border-border/80 card-elevated">
@@ -219,7 +253,7 @@ export default function EnrollmentPage() {
           <CardFooter className="flex flex-col gap-2 p-6 pt-2">
             <Button 
               className="w-full btn-primary-gradient py-6 font-semibold"
-              onClick={() => navigate('/portal-aluno')}
+              onClick={() => navigate(scopedOwnerId ? `/portal-aluno?ct=${scopedOwnerId}` : '/portal-aluno')}
             >
               Acessar Meu Portal do Aluno <ArrowRight className="ml-2 h-4 w-4" />
             </Button>

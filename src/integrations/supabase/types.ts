@@ -119,6 +119,51 @@ export type Database = {
         }
         Relationships: []
       }
+      financial_audit_logs: {
+        Row: {
+          action: string
+          business_type: string
+          created_at: string
+          created_by: string | null
+          entity_id: string
+          entity_type: string
+          id: string
+          metadata: Json
+          new_state: Json
+          previous_state: Json
+          source: string
+          user_id: string
+        }
+        Insert: {
+          action: string
+          business_type: string
+          created_at?: string
+          created_by?: string | null
+          entity_id: string
+          entity_type: string
+          id?: string
+          metadata?: Json
+          new_state?: Json
+          previous_state?: Json
+          source?: string
+          user_id: string
+        }
+        Update: {
+          action?: string
+          business_type?: string
+          created_at?: string
+          created_by?: string | null
+          entity_id?: string
+          entity_type?: string
+          id?: string
+          metadata?: Json
+          new_state?: Json
+          previous_state?: Json
+          source?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       comanda_items: {
         Row: {
           id: string
@@ -853,6 +898,43 @@ export type Database = {
         }
         Returns: number
       }
+      receive_payment_atomic: {
+        Args: {
+          p_payment_id: string
+          p_paid_amount?: number | null
+        }
+        Returns: Json
+      }
+      reopen_payment_atomic: {
+        Args: {
+          p_payment_id: string
+        }
+        Returns: Json
+      }
+      cancel_payment_atomic: {
+        Args: {
+          p_payment_id: string
+        }
+        Returns: Json
+      }
+      receive_payments_batch_atomic: {
+        Args: {
+          p_payment_ids: string[]
+        }
+        Returns: Json
+      }
+      reopen_payments_batch_atomic: {
+        Args: {
+          p_payment_ids: string[]
+        }
+        Returns: Json
+      }
+      cancel_student_open_payments_atomic: {
+        Args: {
+          p_student_id: string
+        }
+        Returns: number
+      }
       generate_student_schedule: {
         Args: {
           p_months_ahead?: number
@@ -1017,6 +1099,14 @@ export type Database = {
           reservation_id?: string
           success: boolean
         }
+      }
+      set_arena_reservation_payment_status_atomic: {
+        Args: {
+          p_payment_method?: string | null
+          p_payment_status: string
+          p_reservation_id: string
+        }
+        Returns: Json
       }
       sync_all_unpaid_payments_for_plan: {
         Args: {

@@ -198,7 +198,9 @@ export default function ReportsPage() {
       return {
         name: court.name,
         hours: courtRes.reduce((acc, r) => acc + (r.durationMinutes / 60), 0),
-        revenue: courtRes.reduce((acc, r) => acc + r.finalPrice, 0)
+        revenue: courtRes
+          .filter(r => r.paymentStatus === 'paid')
+          .reduce((acc, r) => acc + r.finalPrice, 0)
       };
     }).sort((a, b) => b.hours - a.hours);
   }, [courts, filteredReservations, isArena]);
@@ -212,7 +214,9 @@ export default function ReportsPage() {
          if (s) {
            if (!map[s.id]) map[s.id] = { count: 0, revenue: 0, name: s.name };
            map[s.id].count += 1;
-           map[s.id].revenue += r.finalPrice;
+           if (r.paymentStatus === 'paid') {
+             map[s.id].revenue += r.finalPrice;
+           }
          }
        });
     });
@@ -677,10 +681,10 @@ export default function ReportsPage() {
                 </div>
               </div>
 
-              {/* Faturamento por Quadra (Pie) */}
+              {/* Recebido por Quadra (Pie) */}
               <div className="card-interactive p-4 md:p-6 lg:col-span-1 border-border/60">
-                <h3 className="font-display font-bold text-lg md:text-xl text-foreground mb-1">Faturamento por Quadra</h3>
-                <p className="text-sm text-muted-foreground mb-6">Distribuição da receita gerada</p>
+                <h3 className="font-display font-bold text-lg md:text-xl text-foreground mb-1">Recebido por Quadra</h3>
+                <p className="text-sm text-muted-foreground mb-6">Distribuicao da receita recebida</p>
                 <div className="h-[250px] w-full mt-2">
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
@@ -688,7 +692,7 @@ export default function ReportsPage() {
                         label={({ name, value }) => privacyMode ? '••••' : formatCurrency(value)} labelLine={{ strokeWidth: 1, stroke: 'hsl(var(--muted-foreground))' }}>
                         {reservationsByCourtData.map((entry, index) => (<Cell key={index} fill={Object.values(COLORS)[index % Object.values(COLORS).length]} />))}
                       </Pie>
-                      <Tooltip contentStyle={customTooltipStyle} formatter={(value: number) => [privacyMode ? '••••' : formatCurrency(value), 'Faturamento']} />
+                      <Tooltip contentStyle={customTooltipStyle} formatter={(value: number) => [privacyMode ? '••••' : formatCurrency(value), 'Recebido']} />
                       <Legend layout="horizontal" verticalAlign="bottom" align="center" wrapperStyle={{ paddingTop: '10px', fontSize: '12px' }} iconType="circle" />
                     </PieChart>
                   </ResponsiveContainer>
@@ -769,14 +773,14 @@ export default function ReportsPage() {
               {/* Top Reservantes */}
               <div className="card-interactive p-4 md:p-6 lg:col-span-2 border-primary/10 mt-4">
                 <h3 className="font-display font-bold text-lg md:text-xl text-foreground mb-1">Top Reservantes</h3>
-                <p className="text-sm text-muted-foreground mb-6">Clientes que geraram mais receita no período</p>
+                <p className="text-sm text-muted-foreground mb-6">Clientes que geraram mais caixa recebido no periodo</p>
                 <div className="h-[280px] w-full">
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={topReservantesData} layout="vertical" margin={{ top: 0, right: 30, left: 0, bottom: 0 }}>
                       <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} stroke="hsl(var(--border))" />
                       <XAxis type="number" hide />
                       <YAxis type="category" dataKey="name" tick={{ fontSize: 13, fill: 'hsl(var(--foreground))', fontWeight: 500 }} axisLine={false} tickLine={false} width={150} />
-                      <Tooltip contentStyle={customTooltipStyle} cursor={{ fill: 'hsl(var(--muted)/0.3)' }} formatter={(value: number) => [privacyMode ? '••••' : formatCurrency(value), 'Faturamento']} />
+                      <Tooltip contentStyle={customTooltipStyle} cursor={{ fill: 'hsl(var(--muted)/0.3)' }} formatter={(value: number) => [privacyMode ? '••••' : formatCurrency(value), 'Recebido']} />
                       <Bar dataKey="revenue" fill={COLORS.emerald} radius={[0, 4, 4, 0]} barSize={32} />
                     </BarChart>
                   </ResponsiveContainer>

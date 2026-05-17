@@ -8,7 +8,14 @@ import { Textarea } from '@/components/ui/textarea';
 import { formatCurrency } from '@/lib/formatCurrency';
 import { useCourts } from '@/hooks/queries/useCourts';
 import { useStudents } from '@/hooks/queries/useStudents';
-import { useReservations, type ReservationMeta, PAYMENT_METHOD_LABELS, RESERVATION_TYPE_LABELS } from '@/hooks/queries/useReservations';
+import {
+  useReservations,
+  type PaymentMethod,
+  type ReservationMeta,
+  type ReservationType,
+  PAYMENT_METHOD_LABELS,
+  RESERVATION_TYPE_LABELS,
+} from '@/hooks/queries/useReservations';
 import { toast } from 'sonner';
 import { CalendarDays, Clock, User, DollarSign, Search } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -42,7 +49,7 @@ export function ReservationModal({
 }: ReservationModalProps) {
   const { courts } = useCourts();
   const { students } = useStudents();
-  const { reservations, addReservation, updateReservation } = useReservations();
+  const { reservations, addReservation, updateReservation, setReservationPaymentStatus } = useReservations();
   const isEditing = !!reservationId;
   const existing = reservations.find(r => r.id === reservationId);
 
@@ -56,7 +63,7 @@ export function ReservationModal({
   const [reservanteSearch, setReservanteSearch] = useState('');
   const [reservationType, setReservationType] = useState<ReservationMeta['reservationType']>('avulsa');
   const [paymentMethod, setPaymentMethod] = useState<ReservationMeta['paymentMethod']>('pix');
-  const [paymentStatus, setPaymentStatus] = useState<'paid' | 'pending'>('pending');
+  const [paymentStatus, setPaymentStatus] = useState<ReservationMeta['paymentStatus']>('pending');
   const [discount, setDiscount] = useState(0);
   const [notes, setNotes] = useState('');
   const [saving, setSaving] = useState(false);
@@ -73,7 +80,7 @@ export function ReservationModal({
     return (hourlyPrice * duration) / 60;
   }, [selectedCourt, duration, time]);
 
-  const finalPrice = reservationType === 'experimental' ? 0 : Math.max(0, basePrice - discount);
+  const finalPrice = Math.max(0, basePrice - discount);
 
   useEffect(() => {
     if (!open) return;
@@ -115,15 +122,26 @@ export function ReservationModal({
     setSaving(true);
     try {
       const isBlocked = reservationType === 'blocked';
+      const nextPaymentMethod = isBlocked ? 'pix' : paymentMethod;
+      const nextPaymentStatus = isBlocked ? 'paid' : paymentStatus;
       const meta: ReservationMeta = {
         price: isBlocked ? 0 : basePrice,
         discount: isBlocked ? 0 : discount,
         finalPrice: isBlocked ? 0 : finalPrice,
         reservationType,
-        paymentMethod: isBlocked ? 'pix' : paymentMethod,
-        paymentStatus: isBlocked ? 'paid' : paymentStatus,
+        paymentMethod: isEditing && existing ? existing.paymentMethod : nextPaymentMethod,
+        paymentStatus: isEditing && existing ? existing.paymentStatus : nextPaymentStatus,
         status: 'confirmed',
       };
+      if (isEditing && existing?.online !== undefined) {
+        meta.online = existing.online;
+      }
+      if (isEditing && existing?.paymentUpdatedAt) {
+        meta.paymentUpdatedAt = existing.paymentUpdatedAt;
+      }
+      if (isEditing && existing?.paymentPaidAt) {
+        meta.paymentPaidAt = existing.paymentPaidAt;
+      }
       const input = {
         date,
         time,
@@ -135,6 +153,17 @@ export function ReservationModal({
       };
       if (isEditing && reservationId) {
         await updateReservation({ id: reservationId, input });
+        if (
+          existing &&
+          !isBlocked &&
+          (existing.paymentStatus !== nextPaymentStatus || existing.paymentMethod !== nextPaymentMethod)
+        ) {
+          await setReservationPaymentStatus({
+            id: reservationId,
+            paymentStatus: nextPaymentStatus,
+            paymentMethod: nextPaymentMethod,
+          });
+        }
       } else {
         await addReservation(input);
       }
@@ -234,7 +263,7 @@ export function ReservationModal({
           {/* Tipo de Reserva */}
           <div className="space-y-2">
             <Label className="text-sm font-semibold">Tipo de Reserva</Label>
-            <Select value={reservationType} onValueChange={v => setReservationType(v as any)}>
+            <Select value={reservationType} onValueChange={v => setReservationType(v as ReservationType)}>
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
@@ -303,7 +332,7 @@ export function ReservationModal({
           )}
 
           {/* Financeiro */}
-          {reservationType !== 'experimental' && reservationType !== 'blocked' && (
+          {reservationType !== 'blocked' && (
             <div className="p-4 rounded-xl border border-border/60 bg-muted/20 space-y-3">
               <p className="text-sm font-semibold flex items-center gap-2">
                 <DollarSign className="h-4 w-4 text-primary" /> Financeiro
@@ -334,7 +363,7 @@ export function ReservationModal({
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1.5">
                   <Label className="text-xs">Pagamento</Label>
-                  <Select value={paymentMethod} onValueChange={v => setPaymentMethod(v as any)}>
+                  <Select value={paymentMethod} onValueChange={v => setPaymentMethod(v as PaymentMethod)}>
                     <SelectTrigger className="h-9">
                       <SelectValue />
                     </SelectTrigger>
@@ -347,7 +376,7 @@ export function ReservationModal({
                 </div>
                 <div className="space-y-1.5">
                   <Label className="text-xs">Status</Label>
-                  <Select value={paymentStatus} onValueChange={v => setPaymentStatus(v as any)}>
+                  <Select value={paymentStatus} onValueChange={v => setPaymentStatus(v as ReservationMeta['paymentStatus'])}>
                     <SelectTrigger className="h-9">
                       <SelectValue />
                     </SelectTrigger>

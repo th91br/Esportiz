@@ -111,14 +111,12 @@ export function StudentCard({ student, onClick }: StudentCardProps) {
     // 1. Limpa treinos futuros do calendário (RPC existente)
     await supabase.rpc('cleanup_student_future_trainings', { p_student_id: student.id });
 
-    // 2. [NOVO] Soft-delete de todos os pagamentos PENDENTES do aluno.
-    //    Usa o mesmo mecanismo seguro já existente (full_price = -1).
-    //    Pagamentos já pagos são preservados intactos no histórico.
-    await supabase
-      .from('payments')
-      .update({ amount: 0, paid_amount: 0, paid: true, full_price: -1 })
-      .eq('student_id', student.id)
-      .eq('paid', false);
+    // 2. Cancela cobrancas abertas em transacao no banco.
+    //    Recebimentos parciais sao preservados como receita realizada.
+    const { data: cancelledPayments, error: paymentsError } = await supabase.rpc('cancel_student_open_payments_atomic', {
+      p_student_id: student.id,
+    });
+    if (paymentsError) throw paymentsError;
 
     // 3. [NOVO] Remove o aluno de todas as Turmas (group_students)
     await supabase
@@ -140,7 +138,12 @@ export function StudentCard({ student, onClick }: StudentCardProps) {
       descParts.push(`${futureTrainingsCount} treino${futureTrainingsCount !== 1 ? 's' : ''} futuro${futureTrainingsCount !== 1 ? 's' : ''} removido${futureTrainingsCount !== 1 ? 's' : ''}`);
     if (studentGroups.length > 0)
       descParts.push(`removido de ${studentGroups.length} turma${studentGroups.length !== 1 ? 's' : ''}`);
-    descParts.push('cobranças em aberto canceladas');
+    const cancelledCount = Number(cancelledPayments || 0);
+    descParts.push(
+      cancelledCount > 0
+        ? `${cancelledCount} cobrança${cancelledCount !== 1 ? 's' : ''} em aberto cancelada${cancelledCount !== 1 ? 's' : ''}`
+        : 'sem cobranças em aberto'
+    );
 
     toast({
       title: `${student.name} desativado`,

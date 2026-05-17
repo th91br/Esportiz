@@ -7,7 +7,9 @@ import { useStudents } from '@/hooks/queries/useStudents';
 import { useTrainings } from '@/hooks/queries/useTrainings';
 import { usePayments } from '@/hooks/queries/usePayments';
 import { useAttendance } from '@/hooks/queries/useAttendance';
+import { useReservations } from '@/hooks/queries/useReservations';
 import { getEndTime } from '@/data/mockData';
+import { useBusinessContext } from '@/hooks/useBusinessContext';
 import { Link } from 'react-router-dom';
 import { toast } from '@/hooks/use-toast';
 import { getLocalTodayDate, toLocalDateString } from '@/lib/dateUtils';
@@ -46,9 +48,11 @@ function saveDismissed(d: DismissedNotifications) {
 export function NotificationBell() {
   const queryClient = useQueryClient();
   const { students } = useStudents();
+  const { isArena } = useBusinessContext();
   const { trainings, deleteTraining, markTrainingComplete, unmarkTrainingComplete } = useTrainings();
   const { payments } = usePayments();
   const { attendance } = useAttendance();
+  const { reservations } = useReservations();
 
   const refreshData = useCallback(async () => {
     await queryClient.invalidateQueries();
@@ -79,10 +83,20 @@ export function NotificationBell() {
   );
 
   // ── Overdue payments ──
-  const overduePayments = useMemo(
-    () => payments.filter((p) => !p.paid && p.dueDate < today),
-    [payments, today]
-  );
+  const overduePayments = useMemo(() => {
+    if (isArena) {
+      return reservations
+        .filter((r) => r.paymentStatus === 'pending' && r.date < today)
+        .map(r => ({
+          id: r.id,
+          amount: r.finalPrice,
+          studentId: r.reservanteIds[0] || '',
+          dueDate: r.date,
+          paid: false,
+        }));
+    }
+    return payments.filter((p) => !p.paid && p.dueDate < today);
+  }, [isArena, reservations, payments, today]);
 
   const overdueStudentIds = useMemo(
     () => new Set(overduePayments.map((p) => p.studentId)),
@@ -96,10 +110,20 @@ export function NotificationBell() {
     return toLocalDateString(d);
   }, []);
 
-  const upcomingPayments = useMemo(
-    () => payments.filter((p) => !p.paid && (p.dueDate === today || p.dueDate === tomorrow)),
-    [payments, today, tomorrow]
-  );
+  const upcomingPayments = useMemo(() => {
+    if (isArena) {
+      return reservations
+        .filter((r) => r.paymentStatus === 'pending' && (r.date === today || r.date === tomorrow))
+        .map(r => ({
+          id: r.id,
+          amount: r.finalPrice,
+          studentId: r.reservanteIds[0] || '',
+          dueDate: r.date,
+          paid: false,
+        }));
+    }
+    return payments.filter((p) => !p.paid && (p.dueDate === today || p.dueDate === tomorrow));
+  }, [isArena, reservations, payments, today, tomorrow]);
 
   // ── Birthdays today ──
   const todayBirthdays = useMemo(() => {
@@ -114,7 +138,7 @@ export function NotificationBell() {
   const totalActive = pendingTrainings.length
     + (showOverdue ? 1 : 0)
     + (showUpcoming ? 1 : 0)
-    + todayBirthdays.length;
+    + (isArena ? 0 : todayBirthdays.length);
 
   // ── Reset dismissals when the day changes (via dismissDate field) ──
   useEffect(() => {
@@ -161,22 +185,30 @@ export function NotificationBell() {
     await markTrainingComplete(trainingId);
     await refreshData();
     toast({ 
-      title: '✅ Treino concluído', 
-      description: 'O treino foi marcado como executado. A presença dos alunos deve ser conferida manualmente na lista.' 
+      title: isArena ? '✅ Horário concluído' : '✅ Treino concluído', 
+      description: isArena 
+        ? 'O horário foi marcado como executado.' 
+        : 'O treino foi marcado como executado. A presença dos alunos deve ser conferida manualmente na lista.' 
     });
   }, [trainings, markTrainingComplete, refreshData]);
 
   const handleUndoComplete = useCallback(async (trainingId: string) => {
     await unmarkTrainingComplete(trainingId);
     await refreshData();
-    toast({ title: '↩️ Treino reaberto', description: 'O treino voltou para pendente.' });
+    toast({ 
+      title: isArena ? '↩️ Horário reaberto' : '↩️ Treino reaberto', 
+      description: isArena ? 'O horário voltou para pendente.' : 'O treino voltou para pendente.' 
+    });
   }, [unmarkTrainingComplete, refreshData]);
 
   const handleDeleteTraining = useCallback(async (trainingId: string) => {
     await deleteTraining(trainingId);
     dismissTraining(trainingId);
     await refreshData();
-    toast({ title: '🗑️ Treino excluído', description: 'O treino foi removido com sucesso.' });
+    toast({ 
+      title: isArena ? '🗑️ Horário excluído' : '🗑️ Treino excluído', 
+      description: isArena ? 'O horário foi removido com sucesso.' : 'O treino foi removido com sucesso.' 
+    });
   }, [deleteTraining, dismissTraining, refreshData]);
 
   const getTrainingStatus = (time: string, durationMinutes: number = 60): 'upcoming' | 'now' | 'past' => {
@@ -259,8 +291,11 @@ export function NotificationBell() {
 
         {/* Premium Tab System (Sticky) */}
         <div className="flex p-1.5 gap-1.5 bg-muted/30 border-b border-border/50 shrink-0">
-          {(['all', 'trainings', 'payments', 'birthdays'] as const).map((t) => {
-            const labels = { all: 'Todas', trainings: 'Treinos', payments: 'Pagos', birthdays: '🎂' };
+          {(isArena 
+            ? (['all', 'trainings', 'payments'] as const) 
+            : (['all', 'trainings', 'payments', 'birthdays'] as const)
+          ).map((t) => {
+            const labels = { all: 'Todas', trainings: isArena ? 'Horários' : 'Treinos', payments: 'Pagamentos', birthdays: '🎂' };
             const isActive = tab === t;
             return (
               <button
@@ -304,7 +339,7 @@ export function NotificationBell() {
           )}
 
           {/* Birthday Section */}
-          {showBirthdays && todayBirthdays.length > 0 && (
+          {!isArena && showBirthdays && todayBirthdays.length > 0 && (
             <div className="p-4 border-b border-border/30">
               <div className="rounded-2xl bg-card border-l-4 border-pink-500 p-4 shadow-sm relative overflow-hidden">
                 <div className="absolute top-0 right-0 p-4 opacity-5 pointer-events-none">

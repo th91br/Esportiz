@@ -50,7 +50,7 @@ interface ReservationDetailPanelProps {
   reservation: Reservation;
   students: ReturnType<typeof useStudents>['students'];
   courts: ReturnType<typeof useCourts>['courts'];
-  profile: any;
+  profile: ReturnType<typeof useProfile>['profile'];
   onClose: () => void;
   onEdit: () => void;
   onDelete: () => void;
@@ -252,7 +252,7 @@ export default function ArenaAgendaPage() {
   const { user } = useAuth();
   const { courts } = useCourts();
   const { profile } = useProfile();
-  const { reservations, deleteReservation, updateReservation, addReservation } = useReservations();
+  const { reservations, deleteReservation, addReservation, setReservationPaymentStatus } = useReservations();
   const { students } = useStudents();
 
   const [selectedDate, setSelectedDate] = useState(getLocalTodayDate());
@@ -334,6 +334,12 @@ export default function ArenaAgendaPage() {
     reservations.filter(r => r.date === selectedDate && r.status !== 'cancelled'),
     [reservations, selectedDate]
   );
+  const todayReceivedTotal = useMemo(() =>
+    todayReservations
+      .filter(r => r.paymentStatus === 'paid')
+      .reduce((total, reservation) => total + reservation.finalPrice, 0),
+    [todayReservations]
+  );
 
   const reservationsBySlot = useMemo(() => {
     const map = new Map<string, Reservation>();
@@ -357,7 +363,7 @@ export default function ArenaAgendaPage() {
   }, [todayReservations]);
 
   const studentMap = useMemo(() => {
-    const map = new Map<string, any>();
+    const map = new Map<string, ReturnType<typeof useStudents>['students'][number]>();
     students.forEach(s => map.set(s.id, s));
     return map;
   }, [students]);
@@ -386,22 +392,10 @@ export default function ArenaAgendaPage() {
 
   const handleMarkAsPaid = async (r: Reservation) => {
     try {
-      const updatedMeta = {
-        price: r.price,
-        discount: r.discount,
-        finalPrice: r.finalPrice,
-        reservationType: r.reservationType,
-        paymentMethod: r.paymentMethod,
-        paymentStatus: 'paid' as const,
-        status: r.status,
-        online: r.online
-      };
-
-      await updateReservation({
+      await setReservationPaymentStatus({
         id: r.id,
-        input: {
-          meta: updatedMeta
-        }
+        paymentStatus: 'paid',
+        paymentMethod: r.paymentMethod,
       });
       toast.success('Recebimento confirmado com sucesso!');
     } catch (err) {
@@ -542,7 +536,7 @@ export default function ArenaAgendaPage() {
           </div>
           <div className="flex items-center gap-1.5 text-muted-foreground">
             <DollarSign className="h-4 w-4 text-emerald-500" />
-            <span><strong className="text-foreground">{formatCurrency(todayReservations.reduce((a, r) => a + r.finalPrice, 0))}</strong> faturado</span>
+            <span><strong className="text-foreground">{formatCurrency(todayReceivedTotal)}</strong> recebido</span>
           </div>
           <div className="flex items-center gap-1.5 text-muted-foreground">
             <Clock className="h-4 w-4 text-blue-500" />
@@ -766,7 +760,7 @@ export default function ArenaAgendaPage() {
                           className="text-xs h-8 px-2.5 gap-1 border-emerald-500/20 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 hover:text-emerald-700 font-bold transition-all"
                           onClick={() => handleMarkAsPaid(r)}
                         >
-                          Dar Baixa
+                          Confirmar recebimento
                         </Button>
                         <Button 
                           size="sm"

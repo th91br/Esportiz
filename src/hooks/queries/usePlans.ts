@@ -66,7 +66,7 @@ export function usePlans() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['plans'] });
     },
-    onError: (error: any) => {
+    onError: (error: Error) => {
       toast({ title: 'Erro ao criar plano', description: error.message, variant: 'destructive' });
     }
   });
@@ -92,8 +92,8 @@ export function usePlans() {
 
       if (error) throw error;
 
-      // Sync all unpaid payments for this plan if price changed
-      if (data.price !== undefined) {
+      // Sync open payments if plan pricing or billing model changed.
+      if (data.price !== undefined || data.billingType !== undefined) {
         await supabase.rpc('sync_all_unpaid_payments_for_plan', { p_plan_id: id });
       }
 
@@ -103,7 +103,7 @@ export function usePlans() {
       queryClient.invalidateQueries({ queryKey: ['plans'] });
       queryClient.invalidateQueries({ queryKey: ['payments'] }); // Preços podem ter mudado
     },
-    onError: (error: any) => {
+    onError: (error: Error) => {
       toast({ title: 'Erro ao atualizar plano', description: error.message, variant: 'destructive' });
     }
   });
@@ -124,7 +124,7 @@ export function usePlans() {
       queryClient.invalidateQueries({ queryKey: ['plans'] });
       queryClient.invalidateQueries({ queryKey: ['students'] }); // Estudantes podem ter ficado sem plano
     },
-    onError: (error: any) => {
+    onError: (error: Error) => {
       toast({ title: 'Erro ao remover plano', description: error.message, variant: 'destructive' });
     }
   });

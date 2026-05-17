@@ -105,31 +105,10 @@ export function usePayments() {
 
     const markAsPaidMutation = useMutation({
         mutationFn: async ({ paymentId, paidAmount }: { paymentId: string; paidAmount?: number }) => {
-            let finalPaidAmount = paidAmount;
-            let isFullyPaid = true;
-
-            const { data: payRow, error: fetchErr } = await supabase
-                .from('payments')
-                .select('amount')
-                .eq('id', paymentId)
-                .single();
-                
-            if (fetchErr) throw fetchErr;
-
-            if (finalPaidAmount === undefined) {
-                finalPaidAmount = Number(payRow.amount);
-            } else if (finalPaidAmount < Number(payRow.amount)) {
-                isFullyPaid = false;
-            }
-
-            const { error } = await supabase
-                .from('payments')
-                .update({ 
-                    paid: isFullyPaid, 
-                    paid_amount: finalPaidAmount, 
-                    paid_at: new Date().toISOString() 
-                })
-                .eq('id', paymentId);
+            const { error } = await supabase.rpc('receive_payment_atomic', {
+                p_payment_id: paymentId,
+                p_paid_amount: paidAmount ?? null,
+            });
             if (error) throw error;
         },
         onSuccess: () => {
@@ -142,10 +121,9 @@ export function usePayments() {
 
     const markAsUnpaidMutation = useMutation({
         mutationFn: async (paymentId: string) => {
-            const { error } = await supabase
-                .from('payments')
-                .update({ paid: false, paid_at: null, paid_amount: 0 })
-                .eq('id', paymentId);
+            const { error } = await supabase.rpc('reopen_payment_atomic', {
+                p_payment_id: paymentId,
+            });
             if (error) throw error;
         },
         onSuccess: () => {
@@ -158,15 +136,10 @@ export function usePayments() {
 
     const deletePaymentMutation = useMutation({
         mutationFn: async (paymentId: string) => {
-            // Em vez de deletar a linha, fazemos um "soft delete" marcando full_price = -1 e valor = 0.
-            // Isso engana o RPC do banco (ele vê que a linha existe e não a recria), 
-            // mas o front-end filtra essa linha (ela não aparece mais na UI nem soma nos cálculos).
-            const { error } = await supabase.from('payments').update({
-                amount: 0,
-                paid_amount: 0,
-                paid: true,
-                full_price: -1
-            }).eq('id', paymentId);
+            // Cancela a cobranca via RPC para impedir regeneracao automatica.
+            const { error } = await supabase.rpc('cancel_payment_atomic', {
+                p_payment_id: paymentId,
+            });
             if (error) throw error;
         },
         onSuccess: () => {
@@ -229,16 +202,10 @@ export function usePayments() {
 
     const markBatchAsPaidMutation = useMutation({
         mutationFn: async (paymentIds: string[]) => {
-            await Promise.all(paymentIds.map(async (id) => {
-                const { data: payRow } = await supabase.from('payments').select('amount').eq('id', id).single();
-                if (payRow) {
-                    await supabase.from('payments').update({
-                        paid: true,
-                        paid_amount: payRow.amount,
-                        paid_at: new Date().toISOString()
-                    }).eq('id', id);
-                }
-            }));
+            const { error } = await supabase.rpc('receive_payments_batch_atomic', {
+                p_payment_ids: paymentIds,
+            });
+            if (error) throw error;
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['payments'] });
@@ -251,13 +218,10 @@ export function usePayments() {
 
     const markBatchAsUnpaidMutation = useMutation({
         mutationFn: async (paymentIds: string[]) => {
-            await Promise.all(paymentIds.map(async (id) => {
-                await supabase.from('payments').update({
-                    paid: false,
-                    paid_amount: 0,
-                    paid_at: null
-                }).eq('id', id);
-            }));
+            const { error } = await supabase.rpc('reopen_payments_batch_atomic', {
+                p_payment_ids: paymentIds,
+            });
+            if (error) throw error;
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['payments'] });

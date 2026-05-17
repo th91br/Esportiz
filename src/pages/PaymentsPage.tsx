@@ -32,7 +32,7 @@ export default function PaymentsPage() {
   const { students } = useStudents();
   const { plans } = usePlans();
   const { payments, generateMonthlyPayments, markAsPaid, markAsUnpaid, markBatchAsPaid, markBatchAsUnpaid, deletePayment, loadingPayments } = usePayments();
-  const { reservations, loadingReservations, updateReservation } = useReservations();
+  const { reservations, setReservationPaymentStatus } = useReservations();
   const { courts } = useCourts();
   const [privacyMode, togglePrivacyMode] = usePrivacyMode();
   const [searchTerm, setSearchTerm] = useState('');
@@ -154,25 +154,15 @@ export default function PaymentsPage() {
   const handleToggleReservationPayment = async (reservation: typeof reservations[0]) => {
     try {
       const newStatus = reservation.paymentStatus === 'paid' ? 'pending' : 'paid';
-      const meta = {
-        price: reservation.price,
-        discount: reservation.discount,
-        finalPrice: reservation.finalPrice,
-        reservationType: reservation.reservationType,
-        paymentMethod: reservation.paymentMethod,
-        paymentStatus: newStatus as 'paid' | 'pending',
-        status: reservation.status,
-      };
-      
-      await updateReservation({
+      await setReservationPaymentStatus({
         id: reservation.id,
-        input: {
-          meta,
-        }
+        paymentStatus: newStatus,
+        paymentMethod: reservation.paymentMethod,
       });
       toast.success(`Pagamento da reserva marcado como ${newStatus === 'paid' ? 'Pago' : 'Pendente'}!`);
-    } catch (err: any) {
-      toast.error('Erro ao atualizar pagamento da reserva: ' + err.message);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Erro inesperado';
+      toast.error('Erro ao atualizar pagamento da reserva: ' + message);
     }
   };
 

@@ -7,7 +7,7 @@ RETURNS INTEGER
 LANGUAGE plpgsql
 SECURITY INVOKER
 SET search_path = public
-AS $$
+AS $function$
 DECLARE
     v_year INT;
     v_month INT;
@@ -28,10 +28,12 @@ BEGIN
     v_year := CAST(SPLIT_PART(p_month_ref, '-', 1) AS INT);
     v_month := CAST(SPLIT_PART(p_month_ref, '-', 2) AS INT);
 
-    SELECT COALESCE(NULLIF(business_type, ''), 'sport_school')
-    INTO v_business_type
-    FROM public.profiles
-    WHERE user_id = v_user_id;
+    v_business_type := (
+        SELECT COALESCE(NULLIF(business_type, ''), 'sport_school')
+        FROM public.profiles
+        WHERE user_id = v_user_id
+        LIMIT 1
+    );
 
     IF v_business_type IS NULL THEN
         v_business_type := 'sport_school';
@@ -199,6 +201,6 @@ BEGIN
 
     RETURN v_count;
 END;
-$$;
+$function$;
 
 GRANT EXECUTE ON FUNCTION public.generate_monthly_payments(TEXT) TO authenticated;

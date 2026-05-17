@@ -363,3 +363,163 @@ Validacoes executadas:
 Observacoes para fases futuras:
 
 - A Fase 6.2 deve revisar baixa, estorno e pagamentos parciais com a mesma abordagem transacional.
+
+## Registro da Fase 6.2
+
+Status: concluida.
+
+Escopo executado:
+
+- Mapeado o fluxo de baixa individual, baixa em lote, estorno, cancelamento de mensalidade e cancelamento de cobrancas ao desativar aluno.
+- Criada a migration `20260517100000_phase6_2_payment_state_transitions.sql`.
+- Adicionadas RPCs transacionais para:
+  - `receive_payment_atomic`: baixa total ou parcial com travamento da linha.
+  - `reopen_payment_atomic`: estorno/retorno para aberto com limpeza de `paid_amount` e `paid_at`.
+  - `cancel_payment_atomic`: cancelamento seguro para impedir regeneracao automatica.
+  - `receive_payments_batch_atomic`: baixa em lote em uma unica operacao no banco.
+  - `reopen_payments_batch_atomic`: estorno em lote em uma unica operacao no banco.
+  - `cancel_student_open_payments_atomic`: cancelamento de cobrancas abertas na desativacao do aluno.
+- Baixas parciais passaram a ser protegidas contra reducao acidental por cliente com estado antigo.
+- Valor recebido acima do valor da mensalidade passou a ser limitado ao valor da fatura, evitando inflar relatorios.
+- Desativacao de aluno passou a preservar recebimentos parciais como receita realizada e cancelar somente o saldo em aberto.
+- Hook `usePayments` deixou de fazer updates diretos em `payments` para baixa, estorno, lote e cancelamento.
+- `StudentCard` passou a usar RPC transacional para cancelar cobrancas abertas ao desativar aluno.
+- Tipos locais do Supabase foram atualizados para as novas RPCs.
+
+Validacoes executadas:
+
+- `npx eslint` focado nos arquivos alterados da Fase 6.2: passou.
+- `npm run build`: passou.
+- `npm test`: passou.
+- `npx tsc -p tsconfig.app.json --noEmit`: ainda falha por dividas globais preexistentes fora do escopo desta fase.
+
+Observacoes para fases futuras:
+
+- A Fase 6.3 deve revisar sincronizacao de pagamentos pendentes quando plano, preco ou vencimento mudam.
+- Em uma etapa futura, avaliar endurecimento adicional de permissoes diretas de update na tabela `payments`, depois que todos os fluxos legados estiverem em RPC.
+
+## Registro da Fase 6.3
+
+Status: concluida e aplicada no Supabase.
+
+Escopo executado:
+
+- Mapeadas as RPCs antigas `sync_student_unpaid_payments` e `sync_all_unpaid_payments_for_plan`.
+- Criada a migration `20260517113000_phase6_3_harden_payment_sync.sql`.
+- `sync_student_unpaid_payments` passou a:
+  - validar usuario autenticado, aluno, plano, tenant e `business_type`;
+  - recalcular mensalidades pendentes usando preco atual, pro-rata, descontos e vencimento;
+  - preservar recebimentos parciais e limitar `paid_amount` ao novo valor da fatura;
+  - marcar como quitada a cobranca que ficar totalmente coberta apos ajuste de preco/desconto;
+  - cancelar com seguranca cobrancas abertas se o aluno ficar sem plano mensal ou sem vencimento valido.
+- `sync_all_unpaid_payments_for_plan` passou a:
+  - recalcular todas as cobrancas abertas de um plano mensal apos mudanca de preco;
+  - respeitar descontos individuais de cada aluno;
+  - preservar parcial recebido;
+  - cancelar com seguranca cobrancas abertas se o plano deixar de ser mensal.
+- Hook `usePlans` passou a sincronizar pagamentos abertos quando houver mudanca de preco ou tipo de cobranca do plano.
+
+Validacoes executadas:
+
+- `npx eslint` focado nos arquivos alterados da Fase 6.3: passou.
+- `npm run build`: passou.
+- `npm test`: passou.
+- `npx tsc -p tsconfig.app.json --noEmit`: ainda falha por dividas globais preexistentes fora do escopo desta fase.
+
+Observacoes para fases futuras:
+
+- A Fase 6.4 deve revisar permissao direta de escrita na tabela `payments` e separar o que deve ficar apenas via RPC.
+
+## Registro da Fase 6.4
+
+Status: concluida e aplicada no Supabase.
+
+Escopo executado:
+
+- Confirmado que o front-end atual faz apenas leitura direta em `payments`; escritas financeiras passam pelas RPCs das fases 6.1, 6.2 e 6.3.
+- Criada a migration `20260517130000_phase6_4_lock_down_payment_writes.sql`.
+- RPCs financeiras criticas passaram para `SECURITY DEFINER` com `search_path = public`, mantendo validacao explicita por `auth.uid()`.
+- Execucao das RPCs financeiras foi removida de `PUBLIC` e concedida explicitamente a `authenticated`.
+- Politicas antigas de escrita direta em `payments` foram removidas:
+  - `Users can create their own payments`;
+  - `Users can update their own payments`;
+  - `Users can delete their own payments`;
+  - `Isolamento Payments`.
+- Politica de leitura direta foi recriada somente como `SELECT`, permitindo que o usuario autenticado veja apenas seus proprios pagamentos.
+- A partir desta fase, insert/update/delete em `payments` devem acontecer por RPC controlada, nao por chamada direta do cliente.
+
+Validacoes executadas:
+
+- Mapeamento com `rg`: nenhuma escrita direta restante em `payments` no front-end; apenas leitura em `usePayments`.
+- `npm run build`: passou.
+- `npm test`: passou.
+- `npx tsc -p tsconfig.app.json --noEmit`: ainda falha por dividas globais preexistentes fora do escopo desta fase.
+
+Observacoes para fases futuras:
+
+- A Fase 6.5 deve revisar regras equivalentes para reservas/faturamento de arena ou registrar auditoria financeira, conforme prioridade operacional.
+
+## Registro da Fase 6.5
+
+Status: concluida e aplicada no Supabase.
+
+Escopo executado:
+
+- Mapeado o fluxo financeiro das reservas de arena dentro de `trainings.metadata`.
+- Criada a migration `20260517143000_phase6_5_arena_reservation_payment_control.sql`.
+- Adicionada RPC `set_arena_reservation_payment_status_atomic` para baixa/estorno de reservas com validacao de usuario, tenant, tipo `arena`, reserva cancelada e bloqueio de quadra.
+- Adicionado trigger `guard_arena_reservation_payment_fields_trigger` para impedir mudanca direta de `paymentStatus`, `paymentMethod`, `paymentPaidAt` e `paymentUpdatedAt` fora da RPC controlada.
+- Hook `useReservations` passou a expor `setReservationPaymentStatus` e deixou de serializar metadata manualmente como string.
+- Edicao de reservas preserva campos financeiros existentes e envia mudancas de pagamento pela RPC.
+- Opcao `Experimental (Gratis)` removida da Arena; aula experimental fica restrita ao produto Sportiz Sport.
+- Migration normaliza reservas antigas de Arena com `reservationType = experimental` para `avulsa`, sem apagar dados.
+- Tela de Pagamentos da Arena passou a confirmar/estornar reservas pela RPC.
+- Agenda da Arena passou a dar baixa de recebimentos pela RPC.
+- Resumo da agenda agora mostra valor recebido, nao valor apenas previsto.
+- Relatorios da Arena passaram a calcular receita por quadra e top reservantes usando apenas reservas pagas.
+
+Validacoes executadas:
+
+- `npx eslint` focado nos arquivos alterados da Fase 6.5: passou.
+- `npm run build`: passou.
+- `npm test`: passou.
+- Checagem da migration para evitar `AS $$`, `CREATE TABLE` e `SELECT ... INTO`: passou.
+- `npx tsc -p tsconfig.app.json --noEmit`: ainda falha por dividas globais preexistentes fora do escopo desta fase.
+
+Observacoes para fases futuras:
+
+- Validacao manual concluida com sucesso: criar reserva, confirmar pagamento, estornar em Pagamentos, editar sem alterar pagamento, conferir Relatorios e confirmar remocao da opcao Experimental/Gratis na Arena.
+- A Fase 6.6 segue para auditoria/rastreabilidade financeira.
+
+## Registro da Fase 6.6
+
+Status: concluida localmente; migration pendente de execucao no Supabase.
+
+Escopo executado:
+
+- Criada a migration `20260517160000_phase6_6_financial_audit_logs.sql`.
+- Adicionada a tabela `financial_audit_logs` para trilha de auditoria financeira por tenant.
+- RLS configurado para permitir leitura apenas dos logs do proprio usuario.
+- Escrita direta na tabela de auditoria nao foi concedida ao cliente; os logs sao gravados por RPC controlada.
+- Adicionada funcao interna `record_financial_audit_log` para padronizar registros de auditoria.
+- RPCs de pagamentos passaram a registrar estado anterior e novo em:
+  - baixa total;
+  - baixa parcial;
+  - estorno/reabertura;
+  - cancelamento;
+  - cancelamento de saldo em aberto ao desativar aluno;
+  - baixa/estorno em lote.
+- RPC de pagamento de reserva da Arena passou a auditar confirmacao e retorno para pendente.
+- Tipos locais do Supabase foram atualizados para conhecer `financial_audit_logs`.
+
+Validacoes executadas:
+
+- Checagem da migration: sem `AS $$`; tabela nova criada com RLS, policy de leitura e sem permissao direta de escrita ao cliente.
+- `npx eslint src/integrations/supabase/types.ts`: passou.
+- `npm run build`: passou.
+- `npm test`: passou.
+- `npx tsc -p tsconfig.app.json --noEmit`: ainda falha por dividas globais preexistentes fora do escopo desta fase.
+
+Observacoes para fases futuras:
+
+- A Fase 6.6 cria a trilha de auditoria no banco; uma fase posterior pode exibir esses logs em tela administrativa.

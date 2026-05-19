@@ -1136,3 +1136,157 @@ Observacoes:
 Proxima etapa recomendada:
 
 - Fase 9.7: testar portais publicos e protecoes de acesso com o mesmo padrao de seguranca.
+
+## Registro da Fase 9.7
+
+Status: concluida com seguranca; portais publicos e protecoes de acesso fortalecidos com contratos locais, validacoes automatizadas e navegacao visual sem dados reais.
+
+Objetivo:
+
+- Fortalecer os pontos publicos do sistema sem abrir superficie indevida:
+  - Landing page;
+  - matricula publica desativada;
+  - agendamento online da Arena;
+  - portal do aluno;
+  - login;
+  - reset de senha;
+  - protecao das rotas administrativas.
+
+Decisao de seguranca:
+
+- Nenhum dado real foi criado, editado, excluido, baixado ou estornado nesta fase.
+- A validacao visual foi somente de leitura e navegacao local.
+- As regras sensiveis foram extraidas para contratos puros antes da validacao, reduzindo risco de regressao nas telas existentes.
+- Os fluxos publicos com `ct` invalido continuam bloqueados de forma explicita.
+- O portal do aluno continua permitindo acesso manual sem `ct`, mas rejeitando `ct` invalido.
+- O agendamento online da Arena continua exigindo `ct` valido.
+
+Escopo executado:
+
+- Criado `src/lib/publicAccessContracts.ts` para centralizar:
+  - classificacao de rotas publicas, protegidas e desconhecidas;
+  - validacao do escopo publico por `ct`;
+  - retorno padronizado de `scopedOwnerId` e `hasInvalidOwnerId`.
+- Criado `src/lib/publicBookingContracts.ts` para centralizar:
+  - normalizacao segura de metadados publicos de quadra;
+  - fallback de cor, preco, horarios e dias de funcionamento;
+  - calculo de conflitos por sobreposicao de horarios;
+  - bloqueio defensivo de pedidos publicos invalidos;
+  - calculo de preco normal e preco de pico;
+  - suporte seguro a janela de preco de pico que atravessa a meia-noite.
+- `OnlineBookingPage` passou a usar os contratos de acesso e agendamento publico.
+- `StudentPortalPage` passou a usar o contrato central de escopo publico por `ct`.
+- `PaymentsPage` teve um import orfao removido para manter a compilacao limpa.
+- `src/integrations/supabase/types.ts` recebeu a assinatura da RPC `add_arena_partial_payment_atomic`, alinhando os tipos ao banco ja migrado.
+
+Testes automatizados criados:
+
+- `src/lib/publicAccessContracts.test.ts`:
+  - rotas publicas seguem publicas;
+  - rotas administrativas seguem protegidas;
+  - caminhos desconhecidos nao sao expostos por engano;
+  - `ct` ausente, invalido e valido sao classificados corretamente.
+- `src/lib/publicBookingContracts.test.ts`:
+  - metadados vazios ou invalidos caem em defaults seguros;
+  - metadados JSON sao normalizados;
+  - valores quebrados de quadra nao contaminam a tela publica;
+  - reservas canceladas nao bloqueiam horario;
+  - conflitos reais bloqueiam horario;
+  - pedidos invalidos ficam indisponiveis por padrao;
+  - preco de pico e faixa noturna funcionam;
+  - parsing de horario e contrato de sobreposicao ficam explicitos.
+- `src/lib/publicPortalSecurity.test.ts`:
+  - CPF;
+  - telefone;
+  - nome;
+  - e-mail;
+  - datas publicas;
+  - UUID de tenant.
+
+Validacoes executadas:
+
+- `npm test -- publicAccessContracts publicBookingContracts publicPortalSecurity`: passou com 3 arquivos e 15 testes.
+- `npx eslint src/pages/OnlineBookingPage.tsx src/pages/StudentPortalPage.tsx src/pages/PaymentsPage.tsx src/lib/publicAccessContracts.ts src/lib/publicBookingContracts.ts src/lib/publicAccessContracts.test.ts src/lib/publicBookingContracts.test.ts src/lib/publicPortalSecurity.test.ts`: passou.
+- `npm test`: passou com 11 arquivos e 52 testes reais.
+- `npx tsc -p tsconfig.app.json --noEmit`: passou sem erros.
+- `npm run build`: passou.
+
+Validacoes visuais locais:
+
+- `http://127.0.0.1:5173/portal-aluno`: exibiu o formulario manual do Portal do Aluno sem redirecionar indevidamente.
+- `http://127.0.0.1:5173/portal-aluno?ct=abc`: exibiu bloqueio de link invalido.
+- `http://127.0.0.1:5173/agendar`: exibiu bloqueio de link de agendamento sem identificador da Arena.
+- `http://127.0.0.1:5173/agendar?ct=abc`: exibiu bloqueio de link invalido.
+- `http://127.0.0.1:5173/matricula`: exibiu inscricao publica indisponivel, conforme decisao de remover a modalidade antiga.
+- O navegador foi devolvido para `http://127.0.0.1:5173/dashboard`.
+
+Observacoes:
+
+- Nenhuma migration SQL foi criada ou executada nesta fase.
+- O build manteve apenas os avisos ja conhecidos de chunk grande e import dinamico/estatico do cliente Supabase.
+- A Fase 9.7 aumentou a seguranca dos portais sem alterar a experiencia principal dos usuarios autenticados.
+
+Proxima etapa recomendada:
+
+- Fase 9.8: consolidar rotina de regressao profissional, criando um roteiro final de validacao recorrente para antes de deploy.
+
+## Registro da Fase 9.8
+
+Status: concluida com seguranca; rotina profissional de regressao consolidada, documentada e validada de ponta a ponta.
+
+Objetivo:
+
+- Criar uma rotina repetivel para validar o Esportiz antes de deploy, sem depender de memoria e sem expor dados reais.
+- Consolidar em um unico comando as validacoes tecnicas obrigatorias.
+- Documentar o roteiro manual minimo para Sportiz Sport, Esportiz Arena, portais publicos e protecoes de acesso.
+
+Decisao de seguranca:
+
+- Nenhum dado real foi criado, editado, excluido, baixado ou estornado nesta fase.
+- Nenhuma navegacao operacional com criacao de dados foi necessaria, porque o escopo foi rotina de validacao e saneamento tecnico.
+- O comando de regressao foi criado usando apenas ferramentas ja existentes no projeto.
+- Antes de aceitar a rotina, o `lint` completo foi saneado para nao retornar erros.
+
+Escopo executado:
+
+- Criado `REGRESSAO_PROFISSIONAL.md` com:
+  - regra de ouro para nao testar em dados reais;
+  - padrao de prefixo `TESTE REGRESSAO`;
+  - validacao tecnica obrigatoria;
+  - checklist manual base;
+  - checklist de Escola Esportiva / Sportiz Sport;
+  - checklist de Arena / CT Quadra;
+  - checklist de portais publicos;
+  - criterios de liberacao e bloqueio de deploy.
+- Adicionado `typecheck` ao `package.json`:
+  - `tsc -p tsconfig.app.json --noEmit`.
+- Adicionado `check:regression` ao `package.json`:
+  - `npm run lint && npm run typecheck && npm test && npm run build`.
+- Criado `src/lib/errorUtils.ts` para padronizar leitura segura de mensagens de erro.
+- Corrigidas dividas de lint que impediam rotina profissional:
+  - `src/lib/exportUtils.ts`: removido `any[]` no export CSV;
+  - `src/lib/reservationContracts.ts`: removido `any` em pagamentos parciais;
+  - `src/pages/LoginPage.tsx`: catches convertidos para `unknown`;
+  - `src/pages/ResetPasswordPage.tsx`: catch convertido para `unknown`;
+  - `src/pages/SettingsPage.tsx`: catches convertidos para `unknown`;
+  - `supabase/functions/google-sync/index.ts`: tipos basicos adicionados para eventos/participantes do Google;
+  - `tailwind.config.ts`: substituido `require("tailwindcss-animate")` por import tipado.
+
+Validacoes executadas:
+
+- `npm run lint`: passou sem erros; restam 10 avisos conhecidos de Fast Refresh/estrutura de componentes UI.
+- `npx tsc -p tsconfig.app.json --noEmit`: passou sem erros.
+- `npm test`: passou com 11 arquivos e 52 testes reais.
+- `npm run build`: passou.
+- `npm run check:regression`: passou de ponta a ponta.
+
+Observacoes:
+
+- A primeira execucao do `npm run check:regression` dentro do sandbox falhou no `vitest` com `spawn EPERM`, erro de permissao do ambiente ao iniciar o esbuild.
+- A rotina foi repetida com permissao adequada e passou completamente.
+- O build manteve apenas os avisos ja conhecidos de chunk grande e import dinamico/estatico do cliente Supabase.
+- Os avisos de Fast Refresh no `lint` nao bloqueiam a regressao, mas ficam mapeados para uma futura fase de limpeza estetica/arquitetural de componentes UI.
+
+Proxima etapa recomendada:
+
+- Fase 10: fechamento do ciclo com revisao final de release, checklist de deploy controlado e decisao de publicacao/rollback.

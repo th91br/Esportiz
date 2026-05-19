@@ -25,6 +25,7 @@ import { ModalityManager } from '@/components/ModalityManager';
 import { supabase } from '@/integrations/supabase/client';
 import { type BusinessType } from '@/hooks/queries/useProfile';
 import { cn } from '@/lib/utils';
+import { getErrorMessage } from '@/lib/errorUtils';
 
 const BUSINESS_OPTIONS: { type: BusinessType; title: string; description: string; emoji: string }[] = [
   { type: 'sport_school', title: 'Escola Esportiva', description: 'Esportiz Sport — Futevôlei, Vôlei, Futebol, Artes Marciais...', emoji: '🏐' },
@@ -100,9 +101,9 @@ export default function SettingsPage() {
       toast.success('Google Agenda conectado com sucesso!', { id: toastId });
       // Clean URL
       window.history.replaceState({}, document.title, window.location.pathname);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('OAuth Error:', error);
-      toast.error('Erro ao conectar com Google: ' + error.message, { id: toastId });
+      toast.error('Erro ao conectar com Google: ' + getErrorMessage(error), { id: toastId });
     } finally {
       setIsConnectingGoogle(false);
     }
@@ -591,8 +592,8 @@ export default function SettingsPage() {
                           });
                           if (error) throw error;
                           toast.success(`${data.count} contatos analisados e sincronizados!`, { id: tid });
-                        } catch (err: any) {
-                          toast.error('Erro na sincronização: ' + err.message, { id: tid });
+                        } catch (err: unknown) {
+                          toast.error('Erro na sincronização: ' + getErrorMessage(err), { id: tid });
                         }
                       }}
                     >

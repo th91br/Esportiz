@@ -125,12 +125,14 @@ export function parseReservationMeta(raw: Json | string | null | undefined): Res
       : Math.max(0, asNumber(parsed.finalPrice, DEFAULT_META.finalPrice));
 
     const rawPartialPayments = Array.isArray(parsed.partialPayments) ? parsed.partialPayments : [];
-    const partialPayments: PartialPayment[] = rawPartialPayments.map((p: any) => ({
-      id: typeof p.id === 'string' ? p.id : (typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).substring(2, 15)),
-      amount: asNumber(p.amount, 0),
-      method: asPaymentMethod(p.method),
-      date: typeof p.date === 'string' ? p.date : new Date().toISOString(),
-    }));
+    const partialPayments: PartialPayment[] = rawPartialPayments
+      .filter(isRecord)
+      .map((payment) => ({
+        id: typeof payment.id === 'string' ? payment.id : (typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).substring(2, 15)),
+        amount: asNumber(payment.amount, 0),
+        method: asPaymentMethod(payment.method),
+        date: typeof payment.date === 'string' ? payment.date : new Date().toISOString(),
+      }));
 
     return {
       price: reservationType === 'blocked' ? 0 : Math.max(0, asNumber(parsed.price, DEFAULT_META.price)),

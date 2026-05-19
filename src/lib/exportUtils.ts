@@ -1,6 +1,6 @@
 import { getLocalTodayDate } from '@/lib/dateUtils';
 
-export function exportToCSV(data: any[], filename: string) {
+export function exportToCSV(data: Record<string, unknown>[], filename: string) {
   if (!data || !data.length) {
     console.error('No data to export');
     return;
@@ -15,7 +15,7 @@ export function exportToCSV(data: any[], filename: string) {
     ...data.map((row) =>
       headers
         .map((fieldName) => {
-          let value = row[fieldName];
+          const value = row[fieldName];
           
           // Tratamento para valores nulos/indefinidos
           if (value === null || value === undefined) {
@@ -23,12 +23,12 @@ export function exportToCSV(data: any[], filename: string) {
           }
           
           // Formatação de string (escapando vírgulas e aspas)
-          value = String(value);
-          if (value.includes(',') || value.includes('"') || value.includes('\n')) {
-            value = `"${value.replace(/"/g, '""')}"`;
+          let stringValue = String(value);
+          if (stringValue.includes(',') || stringValue.includes('"') || stringValue.includes('\n')) {
+            stringValue = `"${stringValue.replace(/"/g, '""')}"`;
           }
           
-          return value;
+          return stringValue;
         })
         .join(',')
     ),

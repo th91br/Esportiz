@@ -11,6 +11,16 @@ import {
   ArrowRight, ShieldCheck, Landmark, Clock, RefreshCw, Sparkles
 } from 'lucide-react';
 import { formatCurrency } from '@/lib/formatCurrency';
+import { resolvePublicOwnerScope } from '@/lib/publicAccessContracts';
+import {
+  getPublicCourtPriceForTime,
+  isPublicReservationSlotBusy,
+  mapPublicCourtRecord,
+  parseTimeToMinutes,
+  type PublicCourt,
+  type PublicCourtRecord,
+  type PublicReservation,
+} from '@/lib/publicBookingContracts';
 import {
   formatBrazilPhone,
   formatCpf,
@@ -18,56 +28,10 @@ import {
   isValidBrazilPhone,
   isValidCpf,
   isValidPublicEmail,
-  isValidUuid,
   normalizePublicEmail,
   normalizePublicName,
 } from '@/lib/publicPortalSecurity';
 import { getLocalTodayDate } from '@/lib/dateUtils';
-
-interface Court {
-  id: string;
-  name: string;
-  color: string;
-  sportType: string;
-  coverage: string;
-  pricePerHour: number;
-  openingTime: string;
-  closingTime: string;
-  daysOfWeek: number[];
-  usePeakPricing?: boolean;
-  peakPrice?: number;
-  peakStart?: string;
-  peakEnd?: string;
-}
-
-interface DBReservation {
-  id: string;
-  date: string;
-  time: string;
-  courtId: string;
-  durationMinutes: number;
-  status: string;
-}
-
-interface CourtMetadata {
-  sportType: string;
-  coverage: string;
-  pricePerHour: number;
-  openingTime: string;
-  closingTime: string;
-  daysOfWeek: number[];
-  usePeakPricing: boolean;
-  peakPrice: number;
-  peakStart: string;
-  peakEnd: string;
-}
-
-interface PublicCourtRecord {
-  id: string;
-  name: string;
-  color: string | null;
-  metadata: unknown;
-}
 
 interface BookingSuccessData {
   courtName?: string;
@@ -76,39 +40,17 @@ interface BookingSuccessData {
   price: number;
 }
 
-const isRecord = (value: unknown): value is Record<string, unknown> => (
-  typeof value === 'object' && value !== null && !Array.isArray(value)
-);
-
-const getStringValue = (value: unknown, fallback: string) => (
-  typeof value === 'string' && value.trim() ? value : fallback
-);
-
-const getNumberValue = (value: unknown, fallback: number) => {
-  const parsed = Number(value);
-  return Number.isFinite(parsed) ? parsed : fallback;
-};
-
-const getBooleanValue = (value: unknown, fallback: boolean) => (
-  typeof value === 'boolean' ? value : fallback
-);
-
-const getNumberArrayValue = (value: unknown, fallback: number[]) => (
-  Array.isArray(value) ? value.filter((item): item is number => Number.isInteger(item)) : fallback
-);
-
 export default function OnlineBookingPage() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const ownerId = searchParams.get('ct');
-  const hasInvalidOwnerId = ownerId !== null && !isValidUuid(ownerId);
-  const scopedOwnerId = isValidUuid(ownerId) ? ownerId : null;
+  const { hasInvalidOwnerId, scopedOwnerId } = resolvePublicOwnerScope(ownerId);
 
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [arenaName, setArenaName] = useState('Esportiz Arena');
-  const [courts, setCourts] = useState<Court[]>([]);
-  const [reservations, setReservations] = useState<DBReservation[]>([]);
+  const [courts, setCourts] = useState<PublicCourt[]>([]);
+  const [reservations, setReservations] = useState<PublicReservation[]>([]);
   const [successData, setSuccessData] = useState<BookingSuccessData | null>(null);
 
   // Booking Flow Steps: 1 = Court & Time Selection, 2 = Customer Registration
@@ -152,57 +94,7 @@ export default function OnlineBookingPage() {
           setArenaName(data.arena_name || 'Esportiz Arena');
           
           // Map DB Modalities into Court objects
-          const mappedCourts = (data.courts || []).map((c: PublicCourtRecord) => {
-            let meta: CourtMetadata = {
-              sportType: 'futevolei',
-              coverage: 'open',
-              pricePerHour: 80,
-              openingTime: '07:00',
-              closingTime: '23:00',
-              daysOfWeek: [0, 1, 2, 3, 4, 5, 6],
-              usePeakPricing: false,
-              peakPrice: 0,
-              peakStart: '18:00',
-              peakEnd: '22:00'
-            };
-            try {
-              if (c.metadata) {
-                const parsed = typeof c.metadata === 'string' ? JSON.parse(c.metadata) : c.metadata;
-                if (isRecord(parsed)) {
-                  meta = {
-                    sportType: getStringValue(parsed.sportType, meta.sportType),
-                    coverage: getStringValue(parsed.coverage, meta.coverage),
-                    pricePerHour: getNumberValue(parsed.pricePerHour, meta.pricePerHour),
-                    openingTime: getStringValue(parsed.openingTime, meta.openingTime),
-                    closingTime: getStringValue(parsed.closingTime, meta.closingTime),
-                    daysOfWeek: getNumberArrayValue(parsed.daysOfWeek, meta.daysOfWeek),
-                    usePeakPricing: getBooleanValue(parsed.usePeakPricing, meta.usePeakPricing),
-                    peakPrice: getNumberValue(parsed.peakPrice, meta.peakPrice),
-                    peakStart: getStringValue(parsed.peakStart, meta.peakStart),
-                    peakEnd: getStringValue(parsed.peakEnd, meta.peakEnd),
-                  };
-                }
-              }
-            } catch (e) {
-              console.error('Error parsing court metadata:', e);
-            }
-
-            return {
-              id: c.id,
-              name: c.name,
-              color: c.color || '#1DB874',
-              sportType: meta.sportType,
-              coverage: meta.coverage,
-              pricePerHour: Number(meta.pricePerHour || 80),
-              openingTime: meta.openingTime || '07:00',
-              closingTime: meta.closingTime || '23:00',
-              daysOfWeek: meta.daysOfWeek || [0, 1, 2, 3, 4, 5, 6],
-              usePeakPricing: meta.usePeakPricing || false,
-              peakPrice: Number(meta.peakPrice || 0),
-              peakStart: meta.peakStart || '18:00',
-              peakEnd: meta.peakEnd || '22:00'
-            };
-          });
+          const mappedCourts = (data.courts || []).map((court: PublicCourtRecord) => mapPublicCourtRecord(court));
 
           setCourts(mappedCourts);
           if (mappedCourts.length > 0) {
@@ -233,27 +125,8 @@ export default function OnlineBookingPage() {
     setPhone(formatBrazilPhone(val));
   };
 
-  // Helper: check time intervals overlaps
-  const parseTimeToMinutes = (t: string) => {
-    const [h, m] = t.split(':').map(Number);
-    return h * 60 + (m || 0);
-  };
-
   const isSlotBusy = (courtId: string, date: string, slotTime: string, duration: number) => {
-    const slotStart = parseTimeToMinutes(slotTime);
-    const slotEnd = slotStart + duration;
-
-    return reservations.some((res) => {
-      if (res.courtId !== courtId) return false;
-      if (res.date !== date) return false;
-      if (res.status === 'cancelled') return false;
-
-      const resStart = parseTimeToMinutes(res.time);
-      const resEnd = resStart + (res.durationMinutes || 60);
-
-      // Overlap formula: (start1 < end2) AND (end1 > start2)
-      return resStart < slotEnd && resEnd > slotStart;
-    });
+    return isPublicReservationSlotBusy(reservations, courtId, date, slotTime, duration);
   };
 
   // Generate dynamic hourly slots for the selected court
@@ -292,16 +165,9 @@ export default function OnlineBookingPage() {
 
   const selectedCourt = courts.find((c) => c.id === selectedCourtId);
 
-  const getCalculatedPrice = (court: Court | undefined, timeSlot: string) => {
-    if (!court) return 80;
-    let price = court.pricePerHour;
-    if (court.usePeakPricing && court.peakPrice && court.peakStart && court.peakEnd) {
-      if (timeSlot >= court.peakStart && timeSlot < court.peakEnd) {
-        price = court.peakPrice;
-      }
-    }
-    return price;
-  };
+  const getCalculatedPrice = (court: PublicCourt | undefined, timeSlot: string) => (
+    getPublicCourtPriceForTime(court, timeSlot)
+  );
 
   const handleNextStep = (e: React.FormEvent) => {
     e.preventDefault();

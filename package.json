@@ -10,6 +10,8 @@
     "lint": "eslint .",
     "lint:json": "eslint . -f json -o lint.json",
     "preview": "vite preview",
+    "typecheck": "tsc -p tsconfig.app.json --noEmit",
+    "check:regression": "npm run lint && npm run typecheck && npm test && npm run build",
     "test": "vitest run",
     "test:watch": "vitest"
   },

@@ -13,11 +13,11 @@ import {
 import { formatCurrency } from '@/lib/formatCurrency';
 import { cn } from '@/lib/utils';
 import { getLocalTodayDate } from '@/lib/dateUtils';
+import { resolvePublicOwnerScope } from '@/lib/publicAccessContracts';
 import {
   formatCpf,
   isTodayOrPastDate,
   isValidCpf,
-  isValidUuid,
 } from '@/lib/publicPortalSecurity';
 
 interface AttendanceLog {
@@ -71,8 +71,7 @@ const monthNames = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 
 export default function StudentPortalPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const ownerId = searchParams.get('ct');
-  const hasInvalidOwnerId = ownerId !== null && !isValidUuid(ownerId);
-  const scopedOwnerId = isValidUuid(ownerId) ? ownerId : null;
+  const { hasInvalidOwnerId, scopedOwnerId } = resolvePublicOwnerScope(ownerId);
 
   const [loading, setLoading] = useState(true);
   const [authenticating, setAuthenticating] = useState(false);

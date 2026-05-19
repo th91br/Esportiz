@@ -1108,6 +1108,14 @@ export type Database = {
         }
         Returns: Json
       }
+      add_arena_partial_payment_atomic: {
+        Args: {
+          p_amount: number
+          p_method: string
+          p_reservation_id: string
+        }
+        Returns: Json
+      }
       sync_all_unpaid_payments_for_plan: {
         Args: {
           p_plan_id: string

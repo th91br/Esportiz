@@ -9,6 +9,7 @@ import { toast } from "@/hooks/use-toast";
 import { Eye, EyeOff, LogIn, UserPlus, ArrowLeft, Mail } from "lucide-react";
 import loginBg from "@/assets/login-bg.jpg";
 import { Logo } from "@/components/Logo";
+import { getErrorMessage } from "@/lib/errorUtils";
 
 type View = "login" | "signup" | "forgot";
 
@@ -107,10 +108,11 @@ export default function LoginPage() {
         description: "Um novo link de confirmacao foi enviado para sua caixa de entrada.",
       });
       setResendCountdown(60);
-    } catch (error: any) {
-      let description = error.message;
+    } catch (error: unknown) {
+      const message = getErrorMessage(error);
+      let description = message;
 
-      if (error.message.includes("rate limit")) {
+      if (message.includes("rate limit")) {
         description = "Muitas solicitacoes recentes. Aguarde um minuto antes de tentar novamente.";
       }
 
@@ -138,13 +140,14 @@ export default function LoginPage() {
     try {
       const { error } = await signIn(email, password);
       if (error) throw error;
-    } catch (error: any) {
+    } catch (error: unknown) {
       let title = "Erro ao entrar";
-      let description = error.message;
+      const message = getErrorMessage(error);
+      let description = message;
 
-      if (error.message === "Invalid login credentials") {
+      if (message === "Invalid login credentials") {
         description = "E-mail ou senha incorretos.";
-      } else if (error.message === "Email not confirmed") {
+      } else if (message === "Email not confirmed") {
         title = "Confirme seu e-mail";
         description = "Sua conta foi criada, mas o e-mail ainda nao foi confirmado.";
         setUnconfirmedEmail(email);
@@ -198,12 +201,13 @@ export default function LoginPage() {
       setView("login");
       syncMode("login");
       setUnconfirmedEmail(createdEmail);
-    } catch (error: any) {
-      let errorMessage = error.message;
+    } catch (error: unknown) {
+      const message = getErrorMessage(error);
+      let errorMessage = message;
 
-      if (error.message === "User already registered") {
+      if (message === "User already registered") {
         errorMessage = "Este e-mail ja esta cadastrado.";
-      } else if (error.message.includes("rate limit exceeded")) {
+      } else if (message.includes("rate limit exceeded")) {
         errorMessage = "O limite momentaneo de cadastros foi atingido. Tente novamente em alguns minutos.";
       }
 
@@ -234,10 +238,10 @@ export default function LoginPage() {
 
       if (error) throw error;
       setForgotSent(true);
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast({
         title: "Erro ao enviar e-mail",
-        description: error.message,
+        description: getErrorMessage(error),
         variant: "destructive",
       });
     } finally {

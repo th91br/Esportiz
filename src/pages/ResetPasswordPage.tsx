@@ -8,6 +8,7 @@ import { Eye, EyeOff, KeyRound } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import loginBg from '@/assets/login-bg.jpg';
 import { Logo } from '@/components/Logo';
+import { getErrorMessage } from '@/lib/errorUtils';
 
 export default function ResetPasswordPage() {
   const navigate = useNavigate();
@@ -49,8 +50,8 @@ export default function ResetPasswordPage() {
       if (error) throw error;
       toast({ title: 'Senha atualizada com sucesso!' });
       navigate('/');
-    } catch (err: any) {
-      toast({ title: 'Erro ao atualizar senha', description: err.message, variant: 'destructive' });
+    } catch (err: unknown) {
+      toast({ title: 'Erro ao atualizar senha', description: getErrorMessage(err), variant: 'destructive' });
     } finally {
       setLoading(false);
     }

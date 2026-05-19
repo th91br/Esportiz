@@ -6,6 +6,35 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
+type GoogleCalendarAttendee = {
+  displayName?: string
+  email?: string
+  self?: boolean
+}
+
+type GoogleCalendarEvent = {
+  attendees?: GoogleCalendarAttendee[]
+}
+
+type GoogleCalendarResponse = {
+  items?: GoogleCalendarEvent[]
+}
+
+type SyncedStudent = {
+  email: string
+  name: string
+}
+
+type GoogleApiErrorResponse = {
+  error?: {
+    message?: string
+  }
+}
+
+function getErrorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : 'Unknown error'
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
@@ -53,19 +82,19 @@ serve(async (req) => {
     )
 
     if (!calendarResponse.ok) {
-      const errorData = await calendarResponse.json()
+      const errorData = await calendarResponse.json() as GoogleApiErrorResponse
       console.error('Google API Error:', errorData)
       throw new Error(`Google API returned ${calendarResponse.status}: ${errorData.error?.message || 'Unknown error'}`)
     }
 
-    const calendarData = await calendarResponse.json()
+    const calendarData = await calendarResponse.json() as GoogleCalendarResponse
     const events = calendarData.items || []
 
     // 3. Extract unique attendees (excluding the user themselves)
-    const attendeesMap = new Map()
-    events.forEach((event: any) => {
+    const attendeesMap = new Map<string, SyncedStudent>()
+    events.forEach((event) => {
       if (event.attendees) {
-        event.attendees.forEach((attendee: any) => {
+        event.attendees.forEach((attendee) => {
           if (attendee.email && !attendee.self) {
             attendeesMap.set(attendee.email, {
               name: attendee.displayName || attendee.email.split('@')[0],
@@ -108,7 +137,7 @@ serve(async (req) => {
     })
   } catch (error) {
     console.error('Sync Error:', error)
-    return new Response(JSON.stringify({ error: error.message }), {
+    return new Response(JSON.stringify({ error: getErrorMessage(error) }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 400,
     })

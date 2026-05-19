@@ -165,6 +165,28 @@ export function useReservations() {
     onError: (error: unknown) => toast.error('Erro ao atualizar pagamento da reserva: ' + getErrorMessage(error)),
   });
 
+  const addPartialPayment = useMutation({
+    mutationFn: async (params: {
+      id: string;
+      amount: number;
+      method: PaymentMethod;
+    }) => {
+      if (!user) throw new Error('Nao autenticado');
+      const { error } = await supabase.rpc('add_arena_partial_payment_atomic', {
+        p_reservation_id: params.id,
+        p_amount: params.amount,
+        p_method: params.method,
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['reservations'] });
+      queryClient.invalidateQueries({ queryKey: ['trainings'] });
+      toast.success('Pagamento parcial registrado com sucesso!');
+    },
+    onError: (error: unknown) => toast.error('Erro ao registrar pagamento: ' + getErrorMessage(error)),
+  });
+
   return {
     reservations,
     loadingReservations,
@@ -172,5 +194,6 @@ export function useReservations() {
     updateReservation: updateReservation.mutateAsync,
     deleteReservation: deleteReservation.mutateAsync,
     setReservationPaymentStatus: setReservationPaymentStatus.mutateAsync,
+    addPartialPayment: addPartialPayment.mutateAsync,
   };
 }

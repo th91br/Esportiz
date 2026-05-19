@@ -3,13 +3,15 @@ import { Header } from '@/components/Header';
 import { useStudents } from '@/hooks/queries/useStudents';
 import { usePlans } from '@/hooks/queries/usePlans';
 import { usePayments } from '@/hooks/queries/usePayments';
-import { useReservations } from '@/hooks/queries/useReservations';
+import { useReservations, type Reservation } from '@/hooks/queries/useReservations';
 import { useCourts } from '@/hooks/queries/useCourts';
 import { usePrivacyMode } from '@/hooks/usePrivacyMode';
 import { formatCurrency } from '@/lib/formatCurrency';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
+import { ArenaPartialPaymentDialog } from '@/components/arena/ArenaPartialPaymentDialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Check, X, DollarSign, AlertTriangle, Clock, TrendingUp, Eye, EyeOff, Percent, Trash2, Download, Search, CalendarDays } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -51,6 +53,10 @@ export default function PaymentsPage() {
 
   // Seleção em lote (Batch Payments)
   const [selectedPayments, setSelectedPayments] = useState<string[]>([]);
+  
+  // Arena Payment Dialog State
+  const [arenaPaymentDialogRes, setArenaPaymentDialogRes] = useState<Reservation | null>(null);
+
   useEffect(() => {
     setSelectedPayments([]);
   }, [searchTerm, activeSubTab]);
@@ -369,6 +375,11 @@ export default function PaymentsPage() {
                             Pago via {reservation.paymentMethod.toUpperCase()}
                           </span>
                         )}
+                        {status === 'pending' && reservation.totalPaid > 0 && (
+                          <span className="text-emerald-600 dark:text-emerald-400 font-medium text-xs">
+                            Já Pago: {formatCurrency(reservation.totalPaid)} | Falta: {formatCurrency(reservation.remainingBalance)}
+                          </span>
+                        )}
                       </div>
                     </div>
                     <div className="flex items-center gap-2 self-stretch sm:self-auto justify-end mt-2 sm:mt-0">
@@ -379,7 +390,13 @@ export default function PaymentsPage() {
                           'text-xs font-bold w-full sm:w-auto',
                           status === 'paid' ? 'text-muted-foreground hover:bg-destructive/5 hover:text-destructive' : 'btn-primary-gradient'
                         )}
-                        onClick={() => handleToggleReservationPayment(reservation)}
+                        onClick={() => {
+                          if (status === 'paid') {
+                            handleToggleReservationPayment(reservation);
+                          } else {
+                            setArenaPaymentDialogRes(reservation);
+                          }
+                        }}
                       >
                         {status === 'paid' ? (
                           <>
@@ -645,6 +662,14 @@ export default function PaymentsPage() {
           </Dialog>
         )}
       </main>
+
+      <ArenaPartialPaymentDialog
+        reservation={arenaPaymentDialogRes}
+        open={!!arenaPaymentDialogRes}
+        onOpenChange={(open) => {
+          if (!open) setArenaPaymentDialogRes(null);
+        }}
+      />
     </div>
   );
 }

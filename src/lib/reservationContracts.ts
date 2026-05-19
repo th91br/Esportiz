@@ -18,6 +18,13 @@ export const RESERVATION_TYPE_LABELS: Record<ReservationType, string> = {
   blocked: '🔒 Bloquear Horário / Fechar Quadra',
 };
 
+export interface PartialPayment {
+  id: string;
+  amount: number;
+  method: PaymentMethod;
+  date: string;
+}
+
 export interface ReservationMeta {
   price: number;
   discount: number;
@@ -29,6 +36,7 @@ export interface ReservationMeta {
   online?: boolean;
   paymentUpdatedAt?: string;
   paymentPaidAt?: string;
+  partialPayments?: PartialPayment[];
 }
 
 export interface Reservation {
@@ -50,6 +58,9 @@ export interface Reservation {
   online?: boolean;
   paymentUpdatedAt?: string;
   paymentPaidAt?: string;
+  partialPayments?: PartialPayment[];
+  totalPaid: number;
+  remainingBalance: number;
 }
 
 export interface AddReservationInput {
@@ -74,6 +85,7 @@ const DEFAULT_META: ReservationMeta = {
   paymentMethod: 'pix',
   paymentStatus: 'pending',
   status: 'confirmed',
+  partialPayments: [],
 };
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -112,6 +124,14 @@ export function parseReservationMeta(raw: Json | string | null | undefined): Res
       ? 0
       : Math.max(0, asNumber(parsed.finalPrice, DEFAULT_META.finalPrice));
 
+    const rawPartialPayments = Array.isArray(parsed.partialPayments) ? parsed.partialPayments : [];
+    const partialPayments: PartialPayment[] = rawPartialPayments.map((p: any) => ({
+      id: typeof p.id === 'string' ? p.id : (typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).substring(2, 15)),
+      amount: asNumber(p.amount, 0),
+      method: asPaymentMethod(p.method),
+      date: typeof p.date === 'string' ? p.date : new Date().toISOString(),
+    }));
+
     return {
       price: reservationType === 'blocked' ? 0 : Math.max(0, asNumber(parsed.price, DEFAULT_META.price)),
       discount: reservationType === 'blocked' ? 0 : Math.max(0, asNumber(parsed.discount, DEFAULT_META.discount)),
@@ -123,6 +143,7 @@ export function parseReservationMeta(raw: Json | string | null | undefined): Res
       online: parsed.online === true,
       paymentUpdatedAt: typeof parsed.paymentUpdatedAt === 'string' ? parsed.paymentUpdatedAt : undefined,
       paymentPaidAt: typeof parsed.paymentPaidAt === 'string' ? parsed.paymentPaidAt : undefined,
+      partialPayments,
     };
   } catch {
     return { ...DEFAULT_META };
@@ -131,6 +152,9 @@ export function parseReservationMeta(raw: Json | string | null | undefined): Res
 
 export function toReservation(row: TrainingRowWithStudents): Reservation {
   const meta = parseReservationMeta(row.metadata);
+  const totalPaid = (meta.partialPayments || []).reduce((sum, p) => sum + p.amount, 0);
+  const remainingBalance = Math.max(0, meta.finalPrice - totalPaid);
+
   return {
     id: row.id,
     date: row.date,
@@ -143,5 +167,7 @@ export function toReservation(row: TrainingRowWithStudents): Reservation {
     notes: row.notes || '',
     completed: row.completed || false,
     ...meta,
+    totalPaid,
+    remainingBalance,
   };
 }

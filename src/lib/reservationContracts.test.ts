@@ -37,6 +37,7 @@ describe('reservationContracts', () => {
       paymentMethod: 'pix',
       paymentStatus: 'pending',
       status: 'confirmed',
+      partialPayments: [],
     });
 
     expect(parseReservationMeta('not-json')).toEqual({
@@ -47,6 +48,7 @@ describe('reservationContracts', () => {
       paymentMethod: 'pix',
       paymentStatus: 'pending',
       status: 'confirmed',
+      partialPayments: [],
     });
   });
 
@@ -73,6 +75,7 @@ describe('reservationContracts', () => {
       online: true,
       paymentUpdatedAt: '2026-05-18T10:00:00+00:00',
       paymentPaidAt: '2026-05-18T10:01:00+00:00',
+      partialPayments: [],
     });
   });
 
@@ -92,6 +95,7 @@ describe('reservationContracts', () => {
       reservationType: 'blocked',
       paymentStatus: 'paid',
       status: 'confirmed',
+      partialPayments: [],
     });
   });
 
@@ -112,6 +116,7 @@ describe('reservationContracts', () => {
       paymentMethod: 'pix',
       paymentStatus: 'paid',
       status: 'confirmed',
+      partialPayments: [],
     });
   });
 

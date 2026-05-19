@@ -89,10 +89,10 @@ export function NotificationBell() {
   const overduePayments = useMemo(() => {
     if (isArena) {
       return reservations
-        .filter((r) => r.paymentStatus === 'pending' && r.date < today)
+        .filter((r) => r.paymentStatus === 'pending' && r.date < today && r.remainingBalance > 0)
         .map(r => ({
           id: r.id,
-          amount: r.finalPrice,
+          amount: r.remainingBalance,
           studentId: r.reservanteIds[0] || '',
           dueDate: r.date,
           paid: false,
@@ -116,10 +116,10 @@ export function NotificationBell() {
   const upcomingPayments = useMemo(() => {
     if (isArena) {
       return reservations
-        .filter((r) => r.paymentStatus === 'pending' && (r.date === today || r.date === tomorrow))
+        .filter((r) => r.paymentStatus === 'pending' && (r.date === today || r.date === tomorrow) && r.remainingBalance > 0)
         .map(r => ({
           id: r.id,
-          amount: r.finalPrice,
+          amount: r.remainingBalance,
           studentId: r.reservanteIds[0] || '',
           dueDate: r.date,
           paid: false,

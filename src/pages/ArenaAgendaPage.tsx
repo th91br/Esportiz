@@ -25,6 +25,7 @@ import { cn } from '@/lib/utils';
 import { formatCurrency } from '@/lib/formatCurrency';
 import { getLocalTodayDate, toLocalDateString } from '@/lib/dateUtils';
 import { PAYMENT_METHOD_LABELS } from '@/hooks/queries/useReservations';
+import { ArenaPartialPaymentDialog } from '@/components/arena/ArenaPartialPaymentDialog';
 
 const HOURS = Array.from({ length: 16 }, (_, i) => i + 7); // 7 → 22
 
@@ -264,6 +265,7 @@ export default function ArenaAgendaPage() {
   const [selectedReservation, setSelectedReservation] = useState<Reservation | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [pendingPaymentsOpen, setPendingPaymentsOpen] = useState(false);
+  const [paymentDialogRes, setPaymentDialogRes] = useState<Reservation | null>(null);
 
   // States for block entire day feature
   const [blockDayOpen, setBlockDayOpen] = useState(false);
@@ -392,17 +394,7 @@ export default function ArenaAgendaPage() {
   };
 
   const handleMarkAsPaid = async (r: Reservation) => {
-    try {
-      await setReservationPaymentStatus({
-        id: r.id,
-        paymentStatus: 'paid',
-        paymentMethod: r.paymentMethod,
-      });
-      toast.success('Recebimento confirmado com sucesso!');
-    } catch (err) {
-      console.error('Erro ao dar baixa:', err);
-      toast.error('Ocorreu um erro ao processar o pagamento.');
-    }
+    setPaymentDialogRes(r);
   };
 
   const handleChargeClient = (r: Reservation) => {
@@ -805,6 +797,14 @@ export default function ArenaAgendaPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <ArenaPartialPaymentDialog
+        reservation={paymentDialogRes}
+        open={!!paymentDialogRes}
+        onOpenChange={(open) => {
+          if (!open) setPaymentDialogRes(null);
+        }}
+      />
 
       {/* Block Day Dialog */}
       <Dialog open={blockDayOpen} onOpenChange={setBlockDayOpen}>

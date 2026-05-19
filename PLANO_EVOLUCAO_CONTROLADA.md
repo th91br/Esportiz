@@ -1290,3 +1290,68 @@ Observacoes:
 Proxima etapa recomendada:
 
 - Fase 10: fechamento do ciclo com revisao final de release, checklist de deploy controlado e decisao de publicacao/rollback.
+
+## Registro da Fase 10
+
+Status: concluida com seguranca; ciclo de evolucao controlada fechado com guia de deploy, rollback e validacao final.
+
+Objetivo:
+
+- Consolidar o caminho profissional para publicar o Esportiz sem improviso.
+- Definir criterios objetivos de `GO`, `NO-GO` e `GO COM OBSERVACAO`.
+- Separar claramente validacao local, migrations, deploy de frontend, smoke test de producao e rollback.
+- Garantir que a evolucao das fases anteriores esteja acompanhada de um processo operacional seguro.
+
+Decisao de seguranca:
+
+- Nenhum deploy foi executado nesta fase.
+- Nenhuma migration SQL foi criada ou executada nesta fase.
+- Nenhum dado real foi criado, editado, excluido, baixado ou estornado.
+- A validacao foi tecnica e documental, usando a rotina de regressao consolidada na Fase 9.8.
+
+Escopo executado:
+
+- Criado `DEPLOY_CONTROLADO.md` com:
+  - principios de publicacao segura;
+  - checklist antes de publicar;
+  - cuidados com migrations SQL;
+  - sequencia de deploy;
+  - criterios de `GO` e `NO-GO`;
+  - rollback de frontend;
+  - rollback de banco;
+  - smoke test de producao somente leitura;
+  - comunicacao de incidente;
+  - matriz de status de release.
+- Confirmado que `REGRESSAO_PROFISSIONAL.md` segue como roteiro de validacao manual antes de deploy.
+- Confirmado que `npm run check:regression` segue como comando tecnico unico de liberacao.
+
+Validacoes executadas:
+
+- `npm run check:regression`: passou de ponta a ponta.
+- `npm run lint`: passou sem erros; restam 10 avisos conhecidos de Fast Refresh/estrutura de componentes UI.
+- `npm run typecheck`: passou sem erros.
+- `npm test`: passou com 11 arquivos e 52 testes reais.
+- `npm run build`: passou.
+
+Observacoes:
+
+- O build manteve apenas os avisos ja conhecidos de chunk grande e import dinamico/estatico do cliente Supabase.
+- Os avisos de Fast Refresh no lint nao bloqueiam deploy, mas seguem mapeados para futura limpeza tecnica de componentes UI.
+- O arquivo `public/landing-v2.html` ja estava modificado no worktree antes desta fase e nao foi alterado durante a Fase 10.
+
+Conclusao do ciclo:
+
+- O sistema ficou com:
+  - contratos de negocio mais testaveis;
+  - portais publicos mais protegidos;
+  - financeiro, reservas, comercio e vinculos com testes automatizados;
+  - rotina profissional de regressao;
+  - guia formal de deploy e rollback.
+- A partir daqui, qualquer publicacao deve seguir:
+  - `REGRESSAO_PROFISSIONAL.md`;
+  - `DEPLOY_CONTROLADO.md`;
+  - `npm run check:regression`.
+
+Proxima etapa recomendada:
+
+- Antes de publicar: revisar o diff final, separar alteracoes que devem entrar no release, confirmar migrations ja aplicadas no Supabase e decidir `GO/NO-GO` para deploy.

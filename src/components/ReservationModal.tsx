@@ -17,7 +17,7 @@ import {
   RESERVATION_TYPE_LABELS,
 } from '@/hooks/queries/useReservations';
 import { toast } from 'sonner';
-import { CalendarDays, Clock, User, DollarSign, Search } from 'lucide-react';
+import { CalendarDays, Clock, User, DollarSign, Search, AlertTriangle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { getLocalTodayDate } from '@/lib/dateUtils';
 
@@ -177,6 +177,9 @@ export function ReservationModal({
 
   const selectedReservante = students.find(s => s.id === reservanteId);
 
+  const todayStr = getLocalTodayDate();
+  const isRetroactive = date < todayStr || (date === todayStr && time < new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }));
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-lg max-h-[92vh] overflow-y-auto">
@@ -188,6 +191,16 @@ export function ReservationModal({
             {isEditing ? 'Atualize os dados da reserva.' : 'Preencha os dados para criar uma nova reserva.'}
           </DialogDescription>
         </DialogHeader>
+
+        {isRetroactive && (
+          <div className="bg-amber-500/10 border border-amber-500/20 text-amber-700 dark:text-amber-400 p-3 rounded-lg flex items-start gap-2.5 mt-2">
+            <AlertTriangle className="h-5 w-5 shrink-0 mt-0.5" />
+            <div className="text-sm">
+              <p className="font-bold">Aviso: Lançamento Retroativo</p>
+              <p className="opacity-90 text-xs">Você está agendando ou editando um horário no passado.</p>
+            </div>
+          </div>
+        )}
 
         <div className="space-y-5 mt-2">
           {/* Quadra */}

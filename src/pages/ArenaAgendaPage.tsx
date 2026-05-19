@@ -378,6 +378,7 @@ export default function ArenaAgendaPage() {
   };
 
   const isToday = selectedDate === getLocalTodayDate();
+  const currentHour = new Date().getHours();
 
   const openNewReservation = (courtId: string, hour: number) => {
     setEditingReservationId(undefined);
@@ -584,9 +585,10 @@ export default function ArenaAgendaPage() {
                   const reservante = reservation && reservation.reservanteIds && reservation.reservanteIds.length > 0
                     ? studentMap.get(reservation.reservanteIds[0])
                     : null;
+                  const isPastSlot = isToday && hour < currentHour;
 
                   return (
-                    <div key={court.id} className="border-r border-border/30 last:border-r-0 min-h-[56px] relative">
+                    <div key={court.id} className={cn("border-r border-border/30 last:border-r-0 min-h-[56px] relative transition-all", isPastSlot && !reservation && "bg-muted/10 opacity-60 grayscale hover:opacity-100", isPastSlot && reservation && "opacity-75 hover:opacity-100")}>
                       {reservation ? (
                         <button
                           className={cn(

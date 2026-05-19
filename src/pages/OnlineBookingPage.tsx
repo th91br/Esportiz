@@ -22,6 +22,7 @@ import {
   normalizePublicEmail,
   normalizePublicName,
 } from '@/lib/publicPortalSecurity';
+import { getLocalTodayDate } from '@/lib/dateUtils';
 
 interface Court {
   id: string;
@@ -270,7 +271,15 @@ export default function OnlineBookingPage() {
       const min = m % 60;
       const slotTimeStr = `${String(h).padStart(2, '0')}:${String(min).padStart(2, '0')}`;
       
-      const busy = isSlotBusy(selectedCourtId, selectedDate, slotTimeStr, selectedDuration);
+      let busy = isSlotBusy(selectedCourtId, selectedDate, slotTimeStr, selectedDuration);
+
+      // Strict Block for past hours if the selected date is today
+      if (!busy && selectedDate === getLocalTodayDate()) {
+        const currentHour = new Date().getHours();
+        if (h <= currentHour) {
+          busy = true;
+        }
+      }
 
       slots.push({
         time: slotTimeStr,

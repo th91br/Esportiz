@@ -228,7 +228,7 @@ export default function ExpensesPage() {
                     autoFocus
                   />
                 </div>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="exp-amount">Valor (R$) *</Label>
                     <Input
@@ -251,7 +251,7 @@ export default function ExpensesPage() {
                     />
                   </div>
                 </div>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label>Categoria</Label>
                     <Select value={formCategory} onValueChange={setFormCategory}>

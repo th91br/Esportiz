@@ -4,6 +4,12 @@ import { toast } from '@/hooks/use-toast';
 import type { Training, TimeSlot } from '@/data/mockData';
 import { useAuth } from '@/contexts/AuthContext';
 import { useProfile } from '@/hooks/queries/useProfile';
+import { syncAfterScheduleMutation } from '@/lib/querySync';
+import type { Tables, TablesInsert, TablesUpdate } from '@/integrations/supabase/types';
+
+type TrainingRowWithStudents = Tables<'trainings'> & {
+    training_students?: Pick<Tables<'training_students'>, 'student_id'>[] | null;
+};
 
 export function useTrainings() {
     const queryClient = useQueryClient();
@@ -24,11 +30,11 @@ export function useTrainings() {
                 .order('time');
 
             if (error) throw error;
-            return data.map((t: any) => ({
+            return ((data || []) as TrainingRowWithStudents[]).map((t) => ({
                 id: t.id,
                 date: t.date,
                 time: t.time as TimeSlot,
-                studentIds: (t.training_students || []).map((ts: any) => ts.student_id),
+                studentIds: (t.training_students || []).map((ts) => ts.student_id),
                 location: t.location,
                 notes: t.notes,
                 completed: t.completed ?? false,
@@ -60,18 +66,19 @@ export function useTrainings() {
             if (error || !training) throw error || new Error('Treino não criado');
 
             if (data.studentIds && data.studentIds.length > 0) {
+                const trainingStudents: TablesInsert<'training_students'>[] = data.studentIds.map((sid) => ({
+                    training_id: training.id,
+                    student_id: sid,
+                    user_id: user.id,
+                }));
                 const { error: tsError } = await supabase.from('training_students').insert(
-                    data.studentIds.map((sid) => ({ 
-                        training_id: training.id, 
-                        student_id: sid,
-                        user_id: user.id 
-                    }))
+                    trainingStudents
                 );
                 if (tsError) throw tsError;
             }
         },
         onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['trainings'] });
+            syncAfterScheduleMutation(queryClient);
         },
         onError: (error: Error) => {
             toast({ title: 'Erro ao criar treino', description: error.message, variant: 'destructive' });
@@ -80,8 +87,9 @@ export function useTrainings() {
 
     const updateTrainingMutation = useMutation({
         mutationFn: async (params: { id: string; data: Partial<Training> }) => {
+            if (!user) throw new Error('Usuário não autenticado');
             const { id, data } = params;
-            const updates: any = {};
+            const updates: TablesUpdate<'trainings'> = {};
 
             if (data.date !== undefined) updates.date = data.date;
             if (data.time !== undefined) updates.time = data.time;
@@ -98,19 +106,20 @@ export function useTrainings() {
             if (data.studentIds) {
                 await supabase.from('training_students').delete().eq('training_id', id);
                 if (data.studentIds.length > 0) {
+                    const trainingStudents: TablesInsert<'training_students'>[] = data.studentIds.map((sid) => ({
+                        training_id: id,
+                        student_id: sid,
+                        user_id: user.id,
+                    }));
                     const { error: tsError } = await supabase.from('training_students').insert(
-                        data.studentIds.map((sid) => ({ 
-                            training_id: id, 
-                            student_id: sid,
-                            user_id: user.id
-                        }))
+                        trainingStudents
                     );
                     if (tsError) throw tsError;
                 }
             }
         },
         onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['trainings'] });
+            syncAfterScheduleMutation(queryClient);
         },
         onError: (error: Error) => {
             toast({ title: 'Erro ao atualizar treino', description: error.message, variant: 'destructive' });
@@ -123,8 +132,7 @@ export function useTrainings() {
             if (error) throw error;
         },
         onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['trainings'] });
-            queryClient.invalidateQueries({ queryKey: ['attendance'] });
+            syncAfterScheduleMutation(queryClient);
         },
         onError: (error: Error) => {
             toast({ title: 'Erro ao remover treino', description: error.message, variant: 'destructive' });
@@ -133,14 +141,18 @@ export function useTrainings() {
 
     const markCompleteMutation = useMutation({
         mutationFn: async (id: string) => {
+            const completedUpdate: TablesUpdate<'trainings'> = {
+                completed: true,
+                completed_at: new Date().toISOString(),
+            };
             const { error } = await supabase
                 .from('trainings')
-                .update({ completed: true, completed_at: new Date().toISOString() } as any)
+                .update(completedUpdate)
                 .eq('id', id);
             if (error) throw error;
         },
         onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['trainings'] });
+            syncAfterScheduleMutation(queryClient);
         },
         onError: (error: Error) => {
             toast({ title: 'Erro ao marcar treino', description: error.message, variant: 'destructive' });
@@ -149,14 +161,18 @@ export function useTrainings() {
 
     const unmarkCompleteMutation = useMutation({
         mutationFn: async (id: string) => {
+            const completedUpdate: TablesUpdate<'trainings'> = {
+                completed: false,
+                completed_at: null,
+            };
             const { error } = await supabase
                 .from('trainings')
-                .update({ completed: false, completed_at: null } as any)
+                .update(completedUpdate)
                 .eq('id', id);
             if (error) throw error;
         },
         onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['trainings'] });
+            syncAfterScheduleMutation(queryClient);
         },
         onError: (error: Error) => {
             toast({ title: 'Erro ao desmarcar treino', description: error.message, variant: 'destructive' });

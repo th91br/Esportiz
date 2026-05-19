@@ -226,11 +226,11 @@ export default function ReportsPage() {
   let expectedRevenue = 0;
   let receivedRevenue = 0;
   let overdueRevenue = 0;
-  
+
   const todayDateStr = getLocalTodayDate();
 
   // 1. Mensalidades / Planos (Comum a todos, se houver)
-  filteredPayments.forEach(p => {
+  filteredPayments.forEach((p) => {
     const isMonthlyView = period === 'month' || period === 'year' || period === 'all';
     
     if (isMonthlyView) {
@@ -470,18 +470,18 @@ export default function ReportsPage() {
             <p className="text-muted-foreground mt-1.5 text-sm md:text-base">Métricas, faturamento e engajamento da sua {labels.ctLabelShort.toLowerCase()}.</p>
           </div>
 
-          <div className="flex items-center gap-2 sm:gap-3 bg-muted/30 p-1.5 rounded-xl border border-border/50">
+          <div className="flex w-full items-center gap-2 overflow-x-auto rounded-xl border border-border/50 bg-muted/30 p-1.5 sm:gap-3 md:w-auto">
             <Button variant="ghost" size="icon" className="rounded-lg h-9 w-9 bg-background shadow-sm border border-border/50 hover:bg-muted" onClick={togglePrivacyMode} title={privacyMode ? 'Mostrar dados' : 'Ocultar dados'}>
               {privacyMode ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4 text-primary" />}
             </Button>
             {/* Period Filter */}
-            <div className="flex rounded-lg overflow-hidden border border-border/50 bg-background shadow-sm">
+            <div className="flex min-w-max rounded-lg overflow-hidden border border-border/50 bg-background shadow-sm">
               {(Object.keys(filterLabels) as FilterPeriod[]).map((key) => (
                 <button
                   key={key}
                   onClick={() => setPeriod(key)}
                   className={cn(
-                    'px-3 sm:px-4 py-1.5 text-xs sm:text-sm font-semibold transition-colors',
+                    'whitespace-nowrap px-3 sm:px-4 py-1.5 text-xs sm:text-sm font-semibold transition-colors',
                     period === key
                       ? 'bg-primary text-primary-foreground'
                       : 'hover:bg-muted text-muted-foreground'

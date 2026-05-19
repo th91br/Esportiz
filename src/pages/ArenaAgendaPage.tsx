@@ -120,7 +120,7 @@ _Agradecemos a preferência. Bom jogo!_ 🎾🔥
   };
 
   return (
-    <div className="fixed inset-y-0 right-0 w-80 bg-background border-l shadow-2xl z-50 flex flex-col animate-in slide-in-from-right duration-300">
+    <div className="fixed inset-y-0 right-0 w-full max-w-md bg-background border-l shadow-2xl z-50 flex flex-col animate-in slide-in-from-right duration-300 sm:w-[400px]">
       <div className="p-5 border-b flex items-center justify-between">
         <h3 className="font-display font-bold text-lg">
           {isBlocked ? 'Detalhes do Bloqueio' : 'Detalhes da Reserva'}
@@ -329,6 +329,7 @@ export default function ArenaAgendaPage() {
 
   const activeCourts = courts.filter(c => c.isActive);
   const displayedCourts = courtFilter === 'all' ? activeCourts : activeCourts.filter(c => c.id === courtFilter);
+  const agendaGridTemplateColumns = `80px repeat(${displayedCourts.length}, minmax(144px, 1fr))`;
 
   const todayReservations = useMemo(() =>
     reservations.filter(r => r.date === selectedDate && r.status !== 'cancelled'),
@@ -502,7 +503,7 @@ export default function ArenaAgendaPage() {
           </div>
 
           {/* Court filter */}
-          <div className="flex gap-1.5 flex-wrap">
+          <div className="flex w-full gap-1.5 overflow-x-auto pb-1 sm:w-auto sm:flex-wrap sm:overflow-visible sm:pb-0">
             <button
               onClick={() => setCourtFilter('all')}
               className={cn(
@@ -556,7 +557,7 @@ export default function ArenaAgendaPage() {
             {/* Header row */}
             <div
               className="grid sticky top-0 z-10 bg-muted/80 backdrop-blur-sm border-b"
-              style={{ gridTemplateColumns: `80px repeat(${displayedCourts.length}, 1fr)` }}
+              style={{ gridTemplateColumns: agendaGridTemplateColumns }}
             >
               <div className="p-3 text-xs font-bold text-muted-foreground uppercase tracking-wider border-r border-border/50">Hora</div>
               {displayedCourts.map(c => (
@@ -577,7 +578,7 @@ export default function ArenaAgendaPage() {
               <div
                 key={hour}
                 className="grid border-b border-border/30 last:border-b-0"
-                style={{ gridTemplateColumns: `80px repeat(${displayedCourts.length}, 1fr)` }}
+                style={{ gridTemplateColumns: agendaGridTemplateColumns }}
               >
                 {/* Hour label */}
                 <div className="p-3 border-r border-border/50 flex items-center">

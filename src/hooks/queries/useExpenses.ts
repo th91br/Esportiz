@@ -4,6 +4,8 @@ import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { useProfile } from '@/hooks/queries/useProfile';
 import { getLocalTodayDate } from '@/lib/dateUtils';
+import { syncAfterExpenseMutation } from '@/lib/querySync';
+import type { Tables, TablesUpdate } from '@/integrations/supabase/types';
 
 export interface Expense {
   id: string;
@@ -20,7 +22,7 @@ export interface Expense {
   updatedAt: string;
 }
 
-function mapExpense(row: any): Expense {
+function mapExpense(row: Tables<'expenses'>): Expense {
   return {
     id: row.id,
     userId: row.user_id,
@@ -83,7 +85,7 @@ export function useExpenses() {
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['expenses', user?.id] });
+      syncAfterExpenseMutation(queryClient);
       toast.success('Despesa registrada com sucesso!');
     },
     onError: () => toast.error('Erro ao registrar despesa.'),
@@ -92,7 +94,7 @@ export function useExpenses() {
   const updateExpenseMutation = useMutation({
     mutationFn: async ({ id, ...updates }: Partial<Expense> & { id: string }) => {
       if (!user?.id) throw new Error('Not authenticated');
-      const dbUpdates: any = { updated_at: new Date().toISOString() };
+      const dbUpdates: TablesUpdate<'expenses'> = { updated_at: new Date().toISOString() };
       if (updates.description !== undefined) dbUpdates.description = updates.description;
       if (updates.amount !== undefined) dbUpdates.amount = updates.amount;
       if (updates.category !== undefined) dbUpdates.category = updates.category;
@@ -111,7 +113,7 @@ export function useExpenses() {
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['expenses', user?.id] });
+      syncAfterExpenseMutation(queryClient);
     },
     onError: () => toast.error('Erro ao atualizar despesa.'),
   });
@@ -127,7 +129,7 @@ export function useExpenses() {
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['expenses', user?.id] });
+      syncAfterExpenseMutation(queryClient);
       toast.success('Despesa removida.');
     },
     onError: () => toast.error('Erro ao remover despesa.'),

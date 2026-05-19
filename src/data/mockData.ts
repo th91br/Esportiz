@@ -9,33 +9,37 @@ export interface Plan {
   billingType: 'monthly' | 'per_session';
 }
 
+export type StudentLevel = 'iniciante' | 'intermediário' | 'avançado';
+export type StudentDiscountType = 'percentage' | 'fixed';
+
 export interface Student {
   id: string;
   name: string;
   phone: string;
-  email: string;
-  level: 'iniciante' | 'intermediário' | 'avançado';
+  email?: string | null;
+  level: StudentLevel;
   joinDate: string;
-  photo?: string;
+  photo?: string | null;
   active: boolean;
-  planId?: string;
-  paymentDueDay?: number;
-  paymentStartDate?: string;
-  birthDate?: string;
-  modalityId?: string;
-  cpf?: string;
-  rg?: string;
-  address?: string;
-  city?: string;
-  state?: string;
-  zipCode?: string;
+  planId?: string | null;
+  paymentDueDay?: number | null;
+  paymentStartDate?: string | null;
+  birthDate?: string | null;
+  modalityId?: string | null;
+  cpf?: string | null;
+  rg?: string | null;
+  address?: string | null;
+  city?: string | null;
+  state?: string | null;
+  zipCode?: string | null;
   isTrial?: boolean;
-  trialStartedAt?: string;
-  trialConvertedAt?: string;
-  discountType?: 'percentage' | 'fixed';
+  trialStartedAt?: string | null;
+  trialConvertedAt?: string | null;
+  groupIds?: string[];
+  discountType?: StudentDiscountType | null;
   discountValue?: number;
-  discountDurationMonths?: number;
-  discountStartMonth?: string;
+  discountDurationMonths?: number | null;
+  discountStartMonth?: string | null;
 }
 
 export interface Payment {
@@ -62,7 +66,7 @@ export const timeSlots: TimeSlot[] = [
   '20:00', '21:00', '22:00', '23:00', '00:00'
 ];
 
-export const getTimePeriod = (time: TimeSlot): 'manhã' | 'tarde' | 'noite' => {
+export const getTimePeriod = (time: TimeSlot | string): 'manhã' | 'tarde' | 'noite' => {
   const hour = parseInt(time.split(':')[0]);
   if (hour >= 6 && hour < 12) return 'manhã';
   if (hour >= 12 && hour < 18) return 'tarde';

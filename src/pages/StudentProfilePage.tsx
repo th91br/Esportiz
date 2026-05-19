@@ -19,11 +19,13 @@ import {
 } from 'lucide-react';
 import { formatCurrency } from '@/lib/formatCurrency';
 import { cn } from '@/lib/utils';
-import { getDayName } from '@/data/mockData';
 import { useBusinessContext } from '@/hooks/useBusinessContext';
 import { getLocalTodayDate } from '@/lib/dateUtils';
 
 const DEFAULT_CONTRACT_CITY = 'Balneario Camboriu';
+const WEEKDAY_NAMES = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sab'];
+
+const getWeekdayLabel = (dayOfWeek: number) => WEEKDAY_NAMES[dayOfWeek] || 'Dia';
 
 export default function StudentProfilePage() {
   const { id } = useParams();
@@ -236,7 +238,7 @@ export default function StudentProfilePage() {
                             <div className="flex flex-wrap gap-1.5">
                               {group.schedule.map((slot, i: number) => (
                                 <span key={i} className="text-xs bg-background border px-2 py-1 rounded-md text-muted-foreground">
-                                  {getDayName(slot.dayOfWeek)} - {slot.time}
+                                  {getWeekdayLabel(slot.dayOfWeek)} - {slot.time}
                                 </span>
                               ))}
                             </div>
@@ -304,7 +306,7 @@ export default function StudentProfilePage() {
                                   )}
                                 </td>
                                 <td className="px-4 py-3 text-muted-foreground">
-                                  {payment.paymentDate ? new Date(payment.paymentDate).toLocaleDateString('pt-BR') : '-'}
+                                  {payment.paidAt ? new Date(payment.paidAt).toLocaleDateString('pt-BR') : '-'}
                                 </td>
                               </tr>
                             );
@@ -348,12 +350,17 @@ export default function StudentProfilePage() {
                         <div className="space-y-3">
                           {studentTrainings.slice(0, 10).map(training => {
                             const record = studentAttendance.find(a => a.trainingId === training.id);
-                            const trainingGroup = groups.find(g => g.id === training.groupId);
+                            const trainingDay = new Date(`${training.date}T12:00:00`).getDay();
+                            const trainingGroup = studentGroups.find((group) =>
+                              group.schedule.some((slot) => slot.dayOfWeek === trainingDay && slot.time === training.time)
+                            );
+                            const trainingModality = training.modalityId ? modalities.find((m) => m.id === training.modalityId) : undefined;
+                            const trainingTitle = trainingGroup?.name || trainingModality?.name || training.location || labels.trainingLabelSingular;
                             
                             return (
                               <div key={training.id} className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-3 rounded-lg border bg-muted/10">
                                 <div className="flex flex-col">
-                                  <span className="font-semibold text-sm">{trainingGroup?.name || labels.trainingLabelSingular}</span>
+                                  <span className="font-semibold text-sm">{trainingTitle}</span>
                                   <span className="text-xs text-muted-foreground">
                                     {new Date(training.date).toLocaleDateString('pt-BR')} às {training.time}
                                   </span>

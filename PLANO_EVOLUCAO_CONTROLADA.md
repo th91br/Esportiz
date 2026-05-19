@@ -493,7 +493,7 @@ Observacoes para fases futuras:
 
 ## Registro da Fase 6.6
 
-Status: concluida localmente; migration pendente de execucao no Supabase.
+Status: concluida; migration executada no Supabase pelo usuario.
 
 Escopo executado:
 
@@ -523,3 +523,616 @@ Validacoes executadas:
 Observacoes para fases futuras:
 
 - A Fase 6.6 cria a trilha de auditoria no banco; uma fase posterior pode exibir esses logs em tela administrativa.
+
+## Registro da Fase 7.1
+
+Status: concluida localmente.
+
+Escopo executado:
+
+- Criada a camada `querySync` para padronizar invalidacao de cache do frontend por dominio operacional.
+- Pagamentos passaram a sincronizar tambem a futura trilha visual de auditoria financeira.
+- Reservas da Arena passaram a sincronizar reservas, agenda/treinos e auditoria financeira pelo mesmo ponto central.
+- Alteracoes em alunos passaram a sincronizar alunos, pagamentos, turmas, agenda e presencas.
+- Alteracoes em planos passaram a sincronizar planos, pagamentos e alunos.
+- Alteracoes em agenda/treinos e presencas passaram a sincronizar calendario, presencas e reservas.
+- Alteracoes em quadras passaram a sincronizar `courts`, `modalities`, reservas e agenda, pois Arena usa a mesma tabela base de modalidades.
+- Alteracoes em turmas passaram a sincronizar turmas e alunos, evitando vinculos antigos na interface.
+- Vendas, produtos, despesas e comandas passaram a usar a camada central de sincronizacao.
+- A geracao de agenda do aluno via RPC agora atualiza calendario/notificacoes imediatamente apos concluir.
+- O sino de notificacoes deixou de invalidar todo o cache global e passou a sincronizar apenas dados de agenda.
+
+Validacoes executadas:
+
+- `npx eslint` nos arquivos novos/sem dividas antigas de `any`: passou.
+- `npm run build`: passou.
+- `npm test`: passou.
+
+Observacoes para fases futuras:
+
+- O lint amplo nos hooks tambem encontrou dividas antigas de `any` em arquivos ja existentes. Elas nao foram tratadas nesta fase para manter o escopo controlado.
+- Uma proxima etapa pode tipar gradualmente esses hooks sem alterar comportamento.
+
+## Registro da Fase 7.2
+
+Status: concluida localmente.
+
+Escopo executado:
+
+- Removidos usos de `any` dos hooks criticos de dados:
+  - `useStudents`;
+  - `useTrainings`;
+  - `useAttendance`;
+  - `useCourts`;
+  - `useGroups`;
+  - `useExpenses`;
+  - `useSales`.
+- Substituidos casts genericos por tipos do Supabase (`Tables`, `TablesInsert`, `TablesUpdate`, `Json`) onde aplicavel.
+- Adicionados tipos auxiliares para relacionamentos carregados por `select`, como alunos em turmas, alunos em treinos e turmas do aluno.
+- Normalizada a leitura de `discount_type` do aluno para aceitar apenas `percentage`, `fixed` ou `null`.
+- Tipados updates parciais de `trainings`, `expenses`, `groups` e `modalities`.
+- Tipado o parser de metadata de quadras sem alterar o formato gravado.
+- Reduzida a inferencia profunda do Supabase em `useGroups`, mantendo o mesmo select e evitando o erro de instanciacao excessiva nesse hook.
+- Mantida a camada `querySync` criada na Fase 7.1 como ponto unico de sincronizacao.
+
+Validacoes executadas:
+
+- `rg` nos hooks tratados confirmou ausencia de `any`, `as any`, `: any` e `Record<string, any>`.
+- `npx eslint` focado nos hooks tratados: passou.
+- `npm run build`: passou.
+- `npm test`: passou.
+- `npx tsc -p tsconfig.app.json --noEmit`: melhorou removendo o erro de instanciacao profunda em `useGroups`, mas ainda falha por dividas globais preexistentes em componentes/telas fora do escopo desta fase.
+
+Observacoes para fases futuras:
+
+- A proxima etapa pode alinhar os tipos de `Student` entre `useStudents` e `mockData`, que hoje ainda geram erros globais em telas como alunos, comunicacao, planos e relatorios.
+- Tambem permanecem dividas globais em `Logo`, PWA e `StudentProfilePage`, a serem tratadas em fases pequenas.
+
+## Registro da Fase 7.3
+
+Status: concluida localmente.
+
+Escopo executado:
+
+- Alinhado o contrato `Student` usado pelo frontend em `mockData`, que continua sendo o arquivo de tipos compartilhados do app.
+- `Student` passou a refletir com mais fidelidade os dados reais vindos do Supabase:
+  - campos opcionais que podem vir nulos;
+  - `groupIds`;
+  - `paymentStartDate`;
+  - `discountType` nullable;
+  - `StudentLevel` e `StudentDiscountType` como tipos explicitos.
+- `useStudents` deixou de declarar um tipo proprio de aluno e passou a retornar o mesmo `Student` compartilhado pelas telas.
+- Normalizada a leitura de `level`, `discountType`, `email`, `paymentStartDate` e vinculos de turmas no hook `useStudents`.
+- O submit do `StudentForm` passou a tipar explicitamente o payload como `Partial<Student>`, evitando que strings genericas do formulario vazem para o dominio.
+- Eliminados os erros globais de tipagem relacionados a incompatibilidade entre `useStudents.Student` e `mockData.Student` em telas como alunos, comunicacao, planos, relatorios e dashboard.
+
+Validacoes executadas:
+
+- `npx eslint` focado em `mockData`, `useStudents`, `StudentForm`, `StudentCard`, `StudentsPage` e `studentHelpers`: passou.
+- `npm run build`: passou.
+- `npm test`: passou.
+- `npx tsc -p tsconfig.app.json --noEmit`: melhorou e nao aponta mais incompatibilidades do tipo `Student`; ainda falha por dividas globais restantes em ArenaTodaySchedule, Logo/PWA e StudentProfilePage.
+
+Observacoes para fases futuras:
+
+- A proxima etapa pode atacar os erros restantes do `tsc` em blocos pequenos:
+  - `ArenaTodaySchedule` e `TimeSlot`;
+  - props de `Logo`/PWA;
+  - inconsistencias antigas em `StudentProfilePage`.
+
+## Registro da Fase 7.4.1
+
+Status: concluida localmente.
+
+Escopo executado:
+
+- Corrigido o contrato de horario usado por `ArenaTodaySchedule`, permitindo que `getTimePeriod` aceite strings vindas das reservas da Arena sem cast inseguro.
+- `Logo` e `EsportizIcon` passaram a aceitar `variant`, alinhando os usos existentes no dashboard e no botao de instalacao do app.
+- Adicionada variacao visual segura para logo/icone em fundo escuro ou botao, preservando a identidade atual.
+- `InstallPWAButton` teve o prompt de instalacao tipado com `BeforeInstallPromptEvent`, removendo casts genericos para `any`.
+- Adicionado suporte de tipos do `vite-plugin-pwa` em `vite-env.d.ts`, resolvendo o modulo virtual `virtual:pwa-register/react`.
+
+Validacoes executadas:
+
+- `npx eslint` focado em `ArenaTodaySchedule`, `Logo`, `InstallPWAButton`, `PWABadge`, `mockData` e `vite-env`: passou.
+- `npm run build`: passou.
+- `npm test`: passou.
+- `npx tsc -p tsconfig.app.json --noEmit`: melhorou; os erros de ArenaTodaySchedule, Logo e PWA foram removidos. Restam apenas inconsistencias antigas em `StudentProfilePage`.
+
+Observacoes para fases futuras:
+
+- A Fase 7.4.2 pode tratar exclusivamente `StudentProfilePage`, que concentra os erros finais de TypeScript conhecidos.
+
+## Registro da Fase 7.4.2
+
+Status: concluida localmente.
+
+Escopo executado:
+
+- Corrigida a tela `StudentProfilePage` para respeitar os contratos atuais de dados do frontend.
+- A exibicao dos horarios das turmas deixou de tratar `dayOfWeek` numerico como data completa.
+- O historico financeiro do aluno passou a usar `paidAt`, que e o campo real do tipo `Payment`, no lugar do campo inexistente `paymentDate`.
+- O historico de frequencia deixou de depender de `groupId` em `Training`, pois os treinos atuais carregam alunos por `studentIds` e nao mantem vinculo direto de turma.
+- A identificacao visual dos ultimos treinos agora tenta resolver a turma pelo horario do aluno; se nao houver correspondencia, usa modalidade, local ou o rotulo padrao do negocio.
+
+Validacoes executadas:
+
+- `npx eslint src/pages/StudentProfilePage.tsx`: passou.
+- `npx tsc -p tsconfig.app.json --noEmit`: passou sem erros.
+- `npm run build`: passou.
+- `npm test`: passou.
+
+Observacoes para fases futuras:
+
+- A base TypeScript do app agora compila sem erros conhecidos nesta etapa, abrindo espaco para a proxima fase evolutiva com risco menor.
+
+## Registro da Fase 8.1
+
+Status: concluida localmente.
+
+Escopo executado:
+
+- Fortalecida a base responsiva dos componentes globais `Dialog`, `AlertDialog` e `Sheet`.
+- Modais agora respeitam margem lateral em telas pequenas, altura maxima com `100dvh` e rolagem interna segura.
+- Sheets laterais passam a abrir com largura operacional em mobile, sem ficarem estreitos demais por padrao.
+- Ajustada a tela de alunos para filtros em grade responsiva, evitando compressao e overflow em celulares.
+- Ajustada a Agenda da Arena para manter largura minima por quadra e permitir rolagem horizontal controlada quando houver muitas quadras.
+- O painel de detalhes da reserva passa a ocupar largura utilizavel em mobile e manter limite profissional em telas maiores.
+- Ajustado o modal de comandas/PDV para altura mobile mais confortavel, cabecalho adaptavel e itens de consumo sem esmagar quantidade, valor e acoes.
+- Formularios criticos de aluno, reserva, quadra, turma, produto e despesa passaram a usar uma coluna em telas pequenas e duas/mais colunas apenas quando houver espaco.
+- Relatorios ganharam controle de periodo com rolagem horizontal segura no mobile.
+- Removidos casts `any` antigos em `CourtsPage` tocados nesta fase, substituindo por tipos reais de quadra e reserva.
+
+Validacoes executadas:
+
+- `npx eslint` focado nos arquivos alterados nesta fase: passou.
+- `npx tsc -p tsconfig.app.json --noEmit`: passou sem erros.
+- `npm run build`: passou.
+- `npm test`: passou.
+- Servidor local iniciado em `http://127.0.0.1:5173/`.
+- Verificacao visual mobile no navegador interno em 390px: landing publica abriu sem overflow horizontal. Telas autenticadas ficaram cobertas por validacao estatica/build nesta etapa porque a sessao logada do usuario nao e compartilhada com o navegador interno.
+
+Observacoes para fases futuras:
+
+- A Fase 8.2 pode fazer uma revisao visual autenticada, com o usuario logado, nas telas de Arena, Alunos, Comandas e Relatorios para refinamentos finos de UI.
+
+## Registro da Fase 8.2
+
+Status: concluida localmente.
+
+Escopo executado:
+
+- Revisada a experiencia mobile das rotas privadas possiveis nesta sessao, sem contornar autenticacao.
+- Confirmado que as rotas privadas redirecionam corretamente para `/login?mode=login` quando nao ha sessao autenticada.
+- A tela de login foi verificada no navegador interno em 390px sem overflow horizontal.
+- Ajustado o resumo de pagamentos para uma coluna em mobile e duas colunas apenas a partir de telas maiores.
+- O modal de recebimento de pagamentos agora evita duas colunas apertadas no celular e usa acoes empilhadas com largura total em telas pequenas.
+- Cards de modalidades e quadras receberam grades internas mais tolerantes para labels e valores longos.
+- Rodapes de acao dos modais de reserva, quadra e fechamento de comanda passaram a empilhar no mobile, preservando botoes grandes e confortaveis.
+- Horarios no formulario de turmas passaram a ocupar a largura disponivel no celular, evitando selects fixos comprimidos.
+
+Validacoes executadas:
+
+- `npx eslint` focado nos arquivos alterados na Fase 8.2: passou.
+- `npx tsc -p tsconfig.app.json --noEmit`: passou sem erros.
+- `npm run build`: passou.
+- `npm test`: passou.
+- Navegador interno em 390px confirmou login sem overflow horizontal; as telas autenticadas exigem sessao real do usuario para uma auditoria visual completa.
+
+Observacoes para fases futuras:
+
+- Uma revisao 8.3 pode ser feita com o usuario logado no navegador, validando visualmente Agenda, Alunos, Comandas, Pagamentos e Relatorios com dados reais.
+
+## Registro da Fase 8.3
+
+Status: concluida localmente; validacao visual autenticada executada com dados reais em modo somente leitura.
+
+Escopo executado:
+
+- Validada a experiencia autenticada com o usuario logado, sem criar, editar, excluir, cancelar, confirmar pagamento, dar baixa ou alterar dados reais.
+- Auditadas em viewport mobile as telas:
+  - Dashboard;
+  - Agenda;
+  - Quadras;
+  - Reservantes/Alunos;
+  - Comandas;
+  - Pagamentos;
+  - Relatorios.
+- Auditadas em viewport desktop as mesmas telas criticas, confirmando ausencia de overflow horizontal de pagina.
+- Validado que a Agenda usa rolagem horizontal interna controlada para filtros de quadra e grade de horarios, sem estourar a largura global da pagina.
+- Abertos apenas modais seguros, sem salvar:
+  - Nova Reserva;
+  - Novo Aluno;
+  - Abrir Nova Comanda.
+- Confirmado que os modais seguros abrem em largura mobile adequada, com altura controlada e sem overflow horizontal.
+- Conferidos logs do navegador interno: nenhum erro de console encontrado durante a auditoria.
+- Ao finalizar, a navegacao retornou para `/dashboard` e o viewport temporario foi restaurado.
+
+Validacoes executadas:
+
+- Auditoria visual mobile autenticada em 390px: passou.
+- Auditoria visual desktop autenticada em 1366px: passou.
+- Verificacao automatica de overflow horizontal por rota critica: passou.
+- Verificacao de erros de console no navegador interno: passou.
+
+Observacoes para fases futuras:
+
+- A Fase 8 pode ser considerada consolidada do ponto de vista responsivo operacional. Proxima fase natural: Fase 9, adicionando testes profissionais dos fluxos criticos.
+
+## Registro da Fase 9.1
+
+Status: concluida localmente.
+
+Objetivo:
+
+- Mapear a base atual de testes, definir a estrategia profissional da Fase 9 e auditar a conta teste antes de criar testes automatizados ou executar fluxos destrutivos controlados.
+
+Inventario tecnico encontrado:
+
+- O projeto ja usa Vitest com ambiente `jsdom`.
+- Existe setup global em `src/test/setup.ts`, hoje cobrindo `matchMedia`.
+- Existe apenas um teste placeholder em `src/test/example.test.ts`.
+- Nao ha ainda testes reais dos fluxos criticos de negocio.
+- Nao ha Playwright/Cypress instalado no projeto neste momento.
+- `npm test` ja esta disponivel como rotina base de validacao.
+- `npm run build` e `npx tsc -p tsconfig.app.json --noEmit` seguem como validacoes obrigatorias por fase.
+
+Auditoria da conta teste:
+
+- Conta teste autenticada validada no navegador interno.
+- Perfil detectado como Arena/CT.
+- Base teste esta praticamente limpa:
+  - 0 quadras;
+  - 0 reservantes;
+  - 0 comandas;
+  - 0 pagamentos;
+  - 0 produtos/despesas relevantes.
+- Isso e adequado para a Fase 9, porque permite criar dados controlados com prefixo de teste e remover ao final dos fluxos.
+
+Estrategia profissional definida:
+
+- Camada 1: testes unitarios puros com Vitest.
+  - Validar utilitarios de data, moeda, roteamento autenticado e helpers de dominio.
+  - Nao dependem de Supabase real.
+  - Devem ser rapidos e rodar em toda validacao.
+
+- Camada 2: testes de contrato e integracao leve com mocks.
+  - Validar hooks e funcoes que montam payloads para Supabase.
+  - Mockar cliente Supabase e QueryClient.
+  - Garantir que sincronizacao de cache, normalizacao de dados e regras de payload nao regressem.
+
+- Camada 3: testes operacionais E2E em conta teste.
+  - Executar no navegador contra `http://127.0.0.1:5173/`.
+  - Usar somente dados ficticios com prefixo identificavel, por exemplo `TESTE F9`.
+  - Criar, editar, validar e excluir dados quando o fluxo permitir.
+  - Nunca misturar com conta real ou dados reais.
+
+- Camada 4: checklist manual de liberacao.
+  - Usar quando o fluxo depender de integracoes externas, storage, WhatsApp, Google ou confirmacoes humanas.
+  - Registrar resultado no plano antes de avancar.
+
+Ordem segura proposta para as proximas subfases:
+
+- Fase 9.2: criar primeiros testes unitarios reais e substituir o teste placeholder.
+- Fase 9.3: testar utilitarios e contratos de pagamentos/financeiro.
+- Fase 9.4: testar reservas/agenda da Arena com conta teste, criando e removendo dados controlados.
+- Fase 9.5: testar reservantes/alunos, turmas e vinculos relevantes.
+- Fase 9.6: testar comandas, produtos, vendas e estoque.
+- Fase 9.7: testar portais publicos e protecoes de acesso.
+- Fase 9.8: consolidar rotina de regressao profissional.
+
+Validacoes executadas:
+
+- Auditoria do setup de testes: concluida.
+- Auditoria autenticada da conta teste em rotas criticas: concluida.
+- Rotas auditadas no navegador interno:
+  - Dashboard;
+  - Agenda;
+  - Quadras;
+  - Reservantes;
+  - Comandas;
+  - Pagamentos;
+  - Relatorios;
+  - Produtos;
+  - Despesas.
+- Nenhuma acao de criacao, edicao ou exclusao foi executada nesta subfase, porque a Fase 9.1 e de inventario e estrategia. As operacoes controladas com dados teste ficam liberadas a partir das proximas subfases.
+- `npx tsc -p tsconfig.app.json --noEmit`: passou sem erros.
+- `npm test`: passou.
+- `npm run build`: passou.
+
+Observacoes para fases futuras:
+
+- A Fase 9.2 deve comecar por testes sem dependencia de banco real, para fortalecer a base automatizada antes dos fluxos E2E com criacao/exclusao de dados.
+
+## Registro da Fase 9.2
+
+Status: concluida localmente.
+
+Objetivo:
+
+- Substituir o teste placeholder por testes unitarios reais, rapidos e sem dependencia de Supabase ou dados reais.
+
+Escopo executado:
+
+- Removido o teste ficticio `src/test/example.test.ts`.
+- Criados testes unitarios reais para utilitarios e regras pequenas usadas em varias telas:
+  - `src/lib/dateUtils.test.ts`;
+  - `src/lib/formatCurrency.test.ts`;
+  - `src/lib/authRouting.test.ts`;
+  - `src/lib/studentHelpers.test.ts`.
+- `dateUtils` passou a ter cobertura para:
+  - formatacao local `YYYY-MM-DD`;
+  - protecao contra uso de ISO/UTC em datas locais.
+- `formatCurrency` passou a ter cobertura para:
+  - valores inteiros;
+  - centavos;
+  - valor zero em BRL.
+- `authRouting` passou a ter cobertura para:
+  - metas validas de onboarding;
+  - redirecionamento de perfis existentes para dashboard;
+  - redirecionamento de novos perfis para onboarding;
+  - leitura segura de meta salva por tipo de negocio;
+  - caminhos de onboarding para Escola Esportiva e Arena/CT.
+- `studentHelpers` passou a ter cobertura para:
+  - definicao real de aluno/reservante ativo mensal;
+  - exclusao de planos avulsos, inativos, sem plano e plano inexistente;
+  - totais, inativos e ativos sem plano.
+
+Validacoes executadas:
+
+- `npm test`: passou com 4 arquivos de teste e 13 testes reais.
+- `npx eslint` focado nos novos arquivos de teste: passou.
+- `npx tsc -p tsconfig.app.json --noEmit`: passou sem erros.
+- `npm run build`: passou.
+
+Observacoes para fases futuras:
+
+- A Fase 9.3 pode avancar para testes de contratos financeiros/pagamentos, ainda com mocks e sem banco real.
+- A Fase 9.4 deve usar a conta teste para os primeiros fluxos E2E controlados de Arena/Agenda.
+
+## Registro da Fase 9.3
+
+Status: concluida localmente.
+
+Objetivo:
+
+- Fortalecer os contratos financeiros e de pagamentos com regras puras testaveis, usando mocks locais e sem tocar em dados reais.
+
+Escopo executado:
+
+- Criado o modulo `src/lib/financialContracts.ts` para centralizar regras financeiras pequenas e criticas.
+- A tela de Pagamentos passou a usar contratos centralizados para:
+  - status financeiro do pagamento: pago, pendente ou atrasado;
+  - totais de mensalidades/pacotes;
+  - totais de recebimentos de reservas da Arena;
+  - quantidade de itens em atraso;
+  - protecao para reservas canceladas nao entrarem em recebiveis ativos.
+- Criado `src/lib/financialContracts.test.ts` com cobertura para:
+  - vencimento local sem tratar o dia atual como atraso;
+  - pagamentos parciais e saldo restante;
+  - reservas da Arena pagas, pendentes, atrasadas e canceladas;
+  - resumo financeiro por competencia;
+  - resumo financeiro por caixa com vencimento e pagamento em datas diferentes;
+  - vendas recebidas no ato;
+  - despesas pagas entrando no lucro liquido.
+
+Validacoes executadas:
+
+- `npm test`: passou com 5 arquivos de teste e 18 testes reais.
+- `npx eslint src/lib/financialContracts.ts src/lib/financialContracts.test.ts src/pages/PaymentsPage.tsx src/pages/ReportsPage.tsx`: passou.
+- `npx tsc -p tsconfig.app.json --noEmit`: passou sem erros.
+- `npm run build`: passou.
+
+Observacoes:
+
+- Nenhum dado real foi criado, editado, excluido, baixado ou estornado nesta fase.
+- Nenhuma migration SQL foi criada ou executada nesta fase.
+- O build manteve apenas os avisos ja conhecidos de chunk grande e import dinamico/estatico do cliente Supabase.
+
+Proxima etapa recomendada:
+
+- Fase 9.4: iniciar testes E2E controlados da Arena/Agenda com a conta teste, criando e removendo dados com prefixo identificavel de teste.
+
+## Registro da Fase 9.4
+
+Status: concluida com seguranca; nucleo automatizado e E2E visual local finalizados.
+
+Objetivo:
+
+- Fortalecer reservas/agenda da Arena antes de executar testes destrutivos controlados em conta teste.
+
+Decisao de seguranca:
+
+- Preferencia definida e executada: fluxo destrutivo primeiro no ambiente local, nao em producao.
+- A validacao visual foi feita em `http://127.0.0.1:5173/`, com login de teste autorizado.
+- A aba de producao `www.esportiz.com.br` nao foi usada para criacao, edicao, baixa ou exclusao de dados.
+
+Escopo executado:
+
+- Criado o modulo `src/lib/reservationContracts.ts` para centralizar contratos de reserva/agenda da Arena.
+- `useReservations` passou a reutilizar os contratos centralizados sem alterar a assinatura publica usada por Agenda, Quadras, Pagamentos e Relatorios.
+- Criado `src/lib/reservationContracts.test.ts` com cobertura para:
+  - metadata vazia ou invalida;
+  - normalizacao de metadata vinda como JSON string;
+  - bloqueio de quadra como evento financeiramente neutro;
+  - fallback seguro para valores negativos e enums invalidos;
+  - mapeamento de linhas de `trainings` para reservas operacionais da Arena;
+  - exclusao de vinculos nulos de reservantes;
+  - duracao padrao de 60 minutos quando o banco nao informar duracao.
+- Executado E2E visual local da Arena/Agenda com dados controlados `TESTE F9.4`:
+  - criacao de quadra;
+  - criacao de reservante;
+  - criacao de reserva avulsa;
+  - baixa de recebimento pela Agenda;
+  - validacao em Pagamentos;
+  - salvamento da reserva sem perda do status pago;
+  - validacao em Relatorios;
+  - remocao da reserva, da quadra e do reservante criados para o teste.
+
+Validacoes executadas:
+
+- `npm test`: passou com 6 arquivos de teste e 23 testes reais.
+- `npx eslint src/lib/reservationContracts.ts src/lib/reservationContracts.test.ts src/hooks/queries/useReservations.ts`: passou.
+- `npx tsc -p tsconfig.app.json --noEmit`: passou sem erros.
+- `npm run build`: passou.
+
+Validacoes E2E locais:
+
+- Agenda voltou a `0 reservas`, `R$ 0,00 recebido` e `0h ocupadas`.
+- Quadras voltou a `0` quadras cadastradas.
+- Reservantes voltou a `0` reservantes cadastrados.
+- Pagamentos voltou a `R$ 0,00` total, recebido e pendente, com `Locacoes Avulsas (Agenda) 0`.
+- Relatorios voltou a `R$ 0,00` em faturamento, caixa, despesas e resultado liquido, sem `Recebido por Quadra` para dados teste.
+- Dashboard voltou a `0` reservas, `0` quadras ativas, `R$ 0,00` de faturamento e sem dados `TESTE F9.4`.
+
+Observacoes:
+
+- Nenhum dado real foi criado, editado, excluido, baixado ou estornado nesta fase.
+- Os dados ficticios `TESTE F9.4` foram criados somente na conta teste local e removidos ao final.
+- Nenhuma migration SQL foi criada ou executada nesta fase.
+- O build manteve apenas os avisos ja conhecidos de chunk grande e import dinamico/estatico do cliente Supabase.
+
+## Registro da Fase 9.5
+
+Status: concluida com seguranca; contratos de alunos/reservantes e vinculos fortalecidos, com E2E local controlado.
+
+Objetivo:
+
+- Fortalecer alunos/reservantes, turmas e vinculos `group_students` sem quebrar os fluxos solidos existentes.
+
+Decisao de seguranca:
+
+- As regras de vinculo foram primeiro cobertas por testes locais, sem depender de banco real.
+- O E2E visual foi executado somente na conta teste local em `http://127.0.0.1:5173/`.
+- A conta teste atual esta na modalidade Arena/CT; por isso o E2E visual cobriu Reservantes. Turmas e vinculos ficaram cobertos por contratos locais porque nao fazem parte do menu operacional dessa modalidade.
+
+Escopo executado:
+
+- Criado o modulo `src/lib/studentGroupContracts.ts` para centralizar regras sensiveis de vinculos:
+  - normalizacao de ids vinculados;
+  - remocao de ids vazios;
+  - deduplicacao estavel de vinculos;
+  - leitura segura dos grupos de um aluno/reservante;
+  - leitura de alunos ativos dentro de uma turma;
+  - montagem segura dos inserts em `group_students`;
+  - validacao de horarios semanais de turmas;
+  - fallback profissional de duracao de turma para 60 minutos.
+- `useStudents` passou a usar os contratos ao ler e gravar `group_students`.
+- `useGroups` passou a usar os contratos ao ler horarios, duracao e alunos vinculados, alem de montar inserts de vinculos sem duplicidade.
+- Criado `src/lib/studentGroupContracts.test.ts` com cobertura para:
+  - ids duplicados, vazios ou com espacos;
+  - leitura de grupos do aluno sem vazamentos;
+  - exclusao de aluno inativo da lista operacional da turma;
+  - inserts seguros pelo lado do aluno/reservante;
+  - inserts seguros pelo lado da turma;
+  - descarte de horarios semanais invalidos;
+  - fallback de duracao.
+
+Validacoes executadas:
+
+- `npm test -- --run src/lib/studentGroupContracts.test.ts`: passou com 7 testes.
+- `npx eslint src/lib/studentGroupContracts.ts src/lib/studentGroupContracts.test.ts src/hooks/queries/useStudents.ts src/hooks/queries/useGroups.ts`: passou.
+- `npm test`: passou com 7 arquivos de teste e 30 testes reais.
+- `npx tsc -p tsconfig.app.json --noEmit`: passou sem erros.
+- `npm run build`: passou.
+
+Validacoes E2E locais:
+
+- Criado reservante `TESTE F9.5 Reservante` na conta teste Arena/CT.
+- Confirmado total de reservantes `1`, com status `Sem Pacote`.
+- Editado o telefone do reservante de teste de `(54) 99999-9500` para `(54) 99999-9511`.
+- Confirmado que o telefone atualizado apareceu na listagem.
+- Removido o reservante de teste.
+- Recarregada a tela de Reservantes e confirmado retorno para `0` reservantes, sem dados `TESTE F9.5`.
+
+Observacoes:
+
+- Nenhum dado real foi criado, editado, excluido, baixado ou estornado nesta fase.
+- Os dados ficticios `TESTE F9.5` foram criados somente na conta teste local e removidos ao final.
+- Nenhuma migration SQL foi criada ou executada nesta fase.
+- O build manteve apenas os avisos ja conhecidos de chunk grande e import dinamico/estatico do cliente Supabase.
+
+Proxima etapa recomendada:
+
+- Fase 9.6: testar comandas, produtos, vendas e estoque com o mesmo padrao de dados controlados e limpeza ao final.
+
+## Registro da Fase 9.6
+
+Status: concluida com seguranca; contratos de comercio fortalecidos, fluxo de Comandas profissionalizado e E2E local controlado.
+
+Objetivo:
+
+- Fortalecer comandas, produtos, vendas e estoque sem quebrar os fluxos financeiros ja consolidados.
+
+Decisao de seguranca:
+
+- As regras de comercio foram primeiro cobertas por testes locais, sem depender de banco real.
+- O E2E visual foi executado somente na conta teste local em `http://127.0.0.1:5173/`.
+- Todos os dados criados no E2E usaram o prefixo `TESTE F9.6`.
+- A venda teste foi cancelada pelo fluxo oficial, restaurando o estoque.
+- A comanda teste foi esvaziada e removida pelo fluxo oficial.
+- O produto teste foi desativado pelo fluxo oficial da tela de Produtos, que usa exclusao logica para preservar historico.
+
+Escopo executado:
+
+- Criado o modulo `src/lib/commerceContracts.ts` para centralizar regras sensiveis de comercio:
+  - normalizacao de valores monetarios;
+  - normalizacao de quantidades;
+  - calculo seguro de totais de linha;
+  - normalizacao e rotulo de metodo de pagamento;
+  - mapeamento seguro de produtos, vendas, comandas e itens de comanda;
+  - status de estoque: nao controlado, zerado, baixo ou ok;
+  - estatisticas de inventario;
+  - payloads seguros para insert/update de produtos;
+  - payload seguro para itens de comanda.
+- `useProducts` passou a usar contratos centralizados para mapear produtos e montar payloads de insert/update.
+- `useSales` passou a usar contratos centralizados para mapear vendas, rotular metodos de pagamento e calcular total.
+- `useComandas` passou a usar contratos centralizados para mapear comandas, itens e totais.
+- `ComandasPage` deixou de usar `window.confirm` para cancelar comanda, remover item e reabrir comanda, passando a usar `AlertDialog` interno do sistema.
+- Criado `src/lib/commerceContracts.test.ts` com cobertura para:
+  - produtos com valores seguros;
+  - payloads de produto com estoque ligado/desligado;
+  - status e estatisticas de estoque;
+  - metodos de pagamento;
+  - vendas e totais com centavos;
+  - totalizacao de comandas;
+  - inserts e updates de itens de comanda.
+
+Validacoes executadas:
+
+- `npm test -- --run src/lib/commerceContracts.test.ts`: passou com 7 testes.
+- `npx eslint src/lib/commerceContracts.ts src/lib/commerceContracts.test.ts src/hooks/queries/useProducts.ts src/hooks/queries/useSales.ts src/hooks/queries/useComandas.ts src/pages/ComandasPage.tsx`: passou.
+- `rg -n "confirm\(" src/pages/ComandasPage.tsx`: sem ocorrencias.
+- `npm test`: passou com 8 arquivos de teste e 37 testes reais.
+- `npx tsc -p tsconfig.app.json --noEmit`: passou sem erros.
+- `npm run build`: passou.
+
+Validacoes E2E locais:
+
+- Criado produto `TESTE F9.6 Produto` com estoque controlado: 3 unidades, minimo 1, preco R$ 10,00.
+- Registrada venda direta de 1 unidade via PIX.
+- Confirmado que o estoque caiu de 3 para 2 apos a venda.
+- Cancelada a venda pelo fluxo oficial.
+- Confirmado que o estoque voltou de 2 para 3 apos o cancelamento.
+- Criada comanda `TESTE F9.6 Comanda`.
+- Adicionado o produto `TESTE F9.6 Produto` na comanda e confirmado total de R$ 10,00.
+- Removido o item da comanda, retornando total para R$ 0,00.
+- Removida a comanda vazia pelo fluxo oficial.
+- Desativado o produto teste pelo fluxo oficial da tela de Produtos.
+- Confirmado estado final:
+  - Produtos ativos sem `TESTE F9.6`;
+  - Vendas em `R$ 0,00` e `0 venda(s)`;
+  - Comandas abertas/fechadas em `0`;
+  - Dashboard com `Vendas de Hoje` em `R$ 0,00`;
+  - nenhuma tela operacional validada exibindo `TESTE F9.6`.
+
+Observacoes:
+
+- Nenhum dado real foi criado, editado, excluido, baixado ou estornado nesta fase.
+- Nenhuma migration SQL foi criada ou executada nesta fase.
+- Produto usa exclusao logica no sistema; por isso o dado teste foi desativado, nao apagado fisicamente pelo UI.
+- O build manteve apenas os avisos ja conhecidos de chunk grande e import dinamico/estatico do cliente Supabase.
+
+Proxima etapa recomendada:
+
+- Fase 9.7: testar portais publicos e protecoes de acesso com o mesmo padrao de seguranca.

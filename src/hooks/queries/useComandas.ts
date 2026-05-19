@@ -2,89 +2,31 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
+import { syncAfterComandaMutation } from '@/lib/querySync';
+import {
+  buildComandaItemInsert,
+  calculateComandaItemUpdate,
+  mapComandaRow,
+  type CommerceComanda,
+  type CommerceComandaItem,
+  type CommercePaymentMethod,
+} from '@/lib/commerceContracts';
 
-export type ComandaPaymentMethod = 'dinheiro' | 'pix' | 'cartao_credito' | 'cartao_debito';
+export type ComandaPaymentMethod = CommercePaymentMethod;
 
-export interface ComandaItem {
-  id: string;
-  comandaId: string;
-  productId?: string | null;
-  productName: string;
-  quantity: number;
-  unitPrice: number;
-  total: number;
-  createdAt: string;
-}
+export type ComandaItem = CommerceComandaItem;
 
-export interface Comanda {
-  id: string;
-  userId: string;
-  name: string;
-  status: 'open' | 'closed';
-  createdAt: string;
-  closedAt?: string | null;
-  items: ComandaItem[];
-  totalAmount: number;
-}
-
-interface ComandaItemRow {
-  id: string;
-  comanda_id: string | null;
-  product_id: string | null;
-  product_name: string;
-  quantity: number;
-  unit_price: number;
-  total: number;
-  created_at: string;
-}
-
-interface ComandaRow {
-  id: string;
-  user_id: string;
-  name: string;
-  status: string;
-  created_at: string;
-  closed_at: string | null;
-  comanda_items?: ComandaItemRow[] | null;
-}
+export type Comanda = CommerceComanda;
 
 function getErrorMessage(error: unknown): string {
   return error instanceof Error ? error.message : 'Erro inesperado.';
-}
-
-function mapComanda(row: ComandaRow): Comanda {
-  const items = (row.comanda_items || []).map((item) => ({
-    id: item.id,
-    comandaId: item.comanda_id || row.id,
-    productId: item.product_id,
-    productName: item.product_name,
-    quantity: Number(item.quantity),
-    unitPrice: Number(item.unit_price),
-    total: Number(item.total),
-    createdAt: item.created_at,
-  })) as ComandaItem[];
-
-  return {
-    id: row.id,
-    userId: row.user_id,
-    name: row.name,
-    status: row.status === 'closed' ? 'closed' : 'open',
-    createdAt: row.created_at,
-    closedAt: row.closed_at,
-    items,
-    totalAmount: items.reduce((sum, item) => sum + item.total, 0),
-  };
 }
 
 export function useComandas() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
 
-  const invalidateComandaState = () => {
-    queryClient.invalidateQueries({ queryKey: ['comandas'] });
-    queryClient.invalidateQueries({ queryKey: ['sales'] });
-    queryClient.invalidateQueries({ queryKey: ['products'] });
-  };
+  const invalidateComandaState = () => syncAfterComandaMutation(queryClient);
 
   const comandasQuery = useQuery({
     queryKey: ['comandas', user?.id],
@@ -100,7 +42,7 @@ export function useComandas() {
 
       if (error) throw error;
 
-      return ((data || []) as ComandaRow[]).map(mapComanda);
+      return (data || []).map(mapComandaRow);
     },
     enabled: !!user?.id,
   });
@@ -124,7 +66,7 @@ export function useComandas() {
       return data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['comandas'] });
+      syncAfterComandaMutation(queryClient);
       toast.success('Comanda aberta com sucesso!');
     },
     onError: (error: unknown) => {
@@ -159,14 +101,17 @@ export function useComandas() {
 
       if (existingItems && existingItems.length > 0) {
         const existing = existingItems[0];
-        const newQty = Number(existing.quantity) + quantity;
-        const newTotal = Number((newQty * Number(existing.unit_price)).toFixed(2));
+        const nextItem = calculateComandaItemUpdate(
+          Number(existing.quantity),
+          quantity,
+          Number(existing.unit_price)
+        );
 
         const { error: updateErr } = await supabase
           .from('comanda_items')
           .update({
-            quantity: newQty,
-            total: newTotal,
+            quantity: nextItem.quantity,
+            total: nextItem.total,
           })
           .eq('id', existing.id)
           .eq('user_id', user.id);
@@ -175,23 +120,21 @@ export function useComandas() {
         return;
       }
 
-      const total = Number((quantity * unitPrice).toFixed(2));
       const { error: insertErr } = await supabase
         .from('comanda_items')
-        .insert({
-          user_id: user.id,
-          comanda_id: comandaId,
-          product_id: productId,
-          product_name: productName,
+        .insert(buildComandaItemInsert({
+          userId: user.id,
+          comandaId,
+          productId,
+          productName,
           quantity,
-          unit_price: unitPrice,
-          total,
-        });
+          unitPrice,
+        }));
 
       if (insertErr) throw insertErr;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['comandas'] });
+      syncAfterComandaMutation(queryClient);
     },
     onError: (error: unknown) => {
       toast.error('Erro ao adicionar item: ' + getErrorMessage(error));
@@ -222,12 +165,12 @@ export function useComandas() {
 
       if (fetchErr) throw fetchErr;
 
-      const total = Number((quantity * Number(item.unit_price)).toFixed(2));
+      const nextItem = calculateComandaItemUpdate(0, quantity, Number(item.unit_price));
       const { error: updateErr } = await supabase
         .from('comanda_items')
         .update({
-          quantity,
-          total,
+          quantity: nextItem.quantity,
+          total: nextItem.total,
         })
         .eq('id', itemId)
         .eq('user_id', user.id);
@@ -235,7 +178,7 @@ export function useComandas() {
       if (updateErr) throw updateErr;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['comandas'] });
+      syncAfterComandaMutation(queryClient);
     },
     onError: (error: unknown) => {
       toast.error('Erro ao atualizar quantidade: ' + getErrorMessage(error));
@@ -255,7 +198,7 @@ export function useComandas() {
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['comandas'] });
+      syncAfterComandaMutation(queryClient);
       toast.success('Item removido da comanda.');
     },
     onError: (error: unknown) => {
@@ -323,7 +266,7 @@ export function useComandas() {
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['comandas'] });
+      syncAfterComandaMutation(queryClient);
       toast.success('Comanda cancelada com sucesso.');
     },
     onError: (error: unknown) => {

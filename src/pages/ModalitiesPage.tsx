@@ -100,7 +100,7 @@ export default function ModalitiesPage() {
                           </div>
                         </div>
                         
-                        <div className="grid grid-cols-2 gap-4 mb-6">
+                        <div className="grid grid-cols-1 min-[420px]:grid-cols-2 gap-4 mb-6">
                           <div className="space-y-1">
                             <p className="text-2xl font-display font-bold">{mod.studentCount}</p>
                             <p className="text-[10px] uppercase font-bold tracking-wider text-muted-foreground">{labels.studentLabel}</p>

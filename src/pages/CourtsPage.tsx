@@ -3,8 +3,8 @@ import { Header } from '@/components/Header';
 import { getLocalTodayDate, toLocalDateString } from '@/lib/dateUtils';
 import { StatCard } from '@/components/StatCard';
 import { Button } from '@/components/ui/button';
-import { useCourts, type Court, SPORT_LABELS, type CourtMetadata } from '@/hooks/queries/useCourts';
-import { useReservations } from '@/hooks/queries/useReservations';
+import { useCourts, type Court, SPORT_LABELS, type CourtMetadata, type CourtCoverage, type CourtSportType } from '@/hooks/queries/useCourts';
+import { useReservations, type Reservation } from '@/hooks/queries/useReservations';
 import { ReservationModal } from '@/components/ReservationModal';
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription,
@@ -144,10 +144,10 @@ function CourtFormDialog({ open, onOpenChange, court }: CourtFormProps) {
           </div>
 
           {/* Tipo */}
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="space-y-1.5">
               <Label>Tipo de Esporte</Label>
-              <Select value={sportType} onValueChange={v => setSportType(v as any)}>
+              <Select value={sportType} onValueChange={v => setSportType(v as CourtSportType)}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
@@ -160,7 +160,7 @@ function CourtFormDialog({ open, onOpenChange, court }: CourtFormProps) {
             </div>
             <div className="space-y-1.5">
               <Label>Cobertura</Label>
-              <Select value={coverage} onValueChange={v => setCoverage(v as any)}>
+              <Select value={coverage} onValueChange={v => setCoverage(v as CourtCoverage)}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
@@ -173,7 +173,7 @@ function CourtFormDialog({ open, onOpenChange, court }: CourtFormProps) {
           </div>
 
           {/* Capacidade e Preço */}
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="space-y-1.5">
               <Label>Capacidade (jogadores)</Label>
               <Input type="number" min={1} max={50} value={capacity} onChange={e => setCapacity(Number(e.target.value))} />
@@ -190,7 +190,7 @@ function CourtFormDialog({ open, onOpenChange, court }: CourtFormProps) {
           </div>
 
           {/* Horário de Funcionamento */}
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="space-y-1.5">
               <Label>Abre às</Label>
               <Input type="time" value={openingTime} onChange={e => setOpeningTime(e.target.value)} />
@@ -234,7 +234,7 @@ function CourtFormDialog({ open, onOpenChange, court }: CourtFormProps) {
             </div>
 
             {usePeakPricing && (
-              <div className="grid grid-cols-3 gap-3 pt-1.5 animate-in fade-in-50 slide-in-from-top-1 duration-200">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1.5 animate-in fade-in-50 slide-in-from-top-1 duration-200">
                 <div className="space-y-1.5">
                   <Label className="text-xs font-bold text-muted-foreground uppercase">Preço (R$)</Label>
                   <Input type="number" min={0} step={0.5} value={peakPrice} onChange={e => setPeakPrice(Number(e.target.value))} className="h-9 text-sm" />
@@ -271,9 +271,9 @@ function CourtFormDialog({ open, onOpenChange, court }: CourtFormProps) {
             <Switch checked={isActive} onCheckedChange={setIsActive} />
           </div>
 
-          <div className="flex gap-3 pt-2">
-            <Button variant="outline" className="flex-1" onClick={() => onOpenChange(false)}>Cancelar</Button>
-            <Button className="flex-1 btn-primary-gradient" onClick={handleSave} disabled={saving || !name.trim()}>
+          <div className="flex flex-col-reverse gap-3 pt-2 sm:flex-row">
+            <Button variant="outline" className="w-full sm:flex-1" onClick={() => onOpenChange(false)}>Cancelar</Button>
+            <Button className="w-full sm:flex-1 btn-primary-gradient" onClick={handleSave} disabled={saving || !name.trim()}>
               {saving
                 ? <div className="h-4 w-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                 : isEditing ? 'Salvar' : 'Criar Quadra'}
@@ -285,7 +285,7 @@ function CourtFormDialog({ open, onOpenChange, court }: CourtFormProps) {
   );
 }
 
-function CourtStatusBadge({ court, reservations }: { court: Court; reservations: any[] }) {
+function CourtStatusBadge({ court, reservations }: { court: Court; reservations: Reservation[] }) {
   const now = new Date();
   const todayStr = toLocalDateString(now);
   const currentTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
@@ -414,7 +414,7 @@ export default function CourtsPage() {
                     </div>
 
                     {/* Info grid */}
-                    <div className="grid grid-cols-2 gap-3">
+                    <div className="grid grid-cols-1 min-[420px]:grid-cols-2 gap-3">
                       <div className="bg-muted/30 rounded-lg p-2.5 text-center flex flex-col justify-center">
                         <div className="flex items-center justify-center gap-1 mb-0.5">
                           {court.coverage === 'covered' ? <Umbrella className="h-3 w-3 text-blue-500" /> : <Sun className="h-3 w-3 text-yellow-500" />}

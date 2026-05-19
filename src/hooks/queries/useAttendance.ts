@@ -5,6 +5,8 @@ import type { Attendance } from '@/data/mockData';
 import { useAuth } from '@/contexts/AuthContext';
 import { useProfile } from '@/hooks/queries/useProfile';
 import { useCallback } from 'react';
+import { syncAfterScheduleMutation } from '@/lib/querySync';
+import type { Tables, TablesUpdate } from '@/integrations/supabase/types';
 
 export function useAttendance() {
     const queryClient = useQueryClient();
@@ -18,7 +20,7 @@ export function useAttendance() {
             const businessType = profile?.business_type || 'sport_school';
             const { data, error } = await supabase.from('attendance').select('*').eq('user_id', user.id).eq('business_type', businessType).order('date', { ascending: false });
             if (error) throw error;
-            return data.map((a: any) => ({
+            return (data || []).map((a: Tables<'attendance'>) => ({
                 id: a.id,
                 trainingId: a.training_id,
                 studentId: a.student_id,
@@ -53,12 +55,13 @@ export function useAttendance() {
             }
 
             // Sync with notifications: Mark training as completed when attendance is recorded
+            const completedUpdate: TablesUpdate<'trainings'> = {
+                completed: true,
+                completed_at: new Date().toISOString(),
+            };
             const { error: trainingError } = await supabase
                 .from('trainings')
-                .update({ 
-                    completed: true, 
-                    completed_at: new Date().toISOString() 
-                } as any)
+                .update(completedUpdate)
                 .eq('id', trainingId)
                 .eq('completed', false);
 
@@ -67,8 +70,7 @@ export function useAttendance() {
             }
         },
         onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['attendance'] });
-            queryClient.invalidateQueries({ queryKey: ['trainings'] });
+            syncAfterScheduleMutation(queryClient);
         },
         onError: (error: Error) => {
             toast({ title: 'Erro ao atualizar presença', description: error.message, variant: 'destructive' });

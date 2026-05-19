@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { useProfile } from '@/hooks/queries/useProfile';
+import { syncAfterModalityMutation } from '@/lib/querySync';
 
 export interface Modality {
   id: string;
@@ -60,7 +61,7 @@ export function useModalities() {
       return newModality;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['modalities'] });
+      syncAfterModalityMutation(queryClient);
       toast.success('Modalidade criada com sucesso');
     },
     onError: (error: unknown) => {
@@ -89,7 +90,7 @@ export function useModalities() {
       return updated;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['modalities'] });
+      syncAfterModalityMutation(queryClient);
       toast.success('Modalidade atualizada');
     },
     onError: (error: unknown) => {
@@ -125,7 +126,7 @@ export function useModalities() {
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['modalities'] });
+      syncAfterModalityMutation(queryClient);
       toast.success('Modalidade removida');
     },
     onError: (error: unknown) => {

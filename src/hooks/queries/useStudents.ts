@@ -4,34 +4,25 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useProfile } from '@/hooks/queries/useProfile';
 import { getLocalTodayDate } from '@/lib/dateUtils';
+import { syncAfterStudentMutation } from '@/lib/querySync';
+import { buildStudentGroupLinks, getGroupIdsFromStudentLinks } from '@/lib/studentGroupContracts';
+import type { Tables } from '@/integrations/supabase/types';
+import type { Student } from '@/data/mockData';
 
-export interface Student {
-  id: string;
-  name: string;
-  phone: string;
-  level: string;
-  joinDate: string;
-  active: boolean;
-  planId?: string | null;
-  paymentDueDay?: number | null;
-  photo?: string | null;
-  birthDate?: string | null;
-  email?: string | null;
-  modalityId?: string | null;
-  cpf?: string | null;
-  rg?: string | null;
-  address?: string | null;
-  city?: string | null;
-  state?: string | null;
-  zipCode?: string | null;
-  isTrial?: boolean;
-  trialStartedAt?: string | null;
-  trialConvertedAt?: string | null;
-  groupIds?: string[];
-  discountType?: 'percentage' | 'fixed' | null;
-  discountValue?: number;
-  discountDurationMonths?: number | null;
-  discountStartMonth?: string | null;
+type StudentRowWithGroups = Tables<'students'> & {
+  group_students?: Pick<Tables<'group_students'>, 'group_id'>[] | null;
+};
+
+function asDiscountType(value: string | null): Student['discountType'] {
+  return value === 'percentage' || value === 'fixed' ? value : null;
+}
+
+function asStudentLevel(value: string | null): Student['level'] {
+  return value === 'intermediário' || value === 'avançado' ? value : 'iniciante';
+}
+
+function getErrorMessage(error: unknown) {
+  return error instanceof Error ? error.message : 'Erro inesperado';
 }
 
 export function useStudents() {
@@ -53,18 +44,19 @@ export function useStudents() {
       
       if (error) throw error;
       
-      return data.map(s => ({
+      return ((data || []) as StudentRowWithGroups[]).map(s => ({
         id: s.id,
         name: s.name,
         phone: s.phone || '',
-        level: s.level || 'iniciante',
+        level: asStudentLevel(s.level),
         joinDate: s.join_date,
         active: s.active,
         planId: s.plan_id,
         paymentDueDay: s.payment_due_day,
+        paymentStartDate: s.payment_start_date,
         photo: s.photo,
         birthDate: s.birth_date,
-        email: s.email,
+        email: s.email || '',
         modalityId: s.modality_id,
         cpf: s.cpf,
         rg: s.rg,
@@ -75,8 +67,8 @@ export function useStudents() {
         isTrial: s.is_trial ?? false,
         trialStartedAt: s.trial_started_at,
         trialConvertedAt: s.trial_converted_at,
-        groupIds: (s.group_students || []).map((gs: any) => gs.group_id),
-        discountType: s.discount_type,
+        groupIds: getGroupIdsFromStudentLinks(s.group_students),
+        discountType: asDiscountType(s.discount_type),
         discountValue: Number(s.discount_value || 0),
         discountDurationMonths: s.discount_duration_months,
         discountStartMonth: s.discount_start_month,
@@ -128,19 +120,18 @@ export function useStudents() {
       if (data.groupIds && data.groupIds.length > 0) {
         const { error: gsError } = await supabase
           .from('group_students')
-          .insert(data.groupIds.map(gid => ({
-            student_id: newStudent.id,
-            group_id: gid,
-            user_id: user.id
-          })));
+          .insert(buildStudentGroupLinks({
+            studentId: newStudent.id,
+            groupIds: data.groupIds,
+            userId: user.id,
+          }));
         if (gsError) throw gsError;
       }
 
       return newStudent;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['students'] });
-      queryClient.invalidateQueries({ queryKey: ['payments'] });
+      syncAfterStudentMutation(queryClient);
     }
   });
 
@@ -189,11 +180,11 @@ export function useStudents() {
         if (data.groupIds.length > 0) {
           const { error: gsError } = await supabase
             .from('group_students')
-            .insert(data.groupIds.map(gid => ({
-              student_id: id,
-              group_id: gid,
-              user_id: user.id
-            })));
+            .insert(buildStudentGroupLinks({
+              studentId: id,
+              groupIds: data.groupIds,
+              userId: user.id,
+            }));
           if (gsError) throw gsError;
         }
       }
@@ -201,8 +192,7 @@ export function useStudents() {
       return updatedStudent;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['students'] });
-      queryClient.invalidateQueries({ queryKey: ['payments'] });
+      syncAfterStudentMutation(queryClient);
     }
   });
 
@@ -218,11 +208,11 @@ export function useStudents() {
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['students'] });
+      syncAfterStudentMutation(queryClient);
       toast.success('Aluno removido com sucesso');
     },
-    onError: (error: any) => {
-      toast.error('Erro ao remover aluno: ' + error.message);
+    onError: (error: unknown) => {
+      toast.error('Erro ao remover aluno: ' + getErrorMessage(error));
     }
   });
 

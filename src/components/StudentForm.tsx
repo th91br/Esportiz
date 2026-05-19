@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { UserPlus, UploadCloud, MapPin, FileText, Beaker, UsersRound, Check, Tag, Percent } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -27,6 +28,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { getDayName } from '@/data/mockData';
 import { useBusinessContext } from '@/hooks/useBusinessContext';
 import { getLocalTodayDate, toLocalDateString } from '@/lib/dateUtils';
+import { syncAfterScheduleMutation } from '@/lib/querySync';
 
 const studentSchema = z.object({
   name: z.string().min(3, "Nome deve ter no mínimo 3 caracteres"),
@@ -61,6 +63,7 @@ interface StudentFormProps {
 }
 
 export function StudentForm({ student, trigger }: StudentFormProps) {
+  const queryClient = useQueryClient();
   const { addStudent, updateStudent } = useStudents();
   const { plans } = usePlans();
   const { modalities } = useModalities();
@@ -174,12 +177,15 @@ export function StudentForm({ student, trigger }: StudentFormProps) {
         photoUrl = urlData.publicUrl;
       }
 
-      const discType = formData.discountType && formData.discountType !== 'none' ? formData.discountType : null;
+      const discType: Student['discountType'] =
+        formData.discountType === 'percentage' || formData.discountType === 'fixed'
+          ? formData.discountType
+          : null;
       const discVal = discType ? Number(formData.discountValue || 0) : 0;
       const discDuration = formData.discountDurationMonths && formData.discountDurationMonths !== 'none' ? Number(formData.discountDurationMonths) : null;
       const discStart = discType ? formData.discountStartMonth : null;
 
-      const data = {
+      const data: Partial<Student> = {
         name: formData.name,
         phone: formData.phone,
         email: formData.email || null,
@@ -286,6 +292,7 @@ export function StudentForm({ student, trigger }: StudentFormProps) {
 
       if (error) throw error;
 
+      syncAfterScheduleMutation(queryClient);
       toast({ title: 'Agenda configurada!', description: `${labels.trainingLabel} gerados para os próximos 3 meses.` });
       setSchedulePromptOpen(false);
     } catch (err: unknown) {
@@ -437,7 +444,7 @@ export function StudentForm({ student, trigger }: StudentFormProps) {
                 <FileText className="h-4 w-4 text-primary" />
                 <span className="text-sm font-semibold text-foreground">Documentos</span>
               </div>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <FormField control={form.control} name="cpf" render={({ field }) => (
                   <FormItem>
                     <FormLabel>CPF</FormLabel>
@@ -469,7 +476,7 @@ export function StudentForm({ student, trigger }: StudentFormProps) {
                     <FormMessage />
                   </FormItem>
                 )} />
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <FormField control={form.control} name="city" render={({ field }) => (
                     <FormItem>
                       <FormLabel>Cidade</FormLabel>
@@ -649,7 +656,7 @@ export function StudentForm({ student, trigger }: StudentFormProps) {
             )}
 
             {isMonthly && (
-              <div className="grid grid-cols-2 gap-3 pt-2">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
                 <FormField
                   control={form.control}
                   name="paymentDueDay"
@@ -696,7 +703,7 @@ export function StudentForm({ student, trigger }: StudentFormProps) {
                   <Tag className="h-3.5 w-3.5 text-primary" /> Bolsas & Descontos Promocionais
                 </h4>
                 
-                <div className="grid grid-cols-2 gap-3 text-left">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-left">
                   <FormField
                     control={form.control}
                     name="discountType"
@@ -744,7 +751,7 @@ export function StudentForm({ student, trigger }: StudentFormProps) {
                 </div>
 
                 {discountTypeWatch && discountTypeWatch !== 'none' && (
-                  <div className="grid grid-cols-2 gap-3 text-left">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-left">
                     <FormField
                       control={form.control}
                       name="discountDurationMonths"

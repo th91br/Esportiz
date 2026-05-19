@@ -169,7 +169,7 @@ export default function ProductsPage() {
                   <Label>Nome *</Label>
                   <Input placeholder="Ex: Água Mineral 500ml" value={formName} onChange={e => setFormName(e.target.value)} autoFocus />
                 </div>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label>Preço (R$) *</Label>
                     <Input type="number" step="0.01" min="0" placeholder="0,00" value={formPrice} onChange={e => setFormPrice(e.target.value)} />
@@ -207,7 +207,7 @@ export default function ProductsPage() {
                   </div>
 
                   {formTrackStock && (
-                    <div className="grid grid-cols-2 gap-4 animate-fade-in">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 animate-fade-in">
                       <div className="space-y-2">
                         <Label>Estoque Atual *</Label>
                         <Input

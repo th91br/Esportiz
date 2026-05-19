@@ -25,6 +25,11 @@ import {
 } from '@/components/ui/dialog';
 import { useBusinessContext } from '@/hooks/useBusinessContext';
 import { getLocalTodayDate } from '@/lib/dateUtils';
+import {
+  getPaymentFinancialStatus,
+  summarizePayments,
+  summarizeReservationReceivables,
+} from '@/lib/financialContracts';
 
 const monthNames = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
 
@@ -121,35 +126,22 @@ export default function PaymentsPage() {
   }, [monthReservations, students, searchTerm]);
 
   const getStatus = useCallback((p: typeof monthPayments[0]): 'paid' | 'pending' | 'overdue' => {
-    if (p.paid) return 'paid';
-    return p.dueDate < todayStr ? 'overdue' : 'pending';
+    return getPaymentFinancialStatus(p, todayStr);
   }, [todayStr]);
 
   // --- Dynamic Stats calculation depending on active sub-tab ---
   const showReservationsTab = isArena && activeSubTab === 'reservas';
 
-  const totalAmount = useMemo(() => {
-    if (showReservationsTab) {
-      return monthReservations.reduce((sum, r) => sum + r.finalPrice, 0);
-    }
-    return monthPayments.reduce((sum, p) => sum + p.amount, 0);
-  }, [showReservationsTab, monthReservations, monthPayments]);
-
-  const totalPaid = useMemo(() => {
-    if (showReservationsTab) {
-      return monthReservations.filter(r => r.paymentStatus === 'paid').reduce((sum, r) => sum + r.finalPrice, 0);
-    }
-    return monthPayments.reduce((sum, p) => sum + (p.paidAmount || 0), 0);
-  }, [showReservationsTab, monthReservations, monthPayments]);
-
-  const totalPending = Math.max(0, totalAmount - totalPaid);
-
-  const overdueCount = useMemo(() => {
-    if (showReservationsTab) {
-      return monthReservations.filter(r => r.paymentStatus === 'pending' && r.date < todayStr).length;
-    }
-    return monthPayments.filter(p => getStatus(p) === 'overdue').length;
-  }, [showReservationsTab, monthReservations, monthPayments, todayStr, getStatus]);
+  const paymentSummary = useMemo(() => summarizePayments(monthPayments, todayStr), [monthPayments, todayStr]);
+  const reservationSummary = useMemo(
+    () => summarizeReservationReceivables(monthReservations, todayStr),
+    [monthReservations, todayStr],
+  );
+  const activeSummary = showReservationsTab ? reservationSummary : paymentSummary;
+  const totalAmount = activeSummary.totalAmount;
+  const totalPaid = activeSummary.totalPaid;
+  const totalPending = activeSummary.totalPending;
+  const overdueCount = activeSummary.overdueCount;
 
   const handleToggleReservationPayment = async (reservation: typeof reservations[0]) => {
     try {
@@ -241,7 +233,7 @@ export default function PaymentsPage() {
         </div>
 
         {/* Summary cards */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <div className="card-elevated p-4">
             <div className="flex items-center gap-2 text-muted-foreground text-sm mb-1">
               <DollarSign className="h-4 w-4" /> Total do mês
@@ -599,7 +591,7 @@ export default function PaymentsPage() {
               </DialogHeader>
 
               <div className="space-y-4 py-3 text-left">
-                <div className="grid grid-cols-2 gap-4 text-sm bg-muted/40 p-3.5 rounded-xl border border-border/50 text-left">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm bg-muted/40 p-3.5 rounded-xl border border-border/50 text-left">
                   <div>
                     <span className="text-muted-foreground block text-xs font-semibold">Valor Total da Fatura</span>
                     <span className="font-bold text-foreground text-base">{formatCurrency(receivingPayment.amount)}</span>
@@ -630,13 +622,13 @@ export default function PaymentsPage() {
                 </div>
               </div>
 
-              <DialogFooter className="flex gap-2 sm:gap-0 mt-2">
-                <Button type="button" variant="outline" className="flex-1" onClick={() => setReceivingPayment(null)}>
+              <DialogFooter className="flex flex-col-reverse gap-2 sm:flex-row sm:gap-0 mt-2">
+                <Button type="button" variant="outline" className="w-full sm:flex-1" onClick={() => setReceivingPayment(null)}>
                   Cancelar
                 </Button>
                 <Button
                   type="button"
-                  className="flex-1 btn-primary-gradient"
+                  className="w-full sm:flex-1 btn-primary-gradient"
                   onClick={async () => {
                     if (!receiptAmount || isNaN(Number(receiptAmount))) return;
                     const inputAmt = Number(receiptAmount);

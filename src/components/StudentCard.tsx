@@ -21,6 +21,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useModalities } from '@/hooks/queries/useModalities';
 import { getLocalTodayDate } from '@/lib/dateUtils';
 import { useAuth } from '@/contexts/AuthContext';
+import { syncAfterStudentMutation } from '@/lib/querySync';
 
 interface StudentCardProps {
   student: Student;
@@ -128,9 +129,7 @@ export function StudentCard({ student, onClick }: StudentCardProps) {
     await updateStudent(student.id, { active: false });
 
     // 5. Invalida os caches para atualizar a UI imediatamente
-    queryClient.invalidateQueries({ queryKey: ['payments'] });
-    queryClient.invalidateQueries({ queryKey: ['groups'] });
-    queryClient.invalidateQueries({ queryKey: ['students'] });
+    syncAfterStudentMutation(queryClient);
 
     // 6. Toast informativo completo
     const descParts: string[] = [];

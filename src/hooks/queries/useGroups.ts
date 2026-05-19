@@ -3,11 +3,17 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { useProfile } from '@/hooks/queries/useProfile';
+import { syncAfterGroupMutation } from '@/lib/querySync';
+import {
+  buildGroupStudentLinks,
+  getActiveStudentIdsFromGroupLinks,
+  normalizeGroupDuration,
+  parseGroupSchedule,
+  type GroupScheduleSlotContract,
+} from '@/lib/studentGroupContracts';
+import type { Json, Tables, TablesUpdate } from '@/integrations/supabase/types';
 
-export interface GroupScheduleSlot {
-  dayOfWeek: number; // 0=Dom, 1=Seg, 2=Ter, 3=Qua, 4=Qui, 5=Sex, 6=Sab
-  time: string;      // "18:00"
-}
+export type GroupScheduleSlot = GroupScheduleSlotContract;
 
 export interface Group {
   id: string;
@@ -24,6 +30,36 @@ export interface Group {
   studentIds: string[];
 }
 
+type GroupStudentWithStudent = Pick<Tables<'group_students'>, 'student_id'> & {
+  students?: Pick<Tables<'students'>, 'active'> | null;
+};
+
+type GroupRowWithStudents = Tables<'groups'> & {
+  group_students?: GroupStudentWithStudent[] | null;
+};
+
+type GroupsQueryResult = PromiseLike<{
+  data: GroupRowWithStudents[] | null;
+  error: unknown;
+}>;
+
+type GroupsFilterBuilder = {
+  eq(column: string, value: string): GroupsFilterBuilder;
+  order(column: string): GroupsQueryResult;
+};
+
+type GroupsSelectBuilder = {
+  select(columns: string): GroupsFilterBuilder;
+};
+
+type GroupsClient = {
+  from(table: 'groups'): GroupsSelectBuilder;
+};
+
+function getErrorMessage(error: unknown) {
+  return error instanceof Error ? error.message : 'Erro inesperado';
+}
+
 export function useGroups() {
   const { user } = useAuth();
   const { profile } = useProfile();
@@ -34,29 +70,28 @@ export function useGroups() {
     queryFn: async () => {
       if (!user) return [];
       const businessType = profile?.business_type || 'sport_school';
-      const { data, error } = await supabase
+      const groupsClient = supabase as unknown as GroupsClient;
+      const { data, error } = await groupsClient
         .from('groups')
-        .select('*, group_students(student_id, students(active))')
+        .select('id, user_id, name, schedule, location, modality_id, max_students, duration_minutes, color, active, created_at, group_students(student_id, students(active))')
         .eq('user_id', user.id)
         .eq('business_type', businessType)
         .order('name');
 
       if (error) throw error;
-      return (data || []).map((g: any) => ({
+      return ((data || []) as GroupRowWithStudents[]).map((g) => ({
         id: g.id,
         userId: g.user_id,
         name: g.name,
-        schedule: (g.schedule || []) as GroupScheduleSlot[],
+        schedule: parseGroupSchedule(g.schedule),
         location: g.location || '',
         modalityId: g.modality_id,
         maxStudents: g.max_students,
-        durationMinutes: g.duration_minutes ?? 60,
+        durationMinutes: normalizeGroupDuration(g.duration_minutes),
         color: g.color || '#6366f1',
         active: g.active ?? true,
         createdAt: g.created_at,
-        studentIds: (g.group_students || [])
-          .filter((gs: any) => gs.students?.active !== false)
-          .map((gs: any) => gs.student_id),
+        studentIds: getActiveStudentIdsFromGroupLinks(g.group_students),
       })) as Group[];
     },
     enabled: !!user,
@@ -73,7 +108,7 @@ export function useGroups() {
           user_id: user.id,
           business_type: businessType,
           name: data.name,
-          schedule: data.schedule as any,
+          schedule: data.schedule as unknown as Json,
           location: data.location,
           modality_id: data.modalityId || null,
           max_students: data.maxStudents || null,
@@ -90,22 +125,22 @@ export function useGroups() {
       if (data.studentIds && data.studentIds.length > 0) {
         const { error: gsError } = await supabase
           .from('group_students')
-          .insert(data.studentIds.map(sid => ({
-            group_id: newGroup.id,
-            student_id: sid,
-            user_id: user.id,
-          })));
+          .insert(buildGroupStudentLinks({
+            groupId: newGroup.id,
+            studentIds: data.studentIds,
+            userId: user.id,
+          }));
         if (gsError) throw gsError;
       }
 
       return newGroup;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['groups'] });
+      syncAfterGroupMutation(queryClient);
       toast.success('Turma criada com sucesso');
     },
-    onError: (error: any) => {
-      toast.error('Erro ao criar turma: ' + error.message);
+    onError: (error: unknown) => {
+      toast.error('Erro ao criar turma: ' + getErrorMessage(error));
     },
   });
 
@@ -114,9 +149,9 @@ export function useGroups() {
       if (!user) throw new Error('Usuário não autenticado');
       const { id, data } = params;
 
-      const updates: any = {};
+      const updates: TablesUpdate<'groups'> = {};
       if (data.name !== undefined) updates.name = data.name;
-      if (data.schedule !== undefined) updates.schedule = data.schedule;
+      if (data.schedule !== undefined) updates.schedule = data.schedule as unknown as Json;
       if (data.location !== undefined) updates.location = data.location;
       if (data.modalityId !== undefined) updates.modality_id = data.modalityId || null;
       if (data.maxStudents !== undefined) updates.max_students = data.maxStudents || null;
@@ -139,21 +174,21 @@ export function useGroups() {
         if (data.studentIds.length > 0) {
           const { error: gsError } = await supabase
             .from('group_students')
-            .insert(data.studentIds.map(sid => ({
-              group_id: id,
-              student_id: sid,
-              user_id: user.id,
-            })));
+            .insert(buildGroupStudentLinks({
+              groupId: id,
+              studentIds: data.studentIds,
+              userId: user.id,
+            }));
           if (gsError) throw gsError;
         }
       }
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['groups'] });
+      syncAfterGroupMutation(queryClient);
       toast.success('Turma atualizada');
     },
-    onError: (error: any) => {
-      toast.error('Erro ao atualizar turma: ' + error.message);
+    onError: (error: unknown) => {
+      toast.error('Erro ao atualizar turma: ' + getErrorMessage(error));
     },
   });
 
@@ -168,11 +203,11 @@ export function useGroups() {
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['groups'] });
+      syncAfterGroupMutation(queryClient);
       toast.success('Turma removida');
     },
-    onError: (error: any) => {
-      toast.error('Erro ao remover turma: ' + error.message);
+    onError: (error: unknown) => {
+      toast.error('Erro ao remover turma: ' + getErrorMessage(error));
     },
   });
 

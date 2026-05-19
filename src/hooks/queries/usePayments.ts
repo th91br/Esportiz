@@ -6,6 +6,7 @@ import type { Payment } from '@/data/mockData';
 import { useAuth } from '@/contexts/AuthContext';
 import { useProfile } from '@/hooks/queries/useProfile';
 import { getLocalTodayDate } from '@/lib/dateUtils';
+import { syncAfterPaymentMutation } from '@/lib/querySync';
 import type { Tables } from '@/integrations/supabase/types';
 
 type PaymentRowWithStudent = Tables<'payments'> & {
@@ -95,7 +96,7 @@ export function usePayments() {
                 p_month_ref: currentMonthRef,
             }).then(({ data, error }) => {
                 if (!error && data && (data as number) > 0) {
-                    queryClient.invalidateQueries({ queryKey: ['payments'] });
+                    syncAfterPaymentMutation(queryClient);
                 }
             });
         } else {
@@ -112,7 +113,7 @@ export function usePayments() {
             if (error) throw error;
         },
         onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['payments'] });
+            syncAfterPaymentMutation(queryClient);
         },
         onError: (error: Error) => {
             toast({ title: 'Erro ao marcar pagamento', description: error.message, variant: 'destructive' });
@@ -127,7 +128,7 @@ export function usePayments() {
             if (error) throw error;
         },
         onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['payments'] });
+            syncAfterPaymentMutation(queryClient);
         },
         onError: (error: Error) => {
             toast({ title: 'Erro ao desmarcar pagamento', description: error.message, variant: 'destructive' });
@@ -143,7 +144,7 @@ export function usePayments() {
             if (error) throw error;
         },
         onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['payments'] });
+            syncAfterPaymentMutation(queryClient);
         },
         onError: (error: Error) => {
             toast({ title: 'Erro ao excluir pagamento', description: error.message, variant: 'destructive' });
@@ -166,7 +167,7 @@ export function usePayments() {
             return { count: data as number };
         },
         onSuccess: (data) => {
-            queryClient.invalidateQueries({ queryKey: ['payments'] });
+            syncAfterPaymentMutation(queryClient);
             if (data?.count && data.count > 0) {
                 toast({
                     title: 'Pagamentos gerados',
@@ -196,7 +197,7 @@ export function usePayments() {
             if (error) throw error;
         },
         onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['payments'] });
+            syncAfterPaymentMutation(queryClient);
         }
     });
 
@@ -208,7 +209,7 @@ export function usePayments() {
             if (error) throw error;
         },
         onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['payments'] });
+            syncAfterPaymentMutation(queryClient);
             toast({ title: 'Pagamentos em lote', description: 'Pagamentos marcados como pagos com sucesso.' });
         },
         onError: (error: Error) => {
@@ -224,7 +225,7 @@ export function usePayments() {
             if (error) throw error;
         },
         onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['payments'] });
+            syncAfterPaymentMutation(queryClient);
             toast({ title: 'Pagamentos em lote', description: 'Pagamentos desmarcados com sucesso.' });
         },
         onError: (error: Error) => {

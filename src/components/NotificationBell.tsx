@@ -8,11 +8,13 @@ import { useTrainings } from '@/hooks/queries/useTrainings';
 import { usePayments } from '@/hooks/queries/usePayments';
 import { useAttendance } from '@/hooks/queries/useAttendance';
 import { useReservations } from '@/hooks/queries/useReservations';
+import { useCourts } from '@/hooks/queries/useCourts';
 import { getEndTime } from '@/data/mockData';
 import { useBusinessContext } from '@/hooks/useBusinessContext';
 import { Link } from 'react-router-dom';
 import { toast } from '@/hooks/use-toast';
 import { getLocalTodayDate, toLocalDateString } from '@/lib/dateUtils';
+import { syncAfterScheduleMutation } from '@/lib/querySync';
 
 // ── localStorage dismiss (only for manual "X" dismiss, NOT for completed status) ──
 type DismissedNotifications = {
@@ -53,9 +55,10 @@ export function NotificationBell() {
   const { payments } = usePayments();
   const { attendance } = useAttendance();
   const { reservations } = useReservations();
+  const { courts } = useCourts();
 
-  const refreshData = useCallback(async () => {
-    await queryClient.invalidateQueries();
+  const refreshScheduleData = useCallback(() => {
+    syncAfterScheduleMutation(queryClient);
   }, [queryClient]);
   const [open, setOpen] = useState(false);
   const [dismissed, setDismissed] = useState<DismissedNotifications>(getDismissed);
@@ -183,33 +186,33 @@ export function NotificationBell() {
     
     // Persist completed status in the DATABASE (not localStorage!)
     await markTrainingComplete(trainingId);
-    await refreshData();
+    refreshScheduleData();
     toast({ 
       title: isArena ? '✅ Horário concluído' : '✅ Treino concluído', 
       description: isArena 
         ? 'O horário foi marcado como executado.' 
         : 'O treino foi marcado como executado. A presença dos alunos deve ser conferida manualmente na lista.' 
     });
-  }, [trainings, markTrainingComplete, refreshData]);
+  }, [trainings, markTrainingComplete, refreshScheduleData, isArena]);
 
   const handleUndoComplete = useCallback(async (trainingId: string) => {
     await unmarkTrainingComplete(trainingId);
-    await refreshData();
+    refreshScheduleData();
     toast({ 
       title: isArena ? '↩️ Horário reaberto' : '↩️ Treino reaberto', 
       description: isArena ? 'O horário voltou para pendente.' : 'O treino voltou para pendente.' 
     });
-  }, [unmarkTrainingComplete, refreshData]);
+  }, [unmarkTrainingComplete, refreshScheduleData, isArena]);
 
   const handleDeleteTraining = useCallback(async (trainingId: string) => {
     await deleteTraining(trainingId);
     dismissTraining(trainingId);
-    await refreshData();
+    refreshScheduleData();
     toast({ 
       title: isArena ? '🗑️ Horário excluído' : '🗑️ Treino excluído', 
       description: isArena ? 'O horário foi removido com sucesso.' : 'O treino foi removido com sucesso.' 
     });
-  }, [deleteTraining, dismissTraining, refreshData]);
+  }, [deleteTraining, dismissTraining, refreshScheduleData, isArena]);
 
   const getTrainingStatus = (time: string, durationMinutes: number = 60): 'upcoming' | 'now' | 'past' => {
     const hour = parseInt(time.split(':')[0]);
@@ -470,6 +473,13 @@ export function NotificationBell() {
                 {pendingTrainings.map((t) => {
                   const trainingStudents = students.filter((s) => t.studentIds.includes(s.id));
                   const status = getTrainingStatus(t.time, t.durationMinutes);
+                  const court = isArena ? courts.find((c) => c.id === t.modalityId) : undefined;
+                  const locationText = isArena
+                    ? court?.name || t.location || 'Quadra nao definida'
+                    : t.location || 'Sem local';
+                  const statusLabel = isArena
+                    ? status === 'now' ? 'EM HORARIO' : status === 'upcoming' ? 'PROXIMO HORARIO' : 'PENDENTE'
+                    : status === 'now' ? 'EM AULA' : status === 'upcoming' ? 'PROXIMO' : 'PENDENTE';
                   
                   return (
                     <div
@@ -493,12 +503,12 @@ export function NotificationBell() {
                             "text-[10px] font-black uppercase tracking-widest",
                             status === 'now' ? "text-primary" : "text-foreground"
                           )}>
-                            {status === 'now' ? 'EM AULA' : status === 'upcoming' ? 'PRÓXIMO' : 'PENDENTE'}
+                            {statusLabel}
                           </span>
                         </div>
                         <div className="flex items-center gap-3 mt-1 text-[11px] text-muted-foreground font-medium">
                           <span className="flex items-center gap-1 truncate">
-                            <MapPin className="h-3 w-3" />{t.location || 'Sem local'}
+                            <MapPin className="h-3 w-3" />{locationText}
                           </span>
                           <span className="flex items-center gap-1 shrink-0">
                             <Users className="h-3 w-3" />{trainingStudents.length}
@@ -511,7 +521,7 @@ export function NotificationBell() {
                         <button
                           onClick={() => handleMarkComplete(t.id)}
                           className="h-9 w-9 flex items-center justify-center rounded-lg bg-primary/10 text-primary hover:bg-primary hover:text-white transition-all"
-                          title="Marcar como concluído"
+                          title={isArena ? 'Marcar horario como concluido' : 'Marcar como concluido'}
                         >
                           <Check className="h-4 w-4 stroke-[3]" />
                         </button>
@@ -567,7 +577,7 @@ export function NotificationBell() {
                       <button
                         onClick={() => handleUndoComplete(t.id)}
                         className="h-8 w-8 flex items-center justify-center rounded-lg text-muted-foreground hover:bg-emerald-500 hover:text-white transition-all shrink-0"
-                        title="Reabrir treino"
+                        title={isArena ? 'Reabrir horario' : 'Reabrir treino'}
                       >
                         <Undo2 className="h-4 w-4" />
                       </button>
@@ -582,7 +592,7 @@ export function NotificationBell() {
           {showTrainings && (pendingTrainings.length > 0 || completedTrainings.length > 0) && (
             <div className="p-6">
               <Link
-                to="/calendario"
+                to={isArena ? '/agenda' : '/calendario'}
                 onClick={() => setOpen(false)}
                 className="flex items-center justify-center gap-2.5 py-3.5 rounded-xl bg-muted hover:bg-primary/10 text-[11px] font-black uppercase tracking-widest text-foreground hover:text-primary transition-all group"
               >

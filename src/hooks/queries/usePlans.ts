@@ -3,6 +3,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { useProfile } from '@/hooks/queries/useProfile';
+import { syncAfterPlanMutation } from '@/lib/querySync';
 
 export interface Plan {
   id: string;
@@ -64,7 +65,7 @@ export function usePlans() {
       return newPlan;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['plans'] });
+      syncAfterPlanMutation(queryClient);
     },
     onError: (error: Error) => {
       toast({ title: 'Erro ao criar plano', description: error.message, variant: 'destructive' });
@@ -100,8 +101,7 @@ export function usePlans() {
       return updatedPlan;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['plans'] });
-      queryClient.invalidateQueries({ queryKey: ['payments'] }); // Preços podem ter mudado
+      syncAfterPlanMutation(queryClient);
     },
     onError: (error: Error) => {
       toast({ title: 'Erro ao atualizar plano', description: error.message, variant: 'destructive' });
@@ -121,8 +121,7 @@ export function usePlans() {
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['plans'] });
-      queryClient.invalidateQueries({ queryKey: ['students'] }); // Estudantes podem ter ficado sem plano
+      syncAfterPlanMutation(queryClient);
     },
     onError: (error: Error) => {
       toast({ title: 'Erro ao remover plano', description: error.message, variant: 'destructive' });

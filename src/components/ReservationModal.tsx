@@ -214,7 +214,7 @@ export function ReservationModal({
           </div>
 
           {/* Data e Hora */}
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="space-y-2">
               <Label className="flex items-center gap-2 text-sm font-semibold">
                 <CalendarDays className="h-4 w-4 text-primary" /> Data *
@@ -337,7 +337,7 @@ export function ReservationModal({
               <p className="text-sm font-semibold flex items-center gap-2">
                 <DollarSign className="h-4 w-4 text-primary" /> Financeiro
               </p>
-              <div className="grid grid-cols-3 gap-3 text-center">
+              <div className="grid grid-cols-1 gap-3 text-center min-[420px]:grid-cols-3">
                 <div>
                   <p className="text-xs text-muted-foreground mb-1">Valor Base</p>
                   <p className="font-bold text-sm">{formatCurrency(basePrice)}</p>
@@ -360,7 +360,7 @@ export function ReservationModal({
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="space-y-1.5">
                   <Label className="text-xs">Pagamento</Label>
                   <Select value={paymentMethod} onValueChange={v => setPaymentMethod(v as PaymentMethod)}>
@@ -404,11 +404,11 @@ export function ReservationModal({
           </div>
 
           {/* Actions */}
-          <div className="flex gap-3 pt-2">
-            <Button variant="outline" className="flex-1" onClick={() => onOpenChange(false)}>
+          <div className="flex flex-col-reverse gap-3 pt-2 sm:flex-row">
+            <Button variant="outline" className="w-full sm:flex-1" onClick={() => onOpenChange(false)}>
               Cancelar
             </Button>
-            <Button className="flex-1 btn-primary-gradient" onClick={handleSubmit} disabled={saving}>
+            <Button className="w-full sm:flex-1 btn-primary-gradient" onClick={handleSubmit} disabled={saving}>
               {saving
                 ? <div className="h-4 w-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                 : isEditing ? 'Salvar' : 'Criar Reserva'}

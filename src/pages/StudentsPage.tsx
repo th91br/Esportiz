@@ -122,14 +122,14 @@ export default function StudentsPage() {
         </div>
 
         <div className="card-elevated p-4">
-          <div className="flex flex-col md:flex-row gap-3">
+          <div className="flex flex-col lg:flex-row gap-3">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input placeholder={`Buscar ${labels.studentLabelSingular.toLowerCase()}...`} value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="pl-10" />
             </div>
-            <div className="flex gap-2">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 lg:flex lg:w-auto">
               <Select value={levelFilter} onValueChange={setLevelFilter}>
-                <SelectTrigger className="w-[140px]"><SelectValue placeholder="Nível" /></SelectTrigger>
+                <SelectTrigger className="w-full lg:w-[140px]"><SelectValue placeholder="Nível" /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Todos os níveis</SelectItem>
                   <SelectItem value="iniciante">Iniciante</SelectItem>
@@ -138,7 +138,7 @@ export default function StudentsPage() {
                 </SelectContent>
               </Select>
               <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className="w-[120px]"><SelectValue placeholder="Status" /></SelectTrigger>
+                <SelectTrigger className="w-full lg:w-[120px]"><SelectValue placeholder="Status" /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Todos</SelectItem>
                   <SelectItem value="active">Ativos</SelectItem>
@@ -147,7 +147,7 @@ export default function StudentsPage() {
                 </SelectContent>
               </Select>
               <Select value={modalityFilter} onValueChange={setModalityFilter}>
-                <SelectTrigger className="w-[140px]"><SelectValue placeholder={labels.modalityLabelSingular} /></SelectTrigger>
+                <SelectTrigger className="w-full lg:w-[140px]"><SelectValue placeholder={labels.modalityLabelSingular} /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Todas as {labels.modalityLabel.toLowerCase()}</SelectItem>
                   {modalities.map((mod) => (

@@ -2,6 +2,8 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
+import { syncAfterCourtMutation } from '@/lib/querySync';
+import type { Tables, TablesInsert, TablesUpdate } from '@/integrations/supabase/types';
 
 export type CourtSportType =
   | 'beach_tennis' | 'futevolei' | 'volei_praia' | 'society'
@@ -76,18 +78,24 @@ const DEFAULT_META: CourtMetadata = {
   peakEnd: '22:00',
 };
 
-function parseMeta(raw: any): CourtMetadata {
+function parseMeta(raw: unknown): CourtMetadata {
   if (!raw) return { ...DEFAULT_META };
   try {
     const parsed = typeof raw === 'string' ? JSON.parse(raw) : raw;
-    return { ...DEFAULT_META, ...parsed };
+    return parsed && typeof parsed === 'object' && !Array.isArray(parsed)
+      ? { ...DEFAULT_META, ...(parsed as Partial<CourtMetadata>) }
+      : { ...DEFAULT_META };
   } catch {
     return { ...DEFAULT_META };
   }
 }
 
-function toCourt(row: any): Court {
-  const meta = parseMeta((row as any).metadata);
+function getErrorMessage(error: unknown) {
+  return error instanceof Error ? error.message : 'Erro inesperado';
+}
+
+function toCourt(row: Tables<'modalities'>): Court {
+  const meta = parseMeta(row.metadata);
   return {
     id: row.id,
     userId: row.user_id,
@@ -121,37 +129,39 @@ export function useCourts() {
   const addCourt = useMutation({
     mutationFn: async (input: { name: string; color: string; metadata: CourtMetadata }) => {
       if (!user) throw new Error('Não autenticado');
+      const newCourt: TablesInsert<'modalities'> = {
+        user_id: user.id,
+        business_type: 'arena',
+        name: input.name,
+        color: input.color,
+        metadata: JSON.stringify(input.metadata),
+      };
       const { data, error } = await supabase
         .from('modalities')
-        .insert({
-          user_id: user.id,
-          business_type: 'arena',
-          name: input.name,
-          color: input.color,
-          ...(({ metadata: JSON.stringify(input.metadata) }) as any),
-        } as any)
+        .insert(newCourt)
         .select()
         .single();
       if (error) throw error;
       return toCourt(data);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['courts'] });
+      syncAfterCourtMutation(queryClient);
       toast.success('Quadra criada com sucesso!');
     },
-    onError: (e: any) => toast.error('Erro ao criar quadra: ' + e.message),
+    onError: (e: unknown) => toast.error('Erro ao criar quadra: ' + getErrorMessage(e)),
   });
 
   const updateCourt = useMutation({
     mutationFn: async (params: { id: string; name: string; color: string; metadata: CourtMetadata }) => {
       if (!user) throw new Error('Não autenticado');
+      const courtUpdates: TablesUpdate<'modalities'> = {
+        name: params.name,
+        color: params.color,
+        metadata: JSON.stringify(params.metadata),
+      };
       const { data, error } = await supabase
         .from('modalities')
-        .update({
-          name: params.name,
-          color: params.color,
-          ...({ metadata: JSON.stringify(params.metadata) } as any),
-        } as any)
+        .update(courtUpdates)
         .eq('id', params.id)
         .eq('user_id', user.id)
         .select()
@@ -160,10 +170,10 @@ export function useCourts() {
       return toCourt(data);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['courts'] });
+      syncAfterCourtMutation(queryClient);
       toast.success('Quadra atualizada!');
     },
-    onError: (e: any) => toast.error('Erro ao atualizar quadra: ' + e.message),
+    onError: (e: unknown) => toast.error('Erro ao atualizar quadra: ' + getErrorMessage(e)),
   });
 
   const deleteCourt = useMutation({
@@ -177,10 +187,10 @@ export function useCourts() {
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['courts'] });
+      syncAfterCourtMutation(queryClient);
       toast.success('Quadra removida!');
     },
-    onError: (e: any) => toast.error('Erro ao remover quadra: ' + e.message),
+    onError: (e: unknown) => toast.error('Erro ao remover quadra: ' + getErrorMessage(e)),
   });
 
   return {

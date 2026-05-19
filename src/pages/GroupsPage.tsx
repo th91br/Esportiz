@@ -141,7 +141,7 @@ function GroupFormDialog({
           </div>
 
           {/* Local + Duração */}
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="space-y-2">
               <Label>Local</Label>
               <Input placeholder={isArena ? "Ex: Quadra Coberta" : "Ex: Arena Principal"} value={location} onChange={e => setLocation(e.target.value)} />
@@ -163,7 +163,7 @@ function GroupFormDialog({
           </div>
 
           {/* Modalidade + Vagas */}
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="space-y-2">
               <Label>{labels.modalityLabelSingular}</Label>
               <Select value={modalityId} onValueChange={setModalityId}>
@@ -199,9 +199,9 @@ function GroupFormDialog({
               </p>
             )}
             {schedule.map((slot, i) => (
-              <div key={i} className="flex items-center gap-2 p-2.5 rounded-lg border bg-muted/10">
+              <div key={i} className="flex flex-col gap-2 p-2.5 rounded-lg border bg-muted/10 sm:flex-row sm:items-center">
                  <Select value={String(slot.dayOfWeek)} onValueChange={v => updateSlot(i, 'dayOfWeek', v)}>
-                  <SelectTrigger className="w-[110px] h-9"><SelectValue /></SelectTrigger>
+                  <SelectTrigger className="w-full sm:w-[110px] h-9"><SelectValue /></SelectTrigger>
                   <SelectContent>
                     {[
                       { value: 1, label: 'Segunda-feira' },
@@ -217,7 +217,7 @@ function GroupFormDialog({
                   </SelectContent>
                 </Select>
                 <Select value={slot.time} onValueChange={v => updateSlot(i, 'time', v)}>
-                  <SelectTrigger className="w-[100px] h-9"><SelectValue /></SelectTrigger>
+                  <SelectTrigger className="w-full sm:w-[100px] h-9"><SelectValue /></SelectTrigger>
                   <SelectContent className="max-h-60">
                     {Array.from({ length: 18 }, (_, h) => h + 6).map(h => {
                       const t = `${h.toString().padStart(2, '0')}:00`;
@@ -228,7 +228,7 @@ function GroupFormDialog({
                 <span className="text-xs text-muted-foreground hidden sm:inline">
                   {getEndTime(slot.time, parseInt(duration) || 60)}
                 </span>
-                <Button type="button" variant="ghost" size="icon" className="h-8 w-8 ml-auto text-destructive" onClick={() => removeSlot(i)}>
+                <Button type="button" variant="ghost" size="icon" className="h-8 w-full text-destructive sm:w-8 sm:ml-auto" onClick={() => removeSlot(i)}>
                   <X className="h-3.5 w-3.5" />
                 </Button>
               </div>

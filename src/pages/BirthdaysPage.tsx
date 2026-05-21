@@ -109,39 +109,48 @@ export default function BirthdaysPage() {
   }, [students]);
 
   const BirthdayCard = ({ student }: { student: Student & { birthdayThisYear: Date } }) => (
-    <Card className="overflow-hidden border-2 border-transparent hover:border-primary/20 transition-colors">
-      <CardContent className="p-4 sm:p-6 flex flex-col sm:flex-row items-center gap-4">
-        <div className="h-16 w-16 rounded-full bg-primary/10 text-primary flex items-center justify-center shrink-0">
-          <Gift className="h-8 w-8" />
-        </div>
-        
-        <div className="flex-1 text-center sm:text-left">
-          <h3 className="font-display text-lg font-bold">{student.name}</h3>
-          <p className="text-sm text-muted-foreground capitalize">
-            {format(student.birthdayThisYear, "dd 'de' MMMM", { locale: ptBR })}
-          </p>
-          <div className="mt-2 text-sm">
-            Nível: <span className="capitalize font-medium">{student.level}</span>
+    <Card className="overflow-hidden border border-border/50 hover:border-primary/30 transition-all duration-300 card-elevated flex flex-col justify-between h-full hover:shadow-md">
+      <CardContent className="p-5 flex flex-col justify-between h-full">
+        {/* Top Info section */}
+        <div className="flex items-start gap-4">
+          <div className="h-14 w-14 rounded-full bg-primary/10 text-primary flex items-center justify-center shrink-0 shadow-inner">
+            <Gift className="h-7 w-7 animate-pulse" />
+          </div>
+
+          <div className="flex-1 min-w-0">
+            <h3 className="font-display text-base font-bold text-foreground truncate" title={student.name}>
+              {student.name}
+            </h3>
+            <p className="text-xs text-muted-foreground capitalize mt-0.5">
+              {format(student.birthdayThisYear, "dd 'de' MMMM", { locale: ptBR })}
+            </p>
+            <div className="mt-2 text-xs text-muted-foreground flex items-center gap-1.5">
+              <span className="bg-muted px-2 py-0.5 rounded border border-border/40 font-medium capitalize text-foreground">
+                {student.level}
+              </span>
+            </div>
           </div>
         </div>
 
-        <Button
-          variant="outline"
-          className="w-full sm:w-auto mt-2 sm:mt-0 gap-2"
-          onClick={() => handleCopyBirthdayMessage(student)}
-        >
-          <Copy className="h-4 w-4" />
-          Copiar
-        </Button>
+        {/* Bottom Actions section */}
+        <div className="grid grid-cols-2 gap-2 mt-5 pt-4 border-t border-border/40">
+          <Button
+            variant="outline"
+            className="w-full text-xs py-2 h-9 gap-1.5 border-border/80 hover:bg-muted font-semibold transition-all duration-200"
+            onClick={() => handleCopyBirthdayMessage(student)}
+          >
+            <Copy className="h-3.5 w-3.5" />
+            Copiar
+          </Button>
 
-        <Button 
-          variant="outline" 
-          className="w-full sm:w-auto mt-2 sm:mt-0 gap-2"
-          onClick={() => handleBirthdayWhatsApp(student)}
-        >
-          <Phone className="h-4 w-4" />
-          Parabenizar
-        </Button>
+          <Button
+            className="w-full text-xs py-2 h-9 gap-1.5 btn-primary-gradient font-bold transition-all duration-200"
+            onClick={() => handleBirthdayWhatsApp(student)}
+          >
+            <Phone className="h-3.5 w-3.5" />
+            Parabenizar
+          </Button>
+        </div>
       </CardContent>
     </Card>
   );

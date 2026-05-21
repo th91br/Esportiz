@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { MessageCircle, Users, Check, AlertCircle, Save, Loader2 } from 'lucide-react';
+import { MessageCircle, Users, Check, AlertCircle, Save, Loader2, Copy, PhoneOff } from 'lucide-react';
 import { useStudents } from '@/hooks/queries/useStudents';
 import { usePayments } from '@/hooks/queries/usePayments';
 import { getActiveMonthlyStudents, getInactiveStudents, getStudentsWithoutPlan } from '@/lib/studentHelpers';
@@ -13,8 +13,35 @@ import { useBusinessContext } from '@/hooks/useBusinessContext';
 import { useProfile } from '@/hooks/queries/useProfile';
 import { toast } from 'sonner';
 import { getLocalTodayDate, toLocalDateString } from '@/lib/dateUtils';
+import {
+  applyCommunicationTemplate,
+  buildPixDetails,
+  buildWhatsAppAction,
+  getFirstName,
+  getDefaultCommunicationTemplate,
+  type SportSchoolCommunicationEvent,
+} from '@/lib/communicationContracts';
 
 type Audience = 'all_active' | 'overdue' | 'due_7_days' | 'trial' | 'without_plan' | 'inactive';
+
+const AUDIENCE_EVENT_MAP: Record<Audience, SportSchoolCommunicationEvent> = {
+  all_active: 'general_announcement',
+  overdue: 'payment_overdue',
+  due_7_days: 'payment_due_soon',
+  trial: 'trial_follow_up',
+  without_plan: 'without_plan',
+  inactive: 'inactive_recovery',
+};
+
+const ARENA_AUDIENCES = new Set<Audience>(['all_active', 'inactive']);
+
+function getArenaAudienceTemplate(audience: Audience): string {
+  if (audience === 'inactive') {
+    return 'Ola {nome}, tudo bem? Aqui e da {escola}. Sentimos sua falta por aqui. Posso te ajudar a encontrar um novo horario para jogar?';
+  }
+
+  return 'Ola {nome}, tudo bem? Aqui e da {escola}. Passando para compartilhar uma informacao importante sobre nossos horarios e reservas.';
+}
 
 export default function CommunicationPage() {
   const { students, loadingStudents } = useStudents();
@@ -22,6 +49,7 @@ export default function CommunicationPage() {
   const { plans, loadingPlans } = usePlans();
   const { labels } = useBusinessContext();
   const { profile, updateProfile, isUpdatingProfile } = useProfile();
+  const isArena = profile?.business_type === 'arena';
   
   // Nome dinâmico do negócio com fallbacks personalizados por modalidade
   const businessName = profile?.ct_name || (
@@ -29,8 +57,14 @@ export default function CommunicationPage() {
   );
   
   const [audience, setAudience] = useState<Audience>('all_active');
-  const [messageTemplate, setMessageTemplate] = useState(`Olá {nome}, tudo bem? Aqui é da {escola}! 😊`);
+  const [messageTemplate, setMessageTemplate] = useState(getDefaultCommunicationTemplate('sport_school', 'general_announcement') || 'Ola {nome}, tudo bem? Aqui e da {escola}.');
   const [sentTo, setSentTo] = useState<Set<string>>(new Set());
+
+  useEffect(() => {
+    if (isArena && !ARENA_AUDIENCES.has(audience)) {
+      setAudience('all_active');
+    }
+  }, [audience, isArena]);
 
   // Load audience-specific custom template on profile or audience change
   useEffect(() => {
@@ -43,19 +77,13 @@ export default function CommunicationPage() {
       if (customTemplate) {
         setMessageTemplate(customTemplate);
       } else {
-        // High quality default fallback per audience & niche type
-        const fallbacks: Record<Audience, string> = {
-          all_active: `Olá {nome}, tudo bem? Aqui é da {escola}! 😊`,
-          overdue: `Olá {nome}, tudo bem? Passando para lembrar do acerto da sua mensalidade na {escola}. 🙏`,
-          due_7_days: `Olá {nome}, tudo bem? Lembrete amigável de que sua mensalidade na {escola} vence nos próximos dias. 😊`,
-          trial: `Olá {nome}, tudo bem? Aqui é da {escola}! Passando para saber o que achou do seu treino experimental? 🎾🔥`,
-          without_plan: `Olá {nome}, tudo bem? Notamos que você está sem plano ativo na {escola}. Vamos escolher um? 🚀`,
-          inactive: `Olá {nome}, tudo bem? Estamos com saudades de você aqui na {escola}! Que tal voltar a treinar conosco? 🏆`
-        };
-        setMessageTemplate(fallbacks[audience] || `Olá {nome}, tudo bem? Aqui é da {escola}! 😊`);
+        const defaultTemplate = isArena
+          ? getArenaAudienceTemplate(audience)
+          : getDefaultCommunicationTemplate('sport_school', AUDIENCE_EVENT_MAP[audience]);
+        setMessageTemplate(defaultTemplate || 'Ola {nome}, tudo bem? Aqui e da {escola}.');
       }
     }
-  }, [profile, audience]);
+  }, [profile, audience, isArena]);
 
   const handleSaveTemplate = async () => {
     if (!profile) return;
@@ -124,53 +152,65 @@ export default function CommunicationPage() {
   }, [students, plans, payments, audience]);
 
   // Função para limpar o telefone
-  const formatPhoneForWhatsApp = (phone: string) => {
-    const cleaned = phone.replace(/\D/g, '');
-    if (!cleaned) return null;
-    // Assume DDI 55 (Brasil) if not present and has 10-11 digits
-    if (cleaned.length === 10 || cleaned.length === 11) {
-      return `55${cleaned}`;
+  const buildTemplateVariables = (studentName: string) => ({
+    nome: getFirstName(studentName),
+    nome_completo: studentName,
+    escola: businessName,
+    chave_pix: profile?.pix_key || '',
+    beneficiario_pix: profile?.pix_receiver || '',
+    pix_key: profile?.pix_key || '',
+    pix_receiver: profile?.pix_receiver || '',
+  });
+
+  const buildMessageForStudent = (studentName: string) => {
+    const templateVariables = buildTemplateVariables(studentName);
+    const personalizedMessage = applyCommunicationTemplate(messageTemplate, templateVariables);
+
+    if ((audience === 'overdue' || audience === 'due_7_days') && profile?.pix_key && !messageTemplate.includes('{chave_pix}') && !messageTemplate.includes('{pix}')) {
+      return `${personalizedMessage}${buildPixDetails(templateVariables)}`;
     }
-    return cleaned;
+
+    return personalizedMessage;
+  };
+
+  const previewStudent = targetStudents[0];
+  const previewMessage = previewStudent ? buildMessageForStudent(previewStudent.name) : '';
+
+  const handleCopyPreview = () => {
+    if (!previewMessage) {
+      toast.error('Nenhuma mensagem disponivel para copiar.');
+      return;
+    }
+
+    void navigator.clipboard.writeText(previewMessage);
+    toast.success('Preview copiado com sucesso!');
+  };
+
+  const handleCopyStudentMessage = (studentName: string) => {
+    const message = buildMessageForStudent(studentName);
+    if (!message) {
+      toast.error('Mensagem vazia para este contato.');
+      return;
+    }
+
+    void navigator.clipboard.writeText(message);
+    toast.success('Mensagem copiada com sucesso!');
   };
 
   const handleSendWhatsApp = (studentId: string, studentName: string, studentPhone: string | null) => {
-    if (!studentPhone) {
-      toast.error(`O(A) ${labels.studentLabelSingular.toLowerCase()} ${studentName} não possui um telefone cadastrado.`);
+    const safeAction = buildWhatsAppAction({ phone: studentPhone, message: buildMessageForStudent(studentName) });
+    if (safeAction.ok === false) {
+      toast.error('Nao foi possivel montar a mensagem para WhatsApp.');
       return;
     }
 
-    const whatsappPhone = formatPhoneForWhatsApp(studentPhone);
-    if (!whatsappPhone) {
-      toast.error(`Número de telefone inválido para o(a) ${labels.studentLabelSingular.toLowerCase()} ${studentName}.`);
-      return;
-    }
-
-    // Variáveis dinâmicas
-    const firstName = studentName.split(' ')[0];
-    const personalizedMessage = messageTemplate
-      .replace(/{nome}/g, firstName)
-      .replace(/{nome_completo}/g, studentName)
-      .replace(/{escola}/g, businessName)
-      .replace(/{chave_pix}/g, profile?.pix_key || '')
-      .replace(/{beneficiario_pix}/g, profile?.pix_receiver || '');
-
-    let finalMessage = personalizedMessage;
-    if ((audience === 'overdue' || audience === 'due_7_days') && profile?.pix_key && !messageTemplate.includes('{chave_pix}')) {
-      finalMessage += `\n\n📌 *Dados para pagamento via Pix:*\n🔑 *Chave Pix:* ${profile.pix_key}${profile.pix_receiver ? `\n👤 *Beneficiário:* ${profile.pix_receiver}` : ''}`;
-    }
-
-    const encodedMessage = encodeURIComponent(finalMessage);
-
-    const url = `https://wa.me/${whatsappPhone}?text=${encodedMessage}`;
-    window.open(url, '_blank');
-
-    // Marcar como enviado localmente na sessão
+    window.open(safeAction.url, '_blank');
     setSentTo(prev => {
       const next = new Set(prev);
       next.add(studentId);
       return next;
     });
+    return;
   };
 
   return (
@@ -200,10 +240,14 @@ export default function CommunicationPage() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all_active">Todos(as) os(as) {labels.studentLabel} (Ativos)</SelectItem>
+                    {!isArena && (
+                      <>
                     <SelectItem value="overdue">Inadimplentes (Mensalidade Atrasada)</SelectItem>
                     <SelectItem value="due_7_days">Vencendo nos próximos 7 dias</SelectItem>
                     <SelectItem value="trial">{labels.trainingLabel} Experimentais (Leads)</SelectItem>
                     <SelectItem value="without_plan">{labels.studentLabel} sem {labels.planLabel}</SelectItem>
+                      </>
+                    )}
                     <SelectItem value="inactive">{labels.studentLabel} Inativos(as) (Recuperação)</SelectItem>
                   </SelectContent>
                 </Select>
@@ -233,6 +277,31 @@ export default function CommunicationPage() {
                   )}
                   Salvar Modelo como Padrão
                 </Button>
+              </div>
+
+              <div className="space-y-3 rounded-lg border border-border/50 bg-muted/20 p-4">
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <Label className="text-sm font-bold">Preview</Label>
+                    <p className="text-xs text-muted-foreground">
+                      {previewStudent ? `Exemplo para ${previewStudent.name}` : 'Selecione um publico com contatos.'}
+                    </p>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="h-8 gap-1.5 text-xs"
+                    onClick={handleCopyPreview}
+                    disabled={!previewMessage}
+                  >
+                    <Copy className="h-3.5 w-3.5" />
+                    Copiar
+                  </Button>
+                </div>
+                <pre className="max-h-44 overflow-y-auto whitespace-pre-wrap break-words rounded-md bg-background p-3 text-xs leading-relaxed text-foreground border border-border/40">
+                  {previewMessage || 'Nenhuma mensagem para visualizar.'}
+                </pre>
               </div>
 
               <div className="bg-primary/10 border border-primary/20 rounded-lg p-4 flex gap-3 mt-4">
@@ -274,26 +343,42 @@ export default function CommunicationPage() {
                 <div className="flex-1 overflow-y-auto pr-2 space-y-3 custom-scrollbar">
                   {targetStudents.map(student => {
                     const isSent = sentTo.has(student.id);
+                    const message = buildMessageForStudent(student.name);
+                    const whatsappAction = buildWhatsAppAction({ phone: student.phone, message });
+                    const canSend = whatsappAction.ok;
                     return (
-                      <div key={student.id} className={`flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-xl border transition-colors ${isSent ? 'bg-success/5 border-success/20' : 'bg-background hover:bg-muted/30 border-border/40'}`}>
+                      <div key={student.id} className={`flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-xl border transition-colors ${isSent ? 'bg-success/5 border-success/20' : canSend ? 'bg-background hover:bg-muted/30 border-border/40' : 'bg-destructive/5 border-destructive/20'}`}>
                         <div className="flex items-center gap-3 min-w-0">
-                          <div className={`h-10 w-10 rounded-full flex items-center justify-center shrink-0 ${isSent ? 'bg-success/20 text-success' : 'bg-primary/10 text-primary'}`}>
-                            {isSent ? <Check className="h-5 w-5" /> : <Users className="h-5 w-5" />}
+                          <div className={`h-10 w-10 rounded-full flex items-center justify-center shrink-0 ${isSent ? 'bg-success/20 text-success' : canSend ? 'bg-primary/10 text-primary' : 'bg-destructive/10 text-destructive'}`}>
+                            {isSent ? <Check className="h-5 w-5" /> : canSend ? <Users className="h-5 w-5" /> : <PhoneOff className="h-5 w-5" />}
                           </div>
                           <div className="min-w-0 flex-1">
                             <p className="font-semibold text-sm md:text-base truncate" title={student.name}>{student.name}</p>
-                            <p className="text-xs text-muted-foreground truncate">{student.phone || 'Sem telefone'}</p>
+                            <p className={`text-xs truncate ${canSend ? 'text-muted-foreground' : 'text-destructive'}`}>
+                              {student.phone ? (canSend ? student.phone : `${student.phone} - invalido`) : 'Sem telefone'}
+                            </p>
                           </div>
                         </div>
-                        <Button 
-                          onClick={() => handleSendWhatsApp(student.id, student.name, student.phone)}
-                          variant={isSent ? 'outline' : 'default'}
-                          className={`w-full sm:w-auto shrink-0 ${isSent ? 'text-success border-success/30 hover:bg-success/10' : ''}`}
-                          disabled={!student.phone}
-                        >
-                          <MessageCircle className="h-4 w-4 mr-2" />
-                          {isSent ? 'Reenviar' : 'Enviar WhatsApp'}
-                        </Button>
+                        <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
+                          <Button
+                            type="button"
+                            onClick={() => handleCopyStudentMessage(student.name)}
+                            variant="outline"
+                            className="w-full sm:w-auto shrink-0"
+                          >
+                            <Copy className="h-4 w-4 mr-2" />
+                            Copiar
+                          </Button>
+                          <Button
+                            onClick={() => handleSendWhatsApp(student.id, student.name, student.phone)}
+                            variant={isSent ? 'outline' : 'default'}
+                            className={`w-full sm:w-auto shrink-0 ${isSent ? 'text-success border-success/30 hover:bg-success/10' : ''}`}
+                            disabled={!canSend}
+                          >
+                            <MessageCircle className="h-4 w-4 mr-2" />
+                            {isSent ? 'Reenviar' : 'Enviar'}
+                          </Button>
+                        </div>
                       </div>
                     );
                   })}

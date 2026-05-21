@@ -26,6 +26,10 @@ import { formatCurrency } from '@/lib/formatCurrency';
 import { getLocalTodayDate, toLocalDateString } from '@/lib/dateUtils';
 import { PAYMENT_METHOD_LABELS } from '@/hooks/queries/useReservations';
 import { ArenaPartialPaymentDialog } from '@/components/arena/ArenaPartialPaymentDialog';
+import {
+  buildCommunicationMessage,
+  buildWhatsAppAction,
+} from '@/lib/communicationContracts';
 
 const HOURS = Array.from({ length: 16 }, (_, i) => i + 7); // 7 → 22
 
@@ -80,13 +84,22 @@ function ReservationDetailPanel({ reservation, students, courts, profile, onClos
 
     const customTemplate = profile?.niche_settings?.arena?.templates?.booking_confirmation;
     if (customTemplate) {
-      return customTemplate
-        .replace(/{nome}/g, clientName)
-        .replace(/{escola}/g, arenaName)
-        .replace(/{quadra}/g, courtName)
-        .replace(/{data}/g, dateFormatted)
-        .replace(/{hora}/g, `${reservation.time} (${durationLabel})`)
-        .replace(/{valor}/g, priceLabel);
+      return buildCommunicationMessage({
+        businessType: 'arena',
+        event: 'booking_confirmation',
+        customTemplate,
+        variables: {
+          nome: clientName,
+          nome_completo: clientName,
+          escola: arenaName,
+          quadra: courtName,
+          data: dateFormatted,
+          hora: `${reservation.time} (${durationLabel})`,
+          valor: priceLabel,
+          chave_pix: profile?.pix_key || '',
+          beneficiario_pix: profile?.pix_receiver || '',
+        },
+      });
     }
 
     return `━━━━━━━━━━━━━━━━━━━━━━━━
@@ -114,11 +127,17 @@ _Agradecemos a preferência. Bom jogo!_ 🎾🔥
 
   const handleShareWhatsApp = () => {
     const text = buildVoucherText();
-    const cleanPhone = reservante?.phone ? reservante.phone.replace(/\D/g, '') : '';
-    const waPhone = cleanPhone.length >= 10 && !cleanPhone.startsWith('55') ? `55${cleanPhone}` : cleanPhone;
-    const url = `https://wa.me/${waPhone}?text=${encodeURIComponent(text)}`;
-    window.open(url, '_blank');
+    const action = buildWhatsAppAction({ phone: reservante?.phone, message: text });
+    if (!action.ok) {
+      toast.error('Telefone invalido para envio via WhatsApp.');
+      return;
+    }
+    window.open(action.url, '_blank');
   };
+
+  const voucherPreviewText = buildVoucherText();
+  const voucherAction = buildWhatsAppAction({ phone: reservante?.phone, message: voucherPreviewText });
+  const canShareVoucher = voucherAction.ok;
 
   return (
     <div className="fixed inset-y-0 right-0 w-full max-w-md bg-background border-l shadow-2xl z-50 flex flex-col animate-in slide-in-from-right duration-300 sm:w-[400px]">
@@ -211,12 +230,21 @@ _Agradecemos a preferência. Bom jogo!_ 🎾🔥
               <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
                 <MessageCircle className="h-4 w-4 text-emerald-500 shrink-0" /> Comprovante de Reserva
               </p>
+              <pre className="max-h-36 overflow-y-auto whitespace-pre-wrap break-words rounded-lg border border-border/40 bg-background p-3 text-[11px] leading-relaxed text-muted-foreground">
+                {voucherPreviewText}
+              </pre>
+              {!canShareVoucher && (
+                <p className="text-xs font-medium text-destructive">
+                  Telefone invalido ou ausente para envio via WhatsApp.
+                </p>
+              )}
               <div className="flex gap-2">
                 <Button 
                   variant="outline" 
                   size="sm"
                   className="flex-1 text-xs gap-1.5 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 hover:text-emerald-700 border-emerald-500/20 font-bold transition-all"
                   onClick={handleShareWhatsApp}
+                  disabled={!canShareVoucher}
                 >
                   <Send className="h-3.5 w-3.5 shrink-0" /> Enviar
                 </Button>
@@ -411,20 +439,32 @@ export default function ArenaAgendaPage() {
     let text = '';
     
     if (customTemplate) {
-      text = customTemplate
-        .replace(/{nome}/g, reservante?.name || 'Cliente')
-        .replace(/{escola}/g, arenaName)
-        .replace(/{valor}/g, formatCurrency(r.finalPrice))
-        .replace(/{chave_pix}/g, profile?.pix_key || '')
-        .replace(/{beneficiario_pix}/g, profile?.pix_receiver || '');
+      text = buildCommunicationMessage({
+        businessType: 'arena',
+        event: 'payment_reminder',
+        customTemplate,
+        variables: {
+          nome: reservante?.name || 'Cliente',
+          nome_completo: reservante?.name || 'Cliente',
+          escola: arenaName,
+          quadra: court?.name || 'Quadra Principal',
+          data: dateFormatted,
+          hora: r.time,
+          valor: formatCurrency(r.finalPrice),
+          chave_pix: profile?.pix_key || '',
+          beneficiario_pix: profile?.pix_receiver || '',
+        },
+      });
     } else {
       text = `Olá, ${reservante?.name || 'Cliente'}! Tudo bem? \n\nPassando para lembrar do acerto do seu horário reservado na *${arenaName}*:\n🏟 *Quadra:* ${court?.name || 'Quadra Principal'}\n📅 *Data:* ${dateFormatted} às ${r.time}\n💰 *Valor:* ${formatCurrency(r.finalPrice)}\n${pixDetails}\n\nSe preferir, você pode efetuar o pagamento via Pix. Muito obrigado! 🎾🔥`;
     }
 
-    const cleanPhone = reservante?.phone ? reservante.phone.replace(/\D/g, '') : '';
-    const waPhone = cleanPhone.length >= 10 && !cleanPhone.startsWith('55') ? `55${cleanPhone}` : cleanPhone;
-    const url = `https://wa.me/${waPhone}?text=${encodeURIComponent(text)}`;
-    window.open(url, '_blank');
+    const action = buildWhatsAppAction({ phone: reservante?.phone, message: text });
+    if (!action.ok) {
+      toast.error('Telefone invalido para envio via WhatsApp.');
+      return;
+    }
+    window.open(action.url, '_blank');
   };
 
   return (

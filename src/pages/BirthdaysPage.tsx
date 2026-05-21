@@ -4,9 +4,10 @@ import {
   CalendarDays, 
   CalendarRange, 
   Gift,
-  Phone
+  Phone,
+  Copy
 } from 'lucide-react';
-import { format, isToday, isThisMonth, isThisWeek, parseISO } from 'date-fns';
+import { format, isToday, isThisMonth, isThisWeek } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
 import { Header } from '@/components/Header';
@@ -15,9 +16,54 @@ import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent } from '@/components/ui/card';
 import type { Student } from '@/data/mockData';
+import {
+  buildCommunicationMessage,
+  buildCommunicationWhatsAppAction,
+} from '@/lib/communicationContracts';
+import { toast } from 'sonner';
 
 export default function BirthdaysPage() {
   const { students, loadingStudents } = useStudents();
+
+  const buildBirthdayMessage = (student: Student) => buildCommunicationMessage({
+    businessType: 'sport_school',
+    event: 'birthday',
+    variables: {
+      nome: student.name.split(' ')[0],
+      nome_completo: student.name,
+      escola: 'Sportiz Sport',
+    },
+  });
+
+  const handleCopyBirthdayMessage = (student: Student) => {
+    const message = buildBirthdayMessage(student);
+    if (!message) {
+      toast.error('Mensagem vazia para este contato.');
+      return;
+    }
+
+    void navigator.clipboard.writeText(message);
+    toast.success('Mensagem copiada com sucesso!');
+  };
+
+  const handleBirthdayWhatsApp = (student: Student) => {
+    const action = buildCommunicationWhatsAppAction(student.phone, {
+      businessType: 'sport_school',
+      event: 'birthday',
+      variables: {
+        nome: student.name.split(' ')[0],
+        nome_completo: student.name,
+        escola: 'Sportiz Sport',
+      },
+    });
+
+    if (!action.ok) {
+      toast.error('Telefone invalido para envio via WhatsApp.');
+      return;
+    }
+
+    window.open(action.url, '_blank');
+  };
 
   const { birthdaysToday, birthdaysThisWeek, birthdaysThisMonth } = useMemo(() => {
     if (!students) return { birthdaysToday: [], birthdaysThisWeek: [], birthdaysThisMonth: [] };
@@ -79,10 +125,19 @@ export default function BirthdaysPage() {
           </div>
         </div>
 
+        <Button
+          variant="outline"
+          className="w-full sm:w-auto mt-2 sm:mt-0 gap-2"
+          onClick={() => handleCopyBirthdayMessage(student)}
+        >
+          <Copy className="h-4 w-4" />
+          Copiar
+        </Button>
+
         <Button 
           variant="outline" 
           className="w-full sm:w-auto mt-2 sm:mt-0 gap-2"
-          onClick={() => window.open(`https://wa.me/55${student.phone.replace(/\D/g, '')}?text=Parabéns, ${student.name}! Feliz aniversário! 🥳`, '_blank')}
+          onClick={() => handleBirthdayWhatsApp(student)}
         >
           <Phone className="h-4 w-4" />
           Parabenizar

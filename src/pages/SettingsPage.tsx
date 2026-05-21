@@ -26,6 +26,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { type BusinessType } from '@/hooks/queries/useProfile';
 import { cn } from '@/lib/utils';
 import { getErrorMessage } from '@/lib/errorUtils';
+import { getDefaultCommunicationTemplate } from '@/lib/communicationContracts';
 
 const BUSINESS_OPTIONS: { type: BusinessType; title: string; description: string; emoji: string }[] = [
   { type: 'sport_school', title: 'Escola Esportiva', description: 'Esportiz Sport — Futevôlei, Vôlei, Futebol, Artes Marciais...', emoji: '🏐' },
@@ -35,6 +36,8 @@ const BUSINESS_OPTIONS: { type: BusinessType; title: string; description: string
 const GOOGLE_CLIENT_ID = '101916210739-8dd7avpijkt4oc5t053fg7tqtahfakdr.apps.googleusercontent.com';
 const GOOGLE_REDIRECT_URI = window.location.origin + '/configuracoes';
 const GOOGLE_SCOPES = 'https://www.googleapis.com/auth/calendar.events https://www.googleapis.com/auth/spreadsheets';
+const DEFAULT_ARENA_BOOKING_CONFIRMATION_TEMPLATE = getDefaultCommunicationTemplate('arena', 'booking_confirmation') || '';
+const DEFAULT_ARENA_PAYMENT_REMINDER_TEMPLATE = getDefaultCommunicationTemplate('arena', 'payment_reminder') || '';
 
 export default function SettingsPage() {
   const { profile, rawProfile, updateProfile, uploadLogo, isUpdatingProfile, isUploadingLogo } = useProfile();
@@ -490,7 +493,7 @@ export default function SettingsPage() {
                       </p>
                       <Textarea
                         id="booking-confirmation-template"
-                        placeholder="Ex: Olá {nome}! Seu horário está confirmado..."
+                        placeholder={DEFAULT_ARENA_BOOKING_CONFIRMATION_TEMPLATE}
                         className="min-h-[100px] resize-none bg-background border-border/50"
                         value={bookingConfirmationTemplate}
                         onChange={(e) => setBookingConfirmationTemplate(e.target.value)}
@@ -505,7 +508,7 @@ export default function SettingsPage() {
                       </p>
                       <Textarea
                         id="payment-reminder-template"
-                        placeholder="Ex: Olá {nome}! Passando para lembrar do acerto do seu horário..."
+                        placeholder={DEFAULT_ARENA_PAYMENT_REMINDER_TEMPLATE}
                         className="min-h-[100px] resize-none bg-background border-border/50"
                         value={paymentReminderTemplate}
                         onChange={(e) => setPaymentReminderTemplate(e.target.value)}

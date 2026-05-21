@@ -1355,3 +1355,383 @@ Conclusao do ciclo:
 Proxima etapa recomendada:
 
 - Antes de publicar: revisar o diff final, separar alteracoes que devem entrar no release, confirmar migrations ja aplicadas no Supabase e decidir `GO/NO-GO` para deploy.
+
+## Registro da Fase 11.1
+
+Status: concluida com seguranca; comunicacao assistida mapeada sem mudanca de banco, sem automacao real e sem alteracao em dados.
+
+Objetivo:
+
+- Iniciar a evolucao de WhatsApp/comunicacao assistida de forma profissional.
+- Mapear os pontos existentes antes de implementar novas funcionalidades.
+- Separar Escola Esportiva / Sportiz Sport e Arena / CT Quadra: Esportiz Arena.
+- Identificar eventos seguros para mensagens manuais.
+- Preparar a Fase 11.2 com contratos testaveis.
+
+Escopo executado:
+
+- Criado `COMUNICACAO_ASSISTIDA_FASE_11.md`.
+- Mapeada `CommunicationPage`:
+  - comunicacao em massa assistida;
+  - publicos por status do aluno/reservante;
+  - templates salvos em `niche_settings`;
+  - envio manual por `wa.me`.
+- Mapeada `BirthdaysPage`:
+  - aniversariantes de hoje, semana e mes;
+  - mensagem de parabens por WhatsApp.
+- Mapeada `ArenaAgendaPage`:
+  - comprovante de reserva;
+  - cobranca de reserva pendente;
+  - link publico de agendamento;
+  - modelos customizados de Arena.
+- Mapeada `SettingsPage`:
+  - templates `booking_confirmation` e `payment_reminder` para Arena.
+- Mapeado `StudentPortalPage` como destino seguro para autoatendimento futuro.
+- Mapeado `NotificationBell` como fonte interna de eventos, sem envio externo.
+
+Eventos priorizados:
+
+- Sportiz Sport:
+  - mensalidade vencida;
+  - mensalidade vencendo;
+  - aniversariante;
+  - experimental;
+  - inativo;
+  - sem plano;
+  - link do portal do aluno;
+  - lembrete de treino/aula.
+- Esportiz Arena:
+  - comprovante de reserva;
+  - cobranca de reserva pendente;
+  - link de agendamento online;
+  - lembrete de reserva do dia;
+  - reserva cancelada;
+  - pos-jogo com convite para nova reserva.
+
+Riscos mapeados:
+
+- Envio automatico pode gerar bloqueio no WhatsApp.
+- Mensagens hoje estao espalhadas em telas diferentes.
+- Telefone precisa de normalizacao unica.
+- Mensagens financeiras precisam usar valores/status consistentes.
+- Links publicos precisam manter escopo seguro por tenant.
+- Arena e Escola precisam de textos diferentes por contexto.
+
+Decisao de seguranca:
+
+- A Fase 11.1 nao criou migration.
+- A Fase 11.1 nao alterou telas operacionais.
+- A Fase 11.1 nao enviou mensagens.
+- A Fase 11.1 nao mexeu em dados reais.
+- Automacao real fica fora do escopo ate existir opt-in, logs e integracao oficial aprovada.
+
+Proxima etapa recomendada:
+
+- Fase 11.2: criar `src/lib/communicationContracts.ts` e testes, centralizando telefone, URL `wa.me`, templates, variaveis e fallbacks de mensagem antes de mexer na UI.
+
+## Registro da Fase 11.2
+
+Status: concluida com seguranca; contratos puros de comunicacao assistida criados e testados, sem mudanca de banco e sem alteracao de UI.
+
+Objetivo:
+
+- Criar a base tecnica para WhatsApp assistido antes de mexer nas telas.
+- Centralizar normalizacao de telefone, template, eventos e URL `wa.me`.
+- Separar eventos da Escola Esportiva / Sportiz Sport e Arena / CT Quadra: Esportiz Arena.
+- Manter tudo sem efeitos colaterais: sem `window.open`, sem Supabase, sem envio real.
+
+Escopo executado:
+
+- Criado `src/lib/communicationContracts.ts`.
+- Criado `src/lib/communicationContracts.test.ts`.
+- Contratos implementados:
+  - `normalizeWhatsAppPhone`;
+  - `isSupportedCommunicationEvent`;
+  - `getFirstName`;
+  - `buildPixDetails`;
+  - `applyCommunicationTemplate`;
+  - `getDefaultCommunicationTemplate`;
+  - `buildCommunicationMessage`;
+  - `buildWhatsAppUrl`;
+  - `buildWhatsAppAction`;
+  - `buildCommunicationWhatsAppAction`.
+- Eventos Sportiz Sport cobertos:
+  - `payment_overdue`;
+  - `payment_due_soon`;
+  - `birthday`;
+  - `trial_follow_up`;
+  - `inactive_recovery`;
+  - `without_plan`;
+  - `student_portal_link`;
+  - `class_reminder`.
+- Eventos Esportiz Arena cobertos:
+  - `booking_confirmation`;
+  - `payment_reminder`;
+  - `booking_link`;
+  - `reservation_reminder`;
+  - `reservation_cancelled`;
+  - `post_game_rebook`.
+
+Validacoes executadas:
+
+- `npm test -- communicationContracts`: passou com 10 testes.
+- `npx eslint src/lib/communicationContracts.ts src/lib/communicationContracts.test.ts`: passou sem erros.
+- `npx tsc -p tsconfig.app.json --noEmit`: passou sem erros.
+
+Decisoes de seguranca:
+
+- Nenhuma migration foi criada.
+- Nenhuma tela operacional foi alterada.
+- Nenhum dado real foi alterado.
+- Nenhuma mensagem foi enviada.
+- Automacao real continua fora do escopo.
+
+Proxima etapa recomendada:
+
+- Fase 11.3: padronizar o WhatsApp existente usando `communicationContracts` em `CommunicationPage`, `BirthdaysPage` e `ArenaAgendaPage`, mantendo a experiencia atual e reduzindo duplicacao.
+
+## Registro da Fase 11.3
+
+Status: concluida com seguranca; WhatsApp existente padronizado para usar os contratos de comunicacao assistida, sem migration, sem alteracao de banco e sem envio automatico.
+
+Objetivo:
+
+- Reduzir duplicacao de telefone, URL `wa.me` e substituicao de variaveis nas telas existentes.
+- Manter a experiencia atual: o sistema continua apenas abrindo o WhatsApp para o usuario revisar e enviar manualmente.
+- Preservar os fluxos ja solidos da Escola Esportiva / Sportiz Sport e Arena / CT Quadra: Esportiz Arena.
+- Preparar uma base mais segura para melhorias futuras de UX, como preview, copiar mensagem e validacao visual de telefone.
+
+Escopo executado:
+
+- `src/pages/CommunicationPage.tsx` passou a usar `applyCommunicationTemplate`, `getFirstName` e `buildWhatsAppAction`.
+- `src/pages/BirthdaysPage.tsx` passou a usar `buildCommunicationWhatsAppAction` para mensagens de aniversario.
+- `src/pages/ArenaAgendaPage.tsx` passou a usar `buildCommunicationMessage` em templates personalizados de confirmacao de reserva e lembrete de pagamento.
+- `src/pages/ArenaAgendaPage.tsx` tambem passou a usar `buildWhatsAppAction` para montar a URL do WhatsApp com validacao centralizada.
+- Nenhum fluxo foi convertido para envio automatico.
+- Nenhuma regra de pagamento, reserva, aluno, plano ou relatorio foi alterada.
+
+Validacoes executadas:
+
+- `npm test -- communicationContracts`: passou com 10 testes.
+- `npx eslint src/lib/communicationContracts.ts src/lib/communicationContracts.test.ts src/pages/CommunicationPage.tsx src/pages/BirthdaysPage.tsx src/pages/ArenaAgendaPage.tsx`: passou sem erros.
+- `npx tsc -p tsconfig.app.json --noEmit`: passou sem erros.
+- `npm test`: passou com 12 arquivos e 62 testes.
+- `npm run build`: passou com build de producao e geracao do PWA.
+
+Observacoes:
+
+- O build manteve apenas os avisos ja conhecidos de import dinamico/estatico do Supabase e tamanho de chunk acima de 500 kB.
+- A Fase 11.3 nao exige SQL no Supabase.
+- Nao houve alteracao nem exclusao de dados reais.
+
+Proxima etapa recomendada:
+
+- Fase 11.4: melhorar a experiencia operacional da comunicacao assistida com preview de mensagem, botao de copiar, estados de telefone invalido e acabamento responsivo, ainda mantendo envio manual pelo WhatsApp.
+
+## Registro da Fase 11.4
+
+Status: concluida com seguranca; experiencia operacional da comunicacao assistida melhorada, sem migration, sem envio automatico e sem alteracao de dados reais.
+
+Objetivo:
+
+- Dar mais controle antes de abrir o WhatsApp.
+- Permitir copiar mensagens prontas sem depender do envio imediato.
+- Mostrar quando um telefone esta ausente ou invalido antes da tentativa de envio.
+- Melhorar a leitura da mensagem final em telas operacionais.
+
+Escopo executado:
+
+- `src/pages/CommunicationPage.tsx` ganhou preview da mensagem personalizada para o primeiro contato do publico selecionado.
+- `src/pages/CommunicationPage.tsx` ganhou botao de copiar preview e botao de copiar por contato.
+- `src/pages/CommunicationPage.tsx` passou a destacar contatos sem telefone valido e bloquear o botao de envio nesses casos.
+- `src/pages/BirthdaysPage.tsx` ganhou botao de copiar a mensagem de aniversario antes de abrir o WhatsApp.
+- `src/pages/ArenaAgendaPage.tsx` ganhou preview do comprovante de reserva dentro do painel de detalhes.
+- `src/pages/ArenaAgendaPage.tsx` passou a bloquear visualmente o envio do comprovante quando o reservante nao tem telefone valido.
+
+Validacoes executadas:
+
+- `npx eslint src/lib/communicationContracts.ts src/lib/communicationContracts.test.ts src/pages/CommunicationPage.tsx src/pages/BirthdaysPage.tsx src/pages/ArenaAgendaPage.tsx`: passou sem erros.
+- `npx tsc -p tsconfig.app.json --noEmit`: passou sem erros.
+- `npm test`: passou com 12 arquivos e 62 testes.
+- `npm run build`: passou com build de producao e geracao do PWA.
+
+Observacoes:
+
+- A Fase 11.4 nao exige SQL no Supabase.
+- Nenhum envio real foi automatizado.
+- Nenhum dado real foi criado, editado ou excluido.
+- A tentativa de conferencia visual no navegador interno foi bloqueada pelo proprio navegador com `ERR_BLOCKED_BY_CLIENT`; as validacoes tecnicas passaram normalmente.
+- O build manteve apenas os avisos ja conhecidos de import dinamico/estatico do Supabase e tamanho de chunk acima de 500 kB.
+
+Proxima etapa recomendada:
+
+- Fase 11.5: revisar textos, templates padrao e microcopy operacional por modalidade, mantendo mensagens assistidas e revisaveis antes do envio.
+
+## Registro da Fase 11.5
+
+Status: concluida com seguranca; templates padrao e microcopy operacional revisados por modalidade, sem migration, sem automacao de envio e sem alteracao de dados reais.
+
+Objetivo:
+
+- Melhorar a qualidade dos textos padrao usados na comunicacao assistida.
+- Separar melhor a linguagem de Escola Esportiva / Sportiz Sport e Arena / CT Quadra: Esportiz Arena.
+- Reduzir mensagens locais duplicadas nas telas.
+- Manter todos os envios como assistidos, revisaveis e manuais pelo WhatsApp.
+
+Escopo executado:
+
+- `src/lib/communicationContracts.ts` recebeu templates padrao mais profissionais para Sportiz Sport e Esportiz Arena.
+- Adicionado o evento `general_announcement` para comunicacao geral da Escola Esportiva.
+- `src/pages/CommunicationPage.tsx` passou a carregar os fallbacks de mensagem diretamente dos contratos centrais.
+- `src/pages/BirthdaysPage.tsx` passou a usar o template padrao de aniversario vindo dos contratos.
+- `src/pages/SettingsPage.tsx` passou a usar os templates padrao da Arena como placeholders nos modelos de WhatsApp.
+- `src/lib/communicationContracts.test.ts` recebeu cobertura para validar linguagem por modalidade e evitar mistura de conceitos, como Arena usando texto de aula.
+
+Validacoes executadas:
+
+- `npm test -- communicationContracts`: passou com 11 testes.
+- `npx tsc -p tsconfig.app.json --noEmit`: passou sem erros.
+- `npx eslint src/lib/communicationContracts.ts src/lib/communicationContracts.test.ts src/pages/CommunicationPage.tsx src/pages/BirthdaysPage.tsx src/pages/ArenaAgendaPage.tsx src/pages/SettingsPage.tsx`: passou sem erros.
+- `npm test`: passou com 12 arquivos e 63 testes.
+- `npm run build`: passou com build de producao e geracao do PWA.
+
+Observacoes:
+
+- A Fase 11.5 nao exige SQL no Supabase.
+- Nenhum envio real foi executado.
+- Nenhum dado real foi criado, editado ou excluido.
+- O build manteve apenas os avisos ja conhecidos de import dinamico/estatico do Supabase e tamanho de chunk acima de 500 kB.
+
+Proxima etapa recomendada:
+
+- Fase 11.6: revisar visualmente as telas de comunicacao e configuracoes com usuario teste, confirmando clareza dos textos, responsividade e comportamento de copiar/abrir WhatsApp.
+
+## Registro da Fase 11.6
+
+Status: concluida com seguranca; revisao visual e operacional realizada com usuario teste, sem criar, editar ou excluir dados reais.
+
+Objetivo:
+
+- Conferir as telas internas afetadas pela comunicacao assistida.
+- Validar clareza dos textos, comportamento responsivo e consistencia por modalidade.
+- Corrigir inconsistencias visuais/operacionais pequenas encontradas durante a revisao.
+- Manter o fluxo de WhatsApp assistido e manual.
+
+Revisao visual executada:
+
+- `src/pages/CommunicationPage.tsx`: conferido preview, copiar, mensagem padrao e lista de disparo.
+- `src/pages/BirthdaysPage.tsx`: conferida tela de aniversariantes em perfil teste; carregamento ficou dependente dos dados do ambiente, sem erros no console.
+- `src/pages/ArenaAgendaPage.tsx`: conferida tela de agenda em Arena, com botoes de link, recebimentos, bloquear dia e nova reserva.
+- `src/pages/SettingsPage.tsx`: conferidos placeholders dos modelos WhatsApp da Arena, com linguagem de reserva/quadra e sem mistura com aula.
+
+Ajuste executado durante a fase:
+
+- Em perfil Arena, `src/pages/CommunicationPage.tsx` passou a esconder publicos especificos da Escola Esportiva, como mensalidade, vencimento, experimental e plano.
+- Em perfil Arena, a Comunicacao em Massa passou a exibir apenas publicos compativeis: reservantes ativos e reservantes inativos.
+- Em perfil Arena, o fallback da mensagem geral passou a falar de horarios e reservas, nao de aulas ou treinos.
+
+Validacoes executadas:
+
+- `npx eslint src/lib/communicationContracts.ts src/lib/communicationContracts.test.ts src/pages/CommunicationPage.tsx src/pages/BirthdaysPage.tsx src/pages/ArenaAgendaPage.tsx src/pages/SettingsPage.tsx`: passou sem erros.
+- `npx tsc -p tsconfig.app.json --noEmit`: passou sem erros.
+- `npm test`: passou com 12 arquivos e 63 testes.
+- `npm run build`: passou com build de producao e geracao do PWA.
+
+Observacoes:
+
+- A Fase 11.6 nao exige SQL no Supabase.
+- Nenhum envio real foi executado.
+- Nenhum dado real foi criado, editado ou excluido.
+- O build manteve apenas os avisos ja conhecidos de import dinamico/estatico do Supabase e tamanho de chunk acima de 500 kB.
+
+Proxima etapa recomendada:
+
+- Fase 11.7: preparar checklist final de aceite da comunicacao assistida por modalidade antes de deploy, incluindo testes manuais com usuario teste.
+
+## Registro da Fase 11.7
+
+Status: concluida com seguranca; checklist final de aceite da comunicacao assistida criado e registrado, sem alteracao de banco, sem envio real e sem alteracao de dados reais.
+
+Objetivo:
+
+- Transformar a revisao da Fase 11 em um roteiro repetivel de aceite.
+- Separar criterios de aceite para Sportiz Sport e Esportiz Arena.
+- Definir claramente o que libera e o que bloqueia deploy.
+- Preservar a regra de comunicacao assistida, manual e revisavel.
+
+Escopo executado:
+
+- Criado `COMUNICACAO_ASSISTIDA_ACEITE_FASE_11_7.md`.
+- Atualizado `COMUNICACAO_ASSISTIDA_FASE_11.md` com a subfase 11.7.
+- Documentado checklist geral de aceite.
+- Documentado checklist especifico para Escola Esportiva / Sportiz Sport.
+- Documentado checklist especifico para Arena / CT Quadra: Esportiz Arena.
+- Documentado smoke test sem dados reais.
+- Documentados criterios GO/NO-GO antes de deploy.
+
+Validacoes executadas:
+
+- Mudanca documental, sem necessidade de migration.
+- Nenhum envio real foi executado.
+- Nenhum dado real foi criado, editado ou excluido.
+
+Proxima etapa recomendada:
+
+- Rodar o checklist de aceite com usuario teste e, se tudo passar, decidir GO/NO-GO para deploy controlado.
+
+## Registro da Fase 11.8
+
+Status: concluida com seguranca; pacote final de deploy da comunicacao assistida revisado com smoke test, validacoes tecnicas completas e decisao GO.
+
+Objetivo:
+
+- Executar o checklist final da Fase 11 com usuario teste logado.
+- Validar os fluxos principais sem criar, editar ou excluir dados reais.
+- Rodar as validacoes tecnicas completas antes de liberar deploy.
+- Revisar diff e riscos conhecidos.
+- Emitir uma decisao objetiva de GO/NO-GO.
+
+Smoke test executado:
+
+- `/comunicacao` em perfil Arena:
+  - preview visivel;
+  - botao copiar em estado correto sem contatos;
+  - texto padrao falando de horarios e reservas;
+  - seletor exibindo apenas reservantes ativos e inativos;
+  - opcoes de Escola, como mensalidade, experimentais e pacotes, ausentes.
+- `/agenda` em perfil Arena:
+  - Agenda carregou;
+  - Link de Agendamento visivel;
+  - Recebimentos visivel;
+  - Bloquear Dia visivel;
+  - Nova Reserva visivel.
+- `/configuracoes` em perfil Arena:
+  - Modelos de Mensagem do WhatsApp visiveis;
+  - placeholder de confirmacao de reserva com quadra/data/horario/valor;
+  - placeholder de cobranca falando de reserva;
+  - sem linguagem de aula nos modelos da Arena.
+- Console do navegador:
+  - sem erros registrados durante o smoke test.
+
+Validacoes tecnicas executadas:
+
+- `npx eslint src/lib/communicationContracts.ts src/lib/communicationContracts.test.ts src/pages/CommunicationPage.tsx src/pages/BirthdaysPage.tsx src/pages/ArenaAgendaPage.tsx src/pages/SettingsPage.tsx`: passou sem erros.
+- `npx tsc -p tsconfig.app.json --noEmit`: passou sem erros.
+- `npm test`: passou com 12 arquivos e 63 testes.
+- `npm run build`: passou com build de producao e geracao do PWA.
+- `git diff --check`: passou sem erros de whitespace.
+
+Riscos conhecidos:
+
+- O build ainda mostra os avisos ja conhecidos de import dinamico/estatico do Supabase e tamanho de chunk acima de 500 kB.
+- Estes avisos ja estavam mapeados e nao bloqueiam este deploy.
+- Nao ha migration pendente nesta fase.
+
+Decisao:
+
+- GO para deploy controlado da Fase 11.
+- Condicao: apos deploy, executar smoke test rapido em producao nas rotas `/comunicacao`, `/agenda` e `/configuracoes` com usuario teste, sem criar dados reais.
+
+Proxima etapa recomendada:
+
+- Executar deploy controlado e validar producao com o mesmo roteiro de smoke test.

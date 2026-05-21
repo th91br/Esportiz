@@ -18,9 +18,7 @@ export type ComandaItem = CommerceComandaItem;
 
 export type Comanda = CommerceComanda;
 
-function getErrorMessage(error: unknown): string {
-  return error instanceof Error ? error.message : 'Erro inesperado.';
-}
+import { getErrorMessage } from '@/lib/errorUtils';
 
 export function useComandas() {
   const { user } = useAuth();

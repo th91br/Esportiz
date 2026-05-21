@@ -49,6 +49,7 @@ export default function OnlineBookingPage() {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [arenaName, setArenaName] = useState('Esportiz Arena');
+  const [logoUrl, setLogoUrl] = useState<string | null>(null);
   const [courts, setCourts] = useState<PublicCourt[]>([]);
   const [reservations, setReservations] = useState<PublicReservation[]>([]);
   const [successData, setSuccessData] = useState<BookingSuccessData | null>(null);
@@ -91,17 +92,19 @@ export default function OnlineBookingPage() {
         if (error) throw error;
 
         if (data) {
-          setArenaName(data.arena_name || 'Esportiz Arena');
+          const result = data as { arena_name?: string; logo_url?: string | null; courts?: unknown[]; reservations?: unknown[] };
+          setArenaName(result.arena_name || 'Esportiz Arena');
+          setLogoUrl(result.logo_url || null);
           
           // Map DB Modalities into Court objects
-          const mappedCourts = (data.courts || []).map((court: PublicCourtRecord) => mapPublicCourtRecord(court));
+          const mappedCourts = ((result.courts as PublicCourtRecord[]) || []).map((court: PublicCourtRecord) => mapPublicCourtRecord(court));
 
           setCourts(mappedCourts);
           if (mappedCourts.length > 0) {
             setSelectedCourtId(mappedCourts[0].id);
           }
 
-          setReservations(data.reservations || []);
+          setReservations((result.reservations as PublicReservation[]) || []);
         }
       } catch (err: unknown) {
         const error = err as Error;
@@ -308,9 +311,16 @@ export default function OnlineBookingPage() {
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-primary/5 via-background to-background p-4 sm:p-6">
         <Card className="max-w-lg w-full border-border/60 card-elevated shadow-xl overflow-hidden">
           <div className="h-2 bg-gradient-to-r from-emerald-500 to-teal-500" />
-          <CardHeader className="text-center pb-4 space-y-3">
-            <div className="mx-auto w-16 h-16 bg-emerald-500/10 text-emerald-500 rounded-full flex items-center justify-center scale-110 shadow-inner">
-              <Check className="h-8 w-8 stroke-[3px]" />
+          <CardHeader className="text-center pb-4 space-y-3 flex flex-col items-center">
+            <div className="relative">
+              <div className="mx-auto w-16 h-16 bg-emerald-500/10 text-emerald-500 rounded-full flex items-center justify-center scale-110 shadow-inner">
+                <Check className="h-8 w-8 stroke-[3px]" />
+              </div>
+              {logoUrl && (
+                <div className="absolute -bottom-2 -right-2 w-10 h-10 rounded-xl bg-card border border-border/80 shadow-md flex items-center justify-center p-1 overflow-hidden animate-in fade-in zoom-in duration-300">
+                  <img src={logoUrl} alt="Logo" className="w-full h-full object-contain rounded-lg" />
+                </div>
+              )}
             </div>
             <CardTitle className="text-2xl font-bold font-display text-foreground mt-4">Agendamento Confirmado!</CardTitle>
             <CardDescription className="text-sm text-muted-foreground max-w-sm mx-auto">
@@ -372,10 +382,21 @@ export default function OnlineBookingPage() {
   return (
     <div className="min-h-screen bg-gradient-to-b from-primary/5 via-background to-background py-8 px-4 sm:px-6">
       <div className="max-w-2xl mx-auto space-y-6">
-        <div className="text-center space-y-2">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-primary/10 border border-primary/20 text-primary text-xs font-bold font-display uppercase tracking-wider mb-2">
-            <Landmark className="h-3.5 w-3.5 animate-pulse" /> Agendamento de Quadras Online
-          </div>
+        <div className="text-center space-y-3 flex flex-col items-center animate-in fade-in slide-in-from-top-4 duration-500">
+          {logoUrl ? (
+            <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl bg-card border border-border/80 shadow-md flex items-center justify-center p-2.5 overflow-hidden transition-all duration-300 hover:scale-105 mb-1 animate-in fade-in zoom-in duration-300">
+              <img
+                src={logoUrl}
+                alt={`Logo ${arenaName}`}
+                className="w-full h-full object-contain rounded-xl"
+                onError={() => setLogoUrl(null)}
+              />
+            </div>
+          ) : (
+            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-primary/10 border border-primary/20 text-primary text-xs font-bold font-display uppercase tracking-wider mb-1">
+              <Landmark className="h-3.5 w-3.5 animate-pulse" /> Agendamento de Quadras Online
+            </div>
+          )}
           <h1 className="text-2xl sm:text-3xl font-black font-display text-foreground tracking-tight">{arenaName}</h1>
           <p className="text-muted-foreground text-sm max-w-md mx-auto">
             Reserve o seu horário e garanta o seu play em tempo real com toda a comodidade.

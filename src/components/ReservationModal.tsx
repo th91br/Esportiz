@@ -136,11 +136,14 @@ export function ReservationModal({
       if (isEditing && existing?.online !== undefined) {
         meta.online = existing.online;
       }
-      if (isEditing && existing?.paymentUpdatedAt) {
+      if (isEditing && existing?.paymentUpdatedAt !== undefined) {
         meta.paymentUpdatedAt = existing.paymentUpdatedAt;
       }
-      if (isEditing && existing?.paymentPaidAt) {
+      if (isEditing && existing?.paymentPaidAt !== undefined) {
         meta.paymentPaidAt = existing.paymentPaidAt;
+      }
+      if (isEditing && existing?.partialPayments !== undefined) {
+        meta.partialPayments = existing.partialPayments;
       }
       const input = {
         date,

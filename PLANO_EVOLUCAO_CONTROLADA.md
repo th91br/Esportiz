@@ -1735,3 +1735,341 @@ Decisao:
 Proxima etapa recomendada:
 
 - Executar deploy controlado e validar producao com o mesmo roteiro de smoke test.
+
+## Registro da Fase 11.9
+
+Status: concluida com seguranca; smoke test pos-deploy em producao executado com usuario teste, sem criar, editar ou excluir dados reais.
+
+Objetivo:
+
+- Confirmar que o deploy da Fase 11 foi publicado corretamente.
+- Validar as rotas principais em producao.
+- Garantir que Arena continua sem linguagem de Escola na comunicacao.
+- Confirmar que nao houve erro de console durante o smoke test.
+
+Smoke test em producao:
+
+- `/comunicacao`:
+  - pagina carregou autenticada;
+  - preview visivel;
+  - botao copiar visivel e desabilitado quando nao ha contatos;
+  - lista de disparo visivel;
+  - texto padrao de Arena fala de horarios e reservas;
+  - seletor mostra reservantes ativos e reservantes inativos;
+  - seletor nao mostra mensalidade, experimentais ou pacotes.
+- `/agenda`:
+  - pagina carregou;
+  - Link de Agendamento visivel;
+  - Recebimentos visivel;
+  - Bloquear Dia visivel;
+  - Nova Reserva visivel.
+- `/configuracoes`:
+  - pagina carregou;
+  - Modelos de Mensagem do WhatsApp visiveis;
+  - placeholder de confirmacao com reserva/quadra/data/horario/valor;
+  - placeholder de cobranca com reserva;
+  - sem linguagem de aula experimental nos modelos da Arena.
+- Console do navegador:
+  - sem erros registrados durante o smoke test.
+
+Decisao final:
+
+- Deploy da Fase 11 validado em producao.
+- Status final: aprovado.
+
+Observacoes:
+
+- Nenhum envio real de WhatsApp foi executado.
+- Nenhum dado real foi criado, editado ou excluido.
+- Nenhuma migration foi necessaria.
+
+Proxima etapa recomendada:
+
+- Encerrar a Fase 11 como entregue e iniciar nova fase apenas se houver novo objetivo funcional, como automacoes futuras com opt-in, logs e limites.
+
+## Registro da Fase 12.1
+
+Status: concluida com seguranca; smoke operacional em producao executado com usuario teste de Arena, usando apenas dados claramente temporarios.
+
+Objetivo:
+
+- Validar o fluxo operacional de Arena com criacao controlada de dados teste.
+- Confirmar cadastro de quadra, reserva, edicao, cancelamento e limpeza.
+- Garantir que Pagamentos/Agenda nao ficaram com registros temporarios ativos apos a validacao.
+- Nao tocar em dados reais.
+
+Smoke test executado:
+
+- `/quadras`:
+  - criada a quadra temporaria `TESTE 12.1 - Quadra Temporaria`;
+  - quadra apareceu como disponivel;
+  - apos o teste, a quadra foi removida pela interface.
+- `/reservantes`:
+  - criado o reservante `Cliente Teste Fase 12.1`;
+  - reservante apareceu na listagem;
+  - apos o teste, o reservante foi desativado pela interface.
+- `/agenda`:
+  - criada reserva temporaria na quadra teste em 21/05/2026 as 15:00;
+  - reserva apareceu na grade;
+  - detalhes da reserva abriram corretamente;
+  - comprovante de reserva foi gerado;
+  - duracao foi editada de 1h para 1h30;
+  - Agenda atualizou para 1.5h ocupadas;
+  - reserva foi cancelada pela interface;
+  - Agenda voltou para 0 reservas, R$ 0,00 recebido e 0h ocupadas na quadra teste.
+- `/pagamentos`:
+  - apos a limpeza, nao restaram referencias a `TESTE 12.1` ou `Cliente Teste Fase 12.1`.
+
+Validacoes finais:
+
+- Reserva temporaria removida com sucesso.
+- Quadra temporaria removida com sucesso.
+- Reservante temporario desativado com sucesso.
+- Agenda e Pagamentos nao exibem mais dados temporarios da Fase 12.1.
+
+Observacoes:
+
+- A quadra teste foi criada com valor por hora R$ 0,00, entao a reserva ficou automaticamente sem impacto financeiro real.
+- Por esse motivo, a baixa financeira com valor positivo nao foi forçada nesta fase.
+- O fluxo financeiro nao ficou sujo: Pagamentos nao manteve registros temporarios depois da limpeza.
+
+Decisao:
+
+- Fase 12.1 aprovada.
+- O fluxo operacional basico da Arena em producao esta funcional para criar, editar, cancelar e limpar dados teste.
+
+Proxima etapa recomendada:
+
+- Executar a Fase 12.2 com um teste financeiro controlado de valor positivo, preferencialmente criando uma quadra temporaria ja com preco configurado em `/quadras`, para validar recebimento real de reserva sem depender de dados existentes.
+
+## Registro da Fase 12.2
+
+Status: concluida com seguranca; smoke financeiro positivo em producao executado com usuario teste de Arena, usando apenas dados claramente temporarios.
+
+Objetivo:
+
+- Validar uma reserva de Arena com valor positivo.
+- Confirmar baixa de recebimento pela Agenda.
+- Confirmar reflexo financeiro em `/pagamentos` na aba de locacoes avulsas.
+- Validar retorno para pendente/estorno.
+- Limpar todos os dados temporarios criados na fase.
+
+Ajuste de perfil teste:
+
+- Antes do teste, a conta estava com nome de Arena, mas segmento ativo em `Escola Esportiva`.
+- Isso fazia `/pagamentos` carregar linguagem de alunos/planos e esconder a aba correta de locacoes avulsas.
+- Como era perfil teste, o segmento foi ajustado para `Arena / CT de Quadras` e salvo com sucesso.
+- Apos o ajuste, menu, configuracoes e pagamentos passaram a carregar como Arena.
+
+Smoke test executado:
+
+- `/quadras`:
+  - criada a quadra temporaria `TESTE 12.2 - Quadra Financeira`;
+  - valor por hora configurado em R$ 50,00;
+  - quadra apareceu como disponivel;
+  - apos o teste, a quadra foi removida pela interface.
+- `/agenda`:
+  - criada reserva temporaria em 21/05/2026 as 15:00;
+  - reserva apareceu como `15:00 · 1h · R$ 50,00`;
+  - detalhes abriram corretamente;
+  - comprovante exibiu valor R$ 50,00 e pagamento Pix pendente;
+  - antes da baixa, Agenda mostrava R$ 0,00 recebido;
+  - baixa pela Agenda registrou pagamento de R$ 50,00 via Pix;
+  - apos a baixa, Agenda passou a exibir R$ 50,00 recebido;
+  - reserva saiu da lista de Recebimentos pendentes.
+- `/pagamentos`:
+  - aba `Locacoes Avulsas (Agenda)` exibiu 2 reservas;
+  - total do mes exibiu R$ 110,00;
+  - recebido exibiu R$ 50,00;
+  - pendente exibiu R$ 60,00;
+  - reserva `TESTE 12.2 - Quadra Financeira` apareceu como paga via Pix;
+  - acao `Estornar / Pendente` voltou a reserva para pendente.
+
+Ponto de atencao encontrado:
+
+- A acao `Estornar / Pendente` atualizou o resumo corretamente para recebido R$ 0,00 e pendente R$ 110,00.
+- Porem, no card da reserva estornada, a UI continuou exibindo `Ja Pago: R$ 50,00 | Falta: R$ 0,00` mesmo com status pendente.
+- Isso indica uma inconsistencia visual/operacional entre status da reserva e informacao de pagamento parcial.
+- Recomendacao: criar uma fase especifica para revisar a semantica de estorno, removendo ou recalculando pagamentos parciais ao voltar uma reserva para pendente.
+
+Limpeza executada:
+
+- Reserva temporaria `TESTE 12.2` cancelada pela Agenda.
+- Quadra temporaria `TESTE 12.2 - Quadra Financeira` removida pela tela de Quadras.
+- Checagem final em Agenda e Pagamentos confirmou ausencia de referencias a `TESTE 12.2`.
+
+Decisao:
+
+- Fase 12.2 aprovada com ressalva.
+- O fluxo principal de valor positivo funciona: criar reserva, receber R$ 50,00, refletir em Agenda e Pagamentos.
+- A ressalva fica no comportamento de estorno/pendente com pagamentos parciais, que merece correcao controlada em fase propria.
+
+Proxima etapa recomendada:
+
+- Executar a Fase 12.3 para corrigir e validar a regra de estorno/voltar pendente em reservas de Arena, garantindo que status, resumo financeiro e pagamentos parciais fiquem sincronizados.
+
+## Registro da Fase 12.3
+
+Status: implementada com seguranca; correcao preparada em migration SQL para sincronizar estorno de reservas da Arena com pagamentos parciais.
+
+Objetivo:
+
+- Corrigir a inconsistencia encontrada na Fase 12.2.
+- Garantir que `Estornar / Pendente` volte a reserva para pendente sem manter pagamentos parciais antigos.
+- Preservar o fluxo aprovado de criacao de reserva, baixa positiva e exibicao em Pagamentos.
+- Manter auditoria financeira com estado anterior e novo estado.
+
+Correcao aplicada:
+
+- Criada a migration `20260521163000_phase12_3_clear_arena_partial_payments_on_reopen.sql`.
+- A funcao `set_arena_reservation_payment_status_atomic` foi redefinida.
+- Ao mudar uma reserva para `pending`, a funcao agora:
+  - remove `paymentPaidAt`;
+  - limpa `partialPayments` para `[]`;
+  - registra `partialPayments` no estado anterior e no novo estado do audit log;
+  - retorna `partialPayments` no payload de retorno.
+- Ao marcar como `paid`, o comportamento aprovado foi preservado.
+
+Validacoes executadas:
+
+- `npm test`: passou com 12 arquivos e 63 testes.
+- `npm run build`: passou.
+- `git diff --check` focado nos arquivos da Fase 12.3 passou sem erros.
+
+Observacoes:
+
+- O build manteve apenas os avisos conhecidos de chunk grande e import dinamico/estatico do Supabase.
+- O `git diff --check` global ainda acusa trailing whitespace em arquivos ja modificados fora da Fase 12.3 (`OnlineBookingPage.tsx` e `SettingsPage.tsx`), por isso nao alterei esses trechos nesta fase para nao misturar escopos.
+- A correcao so tera efeito em producao apos executar a migration no Supabase.
+
+Decisao:
+
+- Fase 12.3 pronta para aplicar no Supabase.
+- Depois da migration, repetir o smoke: criar reserva teste com valor positivo, receber, usar `Estornar / Pendente` e confirmar que o card nao mostra mais `Ja Pago` antigo.
+
+Proxima etapa recomendada:
+
+- Executar a migration da Fase 12.3 no Supabase e validar o smoke financeiro novamente com usuario teste de Arena.
+
+## Registro da Fase 12.3 - Smoke pos-migration
+
+Status: aprovado em producao com usuario teste de Arena.
+
+Objetivo:
+
+- Confirmar que a migration da Fase 12.3 corrigiu o comportamento de `Estornar / Pendente`.
+- Validar que pagamentos parciais antigos nao permanecem visiveis nem calculados apos estorno.
+- Limpar todos os dados temporarios usados no teste.
+
+Smoke executado:
+
+- Criada a quadra temporaria `TESTE 12.3 - Quadra Estorno` com valor de R$ 40,00/h.
+- Criada a reserva temporaria `TESTE 12.3 - reserva estorno temporaria` em 21/05/2026 as 16:00.
+- Reserva apareceu na Agenda como `16:00 · 1h · R$ 40,00`.
+- Baixa feita pela Agenda em Recebimentos.
+- Agenda passou a exibir R$ 40,00 recebido.
+- Em `/pagamentos`, aba `Locacoes Avulsas (Agenda)`, a reserva apareceu como paga via Pix.
+- Acao `Estornar / Pendente` executada.
+- Apos estorno:
+  - resumo financeiro voltou para recebido R$ 0,00;
+  - pendente ficou coerente;
+  - card da reserva ficou apenas como pendente;
+  - nao apareceu mais `Ja Pago`;
+  - apos refresh, o resultado permaneceu correto.
+
+Limpeza executada:
+
+- Reserva temporaria `TESTE 12.3` cancelada pela Agenda.
+- Quadra temporaria `TESTE 12.3 - Quadra Estorno` removida pela tela de Quadras.
+- Checagem final confirmou:
+  - Agenda sem `TESTE 12.3`;
+  - Pagamentos sem `TESTE 12.3`;
+  - Pagamentos sem `Ja Pago` residual.
+
+Decisao:
+
+- Fase 12.3 aprovada.
+- A regra de estorno/voltar pendente em reservas de Arena esta sincronizada com pagamentos parciais.
+- O fluxo financeiro validado agora cobre: criar reserva, receber, refletir em Pagamentos, estornar, recalcular e limpar.
+
+Proxima etapa recomendada:
+
+- Avancar para uma fase de consolidacao/deploy, revisando migrations pendentes, status do reposititorio e um checklist final de smoke em producao.
+
+## Registro da Fase 12.4
+
+Status: concluida com seguranca; consolidacao tecnica e smoke final executados.
+
+Objetivo:
+
+- Revisar o estado do repositorio apos as Fases 12.1, 12.2 e 12.3.
+- Validar migrations pendentes da fase.
+- Rodar validacoes tecnicas finais.
+- Executar smoke curto em producao sem criar dados novos.
+- Emitir decisao GO/NO-GO.
+
+Revisao do repositorio:
+
+- Arquivos modificados identificados:
+  - `PLANO_EVOLUCAO_CONTROLADA.md`;
+  - ajustes funcionais ja existentes em componentes/hooks/paginas da Fase 12;
+  - migration `20260521150000_add_logo_to_public_arena.sql`;
+  - migration `20260521163000_phase12_3_clear_arena_partial_payments_on_reopen.sql`.
+- Corrigidos apenas espacos finais em:
+  - `src/pages/OnlineBookingPage.tsx`;
+  - `src/pages/SettingsPage.tsx`.
+- Nenhuma regra funcional foi alterada nessa limpeza mecanica.
+
+Validacoes tecnicas:
+
+- `git diff --check`: passou.
+- `npm test`: passou com 12 arquivos e 63 testes.
+- `npm run build`: passou.
+
+Observacoes do build:
+
+- Persistem apenas avisos conhecidos de chunk grande e import dinamico/estatico do Supabase.
+- Esses avisos ja estavam mapeados e nao bloquearam fases anteriores.
+
+Smoke curto em producao:
+
+- `/quadras`:
+  - rota carregou autenticada;
+  - exibiu Arena e quadras existentes;
+  - sem dados temporarios `TESTE 12.3`.
+- `/agenda`:
+  - rota carregou;
+  - exibiu Link de Agendamento, Recebimentos, Bloquear Dia e Nova Reserva;
+  - agenda sem dados temporarios `TESTE 12.3`.
+- `/pagamentos`:
+  - rota carregou como Arena/reservantes;
+  - aba `Locacoes Avulsas (Agenda)` presente;
+  - sem `TESTE 12.3`;
+  - sem `Ja Pago` residual.
+- `/configuracoes`:
+  - rota carregou como Arena;
+  - exibiu modelos de mensagem de WhatsApp;
+  - exibiu organizacao como Quadras;
+  - sem dados temporarios `TESTE 12.3`.
+- Console do navegador:
+  - sem erros registrados durante o smoke.
+
+Migrations:
+
+- `20260521163000_phase12_3_clear_arena_partial_payments_on_reopen.sql` foi executada manualmente no Supabase e validada no smoke da Fase 12.3.
+- `20260521150000_add_logo_to_public_arena.sql` permanece no pacote local e deve ter seu status confirmado antes de um deploy final se ainda nao tiver sido aplicada.
+
+Decisao:
+
+- GO tecnico para consolidar a Fase 12.
+- A area de Arena validada cobre:
+  - quadras;
+  - agenda;
+  - recebimentos;
+  - pagamentos de locacoes avulsas;
+  - estorno/voltar pendente sem residuos de pagamento parcial;
+  - configuracoes principais.
+
+Proxima etapa recomendada:
+
+- Fazer fechamento do pacote: revisar diff final, confirmar status das migrations no Supabase e entao seguir para deploy/commit controlado.

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { Header } from '@/components/Header';
 import { useProfile } from '@/hooks/queries/useProfile';
 import { Button } from '@/components/ui/button';
@@ -40,7 +41,10 @@ const DEFAULT_ARENA_BOOKING_CONFIRMATION_TEMPLATE = getDefaultCommunicationTempl
 const DEFAULT_ARENA_PAYMENT_REMINDER_TEMPLATE = getDefaultCommunicationTemplate('arena', 'payment_reminder') || '';
 
 export default function SettingsPage() {
+  const queryClient = useQueryClient();
   const { profile, rawProfile, updateProfile, uploadLogo, isUpdatingProfile, isUploadingLogo } = useProfile();
+  const [showNicheConfirmation, setShowNicheConfirmation] = useState(false);
+  const [pendingBusinessType, setPendingBusinessType] = useState<BusinessType | null>(null);
   const { user } = useAuth();
   const { labels } = useBusinessContext();
   const [selectedBusinessType, setSelectedBusinessType] = useState<BusinessType>('sport_school');
@@ -55,6 +59,11 @@ export default function SettingsPage() {
   const [pixReceiver, setPixReceiver] = useState('');
   const [bookingConfirmationTemplate, setBookingConfirmationTemplate] = useState('');
   const [paymentReminderTemplate, setPaymentReminderTemplate] = useState('');
+
+  const dynamicCtLabel = selectedBusinessType === 'sport_school' ? 'Escola Esportiva' : 'Arena';
+  const dynamicCtLabelShort = selectedBusinessType === 'sport_school' ? 'Escola' : 'CT';
+  const ctPreposition = selectedBusinessType === 'sport_school' ? 'da' : 'do';
+  const ctGenderedPronoun = selectedBusinessType === 'sport_school' ? 'sua' : 'seu';
 
   // Initialize active business type once from raw profile
   useEffect(() => {
@@ -158,10 +167,8 @@ export default function SettingsPage() {
         }
       };
 
-      const isSavingActiveNiche = selectedBusinessType === rawProfile?.business_type;
-
       await updateProfile({
-        logo_url: isSavingActiveNiche ? null : rawProfile?.logo_url,
+        logo_url: null,
         niche_settings: updatedNicheSettings
       });
 
@@ -222,15 +229,12 @@ export default function SettingsPage() {
         }
       };
 
-      const isSavingActiveNiche = selectedBusinessType === rawProfile?.business_type;
-
       await updateProfile({
-        // Also save business_type to keep settings active
         business_type: selectedBusinessType,
-        ct_name: isSavingActiveNiche ? ctName : rawProfile?.ct_name,
-        logo_url: isSavingActiveNiche ? logoUrl : rawProfile?.logo_url,
-        pix_key: isSavingActiveNiche ? pixKey : rawProfile?.pix_key,
-        pix_receiver: isSavingActiveNiche ? pixReceiver : rawProfile?.pix_receiver,
+        ct_name: ctName,
+        logo_url: logoUrl,
+        pix_key: pixKey,
+        pix_receiver: pixReceiver,
         niche_settings: updatedNicheSettings
       });
 
@@ -244,6 +248,65 @@ export default function SettingsPage() {
     }
   };
 
+  const handleCardClick = (type: BusinessType) => {
+    const activeNiche = rawProfile?.business_type || 'sport_school';
+    if (type !== activeNiche) {
+      setPendingBusinessType(type);
+      setShowNicheConfirmation(true);
+    }
+  };
+
+  const handleConfirmNicheChange = async () => {
+    if (!pendingBusinessType) return;
+
+    setShowNicheConfirmation(false);
+
+    try {
+      const logoUrl = logoPreview;
+      const currentNicheSettings = rawProfile?.niche_settings || {};
+
+      const targetNicheSettings = currentNicheSettings[pendingBusinessType] || {};
+      const updatedNicheSettings = {
+        ...currentNicheSettings,
+        [pendingBusinessType]: {
+          ct_name: targetNicheSettings.ct_name || ctName || rawProfile?.ct_name || '',
+          logo_url: targetNicheSettings.logo_url || logoUrl || rawProfile?.logo_url || null,
+          pix_key: targetNicheSettings.pix_key || pixKey || rawProfile?.pix_key || '',
+          pix_receiver: targetNicheSettings.pix_receiver || pixReceiver || rawProfile?.pix_receiver || '',
+          templates: targetNicheSettings.templates || {
+            booking_confirmation: bookingConfirmationTemplate,
+            payment_reminder: paymentReminderTemplate
+          }
+        }
+      };
+
+      await updateProfile({
+        business_type: pendingBusinessType,
+        ct_name: updatedNicheSettings[pendingBusinessType].ct_name,
+        logo_url: updatedNicheSettings[pendingBusinessType].logo_url,
+        pix_key: updatedNicheSettings[pendingBusinessType].pix_key,
+        pix_receiver: updatedNicheSettings[pendingBusinessType].pix_receiver,
+        niche_settings: updatedNicheSettings
+      });
+
+      toast.success('Segmento alterado com sucesso! Reiniciando aplicação...');
+      setTimeout(() => {
+        queryClient.clear();
+        window.location.href = '/dashboard';
+      }, 1500);
+    } catch (error) {
+      console.error('Erro ao alternar de segmento:', error);
+      toast.error('Erro ao alternar de segmento.');
+    } finally {
+      setPendingBusinessType(null);
+    }
+  };
+
+  const handleCancelNicheChange = () => {
+    setShowNicheConfirmation(false);
+    setPendingBusinessType(null);
+  };
+
   const hasLogo = !!logoPreview;
   const isNewLogoSelected = !!logoFile;
   const isBusy = isUpdatingProfile || isUploadingLogo || isDeletingLogo;
@@ -254,8 +317,8 @@ export default function SettingsPage() {
 
       <main className="container py-6 md:py-8 space-y-6 max-w-4xl">
         <div>
-          <h1 className="text-3xl font-display font-bold">Configurações do {labels.ctLabelShort}</h1>
-          <p className="text-muted-foreground mt-1">Gerencie as informações da sua conta e do seu {labels.ctLabel}.</p>
+          <h1 className="text-3xl font-display font-bold">Configurações {ctPreposition} {dynamicCtLabelShort}</h1>
+          <p className="text-muted-foreground mt-1">Gerencie as informações da sua conta e {ctPreposition === 'da' ? 'da sua' : 'do seu'} {dynamicCtLabel}.</p>
         </div>
 
         {/* Business Type Card */}
@@ -280,14 +343,8 @@ export default function SettingsPage() {
                 return (
                   <button
                     key={option.type}
-                    onClick={async () => {
-                      setSelectedBusinessType(option.type);
-                      try {
-                        await updateProfile({ business_type: option.type });
-                        toast.success(`Tipo de negócio alterado para ${option.title}!`);
-                      } catch (err) {
-                        toast.error('Erro ao alterar tipo de negócio.');
-                      }
+                    onClick={() => {
+                      handleCardClick(option.type);
                     }}
                     disabled={isBusy}
                     className={cn(
@@ -332,7 +389,7 @@ export default function SettingsPage() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-lg">
                 <Building className="h-5 w-5 text-primary" />
-                Dados do {labels.ctLabel}
+                Dados {ctPreposition} {dynamicCtLabel}
               </CardTitle>
               <CardDescription>Personalize sua experiência no Esportiz.</CardDescription>
             </CardHeader>
@@ -343,10 +400,10 @@ export default function SettingsPage() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="ct-name">Nome do {labels.ctLabelShort}</Label>
+                <Label htmlFor="ct-name">Nome {ctPreposition === 'da' ? 'da' : 'do'} {dynamicCtLabelShort}</Label>
                 <Input
                   id="ct-name"
-                  placeholder={`Ex: ${labels.ctLabel} Exemplo`}
+                  placeholder={`Ex: ${dynamicCtLabel} Exemplo`}
                   value={ctName}
                   onChange={(e) => setCtName(e.target.value)}
                 />
@@ -356,7 +413,7 @@ export default function SettingsPage() {
                 <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Configuração de Recebimentos (Pix)</p>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="pix-key">Chave Pix do CT (Opcional)</Label>
+                    <Label htmlFor="pix-key">Chave Pix {ctPreposition === 'da' ? 'da' : 'do'} {dynamicCtLabelShort} (Opcional)</Label>
                     <Input
                       id="pix-key"
                       placeholder="Ex: CNPJ, E-mail, Celular, etc."
@@ -381,7 +438,7 @@ export default function SettingsPage() {
 
               {/* Logo Section */}
               <div className="space-y-3">
-                <Label>Logo do CT (Opcional)</Label>
+                <Label>Logo {ctPreposition === 'da' ? 'da' : 'do'} {dynamicCtLabelShort} (Opcional)</Label>
                 <div className="flex items-start gap-4">
 
                   {/* Preview */}
@@ -432,7 +489,7 @@ export default function SettingsPage() {
                           </AlertDialogTrigger>
                           <AlertDialogContent>
                             <AlertDialogHeader>
-                              <AlertDialogTitle>Remover logo do CT?</AlertDialogTitle>
+                              <AlertDialogTitle>Remover logo {ctPreposition} {dynamicCtLabelShort}?</AlertDialogTitle>
                               <AlertDialogDescription>
                                 A logo atual será removida permanentemente. O sistema voltará a exibir o ícone padrão do Esportiz no cabeçalho.
                                 Esta ação não pode ser desfeita.
@@ -706,6 +763,58 @@ export default function SettingsPage() {
           </div>
         </div>
       </main>
+
+      {/* Modal de Confirmação de Mudança de Segmento (Nicho) */}
+      <AlertDialog open={showNicheConfirmation} onOpenChange={(open) => { if (!open) handleCancelNicheChange(); }}>
+        <AlertDialogContent className="max-w-md">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2 text-xl font-bold">
+              <AlertCircle className="h-6 w-6 text-amber-500 shrink-0" />
+              Confirmar Alteração de Segmento?
+            </AlertDialogTitle>
+            <AlertDialogDescription className="space-y-4 pt-2">
+              <p className="text-sm leading-relaxed text-foreground">
+                Você está alterando o segmento do seu negócio de{' '}
+                <strong className="font-semibold text-primary">
+                  {rawProfile?.business_type === 'sport_school' ? 'Escola Esportiva' : 'Arena / CT de Quadras'}
+                </strong>{' '}
+                para{' '}
+                <strong className="font-semibold text-primary">
+                  {pendingBusinessType === 'sport_school' ? 'Escola Esportiva' : 'Arena / CT de Quadras'}
+                </strong>.
+              </p>
+              <div className="space-y-2 text-muted-foreground text-xs leading-relaxed">
+                <p>
+                  • Os dados cadastrados no segmento anterior (como alunos, turmas ou reservas){' '}
+                  <span className="font-semibold text-foreground">continuam 100% salvos e seguros</span> no banco de dados.
+                </p>
+                <p>
+                  • Eles ficarão ocultos sob o novo segmento para evitar confusões operacionais e manter as gavetas de dados perfeitamente organizadas.
+                </p>
+                <p>
+                  • Se decidir voltar ao segmento anterior no futuro, tudo estará exatamente do jeito que deixou.
+                </p>
+              </div>
+              <p className="text-[11px] text-amber-700 bg-amber-50 border border-amber-200/60 p-3 rounded-lg flex items-start gap-2 leading-normal">
+                <AlertCircle className="h-4 w-4 shrink-0 mt-0.5 text-amber-600" />
+                <span>
+                  Para evitar conflitos de cache e garantir sincronia total nas telas e relatórios, toda a aplicação será limpa e reiniciada no Painel Principal após a confirmação.
+                </span>
+              </p>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="mt-4">
+            <AlertDialogCancel onClick={handleCancelNicheChange} disabled={isBusy} className="h-10">Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleConfirmNicheChange}
+              disabled={isBusy}
+              className="bg-primary text-primary-foreground hover:bg-primary/90 h-10 font-medium"
+            >
+              {isBusy ? 'Salvando...' : 'Confirmar e Reiniciar'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

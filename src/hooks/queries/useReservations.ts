@@ -21,9 +21,7 @@ export type {
   ReservationType,
 } from '@/lib/reservationContracts';
 
-function getErrorMessage(error: unknown) {
-  return error instanceof Error ? error.message : 'Erro inesperado';
-}
+import { getErrorMessage } from '@/lib/errorUtils';
 
 export function useReservations() {
   const { user } = useAuth();

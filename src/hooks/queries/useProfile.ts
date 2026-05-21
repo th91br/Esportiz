@@ -151,7 +151,8 @@ export function useProfile() {
 
       return result as Profile;
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
+      queryClient.setQueryData(['profile', user?.id], data);
       queryClient.invalidateQueries({ queryKey: ['profile', user?.id] });
     },
     onError: () => {

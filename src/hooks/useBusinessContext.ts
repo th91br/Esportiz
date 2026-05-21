@@ -36,8 +36,8 @@ const LABELS: Record<BusinessType, BusinessLabels> = {
     groupLabel: 'Turmas',
     groupLabelSingular: 'Turma',
     locationLabel: 'Local',
-    ctLabel: 'Centro de Treinamento',
-    ctLabelShort: 'CT',
+    ctLabel: 'Escola Esportiva',
+    ctLabelShort: 'Escola',
     attendanceLabel: 'Presença',
   },
   arena: {

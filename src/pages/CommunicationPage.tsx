@@ -11,6 +11,8 @@ import { getActiveMonthlyStudents, getInactiveStudents, getStudentsWithoutPlan }
 import { usePlans } from '@/hooks/queries/usePlans';
 import { useBusinessContext } from '@/hooks/useBusinessContext';
 import { useProfile } from '@/hooks/queries/useProfile';
+import { useReservations } from '@/hooks/queries/useReservations';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { toast } from 'sonner';
 import { getLocalTodayDate, toLocalDateString } from '@/lib/dateUtils';
 import {
@@ -22,7 +24,7 @@ import {
   type SportSchoolCommunicationEvent,
 } from '@/lib/communicationContracts';
 
-type Audience = 'all_active' | 'overdue' | 'due_7_days' | 'trial' | 'without_plan' | 'inactive';
+type Audience = 'all_active' | 'overdue' | 'due_7_days' | 'trial' | 'without_plan' | 'inactive' | 'payment_reminder';
 
 const AUDIENCE_EVENT_MAP: Record<Audience, SportSchoolCommunicationEvent> = {
   all_active: 'general_announcement',
@@ -31,13 +33,17 @@ const AUDIENCE_EVENT_MAP: Record<Audience, SportSchoolCommunicationEvent> = {
   trial: 'trial_follow_up',
   without_plan: 'without_plan',
   inactive: 'inactive_recovery',
+  payment_reminder: 'general_announcement',
 };
 
-const ARENA_AUDIENCES = new Set<Audience>(['all_active', 'inactive']);
+const ARENA_AUDIENCES = new Set<Audience>(['all_active', 'inactive', 'payment_reminder']);
 
 function getArenaAudienceTemplate(audience: Audience): string {
   if (audience === 'inactive') {
     return 'Ola {nome}, tudo bem? Aqui e da {escola}. Sentimos sua falta por aqui. Posso te ajudar a encontrar um novo horario para jogar?';
+  }
+  if (audience === 'payment_reminder') {
+    return 'Olá {nome}, identificamos uma cobrança em aberto na {escola} no valor de R$ {valor}. Você poderia verificar por gentileza? Chave Pix: {chave_pix}';
   }
 
   return 'Ola {nome}, tudo bem? Aqui e da {escola}. Passando para compartilhar uma informacao importante sobre nossos horarios e reservas.';
@@ -47,6 +53,7 @@ export default function CommunicationPage() {
   const { students, loadingStudents } = useStudents();
   const { payments, loadingPayments } = usePayments();
   const { plans, loadingPlans } = usePlans();
+  const { reservations, loadingReservations } = useReservations();
   const { labels } = useBusinessContext();
   const { profile, updateProfile, isUpdatingProfile } = useProfile();
   const isArena = profile?.business_type === 'arena';
@@ -59,6 +66,7 @@ export default function CommunicationPage() {
   const [audience, setAudience] = useState<Audience>('all_active');
   const [messageTemplate, setMessageTemplate] = useState(getDefaultCommunicationTemplate('sport_school', 'general_announcement') || 'Ola {nome}, tudo bem? Aqui e da {escola}.');
   const [sentTo, setSentTo] = useState<Set<string>>(new Set());
+  const [sendingStudent, setSendingStudent] = useState<{ id: string; name: string; phone: string | null } | null>(null);
 
   useEffect(() => {
     if (isArena && !ARENA_AUDIENCES.has(audience)) {
@@ -113,7 +121,7 @@ export default function CommunicationPage() {
     }
   };
 
-  const loading = loadingStudents || loadingPayments || loadingPlans;
+  const loading = loadingStudents || loadingPayments || loadingPlans || (isArena ? loadingReservations : false);
 
   // Filtro de Audiência
   const targetStudents = useMemo(() => {
@@ -146,24 +154,42 @@ export default function CommunicationPage() {
         const dueStudentIds = new Set(duePayments.map(p => p.studentId));
         return students.filter(s => dueStudentIds.has(s.id));
       }
+      case 'payment_reminder': {
+        // Find reservantes with pending reservations (paymentStatus === 'pending' and remainingBalance > 0)
+        const pendingReservations = reservations.filter(r => r.paymentStatus === 'pending' && r.remainingBalance > 0);
+        const pendingStudentIds = new Set(pendingReservations.flatMap(r => r.reservanteIds));
+        return students.filter(s => pendingStudentIds.has(s.id));
+      }
       default:
         return [];
     }
-  }, [students, plans, payments, audience]);
+  }, [students, plans, payments, reservations, audience]);
+
+  const getPendingBalanceForStudent = (studentId: string) => {
+    if (!isArena) return 0;
+    const pendingReservations = reservations.filter(
+      r => r.paymentStatus === 'pending' && r.remainingBalance > 0 && r.reservanteIds.includes(studentId)
+    );
+    return pendingReservations.reduce((sum, r) => sum + r.remainingBalance, 0);
+  };
 
   // Função para limpar o telefone
-  const buildTemplateVariables = (studentName: string) => ({
-    nome: getFirstName(studentName),
-    nome_completo: studentName,
-    escola: businessName,
-    chave_pix: profile?.pix_key || '',
-    beneficiario_pix: profile?.pix_receiver || '',
-    pix_key: profile?.pix_key || '',
-    pix_receiver: profile?.pix_receiver || '',
-  });
+  const buildTemplateVariables = (studentId: string, studentName: string) => {
+    const pendingVal = getPendingBalanceForStudent(studentId);
+    return {
+      nome: getFirstName(studentName),
+      nome_completo: studentName,
+      escola: businessName,
+      chave_pix: profile?.pix_key || '',
+      beneficiario_pix: profile?.pix_receiver || '',
+      pix_key: profile?.pix_key || '',
+      pix_receiver: profile?.pix_receiver || '',
+      valor: pendingVal.toFixed(2),
+    };
+  };
 
-  const buildMessageForStudent = (studentName: string) => {
-    const templateVariables = buildTemplateVariables(studentName);
+  const buildMessageForStudent = (studentId: string, studentName: string) => {
+    const templateVariables = buildTemplateVariables(studentId, studentName);
     const personalizedMessage = applyCommunicationTemplate(messageTemplate, templateVariables);
 
     if ((audience === 'overdue' || audience === 'due_7_days') && profile?.pix_key && !messageTemplate.includes('{chave_pix}') && !messageTemplate.includes('{pix}')) {
@@ -174,7 +200,7 @@ export default function CommunicationPage() {
   };
 
   const previewStudent = targetStudents[0];
-  const previewMessage = previewStudent ? buildMessageForStudent(previewStudent.name) : '';
+  const previewMessage = previewStudent ? buildMessageForStudent(previewStudent.id, previewStudent.name) : '';
 
   const handleCopyPreview = () => {
     if (!previewMessage) {
@@ -186,8 +212,8 @@ export default function CommunicationPage() {
     toast.success('Preview copiado com sucesso!');
   };
 
-  const handleCopyStudentMessage = (studentName: string) => {
-    const message = buildMessageForStudent(studentName);
+  const handleCopyStudentMessage = (studentId: string, studentName: string) => {
+    const message = buildMessageForStudent(studentId, studentName);
     if (!message) {
       toast.error('Mensagem vazia para este contato.');
       return;
@@ -198,7 +224,13 @@ export default function CommunicationPage() {
   };
 
   const handleSendWhatsApp = (studentId: string, studentName: string, studentPhone: string | null) => {
-    const safeAction = buildWhatsAppAction({ phone: studentPhone, message: buildMessageForStudent(studentName) });
+    setSendingStudent({ id: studentId, name: studentName, phone: studentPhone });
+  };
+
+  const handleConfirmSend = () => {
+    if (!sendingStudent) return;
+    const message = buildMessageForStudent(sendingStudent.id, sendingStudent.name);
+    const safeAction = buildWhatsAppAction({ phone: sendingStudent.phone, message });
     if (safeAction.ok === false) {
       toast.error('Nao foi possivel montar a mensagem para WhatsApp.');
       return;
@@ -207,10 +239,11 @@ export default function CommunicationPage() {
     window.open(safeAction.url, '_blank');
     setSentTo(prev => {
       const next = new Set(prev);
-      next.add(studentId);
+      next.add(sendingStudent.id);
       return next;
     });
-    return;
+    setSendingStudent(null);
+    toast.success('Mensagem redirecionada ao WhatsApp!');
   };
 
   return (
@@ -247,6 +280,9 @@ export default function CommunicationPage() {
                     <SelectItem value="trial">{labels.trainingLabel} Experimentais (Leads)</SelectItem>
                     <SelectItem value="without_plan">{labels.studentLabel} sem {labels.planLabel}</SelectItem>
                       </>
+                    )}
+                    {isArena && (
+                      <SelectItem value="payment_reminder">Lembrete de Pagamento (Pendentes)</SelectItem>
                     )}
                     <SelectItem value="inactive">{labels.studentLabel} Inativos(as) (Recuperação)</SelectItem>
                   </SelectContent>
@@ -343,7 +379,7 @@ export default function CommunicationPage() {
                 <div className="flex-1 overflow-y-auto pr-2 space-y-3 custom-scrollbar">
                   {targetStudents.map(student => {
                     const isSent = sentTo.has(student.id);
-                    const message = buildMessageForStudent(student.name);
+                    const message = buildMessageForStudent(student.id, student.name);
                     const whatsappAction = buildWhatsAppAction({ phone: student.phone, message });
                     const canSend = whatsappAction.ok;
                     return (
@@ -362,7 +398,7 @@ export default function CommunicationPage() {
                         <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
                           <Button
                             type="button"
-                            onClick={() => handleCopyStudentMessage(student.name)}
+                            onClick={() => handleCopyStudentMessage(student.id, student.name)}
                             variant="outline"
                             className="w-full sm:w-auto shrink-0"
                           >
@@ -388,6 +424,45 @@ export default function CommunicationPage() {
           </div>
         </div>
       </main>
+
+      {/* Dialog de Confirmação de Envio (Anti-Spam Preview) */}
+      <Dialog open={!!sendingStudent} onOpenChange={(open) => { if (!open) setSendingStudent(null); }}>
+        <DialogContent className="max-w-md rounded-2xl p-6 border border-border/50 backdrop-blur-xl bg-background/95">
+          <DialogHeader>
+            <DialogTitle className="font-display text-xl font-bold flex items-center gap-2">
+              <MessageCircle className="h-5 w-5 text-primary" />
+              Confirmar Envio
+            </DialogTitle>
+            <DialogDescription>
+              Revise os dados de envio antes de abrir o WhatsApp.
+            </DialogDescription>
+          </DialogHeader>
+          {sendingStudent && (
+            <div className="space-y-4 mt-4">
+              <div className="p-4 rounded-xl bg-primary/5 border border-primary/10 space-y-1">
+                <p className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider">Destinatário</p>
+                <p className="font-semibold text-sm text-foreground">{sendingStudent.name}</p>
+                <p className="text-xs text-muted-foreground">{sendingStudent.phone || 'Sem telefone'}</p>
+              </div>
+              <div className="space-y-1.5">
+                <p className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider">Mensagem Personalizada</p>
+                <div className="rounded-xl border border-border/40 bg-muted/30 p-3 max-h-48 overflow-y-auto whitespace-pre-wrap break-words text-xs leading-relaxed text-foreground">
+                  {buildMessageForStudent(sendingStudent.id, sendingStudent.name)}
+                </div>
+              </div>
+              <div className="flex flex-col-reverse gap-3 pt-2 sm:flex-row">
+                <Button type="button" variant="outline" onClick={() => setSendingStudent(null)} className="w-full sm:flex-1 h-11">
+                  Cancelar
+                </Button>
+                <Button type="button" onClick={handleConfirmSend} className="w-full sm:flex-1 h-11 bg-primary text-primary-foreground font-bold shadow-md flex items-center justify-center gap-1.5 hover:bg-primary/95">
+                  <MessageCircle className="h-4 w-4" />
+                  Confirmar e Enviar
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

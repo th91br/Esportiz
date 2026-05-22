@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { Header } from '@/components/Header';
 import { useProfile } from '@/hooks/queries/useProfile';
@@ -59,6 +59,7 @@ export default function SettingsPage() {
   const [pixReceiver, setPixReceiver] = useState('');
   const [bookingConfirmationTemplate, setBookingConfirmationTemplate] = useState('');
   const [paymentReminderTemplate, setPaymentReminderTemplate] = useState('');
+  const processedGoogleCodeRef = useRef<string | null>(null);
 
   const dynamicCtLabel = selectedBusinessType === 'sport_school' ? 'Escola Esportiva' : 'Arena';
   const dynamicCtLabelShort = selectedBusinessType === 'sport_school' ? 'Escola' : 'CT';
@@ -89,13 +90,33 @@ export default function SettingsPage() {
     }
   }, [rawProfile, selectedBusinessType]);
 
+  const clearGoogleOAuthParams = useCallback(() => {
+    const url = new URL(window.location.href);
+    const paramsToClear = ['code', 'scope', 'authuser', 'prompt', 'error', 'error_description', 'state'];
+    let changed = false;
+
+    paramsToClear.forEach((param) => {
+      if (url.searchParams.has(param)) {
+        url.searchParams.delete(param);
+        changed = true;
+      }
+    });
+
+    if (changed) {
+      window.history.replaceState({}, document.title, `${url.pathname}${url.search}${url.hash}`);
+    }
+  }, []);
+
   const handleGoogleCallback = useCallback(async (code: string) => {
+    if (processedGoogleCodeRef.current === code) return;
+
+    processedGoogleCodeRef.current = code;
     setIsConnectingGoogle(true);
     const toastId = toast.loading('Finalizando conexão com Google...');
     
     try {
-      const { data, error } = await supabase.functions.invoke('google-auth', {
-        body: { code, user_id: user?.id }
+      const { error } = await supabase.functions.invoke('google-auth', {
+        body: { code, user_id: user?.id, redirect_uri: GOOGLE_REDIRECT_URI }
       });
 
       if (error) throw error;
@@ -112,25 +133,32 @@ export default function SettingsPage() {
       }
 
       toast.success('Google Agenda conectado com sucesso!', { id: toastId });
-      // Clean URL
-      window.history.replaceState({}, document.title, window.location.pathname);
     } catch (error: unknown) {
       console.error('OAuth Error:', error);
       toast.error('Erro ao conectar com Google: ' + getErrorMessage(error), { id: toastId });
     } finally {
+      clearGoogleOAuthParams();
       setIsConnectingGoogle(false);
     }
-  }, [user?.id, labels.studentLabelSingular]);
+  }, [clearGoogleOAuthParams, user?.id, labels.studentLabelSingular]);
 
   // Handle Google OAuth Redirect
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
     const code = urlParams.get('code');
+    const oauthError = urlParams.get('error');
 
-    if (code && user && !isConnectingGoogle) {
+    if (oauthError) {
+      const errorDescription = urlParams.get('error_description');
+      toast.error(errorDescription || `Google retornou erro: ${oauthError}`);
+      clearGoogleOAuthParams();
+      return;
+    }
+
+    if (code && user && !isConnectingGoogle && processedGoogleCodeRef.current !== code) {
       handleGoogleCallback(code);
     }
-  }, [user, isConnectingGoogle, handleGoogleCallback]);
+  }, [user, isConnectingGoogle, handleGoogleCallback, clearGoogleOAuthParams]);
 
   const handleConnectGoogle = () => {
     const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?` + 

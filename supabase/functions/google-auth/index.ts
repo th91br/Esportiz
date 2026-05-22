@@ -6,13 +6,28 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
+function getAllowedRedirectUris() {
+  return new Set([
+    Deno.env.get('GOOGLE_REDIRECT_URI') ?? '',
+    'https://www.esportiz.com.br/configuracoes',
+    'https://esportiz.com.br/configuracoes',
+    'http://localhost:8080/configuracoes',
+    'http://localhost:5173/configuracoes',
+    'http://127.0.0.1:5173/configuracoes',
+  ].filter(Boolean))
+}
+
+function getErrorMessage(error: unknown) {
+  return error instanceof Error ? error.message : 'Unknown error'
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
   }
 
   try {
-    const { code, user_id } = await req.json()
+    const { code, user_id, redirect_uri: requestedRedirectUri } = await req.json()
     if (!code) throw new Error('No code provided')
     if (!user_id) throw new Error('No user_id provided')
 
@@ -34,10 +49,16 @@ serve(async (req) => {
 
     const client_id = Deno.env.get('GOOGLE_CLIENT_ID')
     const client_secret = Deno.env.get('GOOGLE_CLIENT_SECRET')
-    const redirect_uri = Deno.env.get('GOOGLE_REDIRECT_URI') || 'http://localhost:8080/configuracoes'
+    const redirect_uri = typeof requestedRedirectUri === 'string' && requestedRedirectUri.length > 0
+      ? requestedRedirectUri
+      : Deno.env.get('GOOGLE_REDIRECT_URI') || 'http://localhost:8080/configuracoes'
 
     if (!client_id || !client_secret) {
       throw new Error('Google configuration missing')
+    }
+
+    if (!getAllowedRedirectUris().has(redirect_uri)) {
+      throw new Error('Redirect URI nao autorizada')
     }
 
     // Exchange code for tokens
@@ -77,7 +98,7 @@ serve(async (req) => {
       status: 200,
     })
   } catch (error) {
-    return new Response(JSON.stringify({ error: error.message }), {
+    return new Response(JSON.stringify({ error: getErrorMessage(error) }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 400,
     })

@@ -37,8 +37,40 @@ const BUSINESS_OPTIONS: { type: BusinessType; title: string; description: string
 const GOOGLE_CLIENT_ID = '101916210739-8dd7avpijkt4oc5t053fg7tqtahfakdr.apps.googleusercontent.com';
 const GOOGLE_REDIRECT_URI = window.location.origin + '/configuracoes';
 const GOOGLE_SCOPES = 'https://www.googleapis.com/auth/calendar.events https://www.googleapis.com/auth/spreadsheets';
+const GOOGLE_OAUTH_STATE_KEY = 'esportiz_google_oauth_state';
 const DEFAULT_ARENA_BOOKING_CONFIRMATION_TEMPLATE = getDefaultCommunicationTemplate('arena', 'booking_confirmation') || '';
 const DEFAULT_ARENA_PAYMENT_REMINDER_TEMPLATE = getDefaultCommunicationTemplate('arena', 'payment_reminder') || '';
+
+function createGoogleOAuthState() {
+  const bytes = new Uint8Array(24);
+  window.crypto.getRandomValues(bytes);
+  return Array.from(bytes, (byte) => byte.toString(16).padStart(2, '0')).join('');
+}
+
+function saveGoogleOAuthState(state: string) {
+  try {
+    window.sessionStorage.setItem(GOOGLE_OAUTH_STATE_KEY, state);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function getGoogleOAuthState() {
+  try {
+    return window.sessionStorage.getItem(GOOGLE_OAUTH_STATE_KEY);
+  } catch {
+    return null;
+  }
+}
+
+function clearGoogleOAuthState() {
+  try {
+    window.sessionStorage.removeItem(GOOGLE_OAUTH_STATE_KEY);
+  } catch {
+    // Ignore storage cleanup failures.
+  }
+}
 
 export default function SettingsPage() {
   const queryClient = useQueryClient();
@@ -137,6 +169,7 @@ export default function SettingsPage() {
       console.error('OAuth Error:', error);
       toast.error('Erro ao conectar com Google: ' + getErrorMessage(error), { id: toastId });
     } finally {
+      clearGoogleOAuthState();
       clearGoogleOAuthParams();
       setIsConnectingGoogle(false);
     }
@@ -151,25 +184,46 @@ export default function SettingsPage() {
     if (oauthError) {
       const errorDescription = urlParams.get('error_description');
       toast.error(errorDescription || `Google retornou erro: ${oauthError}`);
+      clearGoogleOAuthState();
       clearGoogleOAuthParams();
       return;
     }
 
     if (code && user && !isConnectingGoogle && processedGoogleCodeRef.current !== code) {
+      const returnedState = urlParams.get('state');
+      const expectedState = getGoogleOAuthState();
+
+      if (!returnedState || !expectedState || returnedState !== expectedState) {
+        toast.error('Falha na validação de segurança do Google. Tente conectar novamente.');
+        clearGoogleOAuthState();
+        clearGoogleOAuthParams();
+        return;
+      }
+
+      clearGoogleOAuthState();
       handleGoogleCallback(code);
     }
   }, [user, isConnectingGoogle, handleGoogleCallback, clearGoogleOAuthParams]);
 
   const handleConnectGoogle = () => {
-    const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?` + 
-      `client_id=${GOOGLE_CLIENT_ID}&` +
-      `redirect_uri=${encodeURIComponent(GOOGLE_REDIRECT_URI)}&` +
-      `response_type=code&` +
-      `scope=${encodeURIComponent(GOOGLE_SCOPES)}&` +
-      `access_type=offline&` +
-      `prompt=consent`;
+    const state = createGoogleOAuthState();
+
+    if (!saveGoogleOAuthState(state)) {
+      toast.error('Nao foi possivel iniciar a conexao segura com Google. Tente novamente.');
+      return;
+    }
+
+    const authParams = new URLSearchParams({
+      client_id: GOOGLE_CLIENT_ID,
+      redirect_uri: GOOGLE_REDIRECT_URI,
+      response_type: 'code',
+      scope: GOOGLE_SCOPES,
+      access_type: 'offline',
+      prompt: 'consent',
+      state,
+    });
     
-    window.location.href = authUrl;
+    window.location.href = `https://accounts.google.com/o/oauth2/v2/auth?${authParams.toString()}`;
   };
 
   const handleLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {

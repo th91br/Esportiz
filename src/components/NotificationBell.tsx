@@ -475,11 +475,11 @@ export function NotificationBell() {
                   const status = getTrainingStatus(t.time, t.durationMinutes);
                   const court = isArena ? courts.find((c) => c.id === t.modalityId) : undefined;
                   const locationText = isArena
-                    ? court?.name || t.location || 'Quadra nao definida'
+                    ? court?.name || t.location || 'Quadra não definida'
                     : t.location || 'Sem local';
                   const statusLabel = isArena
-                    ? status === 'now' ? 'EM HORARIO' : status === 'upcoming' ? 'PROXIMO HORARIO' : 'PENDENTE'
-                    : status === 'now' ? 'EM AULA' : status === 'upcoming' ? 'PROXIMO' : 'PENDENTE';
+                    ? status === 'now' ? 'EM HORÁRIO' : status === 'upcoming' ? 'PRÓXIMO HORÁRIO' : 'PENDENTE'
+                    : status === 'now' ? 'EM AULA' : status === 'upcoming' ? 'PRÓXIMO' : 'PENDENTE';
                   
                   return (
                     <div

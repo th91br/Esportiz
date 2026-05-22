@@ -823,7 +823,7 @@ export default function ComandasPage() {
           <AlertDialogHeader>
             <AlertDialogTitle>Cancelar comanda?</AlertDialogTitle>
             <AlertDialogDescription>
-              A comanda "{comandaToCancel?.name}" sera removida. Use esta acao somente para comandas abertas e sem consumo.
+              A comanda "{comandaToCancel?.name}" será removida. Use esta ação somente para comandas abertas e sem consumo.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -848,7 +848,7 @@ export default function ComandasPage() {
           <AlertDialogHeader>
             <AlertDialogTitle>Remover item?</AlertDialogTitle>
             <AlertDialogDescription>
-              O item "{itemToRemove?.productName}" sera removido da comanda aberta.
+              O item "{itemToRemove?.productName}" será removido da comanda aberta.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -872,7 +872,7 @@ export default function ComandasPage() {
           <AlertDialogHeader>
             <AlertDialogTitle>Reabrir comanda?</AlertDialogTitle>
             <AlertDialogDescription>
-              O faturamento anterior registrado no caixa sera estornado automaticamente e a comanda voltara para aberta.
+              O faturamento anterior registrado no caixa será estornado automaticamente e a comanda voltará para aberta.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

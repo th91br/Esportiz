@@ -95,17 +95,17 @@ export default function StudentPortalPage() {
     const loginBirthDate = forceBirthDate || birthDate;
 
     if (hasInvalidOwnerId) {
-      toast.error('Link do portal invalido.');
+      toast.error('Link do portal inválido.');
       return;
     }
 
     if (!isValidCpf(loginCpf)) {
-      toast.error('CPF invalido. Confira os numeros digitados.');
+      toast.error('CPF inválido. Confira os números digitados.');
       return;
     }
 
     if (!isTodayOrPastDate(loginBirthDate)) {
-      toast.error('Data de nascimento invalida.');
+      toast.error('Data de nascimento inválida.');
       return;
     }
 
@@ -173,7 +173,7 @@ export default function StudentPortalPage() {
 
   const copyPixKey = (amountStr: string) => {
     if (!paymentConfig?.pix_key) {
-      toast.info('Pix ainda nao configurado pela escola.');
+      toast.info('Pix ainda não configurado pela escola.');
       return;
     }
 
@@ -198,9 +198,9 @@ export default function StudentPortalPage() {
             <div className="mx-auto w-12 h-12 bg-destructive/10 text-destructive rounded-full flex items-center justify-center mb-2">
               <ShieldAlert className="h-6 w-6" />
             </div>
-            <CardTitle className="text-xl font-bold font-display text-foreground">Link Invalido</CardTitle>
+            <CardTitle className="text-xl font-bold font-display text-foreground">Link inválido</CardTitle>
             <CardDescription className="text-sm">
-              Este link do portal possui uma identificacao invalida. Solicite um novo link para a secretaria.
+              Este link do portal possui uma identificação inválida. Solicite um novo link para a secretaria.
             </CardDescription>
           </CardHeader>
           <CardFooter>

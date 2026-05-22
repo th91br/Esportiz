@@ -211,22 +211,22 @@ export default function OnlineBookingPage() {
     }
 
     if (!isTodayOrFutureDate(selectedDate)) {
-      toast.error('Escolha uma data valida para a reserva.');
+      toast.error('Escolha uma data válida para a reserva.');
       return;
     }
 
     if (!isValidCpf(safeCpf)) {
-      toast.error('CPF invalido. Confira os numeros digitados.');
+      toast.error('CPF inválido. Confira os números digitados.');
       return;
     }
 
     if (!isValidPublicEmail(safeEmail)) {
-      toast.error('E-mail invalido.');
+      toast.error('E-mail inválido.');
       return;
     }
 
     if (!isValidBrazilPhone(safePhone)) {
-      toast.error('Celular invalido.');
+      toast.error('Celular inválido.');
       return;
     }
 
@@ -560,16 +560,16 @@ export default function OnlineBookingPage() {
 
               <CardContent className="space-y-4">
                 {/* Resumo */}
-                <div className="bg-primary/5 p-4 rounded-xl border border-primary/10 text-xs grid grid-cols-3 gap-2 items-center mb-4">
+                <div className="bg-primary/5 p-4 rounded-xl border border-primary/10 text-xs grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-2 items-start sm:items-center mb-4">
                   <div>
                     <span className="text-muted-foreground uppercase block font-semibold text-[9px] tracking-wider">Quadra</span>
                     <span className="font-bold text-foreground text-sm">{selectedCourt?.name}</span>
                   </div>
-                  <div className="text-center">
+                  <div className="sm:text-center">
                     <span className="text-muted-foreground uppercase block font-semibold text-[9px] tracking-wider">Data & Horário</span>
                     <span className="font-bold text-foreground text-sm">{selectedDate.split('-').reverse().join('/')} às {selectedTimeSlot} ({selectedDuration}m)</span>
                   </div>
-                  <div className="text-right">
+                  <div className="sm:text-right">
                     <span className="text-muted-foreground uppercase block font-semibold text-[9px] tracking-wider">Valor do Play</span>
                     <span className="font-bold text-emerald-600 dark:text-emerald-400 text-sm">
                       {formatCurrency((getCalculatedPrice(selectedCourt, selectedTimeSlot) * selectedDuration) / 60)}

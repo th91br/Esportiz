@@ -46,7 +46,7 @@ export function useReservations() {
 
   const addReservation = useMutation({
     mutationFn: async (input: AddReservationInput) => {
-      if (!user) throw new Error('Nao autenticado');
+      if (!user) throw new Error('Não autenticado');
       const { data: training, error } = await supabase
         .from('trainings')
         .insert({
@@ -84,7 +84,7 @@ export function useReservations() {
 
   const updateReservation = useMutation({
     mutationFn: async (params: { id: string; input: Partial<AddReservationInput> }) => {
-      if (!user) throw new Error('Nao autenticado');
+      if (!user) throw new Error('Não autenticado');
       const { id, input } = params;
       const updates: TablesUpdate<'trainings'> = {};
       if (input.date !== undefined) updates.date = input.date;
@@ -127,7 +127,7 @@ export function useReservations() {
 
   const deleteReservation = useMutation({
     mutationFn: async (id: string) => {
-      if (!user) throw new Error('Nao autenticado');
+      if (!user) throw new Error('Não autenticado');
       const { error } = await supabase
         .from('trainings')
         .delete()
@@ -149,7 +149,7 @@ export function useReservations() {
       paymentStatus: ReservationPaymentStatus;
       paymentMethod?: PaymentMethod | null;
     }) => {
-      if (!user) throw new Error('Nao autenticado');
+      if (!user) throw new Error('Não autenticado');
       const { error } = await supabase.rpc('set_arena_reservation_payment_status_atomic', {
         p_reservation_id: params.id,
         p_payment_status: params.paymentStatus,
@@ -169,7 +169,7 @@ export function useReservations() {
       amount: number;
       method: PaymentMethod;
     }) => {
-      if (!user) throw new Error('Nao autenticado');
+      if (!user) throw new Error('Não autenticado');
       const { error } = await supabase.rpc('add_arena_partial_payment_atomic', {
         p_reservation_id: params.id,
         p_amount: params.amount,

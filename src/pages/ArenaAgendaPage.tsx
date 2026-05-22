@@ -129,7 +129,7 @@ _Agradecemos a preferência. Bom jogo!_ 🎾🔥
     const text = buildVoucherText();
     const action = buildWhatsAppAction({ phone: reservante?.phone, message: text });
     if (!action.ok) {
-      toast.error('Telefone invalido para envio via WhatsApp.');
+      toast.error('Telefone inválido para envio via WhatsApp.');
       return;
     }
     window.open(action.url, '_blank');
@@ -235,7 +235,7 @@ _Agradecemos a preferência. Bom jogo!_ 🎾🔥
               </pre>
               {!canShareVoucher && (
                 <p className="text-xs font-medium text-destructive">
-                  Telefone invalido ou ausente para envio via WhatsApp.
+                  Telefone inválido ou ausente para envio via WhatsApp.
                 </p>
               )}
               <div className="flex gap-2">
@@ -461,7 +461,7 @@ export default function ArenaAgendaPage() {
 
     const action = buildWhatsAppAction({ phone: reservante?.phone, message: text });
     if (!action.ok) {
-      toast.error('Telefone invalido para envio via WhatsApp.');
+      toast.error('Telefone inválido para envio via WhatsApp.');
       return;
     }
     window.open(action.url, '_blank');

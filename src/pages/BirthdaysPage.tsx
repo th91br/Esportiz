@@ -58,7 +58,7 @@ export default function BirthdaysPage() {
     });
 
     if (!action.ok) {
-      toast.error('Telefone invalido para envio via WhatsApp.');
+      toast.error('Telefone inválido para envio via WhatsApp.');
       return;
     }
 

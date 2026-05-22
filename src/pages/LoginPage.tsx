@@ -25,12 +25,12 @@ function getViewFromSearchParams(searchParams: URLSearchParams): View {
 
 const VIEW_COPY: Record<View, { title: string; description: string }> = {
   login: {
-    title: "Entre na sua operacao",
-    description: "Acesse agenda, financeiro e alunos em um unico painel responsivo.",
+    title: "Entre na sua operação",
+    description: "Acesse agenda, financeiro e alunos em um único painel responsivo.",
   },
   signup: {
     title: "Crie sua conta de teste",
-    description: "Comece com 14 dias gratis, sem cartao e com onboarding guiado.",
+    description: "Comece com 14 dias grátis, sem cartão e com onboarding guiado.",
   },
   forgot: {
     title: "Recupere seu acesso",
@@ -149,7 +149,7 @@ export default function LoginPage() {
         description = "E-mail ou senha incorretos.";
       } else if (message === "Email not confirmed") {
         title = "Confirme seu e-mail";
-        description = "Sua conta foi criada, mas o e-mail ainda nao foi confirmado.";
+        description = "Sua conta foi criada, mas o e-mail ainda não foi confirmado.";
         setUnconfirmedEmail(email);
       }
 
@@ -206,9 +206,9 @@ export default function LoginPage() {
       let errorMessage = message;
 
       if (message === "User already registered") {
-        errorMessage = "Este e-mail ja esta cadastrado.";
+        errorMessage = "Este e-mail já está cadastrado.";
       } else if (message.includes("rate limit exceeded")) {
-        errorMessage = "O limite momentaneo de cadastros foi atingido. Tente novamente em alguns minutos.";
+        errorMessage = "O limite momentâneo de cadastros foi atingido. Tente novamente em alguns minutos.";
       }
 
       toast({
@@ -264,7 +264,7 @@ export default function LoginPage() {
         className="absolute top-4 left-4 sm:top-8 sm:left-8 z-50 flex items-center gap-2 px-3 py-2 sm:px-5 sm:py-2.5 text-sm font-medium text-white/90 bg-black/20 hover:bg-black/40 backdrop-blur-md rounded-full border border-white/10 hover:border-white/20 transition-all shadow-lg hover:shadow-xl hover:-translate-y-0.5 group"
       >
         <ArrowLeft className="h-4 w-4 transition-transform group-hover:-translate-x-1" />
-        <span className="hidden sm:inline">Voltar ao inicio</span>
+        <span className="hidden sm:inline">Voltar ao início</span>
         <span className="sm:hidden">Voltar</span>
       </Link>
 
@@ -305,7 +305,7 @@ export default function LoginPage() {
               <p className="text-sm text-muted-foreground leading-relaxed">{copy.description}</p>
               {view === "signup" && (
                 <div className="inline-flex items-center justify-center rounded-full border border-primary/20 bg-primary/10 px-4 py-1.5 text-xs font-medium text-primary mt-3 w-fit mx-auto shadow-sm">
-                  14 dias gratis, sem cartao e com acesso completo
+                  14 dias grátis, sem cartão e com acesso completo
                 </div>
               )}
             </div>
@@ -367,9 +367,9 @@ export default function LoginPage() {
                     )}
                   </Button>
                   <p className="text-center text-sm text-muted-foreground pt-1">
-                    Nao tem conta?{" "}
+                    Não tem conta?{" "}
                     <button type="button" onClick={() => goTo("signup")} className="text-primary font-medium hover:underline">
-                      Comece gratis
+                      Comece grátis
                     </button>
                   </p>
                 </form>

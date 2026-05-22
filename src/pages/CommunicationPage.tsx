@@ -232,7 +232,7 @@ export default function CommunicationPage() {
     const message = buildMessageForStudent(sendingStudent.id, sendingStudent.name);
     const safeAction = buildWhatsAppAction({ phone: sendingStudent.phone, message });
     if (safeAction.ok === false) {
-      toast.error('Nao foi possivel montar a mensagem para WhatsApp.');
+      toast.error('Não foi possível montar a mensagem para WhatsApp.');
       return;
     }
 
@@ -320,7 +320,7 @@ export default function CommunicationPage() {
                   <div>
                     <Label className="text-sm font-bold">Preview</Label>
                     <p className="text-xs text-muted-foreground">
-                      {previewStudent ? `Exemplo para ${previewStudent.name}` : 'Selecione um publico com contatos.'}
+                      {previewStudent ? `Exemplo para ${previewStudent.name}` : 'Selecione um público com contatos.'}
                     </p>
                   </div>
                   <Button
@@ -391,7 +391,7 @@ export default function CommunicationPage() {
                           <div className="min-w-0 flex-1">
                             <p className="font-semibold text-sm md:text-base truncate" title={student.name}>{student.name}</p>
                             <p className={`text-xs truncate ${canSend ? 'text-muted-foreground' : 'text-destructive'}`}>
-                              {student.phone ? (canSend ? student.phone : `${student.phone} - invalido`) : 'Sem telefone'}
+                              {student.phone ? (canSend ? student.phone : `${student.phone} - inválido`) : 'Sem telefone'}
                             </p>
                           </div>
                         </div>

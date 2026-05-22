@@ -324,7 +324,7 @@ export default function SettingsPage() {
     const state = createGoogleOAuthState();
 
     if (!saveGoogleOAuthState(state)) {
-      toast.error('Nao foi possivel iniciar a conexao segura com Google. Tente novamente.');
+      toast.error('Não foi possível iniciar a conexão segura com Google. Tente novamente.');
       return;
     }
 
@@ -515,7 +515,7 @@ export default function SettingsPage() {
 
       <main className="container py-6 md:py-8 space-y-6 max-w-4xl">
         <div>
-          <h1 className="text-3xl font-display font-bold">Configurações {ctPreposition} {dynamicCtLabelShort}</h1>
+          <h1 className="text-2xl sm:text-3xl font-display font-bold">Configurações {ctPreposition} {dynamicCtLabelShort}</h1>
           <p className="text-muted-foreground mt-1">Gerencie as informações da sua conta e {ctPreposition === 'da' ? 'da sua' : 'do seu'} {dynamicCtLabel}.</p>
         </div>
 
@@ -637,7 +637,7 @@ export default function SettingsPage() {
               {/* Logo Section */}
               <div className="space-y-3">
                 <Label>Logo {ctPreposition === 'da' ? 'da' : 'do'} {dynamicCtLabelShort} (Opcional)</Label>
-                <div className="flex items-start gap-4">
+                <div className="flex flex-col sm:flex-row sm:items-start gap-4">
 
                   {/* Preview */}
                   <div className="flex-shrink-0 h-24 w-24 border-2 border-dashed border-border rounded-xl bg-muted/30 overflow-hidden flex items-center justify-center relative group">
@@ -812,8 +812,8 @@ export default function SettingsPage() {
             {/* Google Calendar Card */}
             <Card className="overflow-hidden border-primary/10 shadow-sm hover:shadow-md transition-shadow">
               <div className="h-1 bg-gradient-to-r from-[#4285F4] via-[#EA4335] to-[#FBBC05]" />
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <div className="space-y-1">
+              <CardHeader className="flex flex-col gap-3 space-y-0 pb-2 sm:flex-row sm:items-start sm:justify-between">
+                <div className="space-y-1 min-w-0">
                   <CardTitle className="flex items-center gap-2 text-lg">
                     <Calendar className="h-5 w-5 text-[#4285F4]" />
                     Google Agenda
@@ -821,12 +821,12 @@ export default function SettingsPage() {
                   <CardDescription>Sincronize agenda e analise contatos sem cadastro automático.</CardDescription>
                 </div>
                 {isGoogleConnected ? (
-                  <div className="flex items-center gap-1 text-xs font-medium text-green-600 bg-green-50 px-2 py-1 rounded-full">
+                  <div className="flex w-fit items-center gap-1 text-xs font-medium text-green-600 bg-green-50 px-2 py-1 rounded-full">
                     <CheckCircle2 className="h-3 w-3" />
                     Conectado
                   </div>
                 ) : (
-                  <div className="flex items-center gap-1 text-xs font-medium text-amber-600 bg-amber-50 px-2 py-1 rounded-full">
+                  <div className="flex w-fit items-center gap-1 text-xs font-medium text-amber-600 bg-amber-50 px-2 py-1 rounded-full">
                     <AlertCircle className="h-3 w-3" />
                     Não conectado
                   </div>
@@ -837,11 +837,12 @@ export default function SettingsPage() {
                   Ao conectar, seus(as) {labels.trainingLabel.toLowerCase()} do Esportiz aparecerão na sua agenda do Google e vice-versa.
                   Os contatos do Google Agenda são analisados com segurança, sem criar {labels.studentLabel.toLowerCase()} automaticamente.
                 </p>
-                <div className="flex justify-end gap-2">
+                <div className="flex flex-col gap-2 sm:flex-row sm:justify-end">
                   {isGoogleConnected && (
                     <Button 
                       variant="outline"
                       size="sm"
+                      className="w-full sm:w-auto"
                       onClick={async () => {
                         const tid = toast.loading('Analisando contatos do Google Agenda...');
                         try {
@@ -863,7 +864,10 @@ export default function SettingsPage() {
                   )}
                   <Button 
                     variant={isGoogleConnected ? "outline" : "default"}
-                    className={!isGoogleConnected ? "bg-[#4285F4] hover:bg-[#4285F4]/90 text-white border-none" : ""}
+                    className={cn(
+                      "w-full sm:w-auto",
+                      !isGoogleConnected && "bg-[#4285F4] hover:bg-[#4285F4]/90 text-white border-none"
+                    )}
                     onClick={handleConnectGoogle}
                     disabled={isConnectingGoogle}
                   >
@@ -883,8 +887,8 @@ export default function SettingsPage() {
             {/* Excel / Google Sheets Card */}
             <Card className="overflow-hidden border-primary/10 shadow-sm hover:shadow-md transition-shadow">
               <div className="h-1 bg-gradient-to-r from-[#1D723A] to-[#217346]" />
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <div className="space-y-1">
+              <CardHeader className="flex flex-col gap-3 space-y-0 pb-2 sm:flex-row sm:items-start sm:justify-between">
+                <div className="space-y-1 min-w-0">
                   <CardTitle className="flex items-center gap-2 text-lg">
                     <FileSpreadsheet className="h-5 w-5 text-[#1D723A]" />
                     Controle Financeiro (Planilhas)
@@ -894,7 +898,7 @@ export default function SettingsPage() {
                 {isGoogleConnected ? (
                   <div
                     className={cn(
-                      "flex items-center gap-1 text-xs font-medium px-2 py-1 rounded-full",
+                      "flex w-fit items-center gap-1 text-xs font-medium px-2 py-1 rounded-full",
                       hasGoogleSpreadsheetId
                         ? "text-green-600 bg-green-50"
                         : "text-amber-600 bg-amber-50"
@@ -908,7 +912,7 @@ export default function SettingsPage() {
                     {hasGoogleSpreadsheetId ? 'Planilha configurada' : 'Planilha pendente'}
                   </div>
                 ) : (
-                  <div className="flex items-center gap-1 text-xs font-medium text-amber-600 bg-amber-50 px-2 py-1 rounded-full">
+                  <div className="flex w-fit items-center gap-1 text-xs font-medium text-amber-600 bg-amber-50 px-2 py-1 rounded-full">
                     <AlertCircle className="h-3 w-3" />
                     Inativo
                   </div>
@@ -976,7 +980,7 @@ export default function SettingsPage() {
                   {!isGoogleConnected ? (
                     <Button 
                       variant="default"
-                      className="bg-[#1D723A] hover:bg-[#1D723A]/90 text-white border-none"
+                      className="w-full bg-[#1D723A] hover:bg-[#1D723A]/90 text-white border-none sm:w-auto"
                       onClick={handleConnectGoogle}
                       disabled={isConnectingGoogle}
                     >

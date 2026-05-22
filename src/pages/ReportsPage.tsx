@@ -684,7 +684,7 @@ export default function ReportsPage() {
               {/* Recebido por Quadra (Pie) */}
               <div className="card-interactive p-4 md:p-6 lg:col-span-1 border-border/60">
                 <h3 className="font-display font-bold text-lg md:text-xl text-foreground mb-1">Recebido por Quadra</h3>
-                <p className="text-sm text-muted-foreground mb-6">Distribuicao da receita recebida</p>
+                <p className="text-sm text-muted-foreground mb-6">Distribuição da receita recebida</p>
                 <div className="h-[250px] w-full mt-2">
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
@@ -773,7 +773,7 @@ export default function ReportsPage() {
               {/* Top Reservantes */}
               <div className="card-interactive p-4 md:p-6 lg:col-span-2 border-primary/10 mt-4">
                 <h3 className="font-display font-bold text-lg md:text-xl text-foreground mb-1">Top Reservantes</h3>
-                <p className="text-sm text-muted-foreground mb-6">Clientes que geraram mais caixa recebido no periodo</p>
+                <p className="text-sm text-muted-foreground mb-6">Clientes que geraram mais caixa recebido no período</p>
                 <div className="h-[280px] w-full">
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={topReservantesData} layout="vertical" margin={{ top: 0, right: 30, left: 0, bottom: 0 }}>

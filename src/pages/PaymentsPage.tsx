@@ -196,7 +196,7 @@ export default function PaymentsPage() {
               }}
               disabled={loadingPayments || monthPayments.length === 0}
             >
-              <Download className="h-4 w-4" /> <span className="hidden xs:inline">Exportar</span>
+              <Download className="h-4 w-4" /> <span className="hidden sm:inline">Exportar</span>
             </Button>
             <Button
               variant="ghost"

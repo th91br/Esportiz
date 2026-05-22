@@ -14,12 +14,12 @@ export default function EnrollmentUnavailablePage() {
             <ShieldOff className="h-6 w-6" />
           </div>
           <CardTitle className="text-xl font-bold font-display text-foreground">
-            Inscricao publica indisponivel
+            Inscrição pública indisponível
           </CardTitle>
         </CardHeader>
         <CardContent>
           <p className="text-center text-sm leading-6 text-muted-foreground">
-            Este link publico nao esta ativo. Para cadastrar alunos no Sportiz Sport,
+            Este link público não está ativo. Para cadastrar alunos no Sportiz Sport,
             utilize o painel administrativo ou fale diretamente com a secretaria.
           </p>
         </CardContent>

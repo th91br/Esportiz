@@ -25,6 +25,10 @@ type SyncedStudent = {
   name: string
 }
 
+type ExistingStudentEmail = {
+  email: string | null
+}
+
 type GoogleApiErrorResponse = {
   error?: {
     message?: string
@@ -105,33 +109,36 @@ serve(async (req) => {
       }
     })
 
-    const newStudentsCount = 0
     const syncedStudents = Array.from(attendeesMap.values())
+    const syncedEmails = syncedStudents.map((student) => student.email)
+    let existingCount = 0
 
-    // 4. Upsert students into database
-    for (const studentData of syncedStudents) {
-      // Check if student already exists
-      const { data: existing } = await supabaseClient
+    if (syncedEmails.length > 0) {
+      const { data: existingStudents, error: existingError } = await supabaseClient
         .from('students')
-        .select('id')
+        .select('email')
         .eq('user_id', user_id)
-        .eq('email', studentData.email)
-        .maybeSingle()
+        .in('email', syncedEmails)
 
-      if (!existing) {
-        await supabaseClient.from('students').insert({
-          user_id: user_id,
-          name: studentData.name,
-          email: studentData.email,
-          phone: '', // Google Calendar might not have phone
-          level: 'iniciante',
-          active: true,
-          join_date: new Date().toISOString().split('T')[0]
-        })
-      }
+      if (existingError) throw existingError
+
+      const existingEmails = new Set(
+        ((existingStudents || []) as ExistingStudentEmail[])
+          .map((student) => student.email)
+          .filter((email): email is string => Boolean(email))
+      )
+      existingCount = existingEmails.size
     }
 
-    return new Response(JSON.stringify({ success: true, count: syncedStudents.length }), {
+    return new Response(JSON.stringify({
+      success: true,
+      count: syncedStudents.length,
+      contactsFound: syncedStudents.length,
+      existingCount,
+      skippedCount: Math.max(syncedStudents.length - existingCount, 0),
+      createdCount: 0,
+      autoCreateDisabled: true,
+    }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 200,
     })

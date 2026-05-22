@@ -100,12 +100,13 @@ export default function SettingsPage() {
 
       if (error) throw error;
 
-      // Trigger initial sync
+      // Trigger initial analysis without creating students automatically.
       try {
-        await supabase.functions.invoke('google-sync', {
+        const { data: syncData } = await supabase.functions.invoke('google-sync', {
           body: { user_id: user?.id }
         });
-        toast.success(`Sincronização de ${labels.studentLabel.toLowerCase()} concluída!`);
+        const contactsFound = Number(syncData?.contactsFound ?? syncData?.count ?? 0);
+        toast.success(`${contactsFound} contato${contactsFound !== 1 ? 's' : ''} analisado${contactsFound !== 1 ? 's' : ''}. Nenhum ${labels.studentLabelSingular.toLowerCase()} foi criado automaticamente.`);
       } catch (syncErr) {
         console.error('Initial sync error:', syncErr);
       }
@@ -119,7 +120,7 @@ export default function SettingsPage() {
     } finally {
       setIsConnectingGoogle(false);
     }
-  }, [user?.id, labels.studentLabel]);
+  }, [user?.id, labels.studentLabelSingular]);
 
   // Handle Google OAuth Redirect
   useEffect(() => {
@@ -620,7 +621,7 @@ export default function SettingsPage() {
                     <Calendar className="h-5 w-5 text-[#4285F4]" />
                     Google Agenda
                   </CardTitle>
-                  <CardDescription>Sincronize {labels.trainingLabel.toLowerCase()} e {labels.studentLabel.toLowerCase()} automaticamente.</CardDescription>
+                  <CardDescription>Sincronize agenda e analise contatos sem cadastro automático.</CardDescription>
                 </div>
                 {profile?.google_access_token ? (
                   <div className="flex items-center gap-1 text-xs font-medium text-green-600 bg-green-50 px-2 py-1 rounded-full">
@@ -636,8 +637,8 @@ export default function SettingsPage() {
               </CardHeader>
               <CardContent className="space-y-4">
                 <p className="text-sm text-muted-foreground">
-                  Ao conectar, seus(as) {labels.trainingLabel.toLowerCase()} do Esportiz aparecerão na sua agenda do Google e vice-versa. 
-                  Adicione {labels.studentLabel.toLowerCase()} pelo e-mail no Google Agenda e eles serão registrados aqui.
+                  Ao conectar, seus(as) {labels.trainingLabel.toLowerCase()} do Esportiz aparecerão na sua agenda do Google e vice-versa.
+                  Os contatos do Google Agenda são analisados com segurança, sem criar {labels.studentLabel.toLowerCase()} automaticamente.
                 </p>
                 <div className="flex justify-end gap-2">
                   {profile?.google_access_token && (
@@ -645,19 +646,22 @@ export default function SettingsPage() {
                       variant="outline"
                       size="sm"
                       onClick={async () => {
-                        const tid = toast.loading(`Sincronizando ${labels.studentLabel.toLowerCase()}...`);
+                        const tid = toast.loading('Analisando contatos do Google Agenda...');
                         try {
                           const { data, error } = await supabase.functions.invoke('google-sync', {
                             body: { user_id: user?.id }
                           });
                           if (error) throw error;
-                          toast.success(`${data.count} contatos analisados e sincronizados!`, { id: tid });
+                          const contactsFound = Number(data?.contactsFound ?? data?.count ?? 0);
+                          const existingCount = Number(data?.existingCount ?? 0);
+                          const skippedCount = Number(data?.skippedCount ?? Math.max(contactsFound - existingCount, 0));
+                          toast.success(`${contactsFound} contato${contactsFound !== 1 ? 's' : ''} analisado${contactsFound !== 1 ? 's' : ''}. ${existingCount} já existente${existingCount !== 1 ? 's' : ''}; ${skippedCount} sem importação automática.`, { id: tid });
                         } catch (err: unknown) {
                           toast.error('Erro na sincronização: ' + getErrorMessage(err), { id: tid });
                         }
                       }}
                     >
-                      Sincronizar {labels.studentLabel} Agora
+                      Analisar Contatos
                     </Button>
                   )}
                   <Button 

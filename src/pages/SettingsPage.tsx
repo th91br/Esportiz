@@ -206,6 +206,8 @@ export default function SettingsPage() {
   const dynamicCtLabelShort = selectedBusinessType === 'sport_school' ? 'Escola' : 'CT';
   const ctPreposition = selectedBusinessType === 'sport_school' ? 'da' : 'do';
   const ctGenderedPronoun = selectedBusinessType === 'sport_school' ? 'sua' : 'seu';
+  const isGoogleConnected = Boolean(profile?.google_access_token);
+  const hasGoogleSpreadsheetId = Boolean(profile?.sheets_spreadsheet_id?.trim());
 
   // Initialize active business type once from raw profile
   useEffect(() => {
@@ -818,7 +820,7 @@ export default function SettingsPage() {
                   </CardTitle>
                   <CardDescription>Sincronize agenda e analise contatos sem cadastro automático.</CardDescription>
                 </div>
-                {profile?.google_access_token ? (
+                {isGoogleConnected ? (
                   <div className="flex items-center gap-1 text-xs font-medium text-green-600 bg-green-50 px-2 py-1 rounded-full">
                     <CheckCircle2 className="h-3 w-3" />
                     Conectado
@@ -836,7 +838,7 @@ export default function SettingsPage() {
                   Os contatos do Google Agenda são analisados com segurança, sem criar {labels.studentLabel.toLowerCase()} automaticamente.
                 </p>
                 <div className="flex justify-end gap-2">
-                  {profile?.google_access_token && (
+                  {isGoogleConnected && (
                     <Button 
                       variant="outline"
                       size="sm"
@@ -860,8 +862,8 @@ export default function SettingsPage() {
                     </Button>
                   )}
                   <Button 
-                    variant={profile?.google_access_token ? "outline" : "default"}
-                    className={!profile?.google_access_token ? "bg-[#4285F4] hover:bg-[#4285F4]/90 text-white border-none" : ""}
+                    variant={isGoogleConnected ? "outline" : "default"}
+                    className={!isGoogleConnected ? "bg-[#4285F4] hover:bg-[#4285F4]/90 text-white border-none" : ""}
                     onClick={handleConnectGoogle}
                     disabled={isConnectingGoogle}
                   >
@@ -871,7 +873,7 @@ export default function SettingsPage() {
                         Conectando...
                       </>
                     ) : (
-                      profile?.google_access_token ? 'Reconectar Google Agenda' : 'Conectar Google Agenda'
+                      isGoogleConnected ? 'Reconectar Google Agenda' : 'Conectar Google Agenda'
                     )}
                   </Button>
                 </div>
@@ -889,10 +891,21 @@ export default function SettingsPage() {
                   </CardTitle>
                   <CardDescription>Sincronize pagamentos via Excel ou Google Sheets.</CardDescription>
                 </div>
-                {profile?.google_access_token ? (
-                  <div className="flex items-center gap-1 text-xs font-medium text-green-600 bg-green-50 px-2 py-1 rounded-full">
-                    <CheckCircle2 className="h-3 w-3" />
-                    Google Conectado
+                {isGoogleConnected ? (
+                  <div
+                    className={cn(
+                      "flex items-center gap-1 text-xs font-medium px-2 py-1 rounded-full",
+                      hasGoogleSpreadsheetId
+                        ? "text-green-600 bg-green-50"
+                        : "text-amber-600 bg-amber-50"
+                    )}
+                  >
+                    {hasGoogleSpreadsheetId ? (
+                      <CheckCircle2 className="h-3 w-3" />
+                    ) : (
+                      <AlertCircle className="h-3 w-3" />
+                    )}
+                    {hasGoogleSpreadsheetId ? 'Planilha configurada' : 'Planilha pendente'}
                   </div>
                 ) : (
                   <div className="flex items-center gap-1 text-xs font-medium text-amber-600 bg-amber-50 px-2 py-1 rounded-full">
@@ -907,8 +920,29 @@ export default function SettingsPage() {
                   O sistema reconhece as atualizações e atualiza o financeiro do Esportiz em tempo real.
                 </p>
                 
-                {profile?.google_access_token && (
+                {isGoogleConnected && (
                   <div className="space-y-2 pt-2 border-t">
+                    <div className="flex flex-wrap items-center gap-2 text-xs">
+                      <span className="inline-flex items-center gap-1 font-medium text-green-600 bg-green-50 px-2 py-1 rounded-full">
+                        <CheckCircle2 className="h-3 w-3" />
+                        Google conectado
+                      </span>
+                      <span
+                        className={cn(
+                          "inline-flex items-center gap-1 font-medium px-2 py-1 rounded-full",
+                          hasGoogleSpreadsheetId
+                            ? "text-green-600 bg-green-50"
+                            : "text-amber-600 bg-amber-50"
+                        )}
+                      >
+                        {hasGoogleSpreadsheetId ? (
+                          <CheckCircle2 className="h-3 w-3" />
+                        ) : (
+                          <AlertCircle className="h-3 w-3" />
+                        )}
+                        {hasGoogleSpreadsheetId ? 'ID da planilha salvo' : 'Informe o ID da planilha'}
+                      </span>
+                    </div>
                     <Label htmlFor="spreadsheet-id">ID da Planilha Google</Label>
                     <div className="flex gap-2">
                       <Input 
@@ -916,10 +950,15 @@ export default function SettingsPage() {
                         placeholder="Cole o ID da sua planilha aqui"
                         defaultValue={profile.sheets_spreadsheet_id || ''}
                         onBlur={async (e) => {
-                          if (e.target.value !== profile.sheets_spreadsheet_id) {
+                          const spreadsheetId = e.target.value.trim();
+                          if (spreadsheetId !== (profile.sheets_spreadsheet_id || '')) {
                             try {
-                              await updateProfile({ sheets_spreadsheet_id: e.target.value });
-                              toast.success('ID da planilha atualizado!');
+                              await updateProfile({ sheets_spreadsheet_id: spreadsheetId });
+                              toast.success(
+                                spreadsheetId
+                                  ? 'ID da planilha salvo. Sheets pronto para sincronização.'
+                                  : 'ID da planilha removido. Google segue conectado; Sheets fica pendente.'
+                              );
                             } catch (error) {
                               toast.error('Erro ao salvar ID da planilha.');
                             }
@@ -934,7 +973,7 @@ export default function SettingsPage() {
                 )}
 
                 <div className="flex justify-end">
-                  {!profile?.google_access_token ? (
+                  {!isGoogleConnected ? (
                     <Button 
                       variant="default"
                       className="bg-[#1D723A] hover:bg-[#1D723A]/90 text-white border-none"
@@ -951,9 +990,20 @@ export default function SettingsPage() {
                       )}
                     </Button>
                   ) : (
-                    <div className="text-xs text-green-600 flex items-center gap-1">
-                      <CheckCircle2 className="h-4 w-4" />
-                      Pronto para sincronizar
+                    <div
+                      className={cn(
+                        "text-xs flex items-center gap-1",
+                        hasGoogleSpreadsheetId ? "text-green-600" : "text-amber-600"
+                      )}
+                    >
+                      {hasGoogleSpreadsheetId ? (
+                        <CheckCircle2 className="h-4 w-4" />
+                      ) : (
+                        <AlertCircle className="h-4 w-4" />
+                      )}
+                      {hasGoogleSpreadsheetId
+                        ? 'Pronto para sincronizar pagamentos'
+                        : 'Aguardando ID da planilha'}
                     </div>
                   )}
                 </div>

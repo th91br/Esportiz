@@ -38,8 +38,14 @@ const GOOGLE_CLIENT_ID = '101916210739-8dd7avpijkt4oc5t053fg7tqtahfakdr.apps.goo
 const GOOGLE_REDIRECT_URI = window.location.origin + '/configuracoes';
 const GOOGLE_SCOPES = 'https://www.googleapis.com/auth/calendar.events https://www.googleapis.com/auth/spreadsheets';
 const GOOGLE_OAUTH_STATE_KEY = 'esportiz_google_oauth_state';
+const GOOGLE_OAUTH_STATE_TTL_MS = 10 * 60 * 1000;
 const DEFAULT_ARENA_BOOKING_CONFIRMATION_TEMPLATE = getDefaultCommunicationTemplate('arena', 'booking_confirmation') || '';
 const DEFAULT_ARENA_PAYMENT_REMINDER_TEMPLATE = getDefaultCommunicationTemplate('arena', 'payment_reminder') || '';
+
+type GoogleOAuthStatePayload = {
+  state: string;
+  createdAt: number;
+};
 
 function createGoogleOAuthState() {
   const bytes = new Uint8Array(24);
@@ -48,17 +54,70 @@ function createGoogleOAuthState() {
 }
 
 function saveGoogleOAuthState(state: string) {
+  const payload = JSON.stringify({ state, createdAt: Date.now() } satisfies GoogleOAuthStatePayload);
+  let saved = false;
+
   try {
-    window.sessionStorage.setItem(GOOGLE_OAUTH_STATE_KEY, state);
-    return true;
+    window.sessionStorage.setItem(GOOGLE_OAUTH_STATE_KEY, payload);
+    saved = true;
   } catch {
-    return false;
+    // Ignore storage failures and try the next storage.
   }
+
+  try {
+    window.localStorage.setItem(GOOGLE_OAUTH_STATE_KEY, payload);
+    saved = true;
+  } catch {
+    // Ignore storage failures and return whether any storage worked.
+  }
+
+  return saved;
+}
+
+function parseGoogleOAuthState(raw: string | null): GoogleOAuthStatePayload | null {
+  if (!raw) return null;
+
+  try {
+    const parsed = JSON.parse(raw) as Partial<GoogleOAuthStatePayload>;
+    if (typeof parsed.state === 'string' && typeof parsed.createdAt === 'number') {
+      return { state: parsed.state, createdAt: parsed.createdAt };
+    }
+  } catch {
+    if (raw.length > 0) {
+      return { state: raw, createdAt: Date.now() };
+    }
+  }
+
+  return null;
+}
+
+function getStoredGoogleOAuthPayload() {
+  const storages = [window.sessionStorage, window.localStorage];
+
+  for (const storage of storages) {
+    try {
+      const payload = parseGoogleOAuthState(storage.getItem(GOOGLE_OAUTH_STATE_KEY));
+      if (payload) return payload;
+    } catch {
+      // Continue to the next storage.
+    }
+  }
+
+  return null;
 }
 
 function getGoogleOAuthState() {
   try {
-    return window.sessionStorage.getItem(GOOGLE_OAUTH_STATE_KEY);
+    const payload = getStoredGoogleOAuthPayload();
+
+    if (!payload) return null;
+
+    if (Date.now() - payload.createdAt > GOOGLE_OAUTH_STATE_TTL_MS) {
+      clearGoogleOAuthState();
+      return null;
+    }
+
+    return payload.state;
   } catch {
     return null;
   }
@@ -67,6 +126,12 @@ function getGoogleOAuthState() {
 function clearGoogleOAuthState() {
   try {
     window.sessionStorage.removeItem(GOOGLE_OAUTH_STATE_KEY);
+  } catch {
+    // Ignore storage cleanup failures.
+  }
+
+  try {
+    window.localStorage.removeItem(GOOGLE_OAUTH_STATE_KEY);
   } catch {
     // Ignore storage cleanup failures.
   }
@@ -194,7 +259,7 @@ export default function SettingsPage() {
       const expectedState = getGoogleOAuthState();
 
       if (!returnedState || !expectedState || returnedState !== expectedState) {
-        toast.error('Falha na validação de segurança do Google. Tente conectar novamente.');
+        toast.error('Sessão de segurança do Google expirada ou inválida. Clique em conectar e tente novamente.');
         clearGoogleOAuthState();
         clearGoogleOAuthParams();
         return;

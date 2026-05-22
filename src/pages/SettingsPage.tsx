@@ -23,7 +23,7 @@ import { UploadCloud, Save, Building, Trash2, Calendar, FileSpreadsheet, CheckCi
 import { useAuth } from '@/contexts/AuthContext';
 import { useBusinessContext } from '@/hooks/useBusinessContext';
 import { ModalityManager } from '@/components/ModalityManager';
-import { supabase } from '@/integrations/supabase/client';
+import { supabase, SUPABASE_PUBLISHABLE_KEY, SUPABASE_URL } from '@/integrations/supabase/client';
 import { type BusinessType } from '@/hooks/queries/useProfile';
 import { cn } from '@/lib/utils';
 import { getErrorMessage } from '@/lib/errorUtils';
@@ -137,6 +137,50 @@ function clearGoogleOAuthState() {
   }
 }
 
+async function invokeGoogleAuth(payload: { code: string; userId: string; redirectUri: string }) {
+  const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+
+  if (sessionError) throw sessionError;
+
+  const accessToken = sessionData.session?.access_token;
+  if (!accessToken) {
+    throw new Error('Sessão expirada. Entre novamente e tente conectar o Google.');
+  }
+
+  const response = await fetch(`${SUPABASE_URL}/functions/v1/google-auth`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      apikey: SUPABASE_PUBLISHABLE_KEY,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      code: payload.code,
+      user_id: payload.userId,
+      redirect_uri: payload.redirectUri,
+    }),
+  });
+
+  let responseBody: unknown = null;
+
+  try {
+    responseBody = await response.json();
+  } catch {
+    responseBody = null;
+  }
+
+  if (!response.ok) {
+    const message =
+      responseBody && typeof responseBody === 'object' && 'error' in responseBody
+        ? String((responseBody as { error?: unknown }).error || '')
+        : '';
+
+    throw new Error(message || `Google Auth falhou com status ${response.status}.`);
+  }
+
+  return responseBody;
+}
+
 export default function SettingsPage() {
   const queryClient = useQueryClient();
   const { profile, rawProfile, updateProfile, uploadLogo, isUpdatingProfile, isUploadingLogo } = useProfile();
@@ -212,11 +256,15 @@ export default function SettingsPage() {
     const toastId = toast.loading('Finalizando conexão com Google...');
     
     try {
-      const { error } = await supabase.functions.invoke('google-auth', {
-        body: { code, user_id: user?.id, redirect_uri: GOOGLE_REDIRECT_URI }
-      });
+      if (!user?.id) {
+        throw new Error('Usuário não autenticado. Entre novamente e tente conectar o Google.');
+      }
 
-      if (error) throw error;
+      await invokeGoogleAuth({
+        code,
+        userId: user.id,
+        redirectUri: GOOGLE_REDIRECT_URI,
+      });
 
       // Trigger initial analysis without creating students automatically.
       try {

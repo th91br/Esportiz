@@ -34,6 +34,10 @@ const BUSINESS_OPTIONS: { type: BusinessType; title: string; description: string
   { type: 'arena', title: 'Arena / CT de Quadras', description: 'Esportiz Arena — Locação de quadras, Day Use, Eventos esportivos...', emoji: '🏟️' },
 ];
 
+function getBusinessTypeLabel(type: BusinessType | null | undefined) {
+  return type === 'arena' ? 'Arena / CT de Quadras' : 'Escola Esportiva';
+}
+
 const GOOGLE_CLIENT_ID = '101916210739-8dd7avpijkt4oc5t053fg7tqtahfakdr.apps.googleusercontent.com';
 const GOOGLE_REDIRECT_URI = window.location.origin + '/configuracoes';
 const GOOGLE_SCOPES = 'https://www.googleapis.com/auth/calendar.events https://www.googleapis.com/auth/spreadsheets';
@@ -189,7 +193,6 @@ export default function SettingsPage() {
   const { user } = useAuth();
   const { labels } = useBusinessContext();
   const [selectedBusinessType, setSelectedBusinessType] = useState<BusinessType>('sport_school');
-  const [businessTypeInitialized, setBusinessTypeInitialized] = useState(false);
 
   const [ctName, setCtName] = useState('');
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
@@ -209,13 +212,12 @@ export default function SettingsPage() {
   const isGoogleConnected = Boolean(profile?.google_access_token);
   const hasGoogleSpreadsheetId = Boolean(profile?.sheets_spreadsheet_id?.trim());
 
-  // Initialize active business type once from raw profile
+  // Keep the settings card aligned with the persisted profile value.
   useEffect(() => {
-    if (rawProfile && !businessTypeInitialized) {
+    if (rawProfile) {
       setSelectedBusinessType(rawProfile.business_type || 'sport_school');
-      setBusinessTypeInitialized(true);
     }
-  }, [rawProfile, businessTypeInitialized]);
+  }, [rawProfile]);
 
   // Load niche-specific settings or fallbacks when selected business type changes
   useEffect(() => {
@@ -395,11 +397,12 @@ export default function SettingsPage() {
 
   const handleSave = async () => {
     if (!ctName.trim()) {
-      toast.error('O nome do CT é obrigatório.');
+      toast.error(`O nome ${ctPreposition === 'da' ? 'da' : 'do'} ${dynamicCtLabelShort} é obrigatório.`);
       return;
     }
 
     try {
+      const targetBusinessType = selectedBusinessType;
       let logoUrl = logoPreview; // Use current preview
 
       if (logoFile) {
@@ -414,13 +417,13 @@ export default function SettingsPage() {
       const currentNicheSettings = rawProfile?.niche_settings || {};
       const updatedNicheSettings = {
         ...currentNicheSettings,
-        [selectedBusinessType]: {
+        [targetBusinessType]: {
           ct_name: ctName,
           logo_url: logoUrl,
           pix_key: pixKey,
           pix_receiver: pixReceiver,
           templates: {
-            ...(currentNicheSettings[selectedBusinessType]?.templates || {}),
+            ...(currentNicheSettings[targetBusinessType]?.templates || {}),
             booking_confirmation: bookingConfirmationTemplate,
             payment_reminder: paymentReminderTemplate
           }
@@ -428,7 +431,7 @@ export default function SettingsPage() {
       };
 
       await updateProfile({
-        business_type: selectedBusinessType,
+        business_type: targetBusinessType,
         ct_name: ctName,
         logo_url: logoUrl,
         pix_key: pixKey,
@@ -436,6 +439,8 @@ export default function SettingsPage() {
         niche_settings: updatedNicheSettings
       });
 
+      setSelectedBusinessType(targetBusinessType);
+      await queryClient.invalidateQueries({ queryKey: ['profile', user?.id] });
       setLogoFile(null);
       const input = document.getElementById('logo-input') as HTMLInputElement;
       if (input) input.value = '';
@@ -447,7 +452,12 @@ export default function SettingsPage() {
   };
 
   const handleCardClick = (type: BusinessType) => {
-    const activeNiche = rawProfile?.business_type || 'sport_school';
+    const activeNiche = rawProfile?.business_type || selectedBusinessType;
+    if (type === activeNiche) {
+      setSelectedBusinessType(type);
+      return;
+    }
+
     if (type !== activeNiche) {
       setPendingBusinessType(type);
       setShowNicheConfirmation(true);
@@ -457,16 +467,17 @@ export default function SettingsPage() {
   const handleConfirmNicheChange = async () => {
     if (!pendingBusinessType) return;
 
+    const targetBusinessType = pendingBusinessType;
     setShowNicheConfirmation(false);
 
     try {
       const logoUrl = logoPreview;
       const currentNicheSettings = rawProfile?.niche_settings || {};
 
-      const targetNicheSettings = currentNicheSettings[pendingBusinessType] || {};
+      const targetNicheSettings = currentNicheSettings[targetBusinessType] || {};
       const updatedNicheSettings = {
         ...currentNicheSettings,
-        [pendingBusinessType]: {
+        [targetBusinessType]: {
           ct_name: targetNicheSettings.ct_name || ctName || rawProfile?.ct_name || '',
           logo_url: targetNicheSettings.logo_url || logoUrl || rawProfile?.logo_url || null,
           pix_key: targetNicheSettings.pix_key || pixKey || rawProfile?.pix_key || '',
@@ -479,14 +490,16 @@ export default function SettingsPage() {
       };
 
       await updateProfile({
-        business_type: pendingBusinessType,
-        ct_name: updatedNicheSettings[pendingBusinessType].ct_name,
-        logo_url: updatedNicheSettings[pendingBusinessType].logo_url,
-        pix_key: updatedNicheSettings[pendingBusinessType].pix_key,
-        pix_receiver: updatedNicheSettings[pendingBusinessType].pix_receiver,
+        business_type: targetBusinessType,
+        ct_name: updatedNicheSettings[targetBusinessType].ct_name,
+        logo_url: updatedNicheSettings[targetBusinessType].logo_url,
+        pix_key: updatedNicheSettings[targetBusinessType].pix_key,
+        pix_receiver: updatedNicheSettings[targetBusinessType].pix_receiver,
         niche_settings: updatedNicheSettings
       });
 
+      setSelectedBusinessType(targetBusinessType);
+      await queryClient.invalidateQueries({ queryKey: ['profile', user?.id] });
       toast.success('Segmento alterado com sucesso! Reiniciando aplicação...');
       setTimeout(() => {
         queryClient.clear();
@@ -544,6 +557,8 @@ export default function SettingsPage() {
                     onClick={() => {
                       handleCardClick(option.type);
                     }}
+                    aria-pressed={isSelected}
+                    aria-label={`${option.title}${isSelected ? ' ativo' : ''}`}
                     disabled={isBusy}
                     className={cn(
                       'w-full flex items-center gap-4 p-4 rounded-xl border-2 transition-all duration-200 text-left group',
@@ -1029,11 +1044,11 @@ export default function SettingsPage() {
               <p className="text-sm leading-relaxed text-foreground">
                 Você está alterando o segmento do seu negócio de{' '}
                 <strong className="font-semibold text-primary">
-                  {rawProfile?.business_type === 'sport_school' ? 'Escola Esportiva' : 'Arena / CT de Quadras'}
+                  {getBusinessTypeLabel(rawProfile?.business_type)}
                 </strong>{' '}
                 para{' '}
                 <strong className="font-semibold text-primary">
-                  {pendingBusinessType === 'sport_school' ? 'Escola Esportiva' : 'Arena / CT de Quadras'}
+                  {getBusinessTypeLabel(pendingBusinessType)}
                 </strong>.
               </p>
               <div className="space-y-2 text-muted-foreground text-xs leading-relaxed">

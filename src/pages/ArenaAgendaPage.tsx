@@ -23,6 +23,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { formatCurrency } from '@/lib/formatCurrency';
+import { getReservationPaidAmount } from '@/lib/financialContracts';
 import { getLocalTodayDate, toLocalDateString } from '@/lib/dateUtils';
 import { PAYMENT_METHOD_LABELS } from '@/hooks/queries/useReservations';
 import { ArenaPartialPaymentDialog } from '@/components/arena/ArenaPartialPaymentDialog';
@@ -62,6 +63,7 @@ function getReservationFinancialSummary(reservation: Reservation) {
     totalLabel,
     paidLabel,
     dueLabel,
+    isPaid,
     hasPartialPayment,
     hasAnyPayment: reservation.totalPaid > 0,
     paymentStatusLabel: isPaid ? 'Pago ✅' : hasPartialPayment ? 'Parcial / Pendente ⏳' : 'Pendente ⏳',
@@ -196,9 +198,9 @@ _Agradecemos a preferência. Bom jogo!_ 🎾🔥
               </span>
               <span className={cn(
                 'px-2.5 py-1 rounded-full text-xs font-bold',
-                reservation.paymentStatus === 'paid' ? 'bg-emerald-100 text-emerald-700' : 'bg-orange-100 text-orange-700'
+                financialSummary.isPaid ? 'bg-emerald-100 text-emerald-700' : 'bg-orange-100 text-orange-700'
               )}>
-                {reservation.paymentStatus === 'paid'
+                {financialSummary.isPaid
                   ? '💰 Pago'
                   : financialSummary.hasPartialPayment
                     ? '💳 Parcial'
@@ -393,7 +395,7 @@ export default function ArenaAgendaPage() {
   };
 
   const pendingReservations = useMemo(() => 
-    reservations.filter(r => r.paymentStatus === 'pending' && r.status !== 'cancelled'),
+    reservations.filter(r => r.paymentStatus === 'pending' && r.status !== 'cancelled' && r.remainingBalance > 0),
     [reservations]
   );
   const pendingCount = pendingReservations.length;
@@ -414,8 +416,7 @@ export default function ArenaAgendaPage() {
   );
   const todayReceivedTotal = useMemo(() =>
     todayReservations
-      .filter(r => r.paymentStatus === 'paid')
-      .reduce((total, reservation) => total + reservation.finalPrice, 0),
+      .reduce((total, reservation) => total + getReservationPaidAmount(reservation), 0),
     [todayReservations]
   );
 
@@ -688,7 +689,7 @@ export default function ArenaAgendaPage() {
                             isStart ? 'rounded-t-lg' : '',
                             reservation.reservationType === 'blocked'
                               ? 'bg-zinc-100 dark:bg-zinc-900/40 border-l-2 border-zinc-400/60 text-zinc-500 dark:text-zinc-400 [background-image:repeating-linear-gradient(45deg,transparent,transparent_8px,rgba(0,0,0,0.03)_8px,rgba(0,0,0,0.03)_16px)] dark:[background-image:repeating-linear-gradient(45deg,transparent,transparent_8px,rgba(255,255,255,0.015)_8px,rgba(255,255,255,0.015)_16px)]'
-                              : reservation.paymentStatus === 'paid'
+                              : financialSummary?.isPaid
                                 ? 'bg-emerald-500/20 border-l-2 border-emerald-500'
                                 : 'bg-primary/20 border-l-2 border-primary'
                           )}

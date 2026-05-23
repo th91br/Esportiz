@@ -34,6 +34,7 @@ import { usePrivacyMode } from '@/hooks/usePrivacyMode';
 import { useBusinessContext } from '@/hooks/useBusinessContext';
 import { getActiveMonthlyStudents, getTotalStudents } from '@/lib/studentHelpers';
 import { formatCurrency } from '@/lib/formatCurrency';
+import { getReservationPaidAmount } from '@/lib/financialContracts';
 import { DashboardCharts } from '@/components/DashboardCharts';
 import { useProfile } from '@/hooks/queries/useProfile';
 import { useModalities } from '@/hooks/queries/useModalities';
@@ -132,9 +133,7 @@ export default function Index() {
     reservations.forEach((r) => {
       if (r.date.startsWith(currentMonthStr) && r.status !== 'cancelled') {
         expectedRevenue += r.finalPrice;
-        if (r.paymentStatus === 'paid') {
-          receivedRevenue += r.finalPrice;
-        }
+        receivedRevenue += getReservationPaidAmount(r);
       }
     });
 

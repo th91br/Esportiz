@@ -5,6 +5,7 @@ import type { Reservation } from '@/hooks/queries/useReservations';
 import type { Sale } from '@/hooks/queries/useSales';
 import { useTheme } from 'next-themes';
 import { formatCurrency } from '@/lib/formatCurrency';
+import { getReservationPaidAmount } from '@/lib/financialContracts';
 import { toLocalDateString } from '@/lib/dateUtils';
 
 interface DashboardChartsProps {
@@ -36,9 +37,7 @@ export function DashboardCharts({
                 const month = r.date.slice(0, 7);
                 if (!revenueMap[month]) revenueMap[month] = { expected: 0, paid: 0 };
                 revenueMap[month].expected += r.finalPrice;
-                if (r.paymentStatus === 'paid') {
-                    revenueMap[month].paid += r.finalPrice;
-                }
+                revenueMap[month].paid += getReservationPaidAmount(r);
             }
         });
 

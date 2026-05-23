@@ -76,6 +76,16 @@ describe('financialContracts', () => {
     });
   });
 
+  it('caps arena reservation paid and remaining amounts for dashboard consistency', () => {
+    const paidWithoutPartialHistory = makeReservation({ finalPrice: 120, paymentStatus: 'paid' });
+    const overpaidPending = makeReservation({ finalPrice: 90, totalPaid: 120, paymentStatus: 'pending' });
+
+    expect(getReservationPaidAmount(paidWithoutPartialHistory)).toBe(120);
+    expect(getReservationRemainingAmount(paidWithoutPartialHistory)).toBe(0);
+    expect(getReservationPaidAmount(overpaidPending)).toBe(90);
+    expect(getReservationRemainingAmount(overpaidPending)).toBe(0);
+  });
+
   it('calculates competence financial summary for payments, sales, arena reservations, and expenses', () => {
     const summary = calculateFinancialSummary({
       mode: 'competence',

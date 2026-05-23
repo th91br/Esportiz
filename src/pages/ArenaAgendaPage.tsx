@@ -65,7 +65,7 @@ function getReservationFinancialSummary(reservation: Reservation) {
     hasPartialPayment,
     hasAnyPayment: reservation.totalPaid > 0,
     paymentStatusLabel: isPaid ? 'Pago ✅' : hasPartialPayment ? 'Parcial / Pendente ⏳' : 'Pendente ⏳',
-    cardAmountLabel: isPaid ? totalLabel : hasPartialPayment ? `Falta ${dueLabel}` : totalLabel,
+    cardAmountLabel: isPaid ? `PAGO · ${totalLabel}` : hasPartialPayment ? `Falta ${dueLabel}` : totalLabel,
     chargeAmountLabel: isPaid ? totalLabel : dueLabel,
   };
 }

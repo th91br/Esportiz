@@ -158,8 +158,7 @@ export default function PaymentsPage() {
       });
       toast.success(`Pagamento da reserva marcado como ${newStatus === 'paid' ? 'Pago' : 'Pendente'}!`);
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Erro inesperado';
-      toast.error('Erro ao atualizar pagamento da reserva: ' + message);
+      console.error('Erro ao atualizar pagamento da reserva:', err);
     }
   };
 

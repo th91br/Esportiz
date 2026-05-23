@@ -155,7 +155,7 @@ export function useReservations() {
         p_payment_status: params.paymentStatus,
         p_payment_method: params.paymentMethod ?? null,
       });
-      if (error) throw error;
+      if (error) throw new Error(getErrorMessage(error));
     },
     onSuccess: () => {
       syncAfterReservationMutation(queryClient);
@@ -175,11 +175,10 @@ export function useReservations() {
         p_amount: params.amount,
         p_method: params.method,
       });
-      if (error) throw error;
+      if (error) throw new Error(getErrorMessage(error));
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['reservations'] });
-      queryClient.invalidateQueries({ queryKey: ['trainings'] });
+      syncAfterReservationMutation(queryClient);
       toast.success('Pagamento parcial registrado com sucesso!');
     },
     onError: (error: unknown) => toast.error('Erro ao registrar pagamento: ' + getErrorMessage(error)),

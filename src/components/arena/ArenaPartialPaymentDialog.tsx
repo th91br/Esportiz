@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -9,6 +9,8 @@ import { type Reservation, useReservations } from '@/hooks/queries/useReservatio
 import { type PaymentMethod, PAYMENT_METHOD_LABELS } from '@/lib/reservationContracts';
 import { toast } from 'sonner';
 
+const RECEIVED_PAYMENT_METHODS: PaymentMethod[] = ['pix', 'cartao', 'dinheiro'];
+
 interface ArenaPartialPaymentDialogProps {
   reservation: Reservation | null;
   open: boolean;
@@ -17,29 +19,39 @@ interface ArenaPartialPaymentDialogProps {
 
 export function ArenaPartialPaymentDialog({ reservation, open, onOpenChange }: ArenaPartialPaymentDialogProps) {
   const { addPartialPayment } = useReservations();
-  const [amount, setAmount] = useState<number | ''>('');
+  const [amount, setAmount] = useState('');
   const [method, setMethod] = useState<PaymentMethod>('pix');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Reset values when opened
+  useEffect(() => {
+    if (open) {
+      setAmount('');
+      setMethod('pix');
+    }
+  }, [open, reservation?.id]);
+
   if (!reservation) return null;
 
   const remainingBalance = reservation.remainingBalance;
+  const parsedAmount = Number(amount.replace(',', '.'));
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!amount || Number(amount) <= 0) {
+    if (!amount.trim() || !Number.isFinite(parsedAmount) || parsedAmount <= 0) {
       return toast.error('Informe um valor válido.');
     }
-    if (Number(amount) > remainingBalance) {
+    if (parsedAmount > remainingBalance) {
       return toast.error('O valor informado é maior que o saldo devedor.');
+    }
+    if (!RECEIVED_PAYMENT_METHODS.includes(method)) {
+      return toast.error('Escolha uma forma de pagamento recebida.');
     }
 
     setIsSubmitting(true);
     try {
       await addPartialPayment({
         id: reservation.id,
-        amount: Number(amount),
+        amount: parsedAmount,
         method,
       });
       setAmount('');
@@ -83,13 +95,11 @@ export function ArenaPartialPaymentDialog({ reservation, open, onOpenChange }: A
               </span>
             </Label>
             <Input
-              type="number"
-              step="0.01"
-              min="0.01"
-              max={remainingBalance}
+              type="text"
+              inputMode="decimal"
               placeholder={remainingBalance.toFixed(2)}
               value={amount}
-              onChange={(e) => setAmount(e.target.value ? Number(e.target.value) : '')}
+              onChange={(e) => setAmount(e.target.value)}
               autoFocus
             />
             <div className="flex gap-2 mt-1">
@@ -98,7 +108,7 @@ export function ArenaPartialPaymentDialog({ reservation, open, onOpenChange }: A
                 variant="outline"
                 size="sm"
                 className="h-7 text-xs flex-1"
-                onClick={() => setAmount(remainingBalance)}
+                onClick={() => setAmount(remainingBalance.toFixed(2))}
               >
                 Quitar Tudo
               </Button>
@@ -112,14 +122,14 @@ export function ArenaPartialPaymentDialog({ reservation, open, onOpenChange }: A
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {Object.entries(PAYMENT_METHOD_LABELS).map(([k, v]) => (
-                  <SelectItem key={k} value={k}>{v}</SelectItem>
+                {RECEIVED_PAYMENT_METHODS.map((paymentMethod) => (
+                  <SelectItem key={paymentMethod} value={paymentMethod}>{PAYMENT_METHOD_LABELS[paymentMethod]}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
           </div>
 
-          <Button type="submit" className="w-full btn-primary-gradient" disabled={isSubmitting || !amount}>
+          <Button type="submit" className="w-full btn-primary-gradient" disabled={isSubmitting || !amount.trim()}>
             {isSubmitting ? 'Registrando...' : 'Confirmar Pagamento'}
           </Button>
         </form>

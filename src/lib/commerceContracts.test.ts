@@ -4,6 +4,7 @@ import {
   buildComandaItemInsert,
   buildProductInsertPayload,
   buildProductUpdatePayload,
+  buildSaleCartPayload,
   calculateComandaItemUpdate,
   calculateLineTotal,
   getInventoryStats,
@@ -34,6 +35,7 @@ const saleRow: Tables<'sales'> = {
   user_id: 'user-1',
   business_type: 'arena',
   comanda_id: null,
+  checkout_id: 'checkout-1',
   product_id: 'product-1',
   product_name: 'Agua',
   quantity: 2,
@@ -129,9 +131,21 @@ describe('commerceContracts', () => {
   it('maps sales and calculates sale totals with cents safely', () => {
     expect(calculateLineTotal(3, 2.335)).toBe(7.02);
     expect(mapSaleRow({ ...saleRow, payment_method: 'invalid', total: -30 })).toMatchObject({
+      checkoutId: 'checkout-1',
+      comandaId: null,
       paymentMethod: 'dinheiro',
       total: 0,
     });
+  });
+
+  it('builds safe cart payloads for atomic checkout', () => {
+    expect(buildSaleCartPayload([
+      { productId: 'product-1', quantity: 2.9 },
+      { productId: 'product-2', quantity: 0 },
+      { productId: '', quantity: 3 },
+    ])).toEqual([
+      { productId: 'product-1', quantity: 2 },
+    ]);
   });
 
   it('maps comanda rows and totals consumed items', () => {

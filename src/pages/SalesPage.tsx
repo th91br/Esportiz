@@ -1,8 +1,9 @@
 import { useState, useMemo } from 'react';
 import { Header } from '@/components/Header';
 import { useProducts } from '@/hooks/queries/useProducts';
-import { useSales, getPaymentMethodLabel, type PaymentMethod } from '@/hooks/queries/useSales';
+import { useSales, getPaymentMethodLabel, type PaymentMethod, type Sale } from '@/hooks/queries/useSales';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Select,
@@ -33,6 +34,7 @@ import {
   Banknote,
   Smartphone,
   Clock,
+  Search,
   Package,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -52,11 +54,60 @@ const PAYMENT_METHODS: { value: PaymentMethod; label: string; icon: typeof Bankn
   { value: 'cartao_credito', label: 'Crédito', icon: CreditCard },
 ];
 
+type SalesHistoryPeriod = 'today' | 'week' | 'month' | 'all';
+type SalesOriginFilter = 'all' | 'direct' | 'comanda';
+
+const HISTORY_PERIOD_LABELS: Record<SalesHistoryPeriod, string> = {
+  today: 'Hoje',
+  week: 'Semana',
+  month: 'Mês',
+  all: 'Todos',
+};
+
+function getLocalDateString(date: Date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+function getHistoryRange(period: SalesHistoryPeriod) {
+  if (period === 'all') return null;
+
+  const now = new Date();
+  let start = new Date(now);
+  const end = new Date(now);
+
+  if (period === 'week') {
+    const dow = start.getDay();
+    start.setDate(start.getDate() - (dow === 0 ? 6 : dow - 1));
+  }
+
+  if (period === 'month') {
+    start = new Date(now.getFullYear(), now.getMonth(), 1);
+  }
+
+  return {
+    start: getLocalDateString(start),
+    end: getLocalDateString(end),
+  };
+}
+
+function getSaleTransactionKey(sale: Sale) {
+  if (sale.comandaId) return `comanda:${sale.comandaId}`;
+  if (sale.checkoutId) return `checkout:${sale.checkoutId}`;
+  return `sale:${sale.id}`;
+}
+
 export default function SalesPage() {
   const { activeProducts, loadingProducts } = useProducts();
-  const { sales, loadingSales, addSale, deleteSale, isAddingSale } = useSales();
+  const { sales, loadingSales, checkoutCartSale, deleteSale, isCheckingOutCart } = useSales();
   const [cart, setCart] = useState<CartItem[]>([]);
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('dinheiro');
+  const [historyPeriod, setHistoryPeriod] = useState<SalesHistoryPeriod>('today');
+  const [historyPaymentMethod, setHistoryPaymentMethod] = useState<PaymentMethod | 'all'>('all');
+  const [historyOrigin, setHistoryOrigin] = useState<SalesOriginFilter>('all');
+  const [historySearch, setHistorySearch] = useState('');
 
   // Today's sales (Sincronia com data local)
   const now = new Date();
@@ -65,8 +116,30 @@ export default function SalesPage() {
     return sales.filter(s => s.soldAt.startsWith(todayStr));
   }, [sales, todayStr]);
   const todayTotal = todaySales.reduce((sum, s) => sum + s.total, 0);
+  const todayTransactionCount = new Set(todaySales.map(getSaleTransactionKey)).size;
 
   const cartTotal = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
+  const historyRange = useMemo(() => getHistoryRange(historyPeriod), [historyPeriod]);
+  const filteredHistorySales = useMemo(() => {
+    const term = historySearch.trim().toLowerCase();
+
+    return sales.filter((sale) => {
+      const soldDate = sale.soldAt.slice(0, 10);
+      const inRange = !historyRange || (soldDate >= historyRange.start && soldDate <= historyRange.end);
+      const matchesPayment = historyPaymentMethod === 'all' || sale.paymentMethod === historyPaymentMethod;
+      const matchesOrigin = historyOrigin === 'all'
+        || (historyOrigin === 'comanda' ? Boolean(sale.comandaId) : !sale.comandaId);
+      const originLabel = sale.comandaId ? 'comanda' : 'venda direta';
+      const matchesSearch = !term
+        || sale.productName.toLowerCase().includes(term)
+        || getPaymentMethodLabel(sale.paymentMethod).toLowerCase().includes(term)
+        || originLabel.includes(term);
+
+      return inRange && matchesPayment && matchesOrigin && matchesSearch;
+    });
+  }, [historyOrigin, historyPaymentMethod, historyRange, historySearch, sales]);
+  const historyTotal = filteredHistorySales.reduce((sum, sale) => sum + sale.total, 0);
+  const historyTransactionCount = new Set(filteredHistorySales.map(getSaleTransactionKey)).size;
 
   const addToCart = (product: typeof activeProducts[0]) => {
     setCart(prev => {
@@ -92,15 +165,13 @@ export default function SalesPage() {
     if (cart.length === 0) { toast.error('Adicione produtos ao carrinho.'); return; }
 
     try {
-      for (const item of cart) {
-        await addSale({
+      await checkoutCartSale({
+        items: cart.map(item => ({
           productId: item.productId,
-          productName: item.name,
           quantity: item.quantity,
-          unitPrice: item.price,
-          paymentMethod,
-        });
-      }
+        })),
+        paymentMethod,
+      });
       clearCart();
     } catch (error) {
       console.error(error);
@@ -137,7 +208,7 @@ export default function SalesPage() {
                 <p className="text-3xl font-bold font-display text-primary">{formatCurrency(todayTotal)}</p>
               </div>
               <div className="text-right">
-                <p className="text-sm text-muted-foreground">{todaySales.length} venda(s)</p>
+                <p className="text-sm text-muted-foreground">{todayTransactionCount} atendimento(s)</p>
               </div>
             </div>
           </CardContent>
@@ -272,9 +343,9 @@ export default function SalesPage() {
                       <Button
                         className="w-full h-12 text-base btn-primary-gradient"
                         onClick={handleFinalizeSale}
-                        disabled={isAddingSale}
+                        disabled={isCheckingOutCart}
                       >
-                        {isAddingSale ? 'Registrando...' : 'Finalizar Venda'}
+                        {isCheckingOutCart ? 'Registrando...' : 'Finalizar Venda'}
                       </Button>
                       <Button variant="ghost" size="sm" className="w-full text-muted-foreground" onClick={clearCart}>
                         Limpar carrinho
@@ -287,53 +358,135 @@ export default function SalesPage() {
           </div>
         </div>
 
-        {/* Today's Sales History */}
-        {todaySales.length > 0 && (
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg flex items-center gap-2">
-                <Clock className="h-5 w-5 text-muted-foreground" />
-                Vendas de Hoje
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-2">
-                {todaySales.map(sale => (
-                  <div key={sale.id} className="flex items-center gap-3 p-3 rounded-xl border border-border/50 bg-muted/5">
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium">{sale.productName} {sale.quantity > 1 ? `(x${sale.quantity})` : ''}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {getPaymentMethodLabel(sale.paymentMethod)} • {new Date(sale.soldAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
-                      </p>
-                    </div>
-                    <span className="font-bold text-sm text-primary">{formatCurrency(sale.total)}</span>
-                    <AlertDialog>
-                      <AlertDialogTrigger asChild>
-                        <Button variant="ghost" size="icon" className="h-7 w-7 rounded-full text-destructive hover:text-destructive">
-                          <Trash2 className="h-3 w-3" />
-                        </Button>
-                      </AlertDialogTrigger>
-                      <AlertDialogContent>
-                        <AlertDialogHeader>
-                          <AlertDialogTitle>Cancelar esta venda?</AlertDialogTitle>
-                          <AlertDialogDescription>
-                            A venda de "{sale.productName}" será removida permanentemente.
-                          </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel>Manter</AlertDialogCancel>
-                          <AlertDialogAction onClick={() => deleteSale(sale.id)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-                            Cancelar Venda
-                          </AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
-                  </div>
-                ))}
+        <Card>
+          <CardHeader className="space-y-4">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <Clock className="h-5 w-5 text-muted-foreground" />
+                  Histórico de Vendas
+                </CardTitle>
+                <p className="text-sm text-muted-foreground mt-1">
+                  {historyTransactionCount} atendimento(s) • {filteredHistorySales.length} item(ns) • {formatCurrency(historyTotal)}
+                </p>
               </div>
-            </CardContent>
-          </Card>
-        )}
+            </div>
+
+            <div className="grid gap-2 md:grid-cols-[1.5fr_1fr_1fr_1fr]">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  value={historySearch}
+                  onChange={(event) => setHistorySearch(event.target.value)}
+                  placeholder="Buscar produto, origem ou pagamento..."
+                  className="pl-9"
+                />
+              </div>
+
+              <Select value={historyPeriod} onValueChange={(value) => setHistoryPeriod(value as SalesHistoryPeriod)}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Período" />
+                </SelectTrigger>
+                <SelectContent>
+                  {(Object.keys(HISTORY_PERIOD_LABELS) as SalesHistoryPeriod[]).map((period) => (
+                    <SelectItem key={period} value={period}>{HISTORY_PERIOD_LABELS[period]}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              <Select value={historyPaymentMethod} onValueChange={(value) => setHistoryPaymentMethod(value as PaymentMethod | 'all')}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Pagamento" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos pagamentos</SelectItem>
+                  {PAYMENT_METHODS.map((method) => (
+                    <SelectItem key={method.value} value={method.value}>{method.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              <Select value={historyOrigin} onValueChange={(value) => setHistoryOrigin(value as SalesOriginFilter)}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Origem" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todas origens</SelectItem>
+                  <SelectItem value="direct">Venda direta</SelectItem>
+                  <SelectItem value="comanda">Comandas</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </CardHeader>
+
+          <CardContent>
+            {loadingSales ? (
+              <div className="flex justify-center py-10">
+                <div className="h-8 w-8 border-4 border-primary/30 border-t-primary rounded-full animate-spin" />
+              </div>
+            ) : filteredHistorySales.length === 0 ? (
+              <div className="rounded-xl border border-dashed border-border/60 bg-muted/10 p-8 text-center text-muted-foreground">
+                Nenhuma venda encontrada para os filtros selecionados.
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {filteredHistorySales.map(sale => {
+                  const isComandaSale = Boolean(sale.comandaId);
+                  const originLabel = isComandaSale ? 'Comanda' : 'Venda direta';
+
+                  return (
+                    <div key={sale.id} className="flex items-center gap-3 p-3 rounded-xl border border-border/50 bg-muted/5">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <p className="text-sm font-medium">{sale.productName} {sale.quantity > 1 ? `(x${sale.quantity})` : ''}</p>
+                          <span className={cn(
+                            'rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide',
+                            isComandaSale ? 'bg-amber-100 text-amber-700' : 'bg-primary/10 text-primary'
+                          )}>
+                            {originLabel}
+                          </span>
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                          {getPaymentMethodLabel(sale.paymentMethod)} • {new Date(sale.soldAt).toLocaleDateString('pt-BR')} às {new Date(sale.soldAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                          {sale.checkoutId && !isComandaSale ? ` • Checkout ${sale.checkoutId.slice(0, 8)}` : ''}
+                        </p>
+                      </div>
+                      <span className="font-bold text-sm text-primary">{formatCurrency(sale.total)}</span>
+                      {isComandaSale ? (
+                        <span className="text-[10px] font-semibold text-muted-foreground text-right max-w-[90px]">
+                          Estorne pela comanda
+                        </span>
+                      ) : (
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-7 w-7 rounded-full text-destructive hover:text-destructive">
+                              <Trash2 className="h-3 w-3" />
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Cancelar esta venda?</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                A venda de "{sale.productName}" será removida e o estoque será restaurado quando aplicável.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Manter</AlertDialogCancel>
+                              <AlertDialogAction onClick={() => deleteSale(sale.id)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                                Cancelar Venda
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
       </main>
     </div>
   );

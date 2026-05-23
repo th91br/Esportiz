@@ -5,16 +5,26 @@ import { toast } from 'sonner';
 import { useProfile } from '@/hooks/queries/useProfile';
 import { syncAfterSaleMutation } from '@/lib/querySync';
 import {
+  buildSaleCartPayload,
   calculateLineTotal,
   getPaymentMethodLabel,
   mapSaleRow,
+  type CommerceSaleCartItem,
   type CommercePaymentMethod,
   type CommerceSale,
 } from '@/lib/commerceContracts';
 
 export type PaymentMethod = CommercePaymentMethod;
 export type Sale = CommerceSale;
+export type SaleCartItem = CommerceSaleCartItem;
 export { getPaymentMethodLabel };
+
+type CheckoutCartResult = {
+  success?: boolean;
+  checkout_id?: string;
+  sales_count?: number;
+  total_amount?: number;
+};
 
 export function useSales() {
   const { user } = useAuth();
@@ -69,6 +79,48 @@ export function useSales() {
     onError: () => toast.error('Erro ao registrar venda.'),
   });
 
+  const checkoutCartSaleMutation = useMutation({
+    mutationFn: async ({
+      items,
+      paymentMethod,
+    }: {
+      items: SaleCartItem[];
+      paymentMethod: PaymentMethod;
+    }) => {
+      if (!user?.id) throw new Error('Not authenticated');
+
+      const payload = buildSaleCartPayload(items);
+      if (payload.length === 0) {
+        throw new Error('Adicione produtos ao carrinho.');
+      }
+
+      const businessType = profile?.business_type || 'sport_school';
+      const { data, error } = await supabase.rpc('process_sale_cart_atomic', {
+        p_user_id: user.id,
+        p_business_type: businessType,
+        p_items: payload,
+        p_payment_method: paymentMethod,
+      });
+
+      if (error) throw error;
+
+      const result = data as CheckoutCartResult | null;
+      if (!result?.success) {
+        throw new Error('O checkout nao confirmou a venda no banco de dados.');
+      }
+
+      return result;
+    },
+    onSuccess: (result) => {
+      syncAfterSaleMutation(queryClient);
+      const count = result.sales_count || 0;
+      toast.success(count > 1 ? 'Carrinho vendido com sucesso!' : 'Venda registrada com sucesso!');
+    },
+    onError: (error: unknown) => {
+      toast.error('Erro ao registrar venda: ' + (error instanceof Error ? error.message : 'Erro inesperado.'));
+    },
+  });
+
   const deleteSaleMutation = useMutation({
     mutationFn: async (id: string) => {
       if (!user?.id) throw new Error('Not authenticated');
@@ -90,7 +142,9 @@ export function useSales() {
     sales: salesQuery.data || [],
     loadingSales: salesQuery.isLoading,
     addSale: addSaleMutation.mutateAsync,
+    checkoutCartSale: checkoutCartSaleMutation.mutateAsync,
     deleteSale: deleteSaleMutation.mutateAsync,
     isAddingSale: addSaleMutation.isPending,
+    isCheckingOutCart: checkoutCartSaleMutation.isPending,
   };
 }

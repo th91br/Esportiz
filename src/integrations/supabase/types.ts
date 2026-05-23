@@ -609,6 +609,7 @@ export type Database = {
           user_id: string
           business_type: string
           comanda_id: string | null
+          checkout_id: string | null
           product_id: string | null
           product_name: string
           quantity: number
@@ -623,6 +624,7 @@ export type Database = {
           user_id: string
           business_type?: string
           comanda_id?: string | null
+          checkout_id?: string | null
           product_id?: string | null
           product_name: string
           quantity?: number
@@ -637,6 +639,7 @@ export type Database = {
           user_id?: string
           business_type?: string
           comanda_id?: string | null
+          checkout_id?: string | null
           product_id?: string | null
           product_name?: string
           quantity?: number
@@ -1044,6 +1047,20 @@ export type Database = {
           calculated_total?: number
           sale_id?: string
           success: boolean
+        }
+      }
+      process_sale_cart_atomic: {
+        Args: {
+          p_business_type: string
+          p_items: Json
+          p_payment_method: string
+          p_user_id: string
+        }
+        Returns: {
+          checkout_id?: string
+          sales_count?: number
+          success: boolean
+          total_amount?: number
         }
       }
       reopen_comanda_atomic: {

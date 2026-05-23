@@ -20,6 +20,8 @@ export interface CommerceProduct {
 export interface CommerceSale {
   id: string;
   userId: string;
+  checkoutId?: string | null;
+  comandaId?: string | null;
   productId: string | null;
   productName: string;
   quantity: number;
@@ -50,6 +52,11 @@ export interface CommerceComanda {
   closedAt?: string | null;
   items: CommerceComandaItem[];
   totalAmount: number;
+}
+
+export interface CommerceSaleCartItem {
+  productId: string;
+  quantity: number;
 }
 
 export type ComandaRowWithItems = Tables<'comandas'> & {
@@ -168,6 +175,8 @@ export function mapSaleRow(row: Tables<'sales'>): CommerceSale {
   return {
     id: row.id,
     userId: row.user_id,
+    checkoutId: row.checkout_id,
+    comandaId: row.comanda_id,
     productId: row.product_id,
     productName: row.product_name,
     quantity: normalizeQuantity(row.quantity),
@@ -177,6 +186,13 @@ export function mapSaleRow(row: Tables<'sales'>): CommerceSale {
     soldAt: row.sold_at,
     createdAt: row.created_at,
   };
+}
+
+export function buildSaleCartPayload(items: ReadonlyArray<CommerceSaleCartItem>) {
+  return items.map((item) => ({
+    productId: item.productId,
+    quantity: normalizeQuantity(item.quantity),
+  })).filter((item) => item.productId && item.quantity > 0);
 }
 
 export function mapComandaItem(row: Tables<'comanda_items'>, fallbackComandaId: string): CommerceComandaItem {

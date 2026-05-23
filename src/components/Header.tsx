@@ -36,78 +36,74 @@ export function Header() {
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="container flex h-16 items-center justify-between gap-2">
+      <div className="container flex h-14 items-center gap-1">
         {/* Logo */}
-        <Link to="/dashboard" className="flex items-center gap-2 shrink-0 transition-transform hover:scale-105 active:scale-95">
+        <Link to="/dashboard" className="flex items-center gap-1.5 shrink-0 transition-transform hover:scale-105 active:scale-95" title={profile?.ct_name || 'Dashboard'}>
           {profile?.logo_url ? (
             <img
               src={profile.logo_url}
               alt={profile.ct_name || 'Logo'}
-              className="h-8 w-8 object-contain rounded-md shrink-0"
+              className="h-7 w-7 object-contain rounded-md shrink-0"
             />
           ) : (
             <Logo size="sm" />
           )}
           {profile?.ct_name && (
-            <span className="font-display font-bold text-sm lg:text-base hidden sm:inline-block truncate max-w-[120px] lg:max-w-[220px] whitespace-nowrap">
+            <span className="font-display font-bold text-xs lg:text-sm hidden lg:inline-block truncate max-w-[120px] xl:max-w-[180px]">
               {profile.ct_name}
             </span>
           )}
         </Link>
 
-        {/* Desktop Navigation — driven by navModules (business-type aware) */}
-        <nav className="hidden md:flex items-center justify-center gap-0.5 lg:gap-1 flex-1 mx-2 min-w-0 flex-nowrap overflow-x-auto no-scrollbar">
-          {navModules.map((item) => (
-            <Link
-              key={item.path}
-              to={item.path}
-              className={cn(
-                'px-2 py-1 lg:px-2.5 lg:py-1.5 rounded-lg text-xs lg:text-[13px] font-medium transition-colors whitespace-nowrap shrink-0',
-                location.pathname === item.path
-                  ? 'text-primary bg-primary/10 font-semibold'
-                  : 'text-muted-foreground hover:text-foreground hover:bg-muted'
-              )}
-            >
-              {item.label}
-            </Link>
-          ))}
-        </nav>
+        {/* Desktop Navigation */}
+        <div className="hidden md:block flex-1 min-w-0 mx-1 relative">
+          {/* Fade indicators */}
+          <div className="pointer-events-none absolute left-0 top-0 bottom-0 w-4 bg-gradient-to-r from-background/95 to-transparent z-10" />
+          <div className="pointer-events-none absolute right-0 top-0 bottom-0 w-4 bg-gradient-to-l from-background/95 to-transparent z-10" />
+          <nav className="flex items-center justify-center gap-0.5 overflow-x-auto no-scrollbar px-3">
+            {navModules.map((item) => (
+              <Link
+                key={item.path}
+                to={item.path}
+                className={cn(
+                  'px-2 py-1 lg:px-2.5 lg:py-1.5 rounded-lg text-[11px] lg:text-xs font-medium transition-colors whitespace-nowrap shrink-0',
+                  location.pathname === item.path
+                    ? 'text-primary bg-primary/10 font-semibold'
+                    : 'text-muted-foreground hover:text-foreground hover:bg-muted'
+                )}
+              >
+                {item.label}
+              </Link>
+            ))}
+          </nav>
+        </div>
 
         {/* Actions */}
-        <div className="flex items-center gap-1 shrink-0">
+        <div className="flex items-center gap-0.5 shrink-0">
           <NotificationBell />
-          <div className="hidden md:flex items-center gap-1">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="rounded-full"
-              title={`Logado como: ${user?.email}`}
-            >
-              <UserCircle className="h-4 w-4 text-muted-foreground" />
-            </Button>
-            <InstallPWAButton />
+          <div className="hidden md:flex items-center gap-0.5">
             <Link to="/configuracoes">
-              <Button variant="ghost" size="icon" className="rounded-full" title="Configurações">
-                <Settings className="h-4 w-4" />
+              <Button variant="ghost" size="icon" className="rounded-full h-8 w-8" title="Configurações">
+                <Settings className="h-3.5 w-3.5" />
               </Button>
             </Link>
             <Button
               variant="ghost"
               size="icon"
-              className="rounded-full"
+              className="rounded-full h-8 w-8"
               onClick={() => setIsDark(!isDark)}
               title={isDark ? 'Modo claro' : 'Modo escuro'}
             >
-              {isDark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+              {isDark ? <Sun className="h-3.5 w-3.5" /> : <Moon className="h-3.5 w-3.5" />}
             </Button>
             <Button
               variant="ghost"
               size="icon"
-              className="rounded-full"
+              className="rounded-full h-8 w-8"
               onClick={signOut}
               title="Sair"
             >
-              <LogOut className="h-4 w-4" />
+              <LogOut className="h-3.5 w-3.5" />
             </Button>
           </div>
 

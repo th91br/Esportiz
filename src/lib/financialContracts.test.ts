@@ -3,6 +3,8 @@ import {
   calculateFinancialSummary,
   getPaymentFinancialStatus,
   getRemainingPaymentAmount,
+  getReservationPaidAmount,
+  getReservationRemainingAmount,
   summarizePayments,
   summarizeReservationReceivables,
   type FinancialPayment,
@@ -59,15 +61,17 @@ describe('financialContracts', () => {
   it('summarizes arena receivables without counting cancelled reservations', () => {
     const reservations = [
       makeReservation({ finalPrice: 100, paymentStatus: 'paid' }),
-      makeReservation({ finalPrice: 80, date: '2026-05-10', paymentStatus: 'pending' }),
+      makeReservation({ finalPrice: 80, totalPaid: 30, remainingBalance: 50, date: '2026-05-10', paymentStatus: 'pending' }),
       makeReservation({ finalPrice: 60, date: '2026-05-25', paymentStatus: 'pending' }),
       makeReservation({ finalPrice: 999, status: 'cancelled', paymentStatus: 'paid' }),
     ];
 
+    expect(getReservationPaidAmount(reservations[1])).toBe(30);
+    expect(getReservationRemainingAmount(reservations[1])).toBe(50);
     expect(summarizeReservationReceivables(reservations, today)).toEqual({
       totalAmount: 240,
-      totalPaid: 100,
-      totalPending: 140,
+      totalPaid: 130,
+      totalPending: 110,
       overdueCount: 1,
     });
   });
@@ -84,7 +88,7 @@ describe('financialContracts', () => {
       sales: [{ total: 40 }],
       reservations: [
         makeReservation({ finalPrice: 100, paymentStatus: 'paid' }),
-        makeReservation({ finalPrice: 80, date: '2026-05-10', paymentStatus: 'pending' }),
+        makeReservation({ finalPrice: 80, totalPaid: 30, remainingBalance: 50, date: '2026-05-10', paymentStatus: 'pending' }),
         makeReservation({ finalPrice: 900, status: 'cancelled', paymentStatus: 'paid' }),
       ],
       expenses: [
@@ -94,12 +98,12 @@ describe('financialContracts', () => {
     });
 
     expect(summary.expectedRevenue).toBe(540);
-    expect(summary.receivedRevenue).toBe(310);
-    expect(summary.overdueRevenue).toBe(230);
+    expect(summary.receivedRevenue).toBe(340);
+    expect(summary.overdueRevenue).toBe(200);
     expect(summary.pendingRevenue).toBe(0);
     expect(summary.totalExpensesPaid).toBe(30);
-    expect(summary.netProfit).toBe(280);
-    expect(summary.revenueProgress).toBeCloseTo((310 / 540) * 100);
+    expect(summary.netProfit).toBe(310);
+    expect(summary.revenueProgress).toBeCloseTo((340 / 540) * 100);
   });
 
   it('calculates cashflow summary from due dates and paid dates in range', () => {

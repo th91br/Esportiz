@@ -12,6 +12,8 @@ export interface FinancialPayment {
 export interface FinancialReservation {
   date: string;
   finalPrice: number;
+  totalPaid?: number | null;
+  remainingBalance?: number | null;
   paymentStatus: 'paid' | 'pending' | string;
   status: 'confirmed' | 'pending' | 'cancelled' | string;
 }
@@ -66,6 +68,28 @@ export function getRemainingPaymentAmount(payment: FinancialPayment): number {
   return Math.max(0, payment.amount - paidAmountOf(payment));
 }
 
+function normalizeAmount(value: number | null | undefined): number {
+  const amount = Number(value || 0);
+  return Number.isFinite(amount) ? Math.max(0, amount) : 0;
+}
+
+export function getReservationPaidAmount(reservation: FinancialReservation): number {
+  const finalPrice = normalizeAmount(reservation.finalPrice);
+  if (reservation.paymentStatus === 'paid') return finalPrice;
+  return Math.min(finalPrice, normalizeAmount(reservation.totalPaid));
+}
+
+export function getReservationRemainingAmount(reservation: FinancialReservation): number {
+  const finalPrice = normalizeAmount(reservation.finalPrice);
+  if (reservation.paymentStatus === 'paid') return 0;
+
+  if (reservation.remainingBalance !== undefined && reservation.remainingBalance !== null) {
+    return Math.min(finalPrice, normalizeAmount(reservation.remainingBalance));
+  }
+
+  return Math.max(0, finalPrice - getReservationPaidAmount(reservation));
+}
+
 export function getPaymentFinancialStatus(
   payment: FinancialPayment,
   todayDate: string,
@@ -98,17 +122,25 @@ export function summarizeReservationReceivables(
 ): ReceivableSummary {
   const activeReservations = reservations.filter((reservation) => reservation.status !== 'cancelled');
   const totalAmount = activeReservations.reduce((sum, reservation) => sum + reservation.finalPrice, 0);
-  const totalPaid = activeReservations
-    .filter((reservation) => reservation.paymentStatus === 'paid')
-    .reduce((sum, reservation) => sum + reservation.finalPrice, 0);
+  const totalPaid = activeReservations.reduce(
+    (sum, reservation) => sum + getReservationPaidAmount(reservation),
+    0,
+  );
   const overdueCount = activeReservations.filter(
-    (reservation) => reservation.paymentStatus === 'pending' && reservation.date < todayDate,
+    (reservation) => (
+      reservation.paymentStatus === 'pending'
+      && reservation.date < todayDate
+      && getReservationRemainingAmount(reservation) > 0
+    ),
   ).length;
 
   return {
     totalAmount,
     totalPaid,
-    totalPending: Math.max(0, totalAmount - totalPaid),
+    totalPending: activeReservations.reduce(
+      (sum, reservation) => sum + getReservationRemainingAmount(reservation),
+      0,
+    ),
     overdueCount,
   };
 }
@@ -169,10 +201,13 @@ export function calculateFinancialSummary({
       .filter((reservation) => reservation.status !== 'cancelled')
       .forEach((reservation) => {
         expectedRevenue += reservation.finalPrice;
-        if (reservation.paymentStatus === 'paid') {
-          receivedRevenue += reservation.finalPrice;
-        } else if (reservation.date < todayDate) {
-          overdueRevenue += reservation.finalPrice;
+        receivedRevenue += getReservationPaidAmount(reservation);
+
+        if (
+          reservation.paymentStatus !== 'paid'
+          && reservation.date < todayDate
+        ) {
+          overdueRevenue += getReservationRemainingAmount(reservation);
         }
       });
   }

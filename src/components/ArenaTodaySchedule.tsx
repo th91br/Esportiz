@@ -9,6 +9,16 @@ import { formatCurrency } from '@/lib/formatCurrency';
 
 const periodIcons = { manhã: Sun, tarde: Sunset, noite: Moon };
 
+function getReservationAmountLabel(reservation: ReturnType<typeof useReservations>['reservations'][number]) {
+  const isPaid = reservation.paymentStatus === 'paid' || reservation.remainingBalance <= 0;
+  const hasPartialPayment = reservation.totalPaid > 0 && reservation.remainingBalance > 0;
+
+  if (isPaid) return formatCurrency(reservation.finalPrice);
+  if (hasPartialPayment) return `Falta ${formatCurrency(reservation.remainingBalance)}`;
+
+  return formatCurrency(reservation.finalPrice);
+}
+
 export function ArenaTodaySchedule() {
   const { reservations, loadingReservations } = useReservations();
   const { courts, loadingCourts } = useCourts();
@@ -45,6 +55,7 @@ export function ArenaTodaySchedule() {
             const PeriodIcon = periodIcons[timePeriod];
             const reservantes = students.filter(s => reservation.reservanteIds.includes(s.id));
             const court = courts.find(c => c.id === reservation.courtId);
+            const hasPartialPayment = reservation.totalPaid > 0 && reservation.remainingBalance > 0;
 
             return (
               <div key={reservation.id} className="relative overflow-hidden rounded-xl bg-background border border-border/50 hover:border-primary/40 shadow-sm transition-all group p-4 md:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -56,7 +67,7 @@ export function ArenaTodaySchedule() {
                     <div className={cn("text-[11px] px-2 py-0.5 rounded-md flex items-center gap-1 font-bold uppercase tracking-wider", 
                       reservation.paymentStatus === 'paid' ? 'bg-emerald-100 text-emerald-800' : 'bg-orange-100 text-orange-800'
                     )}>
-                      {reservation.paymentStatus === 'paid' ? '💰 Pago' : '⏳ A Receber'}
+                      {reservation.paymentStatus === 'paid' ? '💰 Pago' : hasPartialPayment ? '💳 Parcial' : '⏳ A Receber'}
                     </div>
                     <div className="flex items-center gap-1.5 text-base font-bold text-foreground">
                       <Clock className="h-4 w-4 text-primary" />
@@ -86,7 +97,7 @@ export function ArenaTodaySchedule() {
                   </div>
                   {reservation.finalPrice > 0 && (
                     <div className="flex items-center gap-1.5 pl-3 border-l border-border/50 text-sm">
-                      <span className="font-bold text-primary">{formatCurrency(reservation.finalPrice)}</span>
+                      <span className="font-bold text-primary">{getReservationAmountLabel(reservation)}</span>
                     </div>
                   )}
                 </div>

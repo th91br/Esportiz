@@ -51,6 +51,25 @@ function isReservationStartingInSlot(r: Reservation, hour: number): boolean {
   return parseInt(r.time.split(':')[0]) === hour;
 }
 
+function getReservationFinancialSummary(reservation: Reservation) {
+  const hasPartialPayment = reservation.totalPaid > 0 && reservation.remainingBalance > 0;
+  const isPaid = reservation.paymentStatus === 'paid' || reservation.remainingBalance <= 0;
+  const totalLabel = formatCurrency(reservation.finalPrice);
+  const paidLabel = formatCurrency(reservation.totalPaid);
+  const dueLabel = formatCurrency(reservation.remainingBalance);
+
+  return {
+    totalLabel,
+    paidLabel,
+    dueLabel,
+    hasPartialPayment,
+    hasAnyPayment: reservation.totalPaid > 0,
+    paymentStatusLabel: isPaid ? 'Pago ✅' : hasPartialPayment ? 'Parcial / Pendente ⏳' : 'Pendente ⏳',
+    cardAmountLabel: isPaid ? totalLabel : hasPartialPayment ? `Falta ${dueLabel}` : totalLabel,
+    chargeAmountLabel: isPaid ? totalLabel : dueLabel,
+  };
+}
+
 interface ReservationDetailPanelProps {
   reservation: Reservation;
   students: ReturnType<typeof useStudents>['students'];
@@ -66,6 +85,7 @@ function ReservationDetailPanel({ reservation, students, courts, profile, onClos
   const reservante = students.find(s => reservation.reservanteIds.includes(s.id));
   const court = courts.find(c => c.id === reservation.courtId);
   const arenaName = profile?.ct_name || 'Esportiz Arena';
+  const financialSummary = getReservationFinancialSummary(reservation);
 
   const buildVoucherText = () => {
     const dateFormatted = new Date(reservation.date + 'T12:00:00').toLocaleDateString('pt-BR');
@@ -76,11 +96,17 @@ function ReservationDetailPanel({ reservation, students, courts, profile, onClos
                           reservation.durationMinutes === 120 ? '2h' :
                           reservation.durationMinutes === 150 ? '2h30' :
                           reservation.durationMinutes === 180 ? '3h' : `${reservation.durationMinutes} min`;
-    const priceLabel = formatCurrency(reservation.finalPrice);
     const paymentMethodLabel = PAYMENT_METHOD_LABELS[reservation.paymentMethod] || 'Pix';
-    const paymentStatusLabel = reservation.paymentStatus === 'paid' ? 'Pago ✅' : 'Pendente ⏳';
-    const pixDetails = (reservation.paymentStatus === 'pending' && profile?.pix_key) ? 
+    const pixDetails = (reservation.paymentStatus === 'pending' && reservation.remainingBalance > 0 && profile?.pix_key) ?
                        `\n🔑 *Chave Pix:* ${profile.pix_key}${profile.pix_receiver ? `\n👤 *Beneficiário:* ${profile.pix_receiver}` : ''}\n` : '';
+    const valueLines = financialSummary.hasPartialPayment
+      ? `💰 *Valor do Play:* ${financialSummary.totalLabel}
+✅ *Já pago:* ${financialSummary.paidLabel}
+⏳ *Saldo pendente:* ${financialSummary.dueLabel}`
+      : financialSummary.hasAnyPayment
+        ? `💰 *Valor do Play:* ${financialSummary.totalLabel}
+✅ *Recebido:* ${financialSummary.paidLabel}`
+        : `💰 *Valor do Play:* ${financialSummary.totalLabel}`;
 
     const customTemplate = profile?.niche_settings?.arena?.templates?.booking_confirmation;
     if (customTemplate) {
@@ -95,7 +121,11 @@ function ReservationDetailPanel({ reservation, students, courts, profile, onClos
           quadra: courtName,
           data: dateFormatted,
           hora: `${reservation.time} (${durationLabel})`,
-          valor: priceLabel,
+          valor: financialSummary.chargeAmountLabel,
+          valor_total: financialSummary.totalLabel,
+          valor_pago: financialSummary.paidLabel,
+          saldo_pendente: financialSummary.dueLabel,
+          status_pagamento: financialSummary.paymentStatusLabel,
           chave_pix: profile?.pix_key || '',
           beneficiario_pix: profile?.pix_receiver || '',
         },
@@ -111,8 +141,8 @@ function ReservationDetailPanel({ reservation, students, courts, profile, onClos
 🏟 *Quadra:* ${courtName}
 📅 *Data:* ${dateFormatted}
 ⏰ *Horário:* ${reservation.time} (${durationLabel})
-💰 *Valor do Play:* ${priceLabel}
-💳 *Pagamento:* ${paymentMethodLabel} (${paymentStatusLabel})
+${valueLines}
+💳 *Pagamento:* ${paymentMethodLabel} (${financialSummary.paymentStatusLabel})
 ${pixDetails}
 📍 *${arenaName}*
 _Agradecemos a preferência. Bom jogo!_ 🎾🔥
@@ -168,7 +198,11 @@ _Agradecemos a preferência. Bom jogo!_ 🎾🔥
                 'px-2.5 py-1 rounded-full text-xs font-bold',
                 reservation.paymentStatus === 'paid' ? 'bg-emerald-100 text-emerald-700' : 'bg-orange-100 text-orange-700'
               )}>
-                {reservation.paymentStatus === 'paid' ? '💰 Pago' : '⏳ A Receber'}
+                {reservation.paymentStatus === 'paid'
+                  ? '💰 Pago'
+                  : financialSummary.hasPartialPayment
+                    ? '💳 Parcial'
+                    : '⏳ A Receber'}
               </span>
               {reservation.online && (
                 <span className="px-2.5 py-1 rounded-full text-xs font-bold bg-indigo-100 text-indigo-700 flex items-center gap-1 shrink-0">
@@ -205,8 +239,21 @@ _Agradecemos a preferência. Bom jogo!_ 🎾🔥
             <div className="flex items-center gap-3 p-3 rounded-xl bg-primary/5 border border-primary/10">
               <DollarSign className="h-4 w-4 text-primary shrink-0" />
               <div>
-                <p className="text-xs text-muted-foreground">Valor</p>
-                <p className="font-bold text-primary text-lg">{formatCurrency(reservation.finalPrice)}</p>
+                <p className="text-xs text-muted-foreground">
+                  {financialSummary.hasPartialPayment ? 'Saldo pendente' : 'Valor'}
+                </p>
+                <p className={cn(
+                  'font-bold text-lg',
+                  financialSummary.hasPartialPayment ? 'text-orange-600 dark:text-orange-400' : 'text-primary'
+                )}>
+                  {financialSummary.hasPartialPayment ? financialSummary.dueLabel : financialSummary.totalLabel}
+                </p>
+                {financialSummary.hasPartialPayment && (
+                  <div className="mt-1 space-y-0.5 text-xs text-muted-foreground">
+                    <p>Valor total: {financialSummary.totalLabel}</p>
+                    <p className="text-emerald-600 dark:text-emerald-400">Já pago: {financialSummary.paidLabel}</p>
+                  </div>
+                )}
                 {reservation.discount > 0 && (
                   <p className="text-xs text-muted-foreground">Desconto: {formatCurrency(reservation.discount)}</p>
                 )}
@@ -431,6 +478,7 @@ export default function ArenaAgendaPage() {
     const court = courts.find(c => c.id === r.courtId);
     const dateFormatted = new Date(r.date + 'T12:00:00').toLocaleDateString('pt-BR');
     const arenaName = profile?.ct_name || 'Esportiz Arena';
+    const financialSummary = getReservationFinancialSummary(r);
     
     const pixDetails = profile?.pix_key ? 
                        `\n🔑 *Chave Pix:* ${profile.pix_key}${profile.pix_receiver ? `\n👤 *Beneficiário:* ${profile.pix_receiver}` : ''}` : '';
@@ -450,13 +498,16 @@ export default function ArenaAgendaPage() {
           quadra: court?.name || 'Quadra Principal',
           data: dateFormatted,
           hora: r.time,
-          valor: formatCurrency(r.finalPrice),
+          valor: financialSummary.chargeAmountLabel,
+          valor_total: financialSummary.totalLabel,
+          valor_pago: financialSummary.paidLabel,
+          saldo_pendente: financialSummary.dueLabel,
           chave_pix: profile?.pix_key || '',
           beneficiario_pix: profile?.pix_receiver || '',
         },
       });
     } else {
-      text = `Olá, ${reservante?.name || 'Cliente'}! Tudo bem? \n\nPassando para lembrar do acerto do seu horário reservado na *${arenaName}*:\n🏟 *Quadra:* ${court?.name || 'Quadra Principal'}\n📅 *Data:* ${dateFormatted} às ${r.time}\n💰 *Valor:* ${formatCurrency(r.finalPrice)}\n${pixDetails}\n\nSe preferir, você pode efetuar o pagamento via Pix. Muito obrigado! 🎾🔥`;
+      text = `Olá, ${reservante?.name || 'Cliente'}! Tudo bem? \n\nPassando para lembrar do acerto do seu horário reservado na *${arenaName}*:\n🏟 *Quadra:* ${court?.name || 'Quadra Principal'}\n📅 *Data:* ${dateFormatted} às ${r.time}\n💰 *Valor total:* ${financialSummary.totalLabel}${financialSummary.hasAnyPayment ? `\n✅ *Já pago:* ${financialSummary.paidLabel}` : ''}\n⏳ *Saldo pendente:* ${financialSummary.dueLabel}\n${pixDetails}\n\nSe preferir, você pode efetuar o pagamento via Pix. Muito obrigado! 🎾🔥`;
     }
 
     const action = buildWhatsAppAction({ phone: reservante?.phone, message: text });
@@ -626,6 +677,7 @@ export default function ArenaAgendaPage() {
                     ? studentMap.get(reservation.reservanteIds[0])
                     : null;
                   const isPastSlot = isToday && hour < currentHour;
+                  const financialSummary = reservation ? getReservationFinancialSummary(reservation) : null;
 
                   return (
                     <div key={court.id} className={cn("border-r border-border/30 last:border-r-0 min-h-[56px] relative transition-all", isPastSlot && !reservation && "bg-muted/10 opacity-60 grayscale hover:opacity-100", isPastSlot && reservation && "opacity-75 hover:opacity-100")}>
@@ -662,7 +714,7 @@ export default function ArenaAgendaPage() {
                                   {reservante?.name || 'Reservado'}
                                 </p>
                                 <p className="text-[10px] text-muted-foreground">
-                                  {reservation.time} · {reservation.durationMinutes / 60}h · {formatCurrency(reservation.finalPrice)}
+                                  {reservation.time} · {reservation.durationMinutes / 60}h · {financialSummary?.cardAmountLabel}
                                 </p>
                               </>
                             )
@@ -750,6 +802,7 @@ export default function ArenaAgendaPage() {
                 const durationLabel = r.durationMinutes === 60 ? '1h' :
                                       r.durationMinutes === 90 ? '1h30' :
                                       r.durationMinutes === 120 ? '2h' : `${r.durationMinutes}m`;
+                const financialSummary = getReservationFinancialSummary(r);
 
                 return (
                   <div key={r.id} className="p-4 rounded-xl border border-border/50 bg-muted/20 hover:bg-muted/30 transition-all space-y-3 shadow-sm text-left">
@@ -785,9 +838,16 @@ export default function ArenaAgendaPage() {
 
                     {/* Bottom: Price and Actions */}
                     <div className="flex items-center justify-between gap-4 pt-1 border-t border-border/30">
-                      <p className="font-extrabold text-base text-orange-600 dark:text-orange-400">
-                        {formatCurrency(r.finalPrice)}
-                      </p>
+                      <div>
+                        <p className="font-extrabold text-base text-orange-600 dark:text-orange-400">
+                          {financialSummary.hasPartialPayment ? financialSummary.dueLabel : financialSummary.totalLabel}
+                        </p>
+                        {financialSummary.hasPartialPayment && (
+                          <p className="text-[10px] text-muted-foreground">
+                            Já pago {financialSummary.paidLabel}
+                          </p>
+                        )}
+                      </div>
                       <div className="flex gap-1.5">
                         <Button 
                           size="sm"

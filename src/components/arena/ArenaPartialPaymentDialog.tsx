@@ -6,10 +6,8 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { formatCurrency } from '@/lib/formatCurrency';
 import { type Reservation, useReservations } from '@/hooks/queries/useReservations';
-import { type PaymentMethod, PAYMENT_METHOD_LABELS } from '@/lib/reservationContracts';
+import { type PaymentMethod, PAYMENT_METHOD_LABELS, RECEIVED_RESERVATION_PAYMENT_METHODS } from '@/lib/reservationContracts';
 import { toast } from 'sonner';
-
-const RECEIVED_PAYMENT_METHODS: PaymentMethod[] = ['pix', 'cartao', 'dinheiro'];
 
 interface ArenaPartialPaymentDialogProps {
   reservation: Reservation | null;
@@ -43,7 +41,7 @@ export function ArenaPartialPaymentDialog({ reservation, open, onOpenChange }: A
     if (parsedAmount > remainingBalance) {
       return toast.error('O valor informado é maior que o saldo devedor.');
     }
-    if (!RECEIVED_PAYMENT_METHODS.includes(method)) {
+    if (!RECEIVED_RESERVATION_PAYMENT_METHODS.includes(method)) {
       return toast.error('Escolha uma forma de pagamento recebida.');
     }
 
@@ -122,7 +120,7 @@ export function ArenaPartialPaymentDialog({ reservation, open, onOpenChange }: A
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {RECEIVED_PAYMENT_METHODS.map((paymentMethod) => (
+                {RECEIVED_RESERVATION_PAYMENT_METHODS.map((paymentMethod) => (
                   <SelectItem key={paymentMethod} value={paymentMethod}>{PAYMENT_METHOD_LABELS[paymentMethod]}</SelectItem>
                 ))}
               </SelectContent>

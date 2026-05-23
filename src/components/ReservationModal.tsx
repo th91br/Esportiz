@@ -14,6 +14,7 @@ import {
   type ReservationMeta,
   type ReservationType,
   PAYMENT_METHOD_LABELS,
+  RESERVATION_PAYMENT_METHOD_OPTIONS,
   RESERVATION_TYPE_LABELS,
 } from '@/hooks/queries/useReservations';
 import { toast } from 'sonner';
@@ -384,8 +385,8 @@ export function ReservationModal({
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      {Object.entries(PAYMENT_METHOD_LABELS).map(([k, v]) => (
-                        <SelectItem key={k} value={k}>{v}</SelectItem>
+                      {RESERVATION_PAYMENT_METHOD_OPTIONS.map((method) => (
+                        <SelectItem key={method} value={method}>{PAYMENT_METHOD_LABELS[method]}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>

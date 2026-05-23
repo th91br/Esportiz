@@ -1,16 +1,33 @@
 import type { Json, Tables } from '@/integrations/supabase/types';
 
 export type ReservationType = 'avulsa' | 'mensalista' | 'blocked';
-export type PaymentMethod = 'pix' | 'cartao' | 'dinheiro' | 'a_receber';
+export type PaymentMethod = 'pix' | 'cartao' | 'cartao_debito' | 'cartao_credito' | 'dinheiro' | 'a_receber';
 export type ReservationStatus = 'confirmed' | 'pending' | 'cancelled';
 export type ReservationPaymentStatus = 'paid' | 'pending';
 
 export const PAYMENT_METHOD_LABELS: Record<PaymentMethod, string> = {
   pix: 'Pix',
   cartao: 'Cartão',
+  cartao_debito: 'Cartão de Débito',
+  cartao_credito: 'Cartão de Crédito',
   dinheiro: 'Dinheiro',
   a_receber: 'A Receber',
 };
+
+export const RESERVATION_PAYMENT_METHOD_OPTIONS: PaymentMethod[] = [
+  'pix',
+  'cartao_debito',
+  'cartao_credito',
+  'dinheiro',
+  'a_receber',
+];
+
+export const RECEIVED_RESERVATION_PAYMENT_METHODS: PaymentMethod[] = [
+  'pix',
+  'cartao_debito',
+  'cartao_credito',
+  'dinheiro',
+];
 
 export const RESERVATION_TYPE_LABELS: Record<ReservationType, string> = {
   avulsa: 'Avulsa',
@@ -102,7 +119,13 @@ function asReservationType(value: unknown): ReservationType {
 }
 
 function asPaymentMethod(value: unknown): PaymentMethod {
-  return value === 'cartao' || value === 'dinheiro' || value === 'a_receber' ? value : 'pix';
+  return value === 'cartao'
+    || value === 'cartao_debito'
+    || value === 'cartao_credito'
+    || value === 'dinheiro'
+    || value === 'a_receber'
+    ? value
+    : 'pix';
 }
 
 function asPaymentStatus(value: unknown): ReservationPaymentStatus {

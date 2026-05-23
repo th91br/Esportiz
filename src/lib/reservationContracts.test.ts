@@ -79,6 +79,24 @@ describe('reservationContracts', () => {
     });
   });
 
+  it('accepts detailed card payment methods while preserving legacy card values', () => {
+    expect(parseReservationMeta({
+      finalPrice: 100,
+      paymentMethod: 'cartao_debito',
+      partialPayments: [
+        { id: 'payment-1', amount: 40, method: 'cartao_credito', date: '2026-05-23T10:00:00+00:00' },
+        { id: 'payment-2', amount: 20, method: 'cartao', date: '2026-05-23T11:00:00+00:00' },
+      ],
+    })).toMatchObject({
+      finalPrice: 100,
+      paymentMethod: 'cartao_debito',
+      partialPayments: [
+        { id: 'payment-1', amount: 40, method: 'cartao_credito' },
+        { id: 'payment-2', amount: 20, method: 'cartao' },
+      ],
+    });
+  });
+
   it('keeps blocked court slots financially neutral and already unavailable', () => {
     expect(parseReservationMeta({
       price: 999,

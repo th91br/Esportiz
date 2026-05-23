@@ -9,6 +9,8 @@ import type { AddReservationInput, PaymentMethod, ReservationPaymentStatus } fro
 
 export {
   PAYMENT_METHOD_LABELS,
+  RECEIVED_RESERVATION_PAYMENT_METHODS,
+  RESERVATION_PAYMENT_METHOD_OPTIONS,
   RESERVATION_TYPE_LABELS,
 } from '@/lib/reservationContracts';
 export type {

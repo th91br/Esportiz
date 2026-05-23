@@ -3,7 +3,7 @@ import { Header } from '@/components/Header';
 import { useStudents } from '@/hooks/queries/useStudents';
 import { usePlans } from '@/hooks/queries/usePlans';
 import { usePayments } from '@/hooks/queries/usePayments';
-import { useReservations, type Reservation } from '@/hooks/queries/useReservations';
+import { PAYMENT_METHOD_LABELS, useReservations, type Reservation } from '@/hooks/queries/useReservations';
 import { useCourts } from '@/hooks/queries/useCourts';
 import { usePrivacyMode } from '@/hooks/usePrivacyMode';
 import { formatCurrency } from '@/lib/formatCurrency';
@@ -370,7 +370,7 @@ export default function PaymentsPage() {
                         </span>
                         {reservation.paymentMethod && status === 'paid' && (
                           <span className="text-emerald-600 dark:text-emerald-400 font-medium">
-                            Pago via {reservation.paymentMethod.toUpperCase()}
+                            Pago via {PAYMENT_METHOD_LABELS[reservation.paymentMethod]}
                           </span>
                         )}
                         {status === 'pending' && reservation.totalPaid > 0 && (

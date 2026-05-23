@@ -1,3 +1,4 @@
+import { lazy, Suspense, type ReactNode } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Analytics } from "@vercel/analytics/react";
@@ -8,37 +9,37 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { AppProvider } from "@/contexts/AppContext";
-import LoginPage from "./pages/LoginPage";
-import LandingPage from "./pages/LandingPage";
-import Index from "./pages/Index";
-import CalendarPage from "./pages/CalendarPage";
-import StudentsPage from "./pages/StudentsPage";
-import StudentProfilePage from "./pages/StudentProfilePage";
-import AttendancePage from "./pages/AttendancePage";
-import PlansPage from "./pages/PlansPage";
-import ReportsPage from "./pages/ReportsPage";
-import PaymentsPage from "./pages/PaymentsPage";
-import BirthdaysPage from "./pages/BirthdaysPage";
-import ResetPasswordPage from "./pages/ResetPasswordPage";
-import OnboardingPage from "./pages/OnboardingPage";
-import SettingsPage from "./pages/SettingsPage";
-import ModalitiesPage from "./pages/ModalitiesPage";
-import GroupsPage from "./pages/GroupsPage";
-import CommunicationPage from "./pages/CommunicationPage";
-import ExpensesPage from "./pages/ExpensesPage";
-import ProductsPage from "./pages/ProductsPage";
-import SalesPage from "./pages/SalesPage";
-import NotFound from "./pages/NotFound";
-import CourtsPage from "./pages/CourtsPage";
-import ArenaAgendaPage from "./pages/ArenaAgendaPage";
-import ComandasPage from "./pages/ComandasPage";
-import ContractsPage from "./pages/ContractsPage";
-import EnrollmentUnavailablePage from "./pages/EnrollmentUnavailablePage";
-import StudentPortalPage from "./pages/StudentPortalPage";
-import OnlineBookingPage from "./pages/OnlineBookingPage";
 import { useProfile } from "./hooks/queries/useProfile";
 import { getAuthenticatedHomePath } from "./lib/authRouting";
 
+const LoginPage = lazy(() => import("./pages/LoginPage"));
+const LandingPage = lazy(() => import("./pages/LandingPage"));
+const Index = lazy(() => import("./pages/Index"));
+const CalendarPage = lazy(() => import("./pages/CalendarPage"));
+const StudentsPage = lazy(() => import("./pages/StudentsPage"));
+const StudentProfilePage = lazy(() => import("./pages/StudentProfilePage"));
+const AttendancePage = lazy(() => import("./pages/AttendancePage"));
+const PlansPage = lazy(() => import("./pages/PlansPage"));
+const ReportsPage = lazy(() => import("./pages/ReportsPage"));
+const PaymentsPage = lazy(() => import("./pages/PaymentsPage"));
+const BirthdaysPage = lazy(() => import("./pages/BirthdaysPage"));
+const ResetPasswordPage = lazy(() => import("./pages/ResetPasswordPage"));
+const OnboardingPage = lazy(() => import("./pages/OnboardingPage"));
+const SettingsPage = lazy(() => import("./pages/SettingsPage"));
+const ModalitiesPage = lazy(() => import("./pages/ModalitiesPage"));
+const GroupsPage = lazy(() => import("./pages/GroupsPage"));
+const CommunicationPage = lazy(() => import("./pages/CommunicationPage"));
+const ExpensesPage = lazy(() => import("./pages/ExpensesPage"));
+const ProductsPage = lazy(() => import("./pages/ProductsPage"));
+const SalesPage = lazy(() => import("./pages/SalesPage"));
+const NotFound = lazy(() => import("./pages/NotFound"));
+const CourtsPage = lazy(() => import("./pages/CourtsPage"));
+const ArenaAgendaPage = lazy(() => import("./pages/ArenaAgendaPage"));
+const ComandasPage = lazy(() => import("./pages/ComandasPage"));
+const ContractsPage = lazy(() => import("./pages/ContractsPage"));
+const EnrollmentUnavailablePage = lazy(() => import("./pages/EnrollmentUnavailablePage"));
+const StudentPortalPage = lazy(() => import("./pages/StudentPortalPage"));
+const OnlineBookingPage = lazy(() => import("./pages/OnlineBookingPage"));
 
 const queryClient = new QueryClient();
 function FullScreenLoader() {
@@ -72,7 +73,7 @@ function LoginRoute() {
   return <LoginPage />;
 }
 
-function ProtectedRoute({ children }: { children: React.ReactNode }) {
+function ProtectedRoute({ children }: { children: ReactNode }) {
   const location = useLocation();
   const { user, loading: authLoading } = useAuth();
   const { profile, loadingProfile, isErrorProfile, errorProfile } = useProfile();
@@ -105,7 +106,8 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 
 function AppRoutes() {
   return (
-    <Routes>
+    <Suspense fallback={<FullScreenLoader />}>
+      <Routes>
       {/* Rota pública — landing page */}
       <Route path="/" element={<LandingPage />} />
       <Route path="/matricula" element={<EnrollmentUnavailablePage />} />
@@ -140,7 +142,8 @@ function AppRoutes() {
       <Route path="/reservantes" element={<ProtectedRoute><StudentsPage /></ProtectedRoute>} />
       <Route path="/comandas" element={<ProtectedRoute><ComandasPage /></ProtectedRoute>} />
       <Route path="*" element={<NotFound />} />
-    </Routes>
+      </Routes>
+    </Suspense>
   );
 }
 

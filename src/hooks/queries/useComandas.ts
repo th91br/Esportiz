@@ -20,6 +20,13 @@ export type Comanda = CommerceComanda;
 
 import { getErrorMessage } from '@/lib/errorUtils';
 
+type CloseComandaResult = {
+  success?: boolean;
+  sales_count?: number;
+  total_amount?: number;
+  closed_at?: string;
+};
+
 export function useComandas() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
@@ -214,16 +221,38 @@ export function useComandas() {
     }) => {
       if (!user?.id) throw new Error('Not authenticated');
 
-      const { error } = await supabase.rpc('close_comanda_atomic', {
+      const { data, error } = await supabase.rpc('close_comanda_atomic', {
         p_user_id: user.id,
         p_comanda_id: comandaId,
         p_payment_method: paymentMethod,
       });
 
       if (error) throw error;
+
+      const result = data as CloseComandaResult | null;
+      if (!result?.success) {
+        throw new Error('A comanda nao confirmou o fechamento no banco de dados.');
+      }
+
+      return result;
     },
-    onSuccess: () => {
-      invalidateComandaState();
+    onSuccess: async (result, variables) => {
+      const closedAt = result.closed_at || new Date().toISOString();
+
+      queryClient.setQueryData<Comanda[]>(['comandas', user?.id], (current = []) =>
+        current.map((comanda) =>
+          comanda.id === variables.comandaId
+            ? { ...comanda, status: 'closed', closedAt }
+            : comanda
+        )
+      );
+
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['comandas'] }),
+        queryClient.invalidateQueries({ queryKey: ['sales'] }),
+        queryClient.invalidateQueries({ queryKey: ['products'] }),
+      ]);
+
       toast.success('Comanda fechada e venda registrada no caixa com sucesso!');
     },
     onError: (error: unknown) => {

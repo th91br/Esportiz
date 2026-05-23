@@ -143,7 +143,7 @@ export default function ComandasPage() {
   };
 
   const handleCloseComandaSubmit = async () => {
-    if (!closingComanda) return;
+    if (!closingComanda || isClosingSubmitting) return;
     setIsClosingSubmitting(true);
     try {
       await closeComanda({

@@ -3,6 +3,7 @@ import { useSearchParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -40,7 +41,13 @@ interface StudentPortalData {
   id: string;
   name: string;
   school_name: string;
+  logo_url?: string | null;
   plan_name: string;
+}
+
+interface StudentPortalBranding {
+  school_name: string;
+  logo_url: string | null;
 }
 
 interface PaymentConfig {
@@ -83,11 +90,23 @@ export default function StudentPortalPage() {
 
   // Portal Data State
   const [student, setStudent] = useState<StudentPortalData | null>(null);
+  const [branding, setBranding] = useState<StudentPortalBranding>({
+    school_name: 'Esportiz Sport',
+    logo_url: null,
+  });
   const [groups, setGroups] = useState<GroupPortalData[]>([]);
   const [attendanceStats, setAttendanceStats] = useState<AttendanceStats | null>(null);
   const [attendanceLogs, setAttendanceLogs] = useState<AttendanceLog[]>([]);
   const [payments, setPayments] = useState<PaymentLog[]>([]);
   const [paymentConfig, setPaymentConfig] = useState<PaymentConfig | null>(null);
+  const [requestType, setRequestType] = useState<'training' | 'makeup'>('training');
+  const [requestDate, setRequestDate] = useState('');
+  const [requestTime, setRequestTime] = useState('');
+  const [requestMessage, setRequestMessage] = useState('');
+  const [submittingRequest, setSubmittingRequest] = useState(false);
+
+  const schoolName = student?.school_name || branding.school_name || 'Esportiz Sport';
+  const schoolLogoUrl = student?.logo_url || branding.logo_url || null;
 
   // Authenticate student via credentials
   const authenticate = async (forceCpf?: string, forceBirthDate?: string) => {
@@ -143,6 +162,37 @@ export default function StudentPortalPage() {
     setLoading(false);
   }, []);
 
+  useEffect(() => {
+    if (hasInvalidOwnerId || !scopedOwnerId) return;
+
+    let active = true;
+
+    const loadBranding = async () => {
+      try {
+        const { data, error } = await supabase.rpc('get_student_portal_branding', {
+          p_user_id: scopedOwnerId,
+        });
+
+        if (error) throw error;
+
+        if (active && data?.success) {
+          setBranding({
+            school_name: data.school_name || 'Esportiz Sport',
+            logo_url: data.logo_url || null,
+          });
+        }
+      } catch (error) {
+        console.error('Erro ao carregar marca do portal:', error);
+      }
+    };
+
+    loadBranding();
+
+    return () => {
+      active = false;
+    };
+  }, [hasInvalidOwnerId, scopedOwnerId]);
+
   // Mask CPF
   const handleCpfChange = (val: string) => {
     const clean = val.replace(/\D/g, '');
@@ -179,6 +229,46 @@ export default function StudentPortalPage() {
 
     navigator.clipboard.writeText(paymentConfig.pix_key);
     toast.success(`Chave Pix copiada com sucesso! Insira o valor de ${amountStr}`);
+  };
+
+  const handleSubmitTrainingRequest = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!student || !scopedOwnerId) {
+      toast.error('Sessão do portal inválida. Entre novamente e tente outra vez.');
+      return;
+    }
+
+    setSubmittingRequest(true);
+    try {
+      const { data, error } = await supabase.rpc('submit_student_training_request', {
+        p_cpf: cpf,
+        p_birth_date: birthDate,
+        p_user_id: scopedOwnerId,
+        p_request_type: requestType,
+        p_preferred_date: requestDate || null,
+        p_preferred_time: requestTime || null,
+        p_message: requestMessage || null,
+      });
+
+      if (error) throw error;
+
+      if (!data?.success) {
+        toast.error(data?.error || 'Não foi possível enviar a solicitação.');
+        return;
+      }
+
+      toast.success(data.message || 'Solicitação enviada para a escola.');
+      setRequestType('training');
+      setRequestDate('');
+      setRequestTime('');
+      setRequestMessage('');
+    } catch (error) {
+      console.error('Erro ao enviar solicitação:', error);
+      toast.error('Ocorreu um erro ao enviar a solicitação.');
+    } finally {
+      setSubmittingRequest(false);
+    }
   };
 
   if (loading) {
@@ -220,10 +310,17 @@ export default function StudentPortalPage() {
         <Card className="max-w-md w-full border-border/60 card-elevated shadow-xl overflow-hidden">
           <div className="h-1.5 bg-gradient-to-r from-primary to-indigo-600" />
           <CardHeader className="text-center space-y-2">
-            <div className="mx-auto w-12 h-12 bg-primary/10 text-primary rounded-full flex items-center justify-center mb-2">
-              <GraduationCap className="h-6 w-6" />
+            <div className="mx-auto w-14 h-14 bg-primary/10 text-primary rounded-2xl flex items-center justify-center mb-2 overflow-hidden border border-primary/10">
+              {schoolLogoUrl ? (
+                <img src={schoolLogoUrl} alt={`Logo ${schoolName}`} className="h-full w-full object-contain p-1.5" />
+              ) : (
+                <GraduationCap className="h-7 w-7" />
+              )}
             </div>
-            <CardTitle className="text-2xl font-black font-display text-foreground tracking-tight">Portal do Aluno</CardTitle>
+            <div>
+              <CardTitle className="text-2xl font-black font-display text-foreground tracking-tight">{schoolName}</CardTitle>
+              <span className="text-[10px] text-primary font-bold tracking-wider uppercase font-display">Portal do Aluno</span>
+            </div>
             <CardDescription className="text-sm">
               Consulte seu cronograma de aulas, frequência e faturamento mensal de forma integrada.
             </CardDescription>
@@ -280,11 +377,15 @@ export default function StudentPortalPage() {
       <header className="bg-background border-b border-border/50 sticky top-0 z-50 shadow-sm backdrop-blur">
         <div className="container max-w-6xl py-4 flex items-center justify-between gap-4">
           <div className="flex items-center gap-2.5">
-            <div className="w-10 h-10 bg-primary/10 text-primary rounded-xl flex items-center justify-center border border-primary/10">
-              <GraduationCap className="h-5.5 w-5.5" />
+            <div className="w-10 h-10 bg-primary/10 text-primary rounded-xl flex items-center justify-center border border-primary/10 overflow-hidden">
+              {schoolLogoUrl ? (
+                <img src={schoolLogoUrl} alt={`Logo ${schoolName}`} className="h-full w-full object-contain p-1" />
+              ) : (
+                <GraduationCap className="h-5.5 w-5.5" />
+              )}
             </div>
             <div>
-              <h2 className="text-base font-black font-display text-foreground leading-tight">{student.school_name}</h2>
+              <h2 className="text-base font-black font-display text-foreground leading-tight">{schoolName}</h2>
               <span className="text-[10px] text-primary font-bold tracking-wider uppercase font-display">Portal do Aluno</span>
             </div>
           </div>
@@ -317,6 +418,81 @@ export default function StudentPortalPage() {
             </Badge>
           </div>
         </div>
+
+        <Card className="border-primary/10 shadow-sm card-elevated overflow-hidden">
+          <div className="h-1 bg-gradient-to-r from-primary via-emerald-500 to-primary" />
+          <CardHeader className="pb-4">
+            <CardTitle className="text-base font-bold flex items-center gap-2">
+              <Calendar className="h-4 w-4 text-primary" /> Solicitar Treino/Reposição
+            </CardTitle>
+            <CardDescription>
+              Envie uma solicitação para a escola analisar. O treino só entra na agenda após aprovação interna.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleSubmitTrainingRequest} className="grid gap-4 lg:grid-cols-[1fr_1fr_auto] lg:items-end">
+              <div className="space-y-3 lg:col-span-2">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-bold uppercase text-muted-foreground">Tipo</label>
+                    <div className="grid grid-cols-2 gap-2">
+                      <Button
+                        type="button"
+                        variant={requestType === 'training' ? 'default' : 'outline'}
+                        className={cn('h-10 text-xs', requestType === 'training' && 'btn-primary-gradient')}
+                        onClick={() => setRequestType('training')}
+                      >
+                        Treino
+                      </Button>
+                      <Button
+                        type="button"
+                        variant={requestType === 'makeup' ? 'default' : 'outline'}
+                        className={cn('h-10 text-xs', requestType === 'makeup' && 'btn-primary-gradient')}
+                        onClick={() => setRequestType('makeup')}
+                      >
+                        Reposição
+                      </Button>
+                    </div>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-bold uppercase text-muted-foreground">Data desejada</label>
+                    <Input
+                      type="date"
+                      min={getLocalTodayDate()}
+                      value={requestDate}
+                      onChange={(e) => setRequestDate(e.target.value)}
+                    />
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-bold uppercase text-muted-foreground">Horário</label>
+                    <Input
+                      type="time"
+                      value={requestTime}
+                      onChange={(e) => setRequestTime(e.target.value)}
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold uppercase text-muted-foreground">Observação</label>
+                  <Textarea
+                    value={requestMessage}
+                    onChange={(e) => setRequestMessage(e.target.value)}
+                    maxLength={500}
+                    className="min-h-[82px] resize-none"
+                    placeholder="Ex: gostaria de repor a falta de terça-feira, se houver vaga."
+                  />
+                </div>
+              </div>
+
+              <Button type="submit" className="btn-primary-gradient h-11" disabled={submittingRequest}>
+                {submittingRequest ? 'Enviando...' : 'Enviar Solicitação'}
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
 
         {/* SECTION METRICS & TIMETABLE */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

@@ -898,6 +898,71 @@ export type Database = {
           },
         ]
       }
+      student_training_requests: {
+        Row: {
+          id: string
+          user_id: string
+          organization_id: string
+          student_id: string
+          student_name_snapshot: string
+          student_phone_snapshot: string | null
+          request_type: string
+          preferred_date: string | null
+          preferred_time: string | null
+          message: string | null
+          status: string
+          source: string
+          resolved_at: string | null
+          resolved_by: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          organization_id: string
+          student_id: string
+          student_name_snapshot: string
+          student_phone_snapshot?: string | null
+          request_type: string
+          preferred_date?: string | null
+          preferred_time?: string | null
+          message?: string | null
+          status?: string
+          source?: string
+          resolved_at?: string | null
+          resolved_by?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          organization_id?: string
+          student_id?: string
+          student_name_snapshot?: string
+          student_phone_snapshot?: string | null
+          request_type?: string
+          preferred_date?: string | null
+          preferred_time?: string | null
+          message?: string | null
+          status?: string
+          source?: string
+          resolved_at?: string | null
+          resolved_by?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "student_training_requests_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       training_students: {
         Row: {
           id: string
@@ -1182,6 +1247,16 @@ export type Database = {
           success: boolean
         }
       }
+      get_student_portal_branding: {
+        Args: {
+          p_user_id: string
+        }
+        Returns: {
+          success: boolean
+          school_name: string
+          logo_url: string | null
+        }
+      }
       get_student_portal_data: {
         Args: {
           p_birth_date?: string | null
@@ -1226,10 +1301,28 @@ export type Database = {
           }[]
           student?: {
             id: string
+            logo_url?: string | null
             name: string
             plan_name: string
             school_name: string
           }
+        }
+      }
+      submit_student_training_request: {
+        Args: {
+          p_birth_date: string
+          p_cpf: string
+          p_message?: string | null
+          p_preferred_date?: string | null
+          p_preferred_time?: string | null
+          p_request_type: string
+          p_user_id: string
+        }
+        Returns: {
+          success: boolean
+          error?: string
+          message?: string
+          request_id?: string
         }
       }
       process_sale: {

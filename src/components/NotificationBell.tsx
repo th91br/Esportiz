@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect, useCallback } from 'react';
-import { Bell, Clock, Users, MapPin, AlertTriangle, X, Check, Trash2, CheckCheck, Calendar, Cake, CreditCard, Undo2 } from 'lucide-react';
+import { Bell, Clock, Users, MapPin, AlertTriangle, X, Check, Trash2, CheckCheck, Calendar, Cake, CreditCard, Undo2, ClipboardList } from 'lucide-react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger, SheetClose } from '@/components/ui/sheet';
 import { cn } from '@/lib/utils';
 import { useQueryClient } from '@tanstack/react-query';
@@ -9,6 +9,7 @@ import { usePayments } from '@/hooks/queries/usePayments';
 import { useAttendance } from '@/hooks/queries/useAttendance';
 import { useReservations } from '@/hooks/queries/useReservations';
 import { useCourts } from '@/hooks/queries/useCourts';
+import { useStudentTrainingRequests } from '@/hooks/queries/useStudentTrainingRequests';
 import { getEndTime } from '@/data/mockData';
 import { useBusinessContext } from '@/hooks/useBusinessContext';
 import { Link } from 'react-router-dom';
@@ -56,6 +57,7 @@ export function NotificationBell() {
   const { attendance } = useAttendance();
   const { reservations } = useReservations();
   const { courts } = useCourts();
+  const { requests: studentTrainingRequests, resolveRequest } = useStudentTrainingRequests();
 
   const refreshScheduleData = useCallback(() => {
     syncAfterScheduleMutation(queryClient);
@@ -139,6 +141,7 @@ export function NotificationBell() {
 
   // Count only truly actionable items for the badge
   const totalActive = pendingTrainings.length
+    + (isArena ? 0 : studentTrainingRequests.length)
     + (showOverdue ? 1 : 0)
     + (showUpcoming ? 1 : 0)
     + (isArena ? 0 : todayBirthdays.length);
@@ -227,11 +230,12 @@ export function NotificationBell() {
   const showTrainings = tab === 'all' || tab === 'trainings';
   const showPayments = tab === 'all' || tab === 'payments';
   const showBirthdays = tab === 'all' || tab === 'birthdays';
+  const showStudentRequests = !isArena && showTrainings;
 
   // Tab counts
   const tabCounts = {
     all: totalActive,
-    trainings: pendingTrainings.length,
+    trainings: pendingTrainings.length + (isArena ? 0 : studentTrainingRequests.length),
     payments: (showOverdue ? 1 : 0) + (showUpcoming ? 1 : 0),
     birthdays: todayBirthdays.length,
   };
@@ -454,6 +458,72 @@ export function NotificationBell() {
                     <X className="h-4 w-4" />
                   </button>
                 </div>
+              </div>
+            </div>
+          )}
+
+          {/* Student Portal Requests Section */}
+          {showStudentRequests && studentTrainingRequests.length > 0 && (
+            <div className="p-4 border-b border-border/30">
+              <div className="flex items-center justify-between px-1 mb-3">
+                <div className="flex items-center gap-2">
+                  <div className="w-1.5 h-3.5 rounded-full bg-primary/40" />
+                  <span className="text-[11px] font-bold uppercase tracking-widest text-foreground/70">
+                    Solicitações do Portal ({studentTrainingRequests.length})
+                  </span>
+                </div>
+              </div>
+
+              <div className="space-y-3">
+                {studentTrainingRequests.map((request) => (
+                  <div key={request.id} className="rounded-2xl bg-card border border-primary/15 p-4 shadow-sm">
+                    <div className="flex items-start gap-3">
+                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                        <ClipboardList className="h-5 w-5" />
+                      </div>
+
+                      <div className="flex-1 min-w-0">
+                        <p className="text-[13px] font-black text-primary uppercase tracking-tight">
+                          {request.requestType === 'makeup' ? 'Reposição solicitada' : 'Treino solicitado'}
+                        </p>
+                        <p className="text-sm font-bold text-foreground mt-1 truncate">{request.studentName}</p>
+                        <div className="flex flex-wrap gap-2 mt-2 text-[11px] text-muted-foreground font-medium">
+                          {request.preferredDate && (
+                            <span className="px-2 py-1 rounded-md bg-muted">
+                              {new Date(request.preferredDate + 'T12:00:00').toLocaleDateString('pt-BR')}
+                            </span>
+                          )}
+                          {request.preferredTime && (
+                            <span className="px-2 py-1 rounded-md bg-muted">{request.preferredTime}</span>
+                          )}
+                          {request.studentPhone && (
+                            <span className="px-2 py-1 rounded-md bg-muted">{request.studentPhone}</span>
+                          )}
+                        </div>
+                        {request.message && (
+                          <p className="text-xs text-muted-foreground mt-3 leading-relaxed line-clamp-3">
+                            {request.message}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2 mt-4">
+                      <button
+                        onClick={() => void resolveRequest(request.id, 'approved')}
+                        className="h-9 rounded-lg bg-primary/10 text-primary hover:bg-primary hover:text-white text-xs font-black uppercase tracking-wider transition-all"
+                      >
+                        Atendida
+                      </button>
+                      <button
+                        onClick={() => void resolveRequest(request.id, 'rejected')}
+                        className="h-9 rounded-lg bg-muted text-muted-foreground hover:bg-destructive/10 hover:text-destructive text-xs font-black uppercase tracking-wider transition-all"
+                      >
+                        Recusar
+                      </button>
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
           )}

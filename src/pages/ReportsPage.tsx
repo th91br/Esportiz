@@ -204,12 +204,13 @@ export default function ReportsPage() {
   }, [payments, monthRefs, range, period]);
 
   const filteredSales = useMemo(() => {
+    if (!isArena) return [];
     if (!range) return sales;
     return sales.filter((s) => {
       const soldDate = s.soldAt.slice(0, 10);
       return soldDate >= range.start && soldDate <= range.end;
     });
-  }, [sales, range]);
+  }, [sales, range, isArena]);
 
   const filteredExpenses = useMemo(() => {
     if (!range) return expenses;
@@ -537,10 +538,12 @@ export default function ReportsPage() {
         let received = monthPayments.reduce((acc, curr) => acc + (curr.paidAmount || 0), 0);
         
         // 2. Vendas de Produtos
-        const monthSales = sales.filter(s => s.soldAt.startsWith(monthRef));
-        const salesTotal = monthSales.reduce((acc, curr) => acc + curr.total, 0);
-        expected += salesTotal;
-        received += salesTotal;
+        if (isArena) {
+          const monthSales = sales.filter(s => s.soldAt.startsWith(monthRef));
+          const salesTotal = monthSales.reduce((acc, curr) => acc + curr.total, 0);
+          expected += salesTotal;
+          received += salesTotal;
+        }
 
         // 3. Reservas (Arena)
         if (isArena) {
@@ -586,10 +589,12 @@ export default function ReportsPage() {
           .reduce((acc, curr) => acc + (curr.paidAmount || 0), 0);
 
         // 2. Vendas de Produtos
-        const daySales = sales.filter(s => s.soldAt.startsWith(dateStr));
-        const salesTotal = daySales.reduce((acc, curr) => acc + curr.total, 0);
-        expected += salesTotal;
-        received += salesTotal;
+        if (isArena) {
+          const daySales = sales.filter(s => s.soldAt.startsWith(dateStr));
+          const salesTotal = daySales.reduce((acc, curr) => acc + curr.total, 0);
+          expected += salesTotal;
+          received += salesTotal;
+        }
 
         // 3. Reservas (Arena)
         if (isArena) {
@@ -841,6 +846,7 @@ export default function ReportsPage() {
           </div>
 
           {/* Recebido por Forma de Pagamento */}
+          {isArena && (
           <div className="card-interactive p-4 md:p-6 border-primary/10">
             <div className="flex items-start justify-between mb-5">
               <div>
@@ -884,6 +890,7 @@ export default function ReportsPage() {
               </div>
             )}
           </div>
+          )}
 
           {/* Gráfico de Presença X Faltas */}
           <div className="card-interactive p-4 md:p-6">

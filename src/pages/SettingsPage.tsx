@@ -19,7 +19,7 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { toast } from 'sonner';
-import { UploadCloud, Save, Building, Trash2, Calendar, FileSpreadsheet, CheckCircle2, AlertCircle, Loader2, Tag, Volleyball, Landmark, GraduationCap, CheckCircle } from 'lucide-react';
+import { UploadCloud, Save, Building, Trash2, Calendar, FileSpreadsheet, CheckCircle2, AlertCircle, Loader2, Tag, GraduationCap, CheckCircle, Copy, ExternalLink } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useBusinessContext } from '@/hooks/useBusinessContext';
 import { ModalityManager } from '@/components/ModalityManager';
@@ -211,6 +211,7 @@ export default function SettingsPage() {
   const ctGenderedPronoun = selectedBusinessType === 'sport_school' ? 'sua' : 'seu';
   const isGoogleConnected = Boolean(profile?.google_access_token);
   const hasGoogleSpreadsheetId = Boolean(profile?.sheets_spreadsheet_id?.trim());
+  const studentPortalUrl = user?.id ? `${window.location.origin}/portal-aluno?ct=${user.id}` : '';
 
   // Keep the settings card aligned with the persisted profile value.
   useEffect(() => {
@@ -341,6 +342,29 @@ export default function SettingsPage() {
     });
     
     window.location.href = `https://accounts.google.com/o/oauth2/v2/auth?${authParams.toString()}`;
+  };
+
+  const handleCopyStudentPortalLink = async () => {
+    if (!studentPortalUrl) {
+      toast.error('Link do Portal do Aluno indisponível. Entre novamente e tente outra vez.');
+      return;
+    }
+
+    try {
+      await navigator.clipboard.writeText(studentPortalUrl);
+      toast.success('Link do Portal do Aluno copiado.');
+    } catch {
+      toast.error('Não foi possível copiar o link automaticamente.');
+    }
+  };
+
+  const handleOpenStudentPortal = () => {
+    if (!studentPortalUrl) {
+      toast.error('Link do Portal do Aluno indisponível. Entre novamente e tente outra vez.');
+      return;
+    }
+
+    window.open(studentPortalUrl, '_blank', 'noopener,noreferrer');
   };
 
   const handleLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -589,6 +613,64 @@ export default function SettingsPage() {
             </CardContent>
           </Card>
         </div>
+
+        {selectedBusinessType === 'sport_school' && (
+          <div className="grid gap-6 md:grid-cols-3">
+            <div className="md:col-span-1 space-y-1">
+              <h3 className="font-medium">Portal do Aluno</h3>
+              <p className="text-sm text-muted-foreground">
+                Link oficial da sua escola para acesso de alunos e responsáveis.
+              </p>
+            </div>
+
+            <Card className="md:col-span-2 border-primary/10">
+              <CardHeader className="pb-3">
+                <CardTitle className="flex items-center gap-2 text-lg">
+                  <GraduationCap className="h-5 w-5 text-primary" />
+                  Portal do Aluno
+                </CardTitle>
+                <CardDescription>
+                  Envie este acesso para o aluno consultar pagamentos, turmas e presenças.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div className="flex flex-col gap-2 sm:flex-row">
+                  <Input
+                    value={studentPortalUrl}
+                    readOnly
+                    aria-label="Link do Portal do Aluno"
+                    className="font-mono text-xs"
+                  />
+                  <div className="flex gap-2 sm:shrink-0">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="flex-1 sm:flex-none"
+                      onClick={handleCopyStudentPortalLink}
+                      disabled={!studentPortalUrl}
+                    >
+                      <Copy className="mr-2 h-4 w-4" />
+                      Copiar
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="flex-1 sm:flex-none"
+                      onClick={handleOpenStudentPortal}
+                      disabled={!studentPortalUrl}
+                    >
+                      <ExternalLink className="mr-2 h-4 w-4" />
+                      Abrir
+                    </Button>
+                  </div>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  O link já inclui o identificador seguro da sua escola.
+                </p>
+              </CardContent>
+            </Card>
+          </div>
+        )}
 
         <div className="grid gap-6 md:grid-cols-3">
           <div className="md:col-span-1 space-y-1">

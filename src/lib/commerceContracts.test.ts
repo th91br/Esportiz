@@ -19,6 +19,7 @@ import {
 const productRow: Tables<'products'> = {
   id: 'product-1',
   user_id: 'user-1',
+  organization_id: null,
   business_type: 'arena',
   name: ' Agua ',
   price: 6.5,
@@ -33,6 +34,7 @@ const productRow: Tables<'products'> = {
 const saleRow: Tables<'sales'> = {
   id: 'sale-1',
   user_id: 'user-1',
+  organization_id: null,
   business_type: 'arena',
   comanda_id: null,
   checkout_id: 'checkout-1',
@@ -49,6 +51,7 @@ const saleRow: Tables<'sales'> = {
 const comandaItemRow: Tables<'comanda_items'> = {
   id: 'item-1',
   user_id: 'user-1',
+  organization_id: null,
   comanda_id: 'comanda-1',
   product_id: 'product-1',
   product_name: 'Agua',
@@ -152,6 +155,7 @@ describe('commerceContracts', () => {
     const comanda = mapComandaRow({
       id: 'comanda-1',
       user_id: 'user-1',
+      organization_id: null,
       business_type: 'arena',
       name: ' Mesa 1 ',
       status: 'unknown',

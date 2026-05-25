@@ -9,6 +9,7 @@ const SPORT_SCHOOL_ROUTE_PREFIXES = [
   '/aniversariantes',
   '/modalidades',
   '/turmas',
+  '/contratos',
 ];
 
 const ARENA_ROUTE_PREFIXES = [

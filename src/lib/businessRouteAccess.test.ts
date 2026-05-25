@@ -11,7 +11,7 @@ describe('businessRouteAccess', () => {
   });
 
   it('allows sport school routes only for sport school profiles', () => {
-    for (const route of ['/calendario', '/alunos', '/alunos/123', '/presenca', '/planos', '/modalidades', '/turmas', '/aniversariantes']) {
+    for (const route of ['/calendario', '/alunos', '/alunos/123', '/presenca', '/planos', '/modalidades', '/turmas', '/aniversariantes', '/contratos']) {
       expect(getRouteAccessScope(route)).toBe('sport_school');
       expect(canAccessBusinessRoute('sport_school', route)).toBe(true);
       expect(canAccessBusinessRoute('arena', route)).toBe(false);

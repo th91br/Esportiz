@@ -250,6 +250,16 @@ export default function ReportsPage() {
     }).sort((a, b) => b.hours - a.hours);
   }, [courts, filteredReservations, isArena]);
 
+  const courtRevenueData = useMemo(() => {
+    return reservationsByCourtData
+      .filter((court) => court.revenue > 0)
+      .sort((a, b) => b.revenue - a.revenue);
+  }, [reservationsByCourtData]);
+
+  const courtRevenueTotal = useMemo(() => {
+    return courtRevenueData.reduce((sum, court) => sum + court.revenue, 0);
+  }, [courtRevenueData]);
+
   const topReservantesData = useMemo(() => {
     if (!isArena) return [];
     const map: Record<string, { count: number, revenue: number, name: string }> = {};
@@ -985,19 +995,64 @@ export default function ReportsPage() {
               {/* Recebido por Quadra (Pie) */}
               <div className="card-interactive p-4 md:p-6 lg:col-span-1 border-border/60">
                 <h3 className="font-display font-bold text-lg md:text-xl text-foreground mb-1">Recebido por Quadra</h3>
-                <p className="text-sm text-muted-foreground mb-6">Distribuição da receita recebida</p>
-                <div className="h-[250px] w-full mt-2">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                      <Pie data={reservationsByCourtData} cx="50%" cy="50%" innerRadius={65} outerRadius={100} paddingAngle={4} dataKey="revenue"
-                        label={({ name, value }) => privacyMode ? '••••' : formatCurrency(value)} labelLine={{ strokeWidth: 1, stroke: 'hsl(var(--muted-foreground))' }}>
-                        {reservationsByCourtData.map((entry, index) => (<Cell key={index} fill={Object.values(COLORS)[index % Object.values(COLORS).length]} />))}
-                      </Pie>
-                      <Tooltip contentStyle={customTooltipStyle} formatter={(value: number) => [privacyMode ? '••••' : formatCurrency(value), 'Recebido']} />
-                      <Legend layout="horizontal" verticalAlign="bottom" align="center" wrapperStyle={{ paddingTop: '10px', fontSize: '12px' }} iconType="circle" />
-                    </PieChart>
-                  </ResponsiveContainer>
-                </div>
+                <p className="text-sm text-muted-foreground mb-6">Receita recebida em reservas, separada por quadra</p>
+                {courtRevenueData.length > 0 ? (
+                  <div className="mt-2 space-y-4">
+                    <div className="relative h-[230px] w-full">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <PieChart margin={{ top: 8, right: 16, bottom: 8, left: 16 }}>
+                          <Pie
+                            data={courtRevenueData}
+                            cx="50%"
+                            cy="50%"
+                            innerRadius={66}
+                            outerRadius={96}
+                            paddingAngle={4}
+                            dataKey="revenue"
+                            nameKey="name"
+                            label={false}
+                            labelLine={false}
+                          >
+                            {courtRevenueData.map((entry, index) => (
+                              <Cell key={entry.name} fill={Object.values(COLORS)[index % Object.values(COLORS).length]} />
+                            ))}
+                          </Pie>
+                          <Tooltip contentStyle={customTooltipStyle} formatter={(value: number) => [privacyMode ? '••••' : formatCurrency(value), 'Recebido']} />
+                        </PieChart>
+                      </ResponsiveContainer>
+                      <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center text-center">
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Total</span>
+                        <span className="text-xl font-black text-foreground">{privacyMode ? '••••' : formatCurrency(courtRevenueTotal)}</span>
+                      </div>
+                    </div>
+
+                    <div className="grid gap-2">
+                      {courtRevenueData.map((court, index) => {
+                        const color = Object.values(COLORS)[index % Object.values(COLORS).length];
+                        const percentage = getPercent(court.revenue, courtRevenueTotal);
+
+                        return (
+                          <div key={court.name} className="flex items-center justify-between gap-3 rounded-xl border border-border/50 bg-muted/20 px-3 py-2">
+                            <div className="flex min-w-0 items-center gap-2">
+                              <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ backgroundColor: color }} />
+                              <span className="truncate text-sm font-semibold text-foreground">{court.name}</span>
+                            </div>
+                            <div className="shrink-0 text-right">
+                              <span className="block text-sm font-bold text-foreground">{privacyMode ? '••••' : formatCurrency(court.revenue)}</span>
+                              <span className="text-[10px] font-semibold text-muted-foreground">{privacyMode ? '••••' : `${percentage.toFixed(0)}%`}</span>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="h-[250px] w-full mt-2 flex flex-col items-center justify-center rounded-xl border border-dashed border-border/60 bg-muted/20 text-center px-6">
+                    <DollarSign className="h-6 w-6 text-muted-foreground/60 mb-2" />
+                    <p className="text-sm font-semibold text-foreground">Nenhuma receita recebida por quadra</p>
+                    <p className="text-xs text-muted-foreground mt-1">Assim que houver reservas pagas no período, a distribuição aparecerá aqui.</p>
+                  </div>
+                )}
               </div>
             </>
           )}

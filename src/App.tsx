@@ -11,6 +11,7 @@ import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { AppProvider } from "@/contexts/AppContext";
 import { useProfile } from "./hooks/queries/useProfile";
 import { getAuthenticatedHomePath } from "./lib/authRouting";
+import { canAccessBusinessRoute } from "./lib/businessRouteAccess";
 
 const LoginPage = lazy(() => import("./pages/LoginPage"));
 const LandingPage = lazy(() => import("./pages/LandingPage"));
@@ -99,6 +100,10 @@ function ProtectedRoute({ children }: { children: ReactNode }) {
 
   if (homePath !== "/onboarding" && isOnboardingRoute) {
     return <Navigate to={homePath} replace />;
+  }
+
+  if (!canAccessBusinessRoute(profile?.business_type, location.pathname)) {
+    return <Navigate to="/dashboard" replace />;
   }
 
   return <>{children}</>;

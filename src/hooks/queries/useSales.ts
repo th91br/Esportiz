@@ -6,7 +6,6 @@ import { useProfile } from '@/hooks/queries/useProfile';
 import { syncAfterSaleMutation } from '@/lib/querySync';
 import {
   buildSaleCartPayload,
-  calculateLineTotal,
   getPaymentMethodLabel,
   mapSaleRow,
   type CommerceSaleCartItem,
@@ -57,20 +56,29 @@ export function useSales() {
       paymentMethod?: PaymentMethod;
     }) => {
       if (!user?.id) throw new Error('Not authenticated');
-      const total = calculateLineTotal(sale.quantity, sale.unitPrice);
       const businessType = profile?.business_type || 'sport_school';
 
-      const { error } = await supabase.rpc('process_sale', {
+      if (!sale.productId) {
+        throw new Error('Produto invalido para venda.');
+      }
+
+      const payload = buildSaleCartPayload([{ productId: sale.productId, quantity: sale.quantity }]);
+      if (payload.length === 0) {
+        throw new Error('Quantidade invalida para venda.');
+      }
+
+      const { data, error } = await supabase.rpc('process_sale_cart_atomic', {
         p_user_id: user.id,
-        p_product_id: sale.productId || null,
-        p_product_name: sale.productName,
-        p_quantity: sale.quantity,
-        p_unit_price: sale.unitPrice,
-        p_total: total,
-        p_payment_method: sale.paymentMethod || 'dinheiro',
         p_business_type: businessType,
+        p_items: payload,
+        p_payment_method: sale.paymentMethod || 'dinheiro',
       });
       if (error) throw error;
+
+      const result = data as CheckoutCartResult | null;
+      if (!result?.success) {
+        throw new Error('O checkout nao confirmou a venda no banco de dados.');
+      }
     },
     onSuccess: () => {
       syncAfterSaleMutation(queryClient);

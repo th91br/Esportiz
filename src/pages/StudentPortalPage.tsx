@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
@@ -7,6 +7,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { EsportizIcon } from '@/components/Logo';
 import { 
   CheckCircle2, XCircle, LogOut, Clock, Calendar, GraduationCap, 
   DollarSign, MapPin, Copy, QrCode, ClipboardList, BookOpen, UserCheck, ShieldAlert 
@@ -66,6 +67,17 @@ interface GroupPortalData {
   }>;
 }
 
+interface TrainingRequestLog {
+  id: string;
+  request_type: 'training' | 'makeup';
+  preferred_date: string | null;
+  preferred_time: string | null;
+  message: string | null;
+  status: 'pending' | 'approved' | 'rejected' | 'cancelled';
+  created_at: string;
+  resolved_at: string | null;
+}
+
 interface AttendanceStats {
   percent: number;
   total_classes: number;
@@ -74,6 +86,45 @@ interface AttendanceStats {
 }
 
 const monthNames = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
+
+const getPortalSessionKey = (ownerId: string | null) => ownerId ? `esportiz:student-portal:${ownerId}` : null;
+
+const getRequestTypeLabel = (type: TrainingRequestLog['request_type']) => (
+  type === 'makeup' ? 'Reposição' : 'Treino'
+);
+
+const getRequestStatus = (status: TrainingRequestLog['status']) => {
+  switch (status) {
+    case 'approved':
+      return {
+        label: 'Atendida',
+        description: 'Sua solicitação foi aceita pela escola. Aguarde a confirmação do horário combinado.',
+        className: 'bg-emerald-100 text-emerald-700 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-400 dark:border-emerald-800',
+        Icon: CheckCircle2,
+      };
+    case 'rejected':
+      return {
+        label: 'Recusada',
+        description: 'Sua solicitação foi recusada pela escola. Fale com a secretaria se precisar de outro horário.',
+        className: 'bg-red-100 text-red-700 border-red-200 dark:bg-red-900/30 dark:text-red-400 dark:border-red-800',
+        Icon: XCircle,
+      };
+    case 'cancelled':
+      return {
+        label: 'Cancelada',
+        description: 'Esta solicitação foi cancelada.',
+        className: 'bg-muted text-muted-foreground border-border',
+        Icon: XCircle,
+      };
+    default:
+      return {
+        label: 'Pendente',
+        description: 'Sua solicitação foi enviada e aguarda análise da escola.',
+        className: 'bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-900/30 dark:text-amber-400 dark:border-amber-800',
+        Icon: Clock,
+      };
+  }
+};
 
 export default function StudentPortalPage() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -99,6 +150,7 @@ export default function StudentPortalPage() {
   const [attendanceLogs, setAttendanceLogs] = useState<AttendanceLog[]>([]);
   const [payments, setPayments] = useState<PaymentLog[]>([]);
   const [paymentConfig, setPaymentConfig] = useState<PaymentConfig | null>(null);
+  const [trainingRequests, setTrainingRequests] = useState<TrainingRequestLog[]>([]);
   const [requestType, setRequestType] = useState<'training' | 'makeup'>('training');
   const [requestDate, setRequestDate] = useState('');
   const [requestTime, setRequestTime] = useState('');
@@ -108,11 +160,26 @@ export default function StudentPortalPage() {
   const schoolName = student?.school_name || branding.school_name || 'Esportiz Sport';
   const schoolLogoUrl = student?.logo_url || branding.logo_url || null;
 
-  // Authenticate student via credentials
-  const authenticate = async (forceCpf?: string, forceBirthDate?: string) => {
-    const loginCpf = forceCpf || cpf;
-    const loginBirthDate = forceBirthDate || birthDate;
+  const loadTrainingRequests = useCallback(async (loginCpf: string, loginBirthDate: string) => {
+    if (!scopedOwnerId) return;
 
+    const { data, error } = await supabase.rpc('get_student_portal_requests', {
+      p_cpf: formatCpf(loginCpf),
+      p_birth_date: loginBirthDate,
+      p_user_id: scopedOwnerId,
+    });
+
+    if (error) throw error;
+
+    if (data?.success) {
+      setTrainingRequests(Array.isArray(data.requests) ? data.requests : []);
+    } else {
+      setTrainingRequests([]);
+    }
+  }, [scopedOwnerId]);
+
+  // Authenticate student via credentials
+  const authenticate = useCallback(async (loginCpf: string, loginBirthDate: string) => {
     if (hasInvalidOwnerId) {
       toast.error('Link do portal inválido.');
       return;
@@ -145,8 +212,17 @@ export default function StudentPortalPage() {
         setAttendanceLogs(data.attendance_logs || []);
         setPayments(data.payments || []);
         setPaymentConfig(data.payment_config || null);
+        await loadTrainingRequests(loginCpf, loginBirthDate);
+        const sessionKey = getPortalSessionKey(scopedOwnerId);
+        if (sessionKey) {
+          sessionStorage.setItem(sessionKey, JSON.stringify({
+            cpf: formatCpf(loginCpf),
+            birthDate: loginBirthDate,
+          }));
+        }
         setAuthenticated(true);
       } else {
+        setTrainingRequests([]);
         toast.error('Dados incorretos. CPF ou Data de Nascimento inválidos.');
       }
     } catch (err: unknown) {
@@ -156,11 +232,40 @@ export default function StudentPortalPage() {
       setAuthenticating(false);
       setLoading(false);
     }
-  };
+  }, [hasInvalidOwnerId, loadTrainingRequests, scopedOwnerId]);
 
   useEffect(() => {
+    if (hasInvalidOwnerId || !scopedOwnerId) {
+      setLoading(false);
+      return;
+    }
+
+    const sessionKey = getPortalSessionKey(scopedOwnerId);
+    const savedSession = sessionKey ? sessionStorage.getItem(sessionKey) : null;
+
+    if (!savedSession) {
+      setLoading(false);
+      return;
+    }
+
+    try {
+      const parsed = JSON.parse(savedSession) as { cpf?: string; birthDate?: string };
+
+      if (parsed.cpf && parsed.birthDate && isValidCpf(parsed.cpf) && isTodayOrPastDate(parsed.birthDate)) {
+        setCpf(formatCpf(parsed.cpf));
+        setBirthDate(parsed.birthDate);
+        authenticate(parsed.cpf, parsed.birthDate);
+        return;
+      }
+    } catch (error) {
+      console.error('Erro ao restaurar sessão do portal:', error);
+    }
+
+    if (sessionKey) {
+      sessionStorage.removeItem(sessionKey);
+    }
     setLoading(false);
-  }, []);
+  }, [authenticate, hasInvalidOwnerId, scopedOwnerId]);
 
   useEffect(() => {
     if (hasInvalidOwnerId || !scopedOwnerId) return;
@@ -216,6 +321,11 @@ export default function StudentPortalPage() {
     setAttendanceLogs([]);
     setPayments([]);
     setPaymentConfig(null);
+    setTrainingRequests([]);
+    const sessionKey = getPortalSessionKey(scopedOwnerId);
+    if (sessionKey) {
+      sessionStorage.removeItem(sessionKey);
+    }
     setSearchParams(scopedOwnerId ? { ct: scopedOwnerId } : {});
     setCpf('');
     setBirthDate('');
@@ -263,6 +373,7 @@ export default function StudentPortalPage() {
       setRequestDate('');
       setRequestTime('');
       setRequestMessage('');
+      await loadTrainingRequests(cpf, birthDate);
     } catch (error) {
       console.error('Erro ao enviar solicitação:', error);
       toast.error('Ocorreu um erro ao enviar a solicitação.');
@@ -309,16 +420,16 @@ export default function StudentPortalPage() {
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-primary/5 via-background to-background p-4 sm:p-6">
         <Card className="max-w-md w-full border-border/60 card-elevated shadow-xl overflow-hidden">
           <div className="h-1.5 bg-gradient-to-r from-primary to-indigo-600" />
-          <CardHeader className="text-center space-y-2">
-            <div className="mx-auto w-14 h-14 bg-primary/10 text-primary rounded-2xl flex items-center justify-center mb-2 overflow-hidden border border-primary/10">
+          <CardHeader className="text-center space-y-3">
+            <div className="mx-auto w-20 h-20 bg-background text-primary rounded-3xl flex items-center justify-center mb-1 overflow-hidden border border-primary/15 shadow-sm">
               {schoolLogoUrl ? (
-                <img src={schoolLogoUrl} alt={`Logo ${schoolName}`} className="h-full w-full object-contain p-1.5" />
+                <img src={schoolLogoUrl} alt={`Logo ${schoolName}`} className="h-full w-full object-contain p-2" />
               ) : (
-                <GraduationCap className="h-7 w-7" />
+                <EsportizIcon size={56} />
               )}
             </div>
             <div>
-              <CardTitle className="text-2xl font-black font-display text-foreground tracking-tight">{schoolName}</CardTitle>
+              <CardTitle className="mx-auto max-w-sm text-2xl sm:text-3xl font-black font-display text-foreground tracking-tight leading-tight break-words">{schoolName}</CardTitle>
               <span className="text-[10px] text-primary font-bold tracking-wider uppercase font-display">Portal do Aluno</span>
             </div>
             <CardDescription className="text-sm">
@@ -376,16 +487,16 @@ export default function StudentPortalPage() {
       {/* HEADER DO PORTAL */}
       <header className="bg-background border-b border-border/50 sticky top-0 z-50 shadow-sm backdrop-blur">
         <div className="container max-w-6xl py-4 flex items-center justify-between gap-4">
-          <div className="flex items-center gap-2.5">
-            <div className="w-10 h-10 bg-primary/10 text-primary rounded-xl flex items-center justify-center border border-primary/10 overflow-hidden">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="w-12 h-12 bg-background text-primary rounded-2xl flex shrink-0 items-center justify-center border border-primary/15 overflow-hidden shadow-sm">
               {schoolLogoUrl ? (
-                <img src={schoolLogoUrl} alt={`Logo ${schoolName}`} className="h-full w-full object-contain p-1" />
+                <img src={schoolLogoUrl} alt={`Logo ${schoolName}`} className="h-full w-full object-contain p-1.5" />
               ) : (
-                <GraduationCap className="h-5.5 w-5.5" />
+                <EsportizIcon size={34} />
               )}
             </div>
-            <div>
-              <h2 className="text-base font-black font-display text-foreground leading-tight">{schoolName}</h2>
+            <div className="min-w-0">
+              <h2 className="text-base sm:text-lg font-black font-display text-foreground leading-tight truncate">{schoolName}</h2>
               <span className="text-[10px] text-primary font-bold tracking-wider uppercase font-display">Portal do Aluno</span>
             </div>
           </div>
@@ -491,6 +602,63 @@ export default function StudentPortalPage() {
                 {submittingRequest ? 'Enviando...' : 'Enviar Solicitação'}
               </Button>
             </form>
+
+            <div className="mt-6 border-t border-border/40 pt-5 space-y-3">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <h3 className="text-sm font-bold text-foreground">Minhas solicitações</h3>
+                  <p className="text-xs text-muted-foreground">Acompanhe o retorno da escola para cada pedido enviado.</p>
+                </div>
+                <Badge variant="secondary" className="text-[10px]">
+                  {trainingRequests.length} registro(s)
+                </Badge>
+              </div>
+
+              {trainingRequests.length === 0 ? (
+                <div className="rounded-xl border border-dashed border-border/60 bg-muted/20 p-4 text-sm text-muted-foreground">
+                  Nenhuma solicitação enviada ainda.
+                </div>
+              ) : (
+                <div className="grid gap-3 md:grid-cols-2">
+                  {trainingRequests.slice(0, 6).map((request) => {
+                    const status = getRequestStatus(request.status);
+                    const StatusIcon = status.Icon;
+                    const preferredDate = request.preferred_date
+                      ? new Date(request.preferred_date + 'T12:00:00').toLocaleDateString('pt-BR')
+                      : 'Data flexível';
+
+                    return (
+                      <div key={request.id} className="rounded-xl border border-border/50 bg-background p-4 space-y-3">
+                        <div className="flex items-start justify-between gap-3">
+                          <div>
+                            <span className="text-sm font-bold text-foreground">{getRequestTypeLabel(request.request_type)}</span>
+                            <p className="text-xs text-muted-foreground">
+                              {preferredDate}{request.preferred_time ? ` às ${request.preferred_time}` : ''}
+                            </p>
+                          </div>
+                          <Badge className={cn('text-[10px] border flex items-center gap-1', status.className)}>
+                            <StatusIcon className="h-3.5 w-3.5" /> {status.label}
+                          </Badge>
+                        </div>
+
+                        <p className="text-xs text-muted-foreground leading-relaxed">{status.description}</p>
+
+                        {request.message && (
+                          <p className="text-xs bg-muted/40 border border-border/40 rounded-lg p-2 text-muted-foreground line-clamp-2">
+                            {request.message}
+                          </p>
+                        )}
+
+                        <div className="text-[10px] text-muted-foreground uppercase tracking-wider font-bold">
+                          Enviada em {new Date(request.created_at).toLocaleDateString('pt-BR')}
+                          {request.resolved_at ? ` · Respondida em ${new Date(request.resolved_at).toLocaleDateString('pt-BR')}` : ''}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
           </CardContent>
         </Card>
 

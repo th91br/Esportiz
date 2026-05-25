@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { EsportizIcon } from '@/components/Logo';
 import { 
   Check, User, Mail, FileText, Phone, Calendar as CalendarIcon, 
   ArrowRight, ShieldCheck, Landmark, Clock, RefreshCw, Sparkles
@@ -316,11 +317,13 @@ export default function OnlineBookingPage() {
               <div className="mx-auto w-16 h-16 bg-emerald-500/10 text-emerald-500 rounded-full flex items-center justify-center scale-110 shadow-inner">
                 <Check className="h-8 w-8 stroke-[3px]" />
               </div>
-              {logoUrl && (
-                <div className="absolute -bottom-2 -right-2 w-10 h-10 rounded-xl bg-card border border-border/80 shadow-md flex items-center justify-center p-1 overflow-hidden animate-in fade-in zoom-in duration-300">
-                  <img src={logoUrl} alt="Logo" className="w-full h-full object-contain rounded-lg" />
-                </div>
-              )}
+              <div className="absolute -bottom-2 -right-2 w-10 h-10 rounded-xl bg-card border border-border/80 shadow-md flex items-center justify-center p-1 overflow-hidden animate-in fade-in zoom-in duration-300">
+                {logoUrl ? (
+                  <img src={logoUrl} alt={`Logo ${arenaName}`} className="w-full h-full object-contain rounded-lg" />
+                ) : (
+                  <EsportizIcon size={30} />
+                )}
+              </div>
             </div>
             <CardTitle className="text-2xl font-bold font-display text-foreground mt-4">Agendamento Confirmado!</CardTitle>
             <CardDescription className="text-sm text-muted-foreground max-w-sm mx-auto">
@@ -383,21 +386,22 @@ export default function OnlineBookingPage() {
     <div className="min-h-screen bg-gradient-to-b from-primary/5 via-background to-background py-8 px-4 sm:px-6">
       <div className="max-w-2xl mx-auto space-y-6">
         <div className="text-center space-y-3 flex flex-col items-center animate-in fade-in slide-in-from-top-4 duration-500">
-          {logoUrl ? (
-            <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl bg-card border border-border/80 shadow-md flex items-center justify-center p-2.5 overflow-hidden transition-all duration-300 hover:scale-105 mb-1 animate-in fade-in zoom-in duration-300">
+          <div className="w-20 h-20 rounded-3xl bg-background border border-primary/15 shadow-sm flex items-center justify-center overflow-hidden transition-all duration-300 hover:scale-105 mb-1 animate-in fade-in zoom-in duration-300">
+            {logoUrl ? (
               <img
                 src={logoUrl}
                 alt={`Logo ${arenaName}`}
-                className="w-full h-full object-contain rounded-xl"
+                className="w-full h-full object-contain p-2"
                 onError={() => setLogoUrl(null)}
               />
-            </div>
-          ) : (
-            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-primary/10 border border-primary/20 text-primary text-xs font-bold font-display uppercase tracking-wider mb-1">
-              <Landmark className="h-3.5 w-3.5 animate-pulse" /> Agendamento de Quadras Online
-            </div>
-          )}
-          <h1 className="text-2xl sm:text-3xl font-black font-display text-foreground tracking-tight">{arenaName}</h1>
+            ) : (
+              <EsportizIcon size={56} />
+            )}
+          </div>
+          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-primary/10 border border-primary/20 text-primary text-xs font-bold font-display uppercase tracking-wider">
+            <Landmark className="h-3.5 w-3.5 animate-pulse" /> Agendamento de Quadras Online
+          </div>
+          <h1 className="max-w-xl text-2xl sm:text-3xl font-black font-display text-foreground tracking-tight leading-tight break-words">{arenaName}</h1>
           <p className="text-muted-foreground text-sm max-w-md mx-auto">
             Reserve o seu horário e garanta o seu play em tempo real com toda a comodidade.
           </p>

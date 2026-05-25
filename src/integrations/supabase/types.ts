@@ -1308,6 +1308,26 @@ export type Database = {
           }
         }
       }
+      get_student_portal_requests: {
+        Args: {
+          p_birth_date?: string | null
+          p_cpf?: string | null
+          p_user_id?: string | null
+        }
+        Returns: {
+          success: boolean
+          requests?: {
+            id: string
+            request_type: "training" | "makeup"
+            preferred_date: string | null
+            preferred_time: string | null
+            message: string | null
+            status: "pending" | "approved" | "rejected" | "cancelled"
+            created_at: string
+            resolved_at: string | null
+          }[]
+        }
+      }
       submit_student_training_request: {
         Args: {
           p_birth_date: string

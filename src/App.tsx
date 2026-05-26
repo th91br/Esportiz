@@ -2,6 +2,7 @@ import { lazy, Suspense, type ReactNode } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Analytics } from "@vercel/analytics/react";
+import { SpeedInsights } from "@vercel/speed-insights/react";
 import { PWABadge } from "@/components/PWABadge";
 import { AppErrorBoundary } from "@/components/AppErrorBoundary";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -161,6 +162,7 @@ const App = () => (
             </BrowserRouter>
           </AppErrorBoundary>
           <Analytics />
+          <SpeedInsights />
         </AppProvider>
       </AuthProvider>
     </TooltipProvider>

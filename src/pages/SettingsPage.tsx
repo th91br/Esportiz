@@ -22,7 +22,7 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { toast } from 'sonner';
-import { UploadCloud, Save, Building, Trash2, Calendar, FileSpreadsheet, CheckCircle2, AlertCircle, Loader2, Tag, GraduationCap, CheckCircle, Copy, ExternalLink, UsersRound, ShieldCheck } from 'lucide-react';
+import { UploadCloud, Save, Building, Trash2, Calendar, FileSpreadsheet, CheckCircle2, AlertCircle, Loader2, Tag, GraduationCap, CheckCircle, Copy, ExternalLink, UsersRound, ShieldCheck, Eye, EyeOff, UserCheck, UserX } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useBusinessContext } from '@/hooks/useBusinessContext';
 import { ModalityManager } from '@/components/ModalityManager';
@@ -248,7 +248,12 @@ export default function SettingsPage() {
   const [selectedBusinessType, setSelectedBusinessType] = useState<BusinessType>('sport_school');
   const [teamInviteEmail, setTeamInviteEmail] = useState('');
   const [teamInviteRole, setTeamInviteRole] = useState<InvitableOrganizationRole>('receptionist');
+  const [teamInvitePassword, setTeamInvitePassword] = useState('');
+  const [showInvitePassword, setShowInvitePassword] = useState(false);
   const [isInvitingTeamMember, setIsInvitingTeamMember] = useState(false);
+  const [memberToConfirmDelete, setMemberToConfirmDelete] = useState<any | null>(null);
+  const [isDeletingMember, setIsDeletingMember] = useState(false);
+  const [isTogglingStatus, setIsTogglingStatus] = useState<string | null>(null);
 
   const [ctName, setCtName] = useState('');
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
@@ -399,7 +404,6 @@ export default function SettingsPage() {
     
     window.location.href = `https://accounts.google.com/o/oauth2/v2/auth?${authParams.toString()}`;
   };
-
   const handleCopyStudentPortalLink = async () => {
     if (!studentPortalUrl) {
       toast.error('Link do Portal do Aluno indisponível. Entre novamente e tente outra vez.');
@@ -425,6 +429,7 @@ export default function SettingsPage() {
 
   const handleInviteTeamMember = async () => {
     const email = teamInviteEmail.trim().toLowerCase();
+    const password = teamInvitePassword.trim();
 
     if (!organizationId) {
       toast.error('Organizacao nao identificada. Atualize a pagina e tente novamente.');
@@ -432,32 +437,94 @@ export default function SettingsPage() {
     }
 
     if (!email || !email.includes('@')) {
-      toast.error('Informe um e-mail valido para o convite.');
+      toast.error('Informe um e-mail valido para o novo membro.');
+      return;
+    }
+
+    if (!password || password.length < 6) {
+      toast.error('Informe uma senha provisoria de pelo menos 6 caracteres.');
       return;
     }
 
     setIsInvitingTeamMember(true);
-    const toastId = toast.loading('Enviando convite da equipe...');
+    const toastId = toast.loading('Criando conta do novo membro...');
 
     try {
       const { error } = await supabase.functions.invoke('team-invite', {
         body: {
+          action: 'create',
           organization_id: organizationId,
           email,
           role: teamInviteRole,
+          password,
         },
       });
 
       if (error) throw error;
 
       setTeamInviteEmail('');
+      setTeamInvitePassword('');
       setTeamInviteRole('receptionist');
       await refetchTeamMembers();
-      toast.success('Convite enviado e membro registrado na equipe.', { id: toastId });
+      toast.success('Conta criada e membro registrado na equipe com sucesso!', { id: toastId });
     } catch (error) {
-      toast.error('Nao foi possivel enviar o convite: ' + getErrorMessage(error), { id: toastId });
+      toast.error('Nao foi possivel criar a conta: ' + getErrorMessage(error), { id: toastId });
     } finally {
       setIsInvitingTeamMember(false);
+    }
+  };
+
+  const handleToggleMemberStatus = async (member: any) => {
+    if (member.userId === user?.id) {
+      toast.error('Voce nao pode alterar o seu proprio status.');
+      return;
+    }
+
+    setIsTogglingStatus(member.id);
+    const newActiveState = !member.active;
+    const toastId = toast.loading(newActiveState ? 'Ativando membro...' : 'Inativando membro...');
+
+    try {
+      const { error } = await supabase
+        .from('organization_members')
+        .update({ active: newActiveState, updated_at: new Date().toISOString() })
+        .eq('id', member.id);
+
+      if (error) throw error;
+
+      await refetchTeamMembers();
+      toast.success(newActiveState ? 'Membro ativado com sucesso!' : 'Membro inativado com sucesso.', { id: toastId });
+    } catch (err) {
+      toast.error('Erro ao alterar status do membro: ' + getErrorMessage(err), { id: toastId });
+    } finally {
+      setIsTogglingStatus(null);
+    }
+  };
+
+  const handleDeleteMember = async () => {
+    if (!memberToConfirmDelete || !organizationId) return;
+
+    setIsDeletingMember(true);
+    const toastId = toast.loading('Excluindo membro definitivamente...');
+
+    try {
+      const { error } = await supabase.functions.invoke('team-invite', {
+        body: {
+          action: 'delete',
+          organization_id: organizationId,
+          user_id: memberToConfirmDelete.userId,
+        },
+      });
+
+      if (error) throw error;
+
+      await refetchTeamMembers();
+      toast.success('Membro excluido permanentemente da equipe.', { id: toastId });
+      setMemberToConfirmDelete(null);
+    } catch (err) {
+      toast.error('Erro ao excluir membro: ' + getErrorMessage(err), { id: toastId });
+    } finally {
+      setIsDeletingMember(false);
     }
   };
 
@@ -782,13 +849,13 @@ export default function SettingsPage() {
                   Equipe
                 </CardTitle>
                 <CardDescription>
-                  Nesta etapa, os cargos aparecem apenas para conferencia. Convites e alteracoes entram em uma proxima fase controlada.
+                  Adicione novos membros com e-mail e senha inicial, ou gerencie os acessos ativos da sua equipe.
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-3">
                 {organizationId && (
-                  <div className="rounded-xl border bg-muted/20 p-3">
-                    <div className="grid gap-3 lg:grid-cols-[1fr_190px_auto]">
+                  <div className="rounded-xl border bg-muted/20 p-3 animate-fade-in">
+                    <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-[1fr_1fr_160px_auto] items-end">
                       <div className="space-y-1.5">
                         <Label htmlFor="team-invite-email">E-mail do novo membro</Label>
                         <Input
@@ -799,6 +866,31 @@ export default function SettingsPage() {
                           onChange={(event) => setTeamInviteEmail(event.target.value)}
                           disabled={isInvitingTeamMember}
                         />
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label htmlFor="team-invite-password">Senha Provisória</Label>
+                        <div className="relative">
+                          <Input
+                            id="team-invite-password"
+                            type={showInvitePassword ? "text" : "password"}
+                            placeholder="Mínimo 6 caracteres"
+                            value={teamInvitePassword}
+                            onChange={(event) => setTeamInvitePassword(event.target.value)}
+                            disabled={isInvitingTeamMember}
+                            className="pr-10"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setShowInvitePassword(!showInvitePassword)}
+                            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                          >
+                            {showInvitePassword ? (
+                              <EyeOff className="h-4 w-4" />
+                            ) : (
+                              <Eye className="h-4 w-4" />
+                            )}
+                          </button>
+                        </div>
                       </div>
                       <div className="space-y-1.5">
                         <Label>Cargo</Label>
@@ -819,26 +911,26 @@ export default function SettingsPage() {
                           </SelectContent>
                         </Select>
                       </div>
-                      <div className="flex items-end">
+                      <div className="w-full">
                         <Button
                           type="button"
-                          className="w-full"
+                          className="w-full btn-primary-gradient"
                           onClick={handleInviteTeamMember}
-                          disabled={isInvitingTeamMember || !teamInviteEmail.trim()}
+                          disabled={isInvitingTeamMember || !teamInviteEmail.trim() || !teamInvitePassword.trim()}
                         >
                           {isInvitingTeamMember ? (
                             <>
                               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                              Enviando
+                              Criando...
                             </>
                           ) : (
-                            'Convidar'
+                            'Adicionar'
                           )}
                         </Button>
                       </div>
                     </div>
                     <p className="mt-2 text-xs text-muted-foreground">
-                      O convite cria o acesso no Supabase Auth e vincula o cargo a esta organizacao. Apenas dono pode executar esta acao.
+                      A criação direta registra a conta no Supabase Auth e vincula o cargo a esta organização. O funcionário poderá logar imediatamente com estes dados.
                     </p>
                   </div>
                 )}
@@ -870,27 +962,73 @@ export default function SettingsPage() {
                       return (
                         <div
                           key={member.id}
-                          className="flex flex-col gap-3 rounded-xl border bg-background p-3 sm:flex-row sm:items-center sm:justify-between"
+                          className="flex flex-col gap-3 rounded-xl border bg-background p-3 sm:flex-row sm:items-center sm:justify-between hover:bg-muted/10 transition-colors"
                         >
                           <div className="min-w-0 space-y-1">
                             <div className="flex flex-wrap items-center gap-2">
                               <p className="truncate text-sm font-semibold text-foreground">{memberLabel}</p>
                               {member.userId === user?.id && (
                                 <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-primary">
-                                  Voce
+                                  Você
                                 </span>
                               )}
                               {!member.active && (
-                                <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                                <span className="rounded-full bg-amber-500/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-amber-600">
                                   Inativo
                                 </span>
                               )}
                             </div>
                             <p className="text-xs text-muted-foreground">{roleInfo.description}</p>
                           </div>
-                          <div className="flex shrink-0 items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-3 py-1 text-xs font-semibold text-primary">
-                            <ShieldCheck className="h-3.5 w-3.5" />
-                            {roleInfo.label}
+                          
+                          <div className="flex flex-wrap items-center gap-3 shrink-0">
+                            <div className="flex shrink-0 items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-3 py-1 text-xs font-semibold text-primary">
+                              <ShieldCheck className="h-3.5 w-3.5" />
+                              {roleInfo.label}
+                            </div>
+
+                            {member.userId !== user?.id && (
+                              <div className="flex items-center gap-1.5 border-l pl-3 border-border">
+                                {/* Toggle Active Status Button */}
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  className={cn(
+                                    "h-8 px-2.5 text-xs font-medium transition-colors",
+                                    member.active
+                                      ? "text-amber-600 hover:text-amber-700 hover:bg-amber-50 border-amber-200"
+                                      : "text-green-600 hover:text-green-700 hover:bg-green-50 border-green-200"
+                                  )}
+                                  onClick={() => handleToggleMemberStatus(member)}
+                                  disabled={isTogglingStatus !== null}
+                                >
+                                  {isTogglingStatus === member.id ? (
+                                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                                  ) : member.active ? (
+                                    <>
+                                      <UserX className="h-3.5 w-3.5 mr-1" />
+                                      Inativar
+                                    </>
+                                  ) : (
+                                    <>
+                                      <UserCheck className="h-3.5 w-3.5 mr-1" />
+                                      Ativar
+                                    </>
+                                  )}
+                                </Button>
+
+                                {/* Delete Member Button */}
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-8 w-8 text-destructive hover:bg-destructive/10 hover:text-destructive transition-colors"
+                                  onClick={() => setMemberToConfirmDelete(member)}
+                                  disabled={isTogglingStatus !== null || isDeletingMember}
+                                >
+                                  <Trash2 className="h-3.5 w-3.5" />
+                                </Button>
+                              </div>
+                            )}
                           </div>
                         </div>
                       );
@@ -901,6 +1039,59 @@ export default function SettingsPage() {
             </Card>
           </div>
         )}
+
+        {/* Delete Member Confirmation Modal */}
+        <AlertDialog 
+          open={memberToConfirmDelete !== null} 
+          onOpenChange={(open) => { if (!open) setMemberToConfirmDelete(null); }}
+        >
+          <AlertDialogContent className="max-w-md">
+            <AlertDialogHeader>
+              <AlertDialogTitle className="flex items-center gap-2 text-xl font-bold">
+                <AlertCircle className="h-6 w-6 text-destructive shrink-0" />
+                Excluir Membro de Equipe?
+              </AlertDialogTitle>
+              <AlertDialogDescription className="space-y-4 pt-2">
+                <p className="text-sm leading-relaxed text-foreground">
+                  Você tem certeza de que deseja excluir permanentemente o funcionário{' '}
+                  <strong className="font-semibold text-primary">
+                    {memberToConfirmDelete?.invitedEmail || `Usuário ${memberToConfirmDelete ? getShortUserId(memberToConfirmDelete.userId) : ''}`}
+                  </strong>?
+                </p>
+                <div className="space-y-2 text-muted-foreground text-xs leading-relaxed">
+                  <p className="text-destructive font-semibold">
+                    ⚠️ Esta ação é irreversível e apagará definitivamente o login deste funcionário do sistema.
+                  </p>
+                  <p>
+                    • Todas as configurações de perfil dele serão removidas imediatamente.
+                  </p>
+                  <p>
+                    • Se você preferir apenas bloquear o acesso dele mantendo os registros históricos nos relatórios de auditoria, use a opção de <strong className="text-foreground">Inativar</strong>.
+                  </p>
+                </div>
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter className="mt-4">
+              <AlertDialogCancel disabled={isDeletingMember} onClick={() => setMemberToConfirmDelete(null)}>
+                Cancelar
+              </AlertDialogCancel>
+              <AlertDialogAction
+                disabled={isDeletingMember}
+                onClick={handleDeleteMember}
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              >
+                {isDeletingMember ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Excluindo...
+                  </>
+                ) : (
+                  'Sim, excluir definitivamente'
+                )}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
 
         <div className="grid gap-6 md:grid-cols-3">
           <div className="md:col-span-1 space-y-1">

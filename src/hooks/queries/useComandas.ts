@@ -64,7 +64,7 @@ export function useComandas() {
       const { data, error } = await supabase
         .from('comandas')
         .insert({
-          user_id: user.id,
+          user_id: tenantId,
           business_type: 'arena',
           name: name.trim(),
           status: 'open',
@@ -133,7 +133,7 @@ export function useComandas() {
 
       const payload = {
         ...buildComandaItemInsert({
-          userId: user.id,
+          userId: tenantId,
           comandaId,
           productId,
           productName,

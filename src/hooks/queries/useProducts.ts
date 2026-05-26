@@ -49,7 +49,7 @@ export function useProducts() {
       if (!user?.id) throw new Error('Not authenticated');
       const businessType = profile?.business_type || 'sport_school';
       const payload = {
-        ...buildProductInsertPayload(product, user.id, businessType),
+        ...buildProductInsertPayload(product, tenantId, businessType),
         organization_id: profile?.organization_id || null,
       };
       const { error } = await supabase

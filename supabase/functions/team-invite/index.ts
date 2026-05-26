@@ -65,6 +65,32 @@ serve(async (req) => {
     if (ownerError) throw ownerError
     if (!ownerMembership) throw new Error("Apenas o dono pode convidar membros.")
 
+    const { data: organization, error: organizationError } = await supabaseClient
+      .from("organizations")
+      .select("id, owner_user_id, name")
+      .eq("id", organization_id)
+      .maybeSingle()
+
+    if (organizationError) throw organizationError
+    if (!organization?.owner_user_id) throw new Error("Organizacao nao encontrada.")
+
+    const { data: ownerProfile, error: ownerProfileError } = await supabaseClient
+      .from("profiles")
+      .select(`
+        ct_name,
+        logo_url,
+        primary_color,
+        secondary_color,
+        business_type,
+        pix_key,
+        pix_receiver,
+        niche_settings
+      `)
+      .eq("user_id", organization.owner_user_id)
+      .maybeSingle()
+
+    if (ownerProfileError) throw ownerProfileError
+
     const redirectTo = `${getSiteUrl(req).replace(/\/$/, "")}/login?mode=login`
     const { data: inviteData, error: inviteError } = await supabaseClient.auth.admin.inviteUserByEmail(email, {
       redirectTo,
@@ -93,6 +119,27 @@ serve(async (req) => {
       })
 
     if (memberError) throw memberError
+
+    const { error: profileError } = await supabaseClient
+      .from("profiles")
+      .upsert({
+        user_id: invitedUserId,
+        organization_id,
+        ct_name: ownerProfile?.ct_name || organization.name || "Esportiz",
+        logo_url: ownerProfile?.logo_url || null,
+        primary_color: ownerProfile?.primary_color || null,
+        secondary_color: ownerProfile?.secondary_color || null,
+        business_type: ownerProfile?.business_type === "arena" ? "arena" : "sport_school",
+        onboarding_completed: true,
+        pix_key: ownerProfile?.pix_key || null,
+        pix_receiver: ownerProfile?.pix_receiver || null,
+        niche_settings: ownerProfile?.niche_settings || null,
+        updated_at: new Date().toISOString(),
+      }, {
+        onConflict: "user_id",
+      })
+
+    if (profileError) throw profileError
 
     return new Response(JSON.stringify({
       success: true,

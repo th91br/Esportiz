@@ -32,6 +32,7 @@ export interface NicheProfile {
 export interface Profile {
   id: string;
   user_id: string;
+  organization_id: string | null;
   ct_name: string | null;
   logo_url: string | null;
   primary_color: string | null;
@@ -50,6 +51,131 @@ export interface Profile {
   updated_at: string;
 }
 
+const PROFILE_SELECT = `
+  id,
+  user_id,
+  organization_id,
+  ct_name,
+  logo_url,
+  primary_color,
+  secondary_color,
+  business_type,
+  onboarding_completed,
+  google_access_token,
+  google_refresh_token,
+  google_calendar_id,
+  sheets_spreadsheet_id,
+  sheets_webhook_active,
+  pix_key,
+  pix_receiver,
+  niche_settings,
+  created_at,
+  updated_at
+`;
+
+function normalizeProfile(data: unknown): Profile {
+  const profile = data as Profile;
+  return {
+    ...profile,
+    business_type: normalizeBusinessType(profile.business_type),
+    onboarding_completed: profile.onboarding_completed === true,
+  };
+}
+
+async function buildInvitedMemberProfile(userId: string): Promise<Profile | null> {
+  const { data: membership, error: membershipError } = await supabase
+    .from('organization_members')
+    .select('organization_id')
+    .eq('user_id', userId)
+    .eq('active', true)
+    .order('created_at', { ascending: true })
+    .limit(1)
+    .maybeSingle();
+
+  if (membershipError) {
+    console.error('Error fetching invited member organization:', membershipError);
+    throw membershipError;
+  }
+
+  if (!membership?.organization_id) return null;
+
+  const { data: organization, error: organizationError } = await supabase
+    .from('organizations')
+    .select('id, owner_user_id, name')
+    .eq('id', membership.organization_id)
+    .maybeSingle();
+
+  if (organizationError) {
+    console.error('Error fetching invited member organization owner:', organizationError);
+    throw organizationError;
+  }
+
+  if (!organization?.owner_user_id) return null;
+
+  const { data: ownerProfile, error: ownerProfileError } = await supabase
+    .from('profiles')
+    .select(PROFILE_SELECT)
+    .eq('user_id', organization.owner_user_id)
+    .maybeSingle();
+
+  if (ownerProfileError) {
+    console.error('Error fetching organization owner profile:', ownerProfileError);
+    throw ownerProfileError;
+  }
+
+  const now = new Date().toISOString();
+  const fallbackBusinessType = normalizeBusinessType(ownerProfile?.business_type);
+  const fallbackProfile = {
+    id: `team-${userId}`,
+    user_id: userId,
+    organization_id: membership.organization_id,
+    ct_name: ownerProfile?.ct_name || organization.name || 'Esportiz',
+    logo_url: ownerProfile?.logo_url || null,
+    primary_color: ownerProfile?.primary_color || null,
+    secondary_color: ownerProfile?.secondary_color || null,
+    business_type: fallbackBusinessType,
+    onboarding_completed: true,
+    google_access_token: null,
+    google_refresh_token: null,
+    google_calendar_id: null,
+    sheets_spreadsheet_id: null,
+    sheets_webhook_active: false,
+    pix_key: ownerProfile?.pix_key || null,
+    pix_receiver: ownerProfile?.pix_receiver || null,
+    niche_settings: ownerProfile?.niche_settings || null,
+    created_at: now,
+    updated_at: now,
+  } satisfies Profile;
+
+  const { data: syncedProfile, error: syncError } = await supabase
+    .from('profiles')
+    .upsert({
+      user_id: userId,
+      organization_id: membership.organization_id,
+      ct_name: fallbackProfile.ct_name,
+      logo_url: fallbackProfile.logo_url,
+      primary_color: fallbackProfile.primary_color,
+      secondary_color: fallbackProfile.secondary_color,
+      business_type: fallbackProfile.business_type,
+      onboarding_completed: true,
+      pix_key: fallbackProfile.pix_key,
+      pix_receiver: fallbackProfile.pix_receiver,
+      niche_settings: fallbackProfile.niche_settings,
+      updated_at: now,
+    }, {
+      onConflict: 'user_id',
+    })
+    .select(PROFILE_SELECT)
+    .single();
+
+  if (syncError) {
+    console.warn('Could not sync invited member profile; using runtime organization context.', syncError);
+    return fallbackProfile;
+  }
+
+  return normalizeProfile(syncedProfile);
+}
+
 export function useProfile() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
@@ -61,26 +187,7 @@ export function useProfile() {
 
       const { data, error } = await supabase
         .from('profiles')
-        .select(`
-          id,
-          user_id,
-          ct_name,
-          logo_url,
-          primary_color,
-          secondary_color,
-          business_type,
-          onboarding_completed,
-          google_access_token,
-          google_refresh_token,
-          google_calendar_id,
-          sheets_spreadsheet_id,
-          sheets_webhook_active,
-          pix_key,
-          pix_receiver,
-          niche_settings,
-          created_at,
-          updated_at
-        `)
+        .select(PROFILE_SELECT)
         .eq('user_id', user.id)
         .maybeSingle();
 
@@ -89,12 +196,9 @@ export function useProfile() {
         throw error;
       }
 
-      if (!data) return null;
+      if (!data) return buildInvitedMemberProfile(user.id);
 
-      return {
-        ...data,
-        business_type: normalizeBusinessType(data.business_type),
-      } as Profile;
+      return normalizeProfile(data);
     },
     enabled: !!user?.id,
   });

@@ -111,6 +111,6 @@ export function useOrganizationMembership() {
     loadingMembership: membershipQuery.isLoading,
     isErrorMembership: membershipQuery.isError,
     errorMembership: membershipQuery.error,
-    isRoleKnown: Boolean((membershipQuery.data?.member?.role || membershipQuery.data?.isOwner) && !membershipQuery.isError),
+    isRoleKnown: Boolean(membershipQuery.data && !membershipQuery.isError),
   };
 }

@@ -69,11 +69,17 @@ const TEAM_ROLE_LABELS: Record<OrganizationRole, { label: string; description: s
 
 type InvitableOrganizationRole = Exclude<OrganizationRole, 'owner'>;
 
-const TEAM_INVITE_ROLE_OPTIONS: Array<{ role: InvitableOrganizationRole; label: string }> = [
+const SCHOOL_TEAM_INVITE_OPTIONS: Array<{ role: InvitableOrganizationRole; label: string }> = [
+  { role: 'instructor', label: TEAM_ROLE_LABELS.instructor.label },
+  { role: 'finance', label: TEAM_ROLE_LABELS.finance.label },
   { role: 'manager', label: TEAM_ROLE_LABELS.manager.label },
+];
+
+const ARENA_TEAM_INVITE_OPTIONS: Array<{ role: InvitableOrganizationRole; label: string }> = [
   { role: 'receptionist', label: TEAM_ROLE_LABELS.receptionist.label },
   { role: 'instructor', label: TEAM_ROLE_LABELS.instructor.label },
   { role: 'finance', label: TEAM_ROLE_LABELS.finance.label },
+  { role: 'manager', label: TEAM_ROLE_LABELS.manager.label },
 ];
 
 function getShortUserId(userId: string) {
@@ -229,7 +235,7 @@ async function invokeGoogleAuth(payload: { code: string; userId: string; redirec
 
 export default function SettingsPage() {
   const queryClient = useQueryClient();
-  const { profile, rawProfile, updateProfile, uploadLogo, isUpdatingProfile, isUploadingLogo } = useProfile();
+  const { profile, rawProfile, loadingProfile, updateProfile, uploadLogo, isUpdatingProfile, isUploadingLogo } = useProfile();
   const [showNicheConfirmation, setShowNicheConfirmation] = useState(false);
   const [pendingBusinessType, setPendingBusinessType] = useState<BusinessType | null>(null);
   const { user } = useAuth();
@@ -296,6 +302,11 @@ export default function SettingsPage() {
       setPaymentReminderTemplate(templates.payment_reminder || '');
     }
   }, [rawProfile, selectedBusinessType]);
+
+  // Reset selected invite role to first valid role of the active niche
+  useEffect(() => {
+    setTeamInviteRole(selectedBusinessType === 'sport_school' ? 'instructor' : 'receptionist');
+  }, [selectedBusinessType]);
 
   const clearGoogleOAuthParams = useCallback(() => {
     const url = new URL(window.location.href);
@@ -464,7 +475,7 @@ export default function SettingsPage() {
 
       setTeamInviteEmail('');
       setTeamInvitePassword('');
-      setTeamInviteRole('receptionist');
+      setTeamInviteRole(selectedBusinessType === 'sport_school' ? 'instructor' : 'receptionist');
       await refetchTeamMembers();
       toast.success('Conta criada e membro registrado na equipe com sucesso!', { id: toastId });
     } catch (error) {
@@ -703,6 +714,17 @@ export default function SettingsPage() {
     setPendingBusinessType(null);
   };
 
+  if (loadingProfile) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="flex flex-col items-center gap-2">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <p className="text-sm text-muted-foreground font-medium">Carregando configurações...</p>
+        </div>
+      </div>
+    );
+  }
+
   const hasLogo = !!logoPreview;
   const isNewLogoSelected = !!logoFile;
   const isBusy = isUpdatingProfile || isUploadingLogo || isDeletingLogo;
@@ -903,7 +925,7 @@ export default function SettingsPage() {
                             <SelectValue placeholder="Cargo" />
                           </SelectTrigger>
                           <SelectContent>
-                            {TEAM_INVITE_ROLE_OPTIONS.map((option) => (
+                            {(selectedBusinessType === 'sport_school' ? SCHOOL_TEAM_INVITE_OPTIONS : ARENA_TEAM_INVITE_OPTIONS).map((option) => (
                               <SelectItem key={option.role} value={option.role}>
                                 {option.label}
                               </SelectItem>
@@ -1470,10 +1492,10 @@ export default function SettingsPage() {
                       <Input 
                         id="spreadsheet-id"
                         placeholder="Cole o ID da sua planilha aqui"
-                        defaultValue={profile.sheets_spreadsheet_id || ''}
+                        defaultValue={profile?.sheets_spreadsheet_id || ''}
                         onBlur={async (e) => {
                           const spreadsheetId = e.target.value.trim();
-                          if (spreadsheetId !== (profile.sheets_spreadsheet_id || '')) {
+                          if (spreadsheetId !== (profile?.sheets_spreadsheet_id || '')) {
                             try {
                               await updateProfile({ sheets_spreadsheet_id: spreadsheetId });
                               toast.success(

@@ -77,7 +77,6 @@ const SCHOOL_TEAM_INVITE_OPTIONS: Array<{ role: InvitableOrganizationRole; label
 
 const ARENA_TEAM_INVITE_OPTIONS: Array<{ role: InvitableOrganizationRole; label: string }> = [
   { role: 'receptionist', label: TEAM_ROLE_LABELS.receptionist.label },
-  { role: 'instructor', label: TEAM_ROLE_LABELS.instructor.label },
   { role: 'finance', label: TEAM_ROLE_LABELS.finance.label },
   { role: 'manager', label: TEAM_ROLE_LABELS.manager.label },
 ];
@@ -741,62 +740,64 @@ export default function SettingsPage() {
         </div>
 
         {/* Business Type Card */}
-        <div className="grid gap-6 md:grid-cols-3">
-          <div className="md:col-span-1 space-y-1">
-            <h3 className="font-medium">Tipo de Negócio</h3>
-            <p className="text-sm text-muted-foreground">
-              O sistema adapta a interface e termos automaticamente ao seu tipo de negócio.
-            </p>
+        {rolePermissions.organizationRole === 'owner' && (
+          <div className="grid gap-6 md:grid-cols-3 animate-fade-in">
+            <div className="md:col-span-1 space-y-1">
+              <h3 className="font-medium">Tipo de Negócio</h3>
+              <p className="text-sm text-muted-foreground">
+                O sistema adapta a interface e termos automaticamente ao seu tipo de negócio.
+              </p>
+            </div>
+            <Card className="md:col-span-2">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-lg">
+                  <Building className="h-5 w-5 text-primary" />
+                  Segmento do Negócio
+                </CardTitle>
+                <CardDescription>Escolha o tipo que melhor representa sua atividade.</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {BUSINESS_OPTIONS.map((option) => {
+                  const isSelected = selectedBusinessType === option.type;
+                  return (
+                    <button
+                      key={option.type}
+                      onClick={() => {
+                        handleCardClick(option.type);
+                      }}
+                      aria-pressed={isSelected}
+                      aria-label={`${option.title}${isSelected ? ' ativo' : ''}`}
+                      disabled={isBusy || !canUpdateSettings}
+                      className={cn(
+                        'w-full flex items-center gap-4 p-4 rounded-xl border-2 transition-all duration-200 text-left group',
+                        isSelected
+                          ? 'border-primary bg-primary/5 shadow-md shadow-primary/10'
+                          : 'border-border hover:border-primary/40 hover:bg-muted/50'
+                      )}
+                    >
+                      <div className={cn(
+                        'flex items-center justify-center h-10 w-10 rounded-xl text-xl shrink-0 transition-all',
+                        isSelected ? 'bg-primary/10 scale-110' : 'bg-muted group-hover:bg-primary/5'
+                      )}>
+                        {option.emoji}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className={cn('font-semibold text-sm', isSelected && 'text-primary')}>{option.title}</p>
+                        <p className="text-xs text-muted-foreground">{option.description}</p>
+                      </div>
+                      <div className={cn(
+                        'h-5 w-5 rounded-full border-2 shrink-0 flex items-center justify-center transition-all',
+                        isSelected ? 'border-primary bg-primary' : 'border-muted-foreground/30'
+                      )}>
+                        {isSelected && <CheckCircle className="h-3 w-3 text-primary-foreground" />}
+                      </div>
+                    </button>
+                  );
+                })}
+              </CardContent>
+            </Card>
           </div>
-          <Card className="md:col-span-2">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-lg">
-                <Building className="h-5 w-5 text-primary" />
-                Segmento do Negócio
-              </CardTitle>
-              <CardDescription>Escolha o tipo que melhor representa sua atividade.</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              {BUSINESS_OPTIONS.map((option) => {
-                const isSelected = selectedBusinessType === option.type;
-                return (
-                  <button
-                    key={option.type}
-                    onClick={() => {
-                      handleCardClick(option.type);
-                    }}
-                    aria-pressed={isSelected}
-                    aria-label={`${option.title}${isSelected ? ' ativo' : ''}`}
-                    disabled={isBusy || !canUpdateSettings}
-                    className={cn(
-                      'w-full flex items-center gap-4 p-4 rounded-xl border-2 transition-all duration-200 text-left group',
-                      isSelected
-                        ? 'border-primary bg-primary/5 shadow-md shadow-primary/10'
-                        : 'border-border hover:border-primary/40 hover:bg-muted/50'
-                    )}
-                  >
-                    <div className={cn(
-                      'flex items-center justify-center h-10 w-10 rounded-xl text-xl shrink-0 transition-all',
-                      isSelected ? 'bg-primary/10 scale-110' : 'bg-muted group-hover:bg-primary/5'
-                    )}>
-                      {option.emoji}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className={cn('font-semibold text-sm', isSelected && 'text-primary')}>{option.title}</p>
-                      <p className="text-xs text-muted-foreground">{option.description}</p>
-                    </div>
-                    <div className={cn(
-                      'h-5 w-5 rounded-full border-2 shrink-0 flex items-center justify-center transition-all',
-                      isSelected ? 'border-primary bg-primary' : 'border-muted-foreground/30'
-                    )}>
-                      {isSelected && <CheckCircle className="h-3 w-3 text-primary-foreground" />}
-                    </div>
-                  </button>
-                );
-              })}
-            </CardContent>
-          </Card>
-        </div>
+        )}
 
         {selectedBusinessType === 'sport_school' && (
           <div className="grid gap-6 md:grid-cols-3">

@@ -41,6 +41,7 @@ import { useModalities } from '@/hooks/queries/useModalities';
 import { useGroups } from '@/hooks/queries/useGroups';
 import { Logo } from '@/components/Logo';
 import { useMemo } from 'react';
+import { useRolePermissions } from '@/hooks/useRolePermissions';
 
 type ArenaCourtMetadata = {
   isActive?: boolean;
@@ -58,7 +59,13 @@ function parseArenaCourtMetadata(metadata: unknown): ArenaCourtMetadata {
 }
 
 export default function Index() {
+  const rolePermissions = useRolePermissions();
+  const { organizationRole } = rolePermissions;
   const { labels, isSportSchool, isArena } = useBusinessContext();
+  const canViewFinancials = organizationRole === 'owner' 
+    || organizationRole === 'manager' 
+    || organizationRole === 'finance';
+
   const { students, loadingStudents } = useStudents();
   const { plans, loadingPlans } = usePlans();
   const { trainings, loadingTrainings } = useTrainings();
@@ -259,7 +266,9 @@ export default function Index() {
         </section>
 
         {/* ── Overdue Alert ── */}
-        <OverdueAlert privacyMode={privacyMode} />
+        {rolePermissions.can('payments', 'view') && (
+          <OverdueAlert privacyMode={privacyMode} />
+        )}
 
         {/* ── Low Stock Alert (Only if Arena & has low/out stock items) ── */}
         {isArena && lowStockProducts.length > 0 && (
@@ -381,53 +390,64 @@ export default function Index() {
                 icon={TrendingUp}
                 description={privacyMode ? '' : 'Média do mês'}
               />
-              <StatCard
-                title="Vendas de Hoje"
-                value={loading ? '...' : pv(formatCurrency(todaySalesTotal))}
-                icon={DollarSign}
-                description={privacyMode ? '' : 'Consumo / Cantina'}
-              />
+              {canViewFinancials ? (
+                <StatCard
+                  title="Vendas de Hoje"
+                  value={loading ? '...' : pv(formatCurrency(todaySalesTotal))}
+                  icon={DollarSign}
+                  description={privacyMode ? '' : 'Consumo / Cantina'}
+                />
+              ) : (
+                <StatCard
+                  title="Produtos Ativos"
+                  value={loading ? '...' : pv(activeProducts.length)}
+                  icon={ShoppingCart}
+                  description="Itens cadastrados"
+                />
+              )}
             </div>
           )}
 
           {/* ── Linha 2: Financeiro ── */}
-          <div className={cn(
-            "grid gap-3 md:gap-4",
-            isSportSchool ? "grid-cols-1 md:grid-cols-2" : "grid-cols-1 md:grid-cols-3"
-          )}>
-            <StatCard
-              title="Faturamento Total"
-              value={loading ? '...' : pv(formatCurrency(expectedRevenue))}
-              icon={DollarSign}
-              description={privacyMode ? '' : isSportSchool ? 'Mensalidades do mês' : 'Mensalidades + Vendas do mês'}
-            />
-            {isSportSchool ? (
+          {canViewFinancials && (
+            <div className={cn(
+              "grid gap-3 md:gap-4",
+              isSportSchool ? "grid-cols-1 md:grid-cols-2" : "grid-cols-1 md:grid-cols-3"
+            )}>
               <StatCard
-                title="Recebido no Mês"
-                value={loading ? '...' : pv(formatCurrency(receivedRevenue))}
-                icon={CheckCircle}
-                variant="success"
-                progress={privacyMode ? undefined : { value: revenueProgress, label: 'Meta Mensal' }}
+                title="Faturamento Total"
+                value={loading ? '...' : pv(formatCurrency(expectedRevenue))}
+                icon={DollarSign}
+                description={privacyMode ? '' : isSportSchool ? 'Mensalidades do mês' : 'Mensalidades + Vendas do mês'}
               />
-            ) : (
-              <>
+              {isSportSchool ? (
                 <StatCard
                   title="Recebido no Mês"
                   value={loading ? '...' : pv(formatCurrency(receivedRevenue))}
                   icon={CheckCircle}
-                  variant="primary"
+                  variant="success"
                   progress={privacyMode ? undefined : { value: revenueProgress, label: 'Meta Mensal' }}
                 />
-                <StatCard
-                  title="Lucro Líquido"
-                  value={loading ? '...' : pv(formatCurrency(netProfit))}
-                  icon={netProfit >= 0 ? TrendingUp : TrendingDown}
-                  variant="success"
-                  description={privacyMode ? '' : `Despesas pagas: ${formatCurrency(totalExpensesPaid)}`}
-                />
-              </>
-            )}
-          </div>
+              ) : (
+                <>
+                  <StatCard
+                    title="Recebido no Mês"
+                    value={loading ? '...' : pv(formatCurrency(receivedRevenue))}
+                    icon={CheckCircle}
+                    variant="primary"
+                    progress={privacyMode ? undefined : { value: revenueProgress, label: 'Meta Mensal' }}
+                  />
+                  <StatCard
+                    title="Lucro Líquido"
+                    value={loading ? '...' : pv(formatCurrency(netProfit))}
+                    icon={netProfit >= 0 ? TrendingUp : TrendingDown}
+                    variant="success"
+                    description={privacyMode ? '' : `Despesas pagas: ${formatCurrency(totalExpensesPaid)}`}
+                  />
+                </>
+              )}
+            </div>
+          )}
         </section>
 
         {/* ── Quadras / Modalidades — sport_school e arena ── */}
@@ -468,16 +488,18 @@ export default function Index() {
 
 
         {/* ── Charts ── */}
-        <section className="animate-fade-up" style={{ animationDelay: '0.1s' }}>
-          <DashboardCharts
-            payments={payments}
-            attendance={attendance}
-            privacyMode={privacyMode}
-            isArena={isArena}
-            reservations={reservations}
-            sales={sales}
-          />
-        </section>
+        {canViewFinancials && (
+          <section className="animate-fade-up" style={{ animationDelay: '0.1s' }}>
+            <DashboardCharts
+              payments={payments}
+              attendance={attendance}
+              privacyMode={privacyMode}
+              isArena={isArena}
+              reservations={reservations}
+              sales={sales}
+            />
+          </section>
+        )}
 
         {/* ── Agenda + Quick Actions ── */}
         <div

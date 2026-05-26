@@ -18,21 +18,23 @@ export function useProducts() {
   const { profile } = useProfile();
   const queryClient = useQueryClient();
 
+  const tenantId = profile?.owner_user_id || user?.id;
+
   const productsQuery = useQuery({
-    queryKey: ['products', user?.id, profile?.business_type],
+    queryKey: ['products', tenantId, profile?.business_type],
     queryFn: async () => {
-      if (!user?.id) return [];
+      if (!tenantId) return [];
       const businessType = profile?.business_type || 'sport_school';
       const { data, error } = await supabase
         .from('products')
         .select('*')
-        .eq('user_id', user.id)
+        .eq('user_id', tenantId)
         .eq('business_type', businessType)
         .order('name');
       if (error) throw error;
       return (data || []).map(mapProductRow);
     },
-    enabled: !!user?.id,
+    enabled: !!tenantId,
   });
 
   const addProductMutation = useMutation({
@@ -46,9 +48,13 @@ export function useProducts() {
     }) => {
       if (!user?.id) throw new Error('Not authenticated');
       const businessType = profile?.business_type || 'sport_school';
+      const payload = {
+        ...buildProductInsertPayload(product, user.id, businessType),
+        organization_id: profile?.organization_id || null,
+      };
       const { error } = await supabase
         .from('products')
-        .insert(buildProductInsertPayload(product, user.id, businessType));
+        .insert(payload);
       if (error) throw error;
     },
     onSuccess: () => {
@@ -61,13 +67,16 @@ export function useProducts() {
   const updateProductMutation = useMutation({
     mutationFn: async ({ id, ...updates }: Partial<Product> & { id: string }) => {
       if (!user?.id) throw new Error('Not authenticated');
-      const dbUpdates = buildProductUpdatePayload(updates);
+      const dbUpdates = {
+        ...buildProductUpdatePayload(updates),
+        organization_id: profile?.organization_id || null,
+      };
       
       const { error } = await supabase
         .from('products')
         .update(dbUpdates)
         .eq('id', id)
-        .eq('user_id', user.id);
+        .eq('user_id', tenantId);
       if (error) throw error;
     },
     onSuccess: () => {
@@ -85,7 +94,7 @@ export function useProducts() {
         .from('products')
         .update({ active: false })
         .eq('id', id)
-        .eq('user_id', user.id);
+        .eq('user_id', tenantId);
       if (error) throw error;
     },
     onSuccess: () => {

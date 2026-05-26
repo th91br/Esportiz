@@ -106,24 +106,29 @@ function toCourt(row: Tables<'modalities'>): Court {
   };
 }
 
+import { useProfile } from '@/hooks/queries/useProfile';
+
 export function useCourts() {
   const { user } = useAuth();
+  const { profile } = useProfile();
   const queryClient = useQueryClient();
 
+  const tenantId = profile?.owner_user_id || user?.id;
+
   const { data: courts = [], isLoading: loadingCourts } = useQuery({
-    queryKey: ['courts', user?.id],
+    queryKey: ['courts', tenantId],
     queryFn: async () => {
-      if (!user) return [];
+      if (!tenantId) return [];
       const { data, error } = await supabase
         .from('modalities')
         .select('*')
-        .eq('user_id', user.id)
+        .eq('user_id', tenantId)
         .eq('business_type', 'arena')
         .order('name');
       if (error) throw error;
       return (data || []).map(toCourt);
     },
-    enabled: !!user,
+    enabled: !!tenantId,
   });
 
   const addCourt = useMutation({
@@ -135,6 +140,7 @@ export function useCourts() {
         name: input.name,
         color: input.color,
         metadata: JSON.stringify(input.metadata),
+        organization_id: profile?.organization_id || null,
       };
       const { data, error } = await supabase
         .from('modalities')
@@ -158,12 +164,13 @@ export function useCourts() {
         name: params.name,
         color: params.color,
         metadata: JSON.stringify(params.metadata),
+        organization_id: profile?.organization_id || null,
       };
       const { data, error } = await supabase
         .from('modalities')
         .update(courtUpdates)
         .eq('id', params.id)
-        .eq('user_id', user.id)
+        .eq('user_id', tenantId)
         .select()
         .single();
       if (error) throw error;
@@ -183,7 +190,7 @@ export function useCourts() {
         .from('modalities')
         .delete()
         .eq('id', id)
-        .eq('user_id', user.id);
+        .eq('user_id', tenantId);
       if (error) throw error;
     },
     onSuccess: () => {

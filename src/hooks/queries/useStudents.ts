@@ -30,15 +30,17 @@ export function useStudents() {
   const { profile } = useProfile();
   const queryClient = useQueryClient();
 
+  const tenantId = profile?.owner_user_id || user?.id;
+
   const { data: students = [], isLoading: loadingStudents } = useQuery({
-    queryKey: ['students', user?.id, profile?.business_type],
+    queryKey: ['students', tenantId, profile?.business_type],
     queryFn: async () => {
-      if (!user) return [];
+      if (!tenantId) return [];
       const businessType = profile?.business_type || 'sport_school';
       const { data, error } = await supabase
         .from('students')
         .select('*, group_students(group_id)')
-        .eq('user_id', user.id)
+        .eq('user_id', tenantId)
         .eq('business_type', businessType)
         .order('name');
       
@@ -74,7 +76,7 @@ export function useStudents() {
         discountStartMonth: s.discount_start_month,
       })) as Student[];
     },
-    enabled: !!user
+    enabled: !!tenantId
   });
 
   const addStudent = useMutation({
@@ -111,6 +113,7 @@ export function useStudents() {
           discount_value: data.discountValue || 0,
           discount_duration_months: data.discountDurationMonths || null,
           discount_start_month: data.discountStartMonth || null,
+          organization_id: profile?.organization_id || null,
         })
         .select()
         .single();
@@ -118,13 +121,18 @@ export function useStudents() {
       if (error) throw error;
 
       if (data.groupIds && data.groupIds.length > 0) {
+        const gsInsert = buildStudentGroupLinks({
+          studentId: newStudent.id,
+          groupIds: data.groupIds,
+          userId: user.id,
+        }).map(link => ({
+          ...link,
+          organization_id: profile?.organization_id || null,
+        }));
+
         const { error: gsError } = await supabase
           .from('group_students')
-          .insert(buildStudentGroupLinks({
-            studentId: newStudent.id,
-            groupIds: data.groupIds,
-            userId: user.id,
-          }));
+          .insert(gsInsert);
         if (gsError) throw gsError;
       }
 
@@ -166,10 +174,11 @@ export function useStudents() {
           discount_value: data.discountValue === undefined ? undefined : data.discountValue,
           discount_duration_months: data.discountDurationMonths === undefined ? undefined : data.discountDurationMonths,
           discount_start_month: data.discountStartMonth === undefined ? undefined : data.discountStartMonth,
+          organization_id: profile?.organization_id || null,
           updated_at: new Date().toISOString()
         })
         .eq('id', id)
-        .eq('user_id', user.id)
+        .eq('user_id', tenantId)
         .select()
         .single();
 
@@ -178,13 +187,18 @@ export function useStudents() {
       if (data.groupIds !== undefined) {
         await supabase.from('group_students').delete().eq('student_id', id);
         if (data.groupIds.length > 0) {
+          const gsInsert = buildStudentGroupLinks({
+            studentId: id,
+            groupIds: data.groupIds,
+            userId: user.id,
+          }).map(link => ({
+            ...link,
+            organization_id: profile?.organization_id || null,
+          }));
+
           const { error: gsError } = await supabase
             .from('group_students')
-            .insert(buildStudentGroupLinks({
-              studentId: id,
-              groupIds: data.groupIds,
-              userId: user.id,
-            }));
+            .insert(gsInsert);
           if (gsError) throw gsError;
         }
       }
@@ -203,7 +217,7 @@ export function useStudents() {
         .from('students')
         .delete()
         .eq('id', id)
-        .eq('user_id', user.id); // Garante que só deleta se for o dono
+        .eq('user_id', tenantId);
       
       if (error) throw error;
     },

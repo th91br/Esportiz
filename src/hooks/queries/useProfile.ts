@@ -33,6 +33,7 @@ export interface Profile {
   id: string;
   user_id: string;
   organization_id: string | null;
+  owner_user_id?: string | null;
   ct_name: string | null;
   logo_url: string | null;
   primary_color: string | null;
@@ -70,13 +71,18 @@ const PROFILE_SELECT = `
   pix_receiver,
   niche_settings,
   created_at,
-  updated_at
+  updated_at,
+  organizations (
+    owner_user_id
+  )
 `;
 
 function normalizeProfile(data: unknown): Profile {
-  const profile = data as Profile;
+  const profile = data as any;
+  const owner_user_id = profile?.organizations?.owner_user_id || profile?.user_id || null;
   return {
     ...profile,
+    owner_user_id,
     business_type: normalizeBusinessType(profile.business_type),
     onboarding_completed: profile.onboarding_completed === true,
   };
@@ -129,6 +135,7 @@ async function buildInvitedMemberProfile(userId: string): Promise<Profile | null
     id: `team-${userId}`,
     user_id: userId,
     organization_id: membership.organization_id,
+    owner_user_id: organization.owner_user_id,
     ct_name: ownerProfile?.ct_name || organization.name || 'Esportiz',
     logo_url: ownerProfile?.logo_url || null,
     primary_color: ownerProfile?.primary_color || null,

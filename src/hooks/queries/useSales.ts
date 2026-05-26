@@ -30,21 +30,23 @@ export function useSales() {
   const { profile } = useProfile();
   const queryClient = useQueryClient();
 
+  const tenantId = profile?.owner_user_id || user?.id;
+
   const salesQuery = useQuery({
-    queryKey: ['sales', user?.id, profile?.business_type],
+    queryKey: ['sales', tenantId, profile?.business_type],
     queryFn: async () => {
-      if (!user?.id) return [];
+      if (!tenantId) return [];
       const businessType = profile?.business_type || 'sport_school';
       const { data, error } = await supabase
         .from('sales')
         .select('*')
-        .eq('user_id', user.id)
+        .eq('user_id', tenantId)
         .eq('business_type', businessType)
         .order('sold_at', { ascending: false });
       if (error) throw error;
       return (data || []).map(mapSaleRow);
     },
-    enabled: !!user?.id,
+    enabled: !!tenantId,
   });
 
   const addSaleMutation = useMutation({
@@ -68,7 +70,7 @@ export function useSales() {
       }
 
       const { data, error } = await supabase.rpc('process_sale_cart_atomic', {
-        p_user_id: user.id,
+        p_user_id: tenantId,
         p_business_type: businessType,
         p_items: payload,
         p_payment_method: sale.paymentMethod || 'dinheiro',
@@ -104,7 +106,7 @@ export function useSales() {
 
       const businessType = profile?.business_type || 'sport_school';
       const { data, error } = await supabase.rpc('process_sale_cart_atomic', {
-        p_user_id: user.id,
+        p_user_id: tenantId,
         p_business_type: businessType,
         p_items: payload,
         p_payment_method: paymentMethod,
@@ -135,7 +137,7 @@ export function useSales() {
 
       const { error } = await supabase.rpc('delete_sale_and_restore_stock', {
         p_sale_id: id,
-        p_user_id: user.id,
+        p_user_id: tenantId,
       });
       if (error) throw error;
     },

@@ -27,21 +27,26 @@ type CloseComandaResult = {
   closed_at?: string;
 };
 
+import { useProfile } from '@/hooks/queries/useProfile';
+
 export function useComandas() {
   const { user } = useAuth();
+  const { profile } = useProfile();
   const queryClient = useQueryClient();
+
+  const tenantId = profile?.owner_user_id || user?.id;
 
   const invalidateComandaState = () => syncAfterComandaMutation(queryClient);
 
   const comandasQuery = useQuery({
-    queryKey: ['comandas', user?.id],
+    queryKey: ['comandas', tenantId],
     queryFn: async () => {
-      if (!user?.id) return [];
+      if (!tenantId) return [];
 
       const { data, error } = await supabase
         .from('comandas')
         .select('*, comanda_items(*)')
-        .eq('user_id', user.id)
+        .eq('user_id', tenantId)
         .eq('business_type', 'arena')
         .order('created_at', { ascending: false });
 
@@ -49,7 +54,7 @@ export function useComandas() {
 
       return (data || []).map(mapComandaRow);
     },
-    enabled: !!user?.id,
+    enabled: !!tenantId,
   });
 
   const openComandaMutation = useMutation({
@@ -63,6 +68,7 @@ export function useComandas() {
           business_type: 'arena',
           name: name.trim(),
           status: 'open',
+          organization_id: profile?.organization_id || null,
         })
         .select()
         .single();
@@ -99,7 +105,7 @@ export function useComandas() {
         .from('comanda_items')
         .select('*')
         .eq('comanda_id', comandaId)
-        .eq('user_id', user.id)
+        .eq('user_id', tenantId)
         .eq('product_name', productName);
 
       if (fetchErr) throw fetchErr;
@@ -119,22 +125,27 @@ export function useComandas() {
             total: nextItem.total,
           })
           .eq('id', existing.id)
-          .eq('user_id', user.id);
+          .eq('user_id', tenantId);
 
         if (updateErr) throw updateErr;
         return;
       }
 
-      const { error: insertErr } = await supabase
-        .from('comanda_items')
-        .insert(buildComandaItemInsert({
+      const payload = {
+        ...buildComandaItemInsert({
           userId: user.id,
           comandaId,
           productId,
           productName,
           quantity,
           unitPrice,
-        }));
+        }),
+        organization_id: profile?.organization_id || null,
+      };
+
+      const { error: insertErr } = await supabase
+        .from('comanda_items')
+        .insert(payload);
 
       if (insertErr) throw insertErr;
     },
@@ -155,7 +166,7 @@ export function useComandas() {
           .from('comanda_items')
           .delete()
           .eq('id', itemId)
-          .eq('user_id', user.id);
+          .eq('user_id', tenantId);
 
         if (error) throw error;
         return;
@@ -165,7 +176,7 @@ export function useComandas() {
         .from('comanda_items')
         .select('*')
         .eq('id', itemId)
-        .eq('user_id', user.id)
+        .eq('user_id', tenantId)
         .single();
 
       if (fetchErr) throw fetchErr;
@@ -178,7 +189,7 @@ export function useComandas() {
           total: nextItem.total,
         })
         .eq('id', itemId)
-        .eq('user_id', user.id);
+        .eq('user_id', tenantId);
 
       if (updateErr) throw updateErr;
     },
@@ -198,7 +209,7 @@ export function useComandas() {
         .from('comanda_items')
         .delete()
         .eq('id', itemId)
-        .eq('user_id', user.id);
+        .eq('user_id', tenantId);
 
       if (error) throw error;
     },
@@ -222,7 +233,7 @@ export function useComandas() {
       if (!user?.id) throw new Error('Not authenticated');
 
       const { data, error } = await supabase.rpc('close_comanda_atomic', {
-        p_user_id: user.id,
+        p_user_id: tenantId,
         p_comanda_id: comandaId,
         p_payment_method: paymentMethod,
       });
@@ -239,7 +250,7 @@ export function useComandas() {
     onSuccess: async (result, variables) => {
       const closedAt = result.closed_at || new Date().toISOString();
 
-      queryClient.setQueryData<Comanda[]>(['comandas', user?.id], (current = []) =>
+      queryClient.setQueryData<Comanda[]>(['comandas', tenantId], (current = []) =>
         current.map((comanda) =>
           comanda.id === variables.comandaId
             ? { ...comanda, status: 'closed', closedAt }
@@ -265,7 +276,7 @@ export function useComandas() {
       if (!user?.id) throw new Error('Not authenticated');
 
       const { error } = await supabase.rpc('reopen_comanda_atomic', {
-        p_user_id: user.id,
+        p_user_id: tenantId,
         p_comanda_id: comandaId,
       });
 
@@ -288,7 +299,7 @@ export function useComandas() {
         .from('comandas')
         .delete()
         .eq('id', comandaId)
-        .eq('user_id', user.id);
+        .eq('user_id', tenantId);
 
       if (error) throw error;
     },

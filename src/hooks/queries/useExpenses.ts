@@ -44,21 +44,23 @@ export function useExpenses() {
   const { profile } = useProfile();
   const queryClient = useQueryClient();
 
+  const tenantId = profile?.owner_user_id || user?.id;
+
   const expensesQuery = useQuery({
-    queryKey: ['expenses', user?.id, profile?.business_type],
+    queryKey: ['expenses', tenantId, profile?.business_type],
     queryFn: async () => {
-      if (!user?.id) return [];
+      if (!tenantId) return [];
       const businessType = profile?.business_type || 'sport_school';
       const { data, error } = await supabase
         .from('expenses')
         .select('*')
-        .eq('user_id', user.id)
+        .eq('user_id', tenantId)
         .eq('business_type', businessType)
         .order('date', { ascending: false });
       if (error) throw error;
       return (data || []).map(mapExpense);
     },
-    enabled: !!user?.id,
+    enabled: !!tenantId,
   });
 
   const addExpenseMutation = useMutation({
@@ -81,6 +83,7 @@ export function useExpenses() {
         date: expense.date || getLocalTodayDate(),
         recurrence: expense.recurrence || 'none',
         notes: expense.notes || null,
+        organization_id: profile?.organization_id || null,
       });
       if (error) throw error;
     },
@@ -94,7 +97,10 @@ export function useExpenses() {
   const updateExpenseMutation = useMutation({
     mutationFn: async ({ id, ...updates }: Partial<Expense> & { id: string }) => {
       if (!user?.id) throw new Error('Not authenticated');
-      const dbUpdates: TablesUpdate<'expenses'> = { updated_at: new Date().toISOString() };
+      const dbUpdates: TablesUpdate<'expenses'> = {
+        updated_at: new Date().toISOString(),
+        organization_id: profile?.organization_id || null,
+      };
       if (updates.description !== undefined) dbUpdates.description = updates.description;
       if (updates.amount !== undefined) dbUpdates.amount = updates.amount;
       if (updates.category !== undefined) dbUpdates.category = updates.category;
@@ -109,7 +115,7 @@ export function useExpenses() {
         .from('expenses')
         .update(dbUpdates)
         .eq('id', id)
-        .eq('user_id', user.id);
+        .eq('user_id', tenantId);
       if (error) throw error;
     },
     onSuccess: () => {
@@ -125,7 +131,7 @@ export function useExpenses() {
         .from('expenses')
         .delete()
         .eq('id', id)
-        .eq('user_id', user.id);
+        .eq('user_id', tenantId);
       if (error) throw error;
     },
     onSuccess: () => {

@@ -25,25 +25,30 @@ export type {
 
 import { getErrorMessage } from '@/lib/errorUtils';
 
+import { useProfile } from '@/hooks/queries/useProfile';
+
 export function useReservations() {
   const { user } = useAuth();
+  const { profile } = useProfile();
   const queryClient = useQueryClient();
 
+  const tenantId = profile?.owner_user_id || user?.id;
+
   const { data: reservations = [], isLoading: loadingReservations } = useQuery({
-    queryKey: ['reservations', user?.id],
+    queryKey: ['reservations', tenantId],
     queryFn: async () => {
-      if (!user) return [];
+      if (!tenantId) return [];
       const { data, error } = await supabase
         .from('trainings')
         .select('*, training_students(student_id)')
-        .eq('user_id', user.id)
+        .eq('user_id', tenantId)
         .eq('business_type', 'arena')
         .order('date')
         .order('time');
       if (error) throw error;
       return (data || []).map(toReservation);
     },
-    enabled: !!user,
+    enabled: !!tenantId,
   });
 
   const addReservation = useMutation({
@@ -61,18 +66,19 @@ export function useReservations() {
           notes: input.notes,
           location: '',
           metadata: input.meta as unknown as Json,
+          organization_id: profile?.organization_id || null,
         })
         .select()
         .single();
       if (error) throw error;
       if (input.reservanteIds.length > 0) {
-        const { error: insertError } = await supabase.from('training_students').insert(
-          input.reservanteIds.map(sid => ({
-            training_id: training.id,
-            student_id: sid,
-            user_id: user.id,
-          }))
-        );
+        const tsInsert = input.reservanteIds.map(sid => ({
+          training_id: training.id,
+          student_id: sid,
+          user_id: user.id,
+          organization_id: profile?.organization_id || null,
+        }));
+        const { error: insertError } = await supabase.from('training_students').insert(tsInsert);
         if (insertError) throw insertError;
       }
       return training;
@@ -95,12 +101,13 @@ export function useReservations() {
       if (input.durationMinutes !== undefined) updates.duration_minutes = input.durationMinutes;
       if (input.notes !== undefined) updates.notes = input.notes;
       if (input.meta !== undefined) updates.metadata = input.meta as unknown as Json;
+      updates.organization_id = profile?.organization_id || null;
       if (Object.keys(updates).length > 0) {
         const { error } = await supabase
           .from('trainings')
           .update(updates)
           .eq('id', id)
-          .eq('user_id', user.id)
+          .eq('user_id', tenantId)
           .eq('business_type', 'arena');
         if (error) throw error;
       }
@@ -109,13 +116,17 @@ export function useReservations() {
           .from('training_students')
           .delete()
           .eq('training_id', id)
-          .eq('user_id', user.id);
+          .eq('user_id', tenantId);
         if (deleteError) throw deleteError;
 
         if (input.reservanteIds.length > 0) {
-          const { error: insertError } = await supabase.from('training_students').insert(
-            input.reservanteIds.map(sid => ({ training_id: id, student_id: sid, user_id: user.id }))
-          );
+          const tsInsert = input.reservanteIds.map(sid => ({
+            training_id: id,
+            student_id: sid,
+            user_id: user.id,
+            organization_id: profile?.organization_id || null,
+          }));
+          const { error: insertError } = await supabase.from('training_students').insert(tsInsert);
           if (insertError) throw insertError;
         }
       }
@@ -134,7 +145,7 @@ export function useReservations() {
         .from('trainings')
         .delete()
         .eq('id', id)
-        .eq('user_id', user.id)
+        .eq('user_id', tenantId)
         .eq('business_type', 'arena');
       if (error) throw error;
     },

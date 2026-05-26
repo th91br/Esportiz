@@ -853,7 +853,7 @@ export default function SettingsPage() {
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-3">
-                {organizationId && (
+                {organizationId && rolePermissions.can('team', 'manage_team') && (
                   <div className="rounded-xl border bg-muted/20 p-3 animate-fade-in">
                     <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-[1fr_1fr_160px_auto] items-end">
                       <div className="space-y-1.5">
@@ -987,7 +987,7 @@ export default function SettingsPage() {
                               {roleInfo.label}
                             </div>
 
-                            {member.userId !== user?.id && (
+                            {member.userId !== user?.id && rolePermissions.can('team', 'manage_team') && (
                               <div className="flex items-center gap-1.5 border-l pl-3 border-border">
                                 {/* Toggle Active Status Button */}
                                 <Button

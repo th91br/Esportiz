@@ -11,6 +11,9 @@ import {
   TrendingDown,
   ShoppingCart,
   Landmark,
+  Star,
+  Receipt,
+  UserCheck,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Header } from '@/components/Header';
@@ -42,6 +45,7 @@ import { useGroups } from '@/hooks/queries/useGroups';
 import { Logo } from '@/components/Logo';
 import { useMemo } from 'react';
 import { useRolePermissions } from '@/hooks/useRolePermissions';
+import { useComandas } from '@/hooks/queries/useComandas';
 
 type ArenaCourtMetadata = {
   isActive?: boolean;
@@ -65,6 +69,9 @@ export default function Index() {
   const canViewFinancials = organizationRole === 'owner' 
     || organizationRole === 'manager' 
     || organizationRole === 'finance';
+  const isEmployee = organizationRole === 'receptionist' || organizationRole === 'instructor';
+  const isReceptionist = organizationRole === 'receptionist';
+  const isInstructor = organizationRole === 'instructor';
 
   const { students, loadingStudents } = useStudents();
   const { plans, loadingPlans } = usePlans();
@@ -76,6 +83,7 @@ export default function Index() {
   const { activeProducts } = useProducts();
   const { reservations, loadingReservations } = useReservations();
   const { courts, loadingCourts } = useCourts();
+  const { comandas } = useComandas();
 
   const lowStockProducts = useMemo(() => {
     if (!isArena) return [];
@@ -220,6 +228,35 @@ export default function Index() {
     const totalHoursBooked = monthReservations.reduce((acc, r) => acc + (r.durationMinutes || 60) / 60, 0);
     return totalHoursAvailable > 0 ? Math.round((totalHoursBooked / totalHoursAvailable) * 100) : 0;
   })() : 0;
+
+  // ── Métricas de Desempenho Individual (para funcionários) ──
+  // Vendas geradas HOJE pelo usuário logado (Arena - Recepcionista)
+  const myTodaySales = useMemo(() => {
+    if (!isArena || !isReceptionist) return [];
+    return sales.filter((s) => s.soldAt.startsWith(todayDateStr));
+  }, [sales, todayDateStr, isArena, isReceptionist]);
+
+  const myTodaySalesTotal = myTodaySales.reduce((sum, s) => sum + s.total, 0);
+
+  // Comandas abertas hoje pelo usuário logado (Arena - Recepcionista)
+  const myTodayOpenComandas = useMemo(() => {
+    if (!isArena || !isReceptionist) return [];
+    return comandas.filter(
+      (c) => c.status === 'open' && c.createdAt.startsWith(todayDateStr)
+    );
+  }, [comandas, todayDateStr, isArena, isReceptionist]);
+
+  // Treinos ministrados hoje (Instructor)
+  const myTodayTrainings = useMemo(() => {
+    if (!isInstructor) return [];
+    return trainings.filter((t) => t.date === todayDateStr);
+  }, [trainings, todayDateStr, isInstructor]);
+
+  // Presenças registradas hoje pelo instructor
+  const myTodayAttendance = useMemo(() => {
+    if (!isInstructor) return [];
+    return attendance.filter((a) => a.date === todayDateStr);
+  }, [attendance, todayDateStr, isInstructor]);
 
   const pv = (val: number | string) => (privacyMode ? '••••' : val);
 
@@ -482,6 +519,87 @@ export default function Index() {
                   </div>
                 </div>
               ))}
+            </div>
+          </section>
+        )}
+
+        {/* ── Meu Desempenho Hoje (apenas para funcionários) ── */}
+        {isEmployee && (
+          <section className="animate-fade-up" style={{ animationDelay: '0.07s' }}>
+            <div className="flex items-center gap-2 mb-4 px-1">
+              <Star className="h-4 w-4 text-primary" />
+              <h2 className="font-display font-bold text-lg">Meu Desempenho Hoje</h2>
+            </div>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
+              {isReceptionist && isArena && (
+                <>
+                  <StatCard
+                    title="Minhas Vendas Hoje"
+                    value={loading ? '...' : pv(formatCurrency(myTodaySalesTotal))}
+                    icon={DollarSign}
+                    description={privacyMode ? '' : `${myTodaySales.length} venda(s) registrada(s)`}
+                    variant="primary"
+                  />
+                  <StatCard
+                    title="Comandas Abertas Hoje"
+                    value={loading ? '...' : pv(myTodayOpenComandas.length)}
+                    icon={Receipt}
+                    description={privacyMode ? '' : 'Comandas em aberto'}
+                  />
+                </>
+              )}
+              {isReceptionist && !isArena && (
+                <>
+                  <StatCard
+                    title="Pagamentos Recebidos"
+                    value={loading ? '...' : pv(payments.filter(p => p.paid && p.paidAt?.startsWith(todayDateStr)).length)}
+                    icon={CheckCircle}
+                    description="Pagamentos confirmados hoje"
+                    variant="success"
+                  />
+                  <StatCard
+                    title="Presenças Registradas"
+                    value={loading ? '...' : pv(attendance.filter(a => a.date === todayDateStr).length)}
+                    icon={UserCheck}
+                    description={`${labels.attendanceLabel} de hoje`}
+                  />
+                </>
+              )}
+              {isInstructor && (
+                <>
+                  <StatCard
+                    title={`${labels.trainingLabel} Hoje`}
+                    value={loading ? '...' : pv(myTodayTrainings.length)}
+                    icon={Calendar}
+                    description={`${labels.trainingLabel} sob sua responsabilidade`}
+                    variant="primary"
+                  />
+                  <StatCard
+                    title="Presenças Hoje"
+                    value={loading ? '...' : pv(myTodayAttendance.filter(a => a.present).length)}
+                    icon={UserCheck}
+                    description={`de ${myTodayAttendance.length} esperado(s)`}
+                    variant="success"
+                  />
+                </>
+              )}
+              {/* Coluna de alunos ativos — visível para todos os funcionários */}
+              {isSportSchool && (
+                <StatCard
+                  title={`${labels.studentLabel} Ativos`}
+                  value={loading ? '...' : activeStudents}
+                  icon={Users}
+                  description={`de ${totalStudents} total`}
+                />
+              )}
+              {isArena && (
+                <StatCard
+                  title="Reservas de Hoje"
+                  value={loading ? '...' : pv(todayReservationsCount)}
+                  icon={Calendar}
+                  description="Clientes agendados"
+                />
+              )}
             </div>
           </section>
         )}

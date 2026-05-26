@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { Eye, EyeOff, Users, Calendar, CheckCircle, DollarSign, TrendingUp, Activity, UserMinus } from 'lucide-react';
+import { Eye, EyeOff, Users, Calendar, CheckCircle, DollarSign, TrendingUp, Activity, UserMinus, Lock } from 'lucide-react';
 import { Header } from '@/components/Header';
 import { Button } from '@/components/ui/button';
 import { StatCard } from '@/components/StatCard';
@@ -18,6 +18,7 @@ import { getReservationPaidAmount, getReservationRemainingAmount } from '@/lib/f
 import { cn } from '@/lib/utils';
 import { getActiveMonthlyStudents } from '@/lib/studentHelpers';
 import { useBusinessContext } from '@/hooks/useBusinessContext';
+import { useRolePermissions } from '@/hooks/useRolePermissions';
 import { getLocalTodayDate, toLocalDateString } from '@/lib/dateUtils';
 import {
   BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
@@ -172,6 +173,12 @@ export default function ReportsPage() {
   const [period, setPeriod] = useState<FilterPeriod>('month');
   const [privacyMode, togglePrivacyMode] = usePrivacyMode();
   const { labels, isArena, isSportSchool } = useBusinessContext();
+  const rolePermissions = useRolePermissions();
+  const { organizationRole } = rolePermissions;
+  // Somente dono, gerente e financeiro veem dados financeiros completos
+  const canViewFinancials = rolePermissions.can('reports', 'view_sensitive_financials');
+  // Instructor e Receptionist veem apenas dados operacionais
+  const isOperationalOnly = !canViewFinancials;
 
   const range = useMemo(() => getDateRange(period), [period]);
   const monthRefs = useMemo(() => getMonthRefsForPeriod(period), [period]);
@@ -694,6 +701,24 @@ export default function ReportsPage() {
           </div>
         </div>
 
+        {/* Mensagem para cargos sem acesso financeiro */}
+        {isOperationalOnly && (
+          <div className="rounded-2xl border border-amber-200 bg-amber-50 dark:bg-amber-950/20 dark:border-amber-800 p-5 flex items-start gap-4 animate-fade-in">
+            <div className="bg-amber-100 dark:bg-amber-900/40 p-2.5 rounded-xl shrink-0">
+              <Lock className="h-5 w-5 text-amber-600 dark:text-amber-400" />
+            </div>
+            <div>
+              <p className="font-bold text-amber-800 dark:text-amber-200 text-sm">
+                Acesso parcial ao relatório
+              </p>
+              <p className="text-amber-700 dark:text-amber-300 text-xs mt-0.5">
+                Seu cargo ({organizationRole === 'receptionist' ? 'Recepcionista' : 'Professor/Instrutor'}) tem acesso apenas às métricas operacionais.
+                Os dados financeiros completos estão disponíveis apenas para proprietários, gerentes e o financeiro.
+              </p>
+            </div>
+          </div>
+        )}
+
         {/* KPIs Premium */}
         <section className={cn(
           "grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-4 xl:gap-3 animate-fade-in",
@@ -719,20 +744,24 @@ export default function ReportsPage() {
             description={privacyMode ? '' : `Média de ${labels.attendanceLabel.toLowerCase()}`}
             progress={privacyMode ? undefined : { value: attendanceRate, label: `Taxa de ${labels.attendanceLabel}` }}
           />
-          <StatCard 
-            title="Faturamento Total" 
-            value={privacyMode ? '••••' : formatCurrency(expectedRevenue)} 
-            icon={DollarSign} 
-            description={privacyMode ? '' : 'Total bruto faturado'}
-          />
-          <StatCard 
-            title="Caixa (Recebido)" 
-            value={privacyMode ? '••••' : formatCurrency(receivedRevenue)} 
-            icon={CheckCircle} 
-            variant="primary"
-            progress={privacyMode ? undefined : { value: revenueProgress, label: "Meta vs Esperado" }}
-          />
-          {!isSportSchool && (
+          {canViewFinancials && (
+            <StatCard 
+              title="Faturamento Total" 
+              value={privacyMode ? '••••' : formatCurrency(expectedRevenue)} 
+              icon={DollarSign} 
+              description={privacyMode ? '' : 'Total bruto faturado'}
+            />
+          )}
+          {canViewFinancials && (
+            <StatCard 
+              title="Caixa (Recebido)" 
+              value={privacyMode ? '••••' : formatCurrency(receivedRevenue)} 
+              icon={CheckCircle} 
+              variant="primary"
+              progress={privacyMode ? undefined : { value: revenueProgress, label: "Meta vs Esperado" }}
+            />
+          )}
+          {canViewFinancials && !isSportSchool && (
             <StatCard 
               title="Despesas (Pagas)" 
               value={privacyMode ? '••••' : formatCurrency(totalExpensesPaid)} 
@@ -741,7 +770,7 @@ export default function ReportsPage() {
               description={privacyMode ? '' : 'Total de despesas pagas'}
             />
           )}
-          {!isSportSchool && (
+          {canViewFinancials && !isSportSchool && (
             <StatCard 
               title="Resultado Líquido" 
               value={privacyMode ? '••••' : formatCurrency(netProfit)} 
@@ -752,7 +781,8 @@ export default function ReportsPage() {
           )}
         </section>
 
-        {/* Charts Grid */}
+        {/* Gráficos — apenas para cargos com acesso financeiro */}
+        {canViewFinancials && (
         <div className="grid lg:grid-cols-2 gap-5 md:gap-6">
           
           {/* Gráfico Financeiro Real */}
@@ -1146,6 +1176,7 @@ export default function ReportsPage() {
           )}
 
         </div>
+        )}
       </main>
     </div>
   );

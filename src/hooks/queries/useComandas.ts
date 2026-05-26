@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
+import { useProfile } from '@/hooks/queries/useProfile';
 import { syncAfterComandaMutation } from '@/lib/querySync';
 import {
   buildComandaItemInsert,
@@ -27,14 +28,16 @@ type CloseComandaResult = {
   closed_at?: string;
 };
 
-import { useProfile } from '@/hooks/queries/useProfile';
-
 export function useComandas() {
   const { user } = useAuth();
-  const { profile } = useProfile();
+  const { profile, loadingProfile } = useProfile();
   const queryClient = useQueryClient();
 
-  const tenantId = profile?.owner_user_id || user?.id;
+  // tenantId é o owner da organização (compartilhado entre todos os membros da equipe).
+  // Aguarda o profile carregar para evitar race condition onde user?.id do funcionário
+  // seria usado antes de owner_user_id estar disponível.
+  const tenantId = profile?.owner_user_id || (loadingProfile ? null : user?.id);
+  const createdByUserId = user?.id; // Quem está criando a comanda (pode ser funcionário ou owner)
 
   const invalidateComandaState = () => syncAfterComandaMutation(queryClient);
 
@@ -54,17 +57,19 @@ export function useComandas() {
 
       return (data || []).map(mapComandaRow);
     },
-    enabled: !!tenantId,
+    // Só executa quando o tenantId estiver resolvido (aguarda profile carregar)
+    enabled: !!tenantId && !loadingProfile,
   });
 
   const openComandaMutation = useMutation({
     mutationFn: async (name: string) => {
       if (!user?.id) throw new Error('Not authenticated');
+      if (!tenantId) throw new Error('Perfil da organização não carregado. Tente novamente.');
 
       const { data, error } = await supabase
         .from('comandas')
         .insert({
-          user_id: tenantId,
+          user_id: tenantId,           // sempre o ID do owner (tenant da organização)
           business_type: 'arena',
           name: name.trim(),
           status: 'open',
@@ -100,6 +105,8 @@ export function useComandas() {
       quantity?: number;
     }) => {
       if (!user?.id) throw new Error('Not authenticated');
+
+      if (!tenantId) throw new Error('Perfil da organização não carregado. Tente novamente.');
 
       const { data: existingItems, error: fetchErr } = await supabase
         .from('comanda_items')

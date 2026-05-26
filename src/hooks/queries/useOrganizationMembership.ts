@@ -36,19 +36,31 @@ export function useOrganizationMembership() {
     queryFn: async () => {
       if (!user?.id) return null;
 
-      const { data, error } = await supabase
+      // 1. Verificar ativamente se o usuario e o proprietario (owner) de alguma organizacao no banco
+      const { data: orgData, error: orgError } = await supabase
+        .from('organizations')
+        .select('id')
+        .eq('owner_user_id', user.id)
+        .maybeSingle();
+
+      if (orgError) {
+        console.error('Error fetching owned organization:', orgError);
+      }
+
+      // 2. Buscar membresias ativas
+      const { data: memberData, error: memberError } = await supabase
         .from('organization_members')
         .select('id, organization_id, user_id, role, active, created_at')
         .eq('user_id', user.id)
         .eq('active', true)
         .order('created_at', { ascending: true });
 
-      if (error) {
-        console.error('Error fetching organization membership:', error);
-        throw error;
+      if (memberError) {
+        console.error('Error fetching organization membership:', memberError);
+        throw memberError;
       }
 
-      const memberships = (data || [])
+      const memberships = (memberData || [])
         .map((row) => ({
           id: row.id,
           organizationId: row.organization_id,
@@ -58,27 +70,47 @@ export function useOrganizationMembership() {
         }))
         .sort((a, b) => getRolePriority(a.role) - getRolePriority(b.role));
 
-      return memberships[0] || null;
+      const activeMember = memberships[0] || null;
+
+      return {
+        member: activeMember,
+        isOwner: Boolean(orgData?.id),
+        ownedOrgId: orgData?.id || null,
+      };
     },
     enabled: !!user?.id,
     staleTime: 5 * 60 * 1000,
   });
 
   const effectiveRole = useMemo<OrganizationRole>(() => {
-    if (membershipQuery.data?.role) return membershipQuery.data.role;
+    // Se o banco retornou cargo na tabela de membros, usamos ele.
+    if (membershipQuery.data?.member?.role) {
+      return membershipQuery.data.member.role;
+    }
 
-    // Compatibility fallback: legacy owners keep the current full experience
-    // until team role adoption is complete and verified tenant by tenant.
-    return 'owner';
-  }, [membershipQuery.data?.role]);
+    // Se ele for o proprietario da organizacao no banco, ele e o owner
+    if (membershipQuery.data?.isOwner) {
+      return 'owner';
+    }
+
+    // Fallback de seguranca: se nao for o dono no banco e nao tiver membresia, 
+    // assume o cargo restrito (receptionist) em vez de dar super-poderes (owner).
+    return 'receptionist';
+  }, [membershipQuery.data]);
+
+  const organizationId = useMemo(() => {
+    return membershipQuery.data?.member?.organizationId 
+      || membershipQuery.data?.ownedOrgId 
+      || null;
+  }, [membershipQuery.data]);
 
   return {
-    membership: membershipQuery.data,
+    membership: membershipQuery.data?.member || null,
     effectiveRole,
-    organizationId: membershipQuery.data?.organizationId || null,
+    organizationId,
     loadingMembership: membershipQuery.isLoading,
     isErrorMembership: membershipQuery.isError,
     errorMembership: membershipQuery.error,
-    isRoleKnown: Boolean(membershipQuery.data?.role && !membershipQuery.isError),
+    isRoleKnown: Boolean((membershipQuery.data?.member?.role || membershipQuery.data?.isOwner) && !membershipQuery.isError),
   };
 }

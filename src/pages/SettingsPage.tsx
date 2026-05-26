@@ -978,7 +978,9 @@ export default function SettingsPage() {
                   </div>
                 ) : (
                   <div className="space-y-2">
-                    {teamMembers.map((member) => {
+                    {teamMembers
+                      .filter((member) => rolePermissions.organizationRole === 'owner' || member.userId === user?.id)
+                      .map((member) => {
                       const roleInfo = TEAM_ROLE_LABELS[member.role];
                       const memberLabel = member.invitedEmail
                         || (member.userId === user?.id && user?.email ? user.email : `Usuario ${getShortUserId(member.userId)}`);

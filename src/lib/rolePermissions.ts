@@ -186,6 +186,7 @@ const MANAGER_PERMISSIONS: Partial<Record<PermissionModule, readonly PermissionA
   reports: MODULE_ACTIONS.reports,
   communication: MODULE_ACTIONS.communication,
   settings: ['view', 'update', 'manage_settings'],
+  team: ['view'],
 };
 
 const RECEPTIONIST_PERMISSIONS: Partial<Record<PermissionModule, readonly PermissionAction[]>> = {
@@ -203,6 +204,8 @@ const RECEPTIONIST_PERMISSIONS: Partial<Record<PermissionModule, readonly Permis
   courts: ['view'],
   communication: ['view', 'send_message'],
   student_training_requests: ['view', 'update'],
+  settings: ['view'],
+  team: ['view'],
 };
 
 const INSTRUCTOR_PERMISSIONS: Partial<Record<PermissionModule, readonly PermissionAction[]>> = {
@@ -214,6 +217,8 @@ const INSTRUCTOR_PERMISSIONS: Partial<Record<PermissionModule, readonly Permissi
   attendance: ['view', 'create', 'update'],
   groups: ['view'],
   student_training_requests: ['view', 'update', 'approve_request'],
+  settings: ['view'],
+  team: ['view'],
 };
 
 const FINANCE_PERMISSIONS: Partial<Record<PermissionModule, readonly PermissionAction[]>> = {
@@ -223,6 +228,8 @@ const FINANCE_PERMISSIONS: Partial<Record<PermissionModule, readonly PermissionA
   sales: ['view', 'export'],
   comandas: ['view'],
   reports: ['view', 'export', 'view_sensitive_financials'],
+  settings: ['view'],
+  team: ['view'],
 };
 
 const ROLE_PERMISSIONS: Record<Exclude<OrganizationRole, 'owner'>, Partial<Record<PermissionModule, readonly PermissionAction[]>>> = {

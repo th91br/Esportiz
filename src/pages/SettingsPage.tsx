@@ -242,6 +242,7 @@ export default function SettingsPage() {
   const { labels, organizationId } = useBusinessContext();
   const rolePermissions = useRolePermissions();
   const canViewTeam = rolePermissions.can('team', 'view');
+  const canUpdateSettings = rolePermissions.can('settings', 'update');
   const {
     teamMembers,
     loadingTeamMembers,
@@ -766,7 +767,7 @@ export default function SettingsPage() {
                     }}
                     aria-pressed={isSelected}
                     aria-label={`${option.title}${isSelected ? ' ativo' : ''}`}
-                    disabled={isBusy}
+                    disabled={isBusy || !canUpdateSettings}
                     className={cn(
                       'w-full flex items-center gap-4 p-4 rounded-xl border-2 transition-all duration-200 text-left group',
                       isSelected
@@ -1144,6 +1145,7 @@ export default function SettingsPage() {
                   placeholder={`Ex: ${dynamicCtLabel} Exemplo`}
                   value={ctName}
                   onChange={(e) => setCtName(e.target.value)}
+                  disabled={!canUpdateSettings}
                 />
               </div>
 
@@ -1157,6 +1159,7 @@ export default function SettingsPage() {
                       placeholder="Ex: CNPJ, E-mail, Celular, etc."
                       value={pixKey}
                       onChange={(e) => setPixKey(e.target.value)}
+                      disabled={!canUpdateSettings}
                     />
                   </div>
                   <div className="space-y-2">
@@ -1166,6 +1169,7 @@ export default function SettingsPage() {
                       placeholder="Ex: Nome do Dono ou Razão Social"
                       value={pixReceiver}
                       onChange={(e) => setPixReceiver(e.target.value)}
+                      disabled={!canUpdateSettings}
                     />
                   </div>
                 </div>
@@ -1192,27 +1196,30 @@ export default function SettingsPage() {
                   <div className="flex-1 space-y-2">
                     <div className="flex flex-wrap gap-2">
                       {/* Upload button */}
-                      <label
-                        className="inline-flex items-center justify-center rounded-md text-sm font-medium
-                          ring-offset-background transition-colors focus-visible:outline-none
-                          focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2
-                          disabled:pointer-events-none disabled:opacity-50
-                          border border-input bg-background hover:bg-accent hover:text-accent-foreground
-                          h-9 px-4 py-2 cursor-pointer"
-                      >
-                        <UploadCloud className="mr-2 h-4 w-4" />
-                        {hasLogo ? 'Trocar imagem' : 'Escolher imagem'}
-                        <input
-                          id="logo-input"
-                          type="file"
-                          className="hidden"
-                          accept="image/*"
-                          onChange={handleLogoChange}
-                        />
-                      </label>
+                      {canUpdateSettings && (
+                        <label
+                          className="inline-flex items-center justify-center rounded-md text-sm font-medium
+                            ring-offset-background transition-colors focus-visible:outline-none
+                            focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2
+                            disabled:pointer-events-none disabled:opacity-50
+                            border border-input bg-background hover:bg-accent hover:text-accent-foreground
+                            h-9 px-4 py-2 cursor-pointer"
+                        >
+                          <UploadCloud className="mr-2 h-4 w-4" />
+                          {hasLogo ? 'Trocar imagem' : 'Escolher imagem'}
+                          <input
+                            id="logo-input"
+                            type="file"
+                            className="hidden"
+                            accept="image/*"
+                            onChange={handleLogoChange}
+                            disabled={!canUpdateSettings}
+                          />
+                        </label>
+                      )}
 
                       {/* Remove logo button — só aparece se há logo salva no perfil */}
-                      {profile?.logo_url && !isNewLogoSelected && (
+                      {canUpdateSettings && profile?.logo_url && !isNewLogoSelected && (
                         <AlertDialog>
                           <AlertDialogTrigger asChild>
                             <Button
@@ -1292,6 +1299,7 @@ export default function SettingsPage() {
                         className="min-h-[100px] resize-none bg-background border-border/50"
                         value={bookingConfirmationTemplate}
                         onChange={(e) => setBookingConfirmationTemplate(e.target.value)}
+                        disabled={!canUpdateSettings}
                       />
                     </div>
 
@@ -1307,6 +1315,7 @@ export default function SettingsPage() {
                         className="min-h-[100px] resize-none bg-background border-border/50"
                         value={paymentReminderTemplate}
                         onChange={(e) => setPaymentReminderTemplate(e.target.value)}
+                        disabled={!canUpdateSettings}
                       />
                     </div>
                   </div>
@@ -1316,7 +1325,7 @@ export default function SettingsPage() {
               <div className="pt-4 flex justify-end border-t">
                 <Button
                   onClick={handleSave}
-                  disabled={isBusy || !ctName.trim()}
+                  disabled={isBusy || !ctName.trim() || !canUpdateSettings}
                   className="btn-primary-gradient"
                 >
                   {isBusy ? 'Salvando...' : (
@@ -1493,7 +1502,9 @@ export default function SettingsPage() {
                         id="spreadsheet-id"
                         placeholder="Cole o ID da sua planilha aqui"
                         defaultValue={profile?.sheets_spreadsheet_id || ''}
+                        disabled={!canUpdateSettings}
                         onBlur={async (e) => {
+                          if (!canUpdateSettings) return;
                           const spreadsheetId = e.target.value.trim();
                           if (spreadsheetId !== (profile?.sheets_spreadsheet_id || '')) {
                             try {
@@ -1522,7 +1533,7 @@ export default function SettingsPage() {
                       variant="default"
                       className="w-full bg-[#1D723A] hover:bg-[#1D723A]/90 text-white border-none sm:w-auto"
                       onClick={handleConnectGoogle}
-                      disabled={isConnectingGoogle}
+                      disabled={isConnectingGoogle || !canUpdateSettings}
                     >
                       {isConnectingGoogle ? (
                         <>

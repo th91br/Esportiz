@@ -18,15 +18,17 @@ export function usePlans() {
   const { profile } = useProfile();
   const queryClient = useQueryClient();
 
+  const tenantId = profile?.owner_user_id || user?.id;
+
   const { data: plans = [], isLoading: loadingPlans } = useQuery({
-    queryKey: ['plans', user?.id, profile?.business_type],
+    queryKey: ['plans', tenantId, profile?.business_type],
     queryFn: async () => {
-      if (!user) return [];
+      if (!tenantId) return [];
       const businessType = profile?.business_type || 'sport_school';
       const { data, error } = await supabase
         .from('plans')
         .select('*')
-        .eq('user_id', user.id)
+        .eq('user_id', tenantId)
         .eq('business_type', businessType)
         .order('name');
       
@@ -40,7 +42,7 @@ export function usePlans() {
         billingType: p.billing_type as 'monthly' | 'per_session',
       })) as Plan[];
     },
-    enabled: !!user
+    enabled: !!tenantId
   });
 
   const addPlanMutation = useMutation({
@@ -57,6 +59,7 @@ export function usePlans() {
           price: data.price,
           sessions_per_week: data.sessionsPerWeek,
           billing_type: data.billingType,
+          organization_id: profile?.organization_id || null,
         })
         .select()
         .single();
@@ -84,10 +87,11 @@ export function usePlans() {
           price: data.price,
           sessions_per_week: data.sessionsPerWeek,
           billing_type: data.billingType,
+          organization_id: profile?.organization_id || null,
           updated_at: new Date().toISOString()
         })
         .eq('id', id)
-        .eq('user_id', user.id)
+        .eq('user_id', tenantId)
         .select()
         .single();
 
@@ -116,7 +120,7 @@ export function usePlans() {
         .from('plans')
         .delete()
         .eq('id', id)
-        .eq('user_id', user.id);
+        .eq('user_id', tenantId);
       
       if (error) throw error;
     },

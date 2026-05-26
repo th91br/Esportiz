@@ -16,15 +16,17 @@ export function useTrainings() {
     const { user } = useAuth();
     const { profile } = useProfile();
 
+    const tenantId = profile?.owner_user_id || user?.id;
+
     const { data: trainings = [], isLoading: loadingTrainings } = useQuery({
-        queryKey: ['trainings', user?.id, profile?.business_type],
+        queryKey: ['trainings', tenantId, profile?.business_type],
         queryFn: async () => {
-            if (!user) return [];
+            if (!tenantId) return [];
             const businessType = profile?.business_type || 'sport_school';
             const { data, error } = await supabase
                 .from('trainings')
                 .select('*, training_students(student_id)')
-                .eq('user_id', user.id)
+                .eq('user_id', tenantId)
                 .eq('business_type', businessType)
                 .order('date')
                 .order('time');
@@ -44,7 +46,7 @@ export function useTrainings() {
                 durationMinutes: t.duration_minutes ?? 60,
             })) as Training[];
         },
-        enabled: !!user,
+        enabled: !!tenantId,
     });
 
     const addTrainingMutation = useMutation({
@@ -61,6 +63,7 @@ export function useTrainings() {
                 notes: data.notes,
                 modality_id: data.modalityId,
                 duration_minutes: data.durationMinutes ?? 60,
+                organization_id: profile?.organization_id || null,
             }).select().single();
 
             if (error || !training) throw error || new Error('Treino não criado');
@@ -70,6 +73,7 @@ export function useTrainings() {
                     training_id: training.id,
                     student_id: sid,
                     user_id: user.id,
+                    organization_id: profile?.organization_id || null,
                 }));
                 const { error: tsError } = await supabase.from('training_students').insert(
                     trainingStudents
@@ -89,7 +93,9 @@ export function useTrainings() {
         mutationFn: async (params: { id: string; data: Partial<Training> }) => {
             if (!user) throw new Error('Usuário não autenticado');
             const { id, data } = params;
-            const updates: TablesUpdate<'trainings'> = {};
+            const updates: TablesUpdate<'trainings'> = {
+                organization_id: profile?.organization_id || null,
+            };
 
             if (data.date !== undefined) updates.date = data.date;
             if (data.time !== undefined) updates.time = data.time;
@@ -99,17 +105,18 @@ export function useTrainings() {
             if (data.durationMinutes !== undefined) updates.duration_minutes = data.durationMinutes;
 
             if (Object.keys(updates).length > 0) {
-                const { error } = await supabase.from('trainings').update(updates).eq('id', id);
+                const { error } = await supabase.from('trainings').update(updates).eq('id', id).eq('user_id', tenantId);
                 if (error) throw error;
             }
 
             if (data.studentIds) {
-                await supabase.from('training_students').delete().eq('training_id', id);
+                await supabase.from('training_students').delete().eq('training_id', id).eq('user_id', tenantId);
                 if (data.studentIds.length > 0) {
                     const trainingStudents: TablesInsert<'training_students'>[] = data.studentIds.map((sid) => ({
                         training_id: id,
                         student_id: sid,
                         user_id: user.id,
+                        organization_id: profile?.organization_id || null,
                     }));
                     const { error: tsError } = await supabase.from('training_students').insert(
                         trainingStudents
@@ -128,7 +135,8 @@ export function useTrainings() {
 
     const deleteTrainingMutation = useMutation({
         mutationFn: async (id: string) => {
-            const { error } = await supabase.from('trainings').delete().eq('id', id);
+            if (!user) throw new Error('Usuário não autenticado');
+            const { error } = await supabase.from('trainings').delete().eq('id', id).eq('user_id', tenantId);
             if (error) throw error;
         },
         onSuccess: () => {
@@ -141,14 +149,17 @@ export function useTrainings() {
 
     const markCompleteMutation = useMutation({
         mutationFn: async (id: string) => {
+            if (!user) throw new Error('Usuário não autenticado');
             const completedUpdate: TablesUpdate<'trainings'> = {
                 completed: true,
                 completed_at: new Date().toISOString(),
+                organization_id: profile?.organization_id || null,
             };
             const { error } = await supabase
                 .from('trainings')
                 .update(completedUpdate)
-                .eq('id', id);
+                .eq('id', id)
+                .eq('user_id', tenantId);
             if (error) throw error;
         },
         onSuccess: () => {
@@ -161,14 +172,17 @@ export function useTrainings() {
 
     const unmarkCompleteMutation = useMutation({
         mutationFn: async (id: string) => {
+            if (!user) throw new Error('Usuário não autenticado');
             const completedUpdate: TablesUpdate<'trainings'> = {
                 completed: false,
                 completed_at: null,
+                organization_id: profile?.organization_id || null,
             };
             const { error } = await supabase
                 .from('trainings')
                 .update(completedUpdate)
-                .eq('id', id);
+                .eq('id', id)
+                .eq('user_id', tenantId);
             if (error) throw error;
         },
         onSuccess: () => {

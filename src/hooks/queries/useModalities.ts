@@ -23,22 +23,24 @@ export function useModalities() {
   const { profile } = useProfile();
   const queryClient = useQueryClient();
 
+  const tenantId = profile?.owner_user_id || user?.id;
+
   const { data: modalities = [], isLoading: loadingModalities } = useQuery({
-    queryKey: ['modalities', user?.id, profile?.business_type],
+    queryKey: ['modalities', tenantId, profile?.business_type],
     queryFn: async () => {
-      if (!user) return [];
+      if (!tenantId) return [];
       const businessType = profile?.business_type || 'sport_school';
       const { data, error } = await supabase
         .from('modalities')
         .select('*')
-        .eq('user_id', user.id)
+        .eq('user_id', tenantId)
         .eq('business_type', businessType)
         .order('name');
       
       if (error) throw error;
       return data as Modality[];
     },
-    enabled: !!user
+    enabled: !!tenantId
   });
 
   const addModality = useMutation({
@@ -52,7 +54,8 @@ export function useModalities() {
           user_id: user.id,
           business_type: businessType,
           name: data.name,
-          color: data.color || '#4285F4'
+          color: data.color || '#4285F4',
+          organization_id: profile?.organization_id || null,
         })
         .select()
         .single();
@@ -79,10 +82,11 @@ export function useModalities() {
         .update({
           name: data.name,
           color: data.color,
+          organization_id: profile?.organization_id || null,
           updated_at: new Date().toISOString()
         })
         .eq('id', id)
-        .eq('user_id', user.id)
+        .eq('user_id', tenantId)
         .select()
         .single();
 
@@ -121,7 +125,7 @@ export function useModalities() {
         .from('modalities')
         .delete()
         .eq('id', id)
-        .eq('user_id', user.id);
+        .eq('user_id', tenantId);
       
       if (error) throw error;
     },

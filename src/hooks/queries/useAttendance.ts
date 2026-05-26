@@ -13,12 +13,19 @@ export function useAttendance() {
     const { user } = useAuth();
     const { profile } = useProfile();
 
+    const tenantId = profile?.owner_user_id || user?.id;
+
     const { data: attendance = [], isLoading: loadingAttendance } = useQuery({
-        queryKey: ['attendance', user?.id, profile?.business_type],
+        queryKey: ['attendance', tenantId, profile?.business_type],
         queryFn: async () => {
-            if (!user) return [];
+            if (!tenantId) return [];
             const businessType = profile?.business_type || 'sport_school';
-            const { data, error } = await supabase.from('attendance').select('*').eq('user_id', user.id).eq('business_type', businessType).order('date', { ascending: false });
+            const { data, error } = await supabase
+                .from('attendance')
+                .select('*')
+                .eq('user_id', tenantId)
+                .eq('business_type', businessType)
+                .order('date', { ascending: false });
             if (error) throw error;
             return (data || []).map((a: Tables<'attendance'>) => ({
                 id: a.id,
@@ -28,7 +35,7 @@ export function useAttendance() {
                 date: a.date,
             })) as Attendance[];
         },
-        enabled: !!user,
+        enabled: !!tenantId,
     });
 
     const toggleAttendanceMutation = useMutation({
@@ -50,6 +57,7 @@ export function useAttendance() {
                     student_id: studentId,
                     present: newStatus,
                     date,
+                    organization_id: profile?.organization_id || null,
                 });
                 if (error) throw error;
             }
@@ -58,6 +66,7 @@ export function useAttendance() {
             const completedUpdate: TablesUpdate<'trainings'> = {
                 completed: true,
                 completed_at: new Date().toISOString(),
+                organization_id: profile?.organization_id || null,
             };
             const { error: trainingError } = await supabase
                 .from('trainings')

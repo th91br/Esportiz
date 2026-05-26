@@ -121,7 +121,7 @@ export function useBusinessContext() {
   const businessType: BusinessType = rawBusinessType === 'arena' ? 'arena' : 'sport_school';
   const labels = useMemo(() => LABELS[businessType], [businessType]);
   const baseNavModules = useMemo(() => buildNavModules(businessType, labels), [businessType, labels]);
-  const shouldApplyRolePermissions = isRoleKnown && !loadingMembership && !isErrorMembership;
+  const shouldApplyRolePermissions = true;
   const navModules = useMemo(() => {
     if (!shouldApplyRolePermissions) return baseNavModules;
 

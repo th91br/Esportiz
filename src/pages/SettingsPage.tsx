@@ -278,7 +278,9 @@ export default function SettingsPage() {
   const ctGenderedPronoun = selectedBusinessType === 'sport_school' ? 'sua' : 'seu';
   const isGoogleConnected = Boolean(profile?.google_access_token);
   const hasGoogleSpreadsheetId = Boolean(profile?.sheets_spreadsheet_id?.trim());
-  const studentPortalUrl = user?.id ? `${window.location.origin}/portal-aluno?ct=${user.id}` : '';
+  const studentPortalUrl = profile?.owner_user_id || user?.id 
+    ? `${window.location.origin}/portal-aluno?ct=${profile?.owner_user_id || user?.id}` 
+    : '';
 
   // Keep the settings card aligned with the persisted profile value.
   useEffect(() => {

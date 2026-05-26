@@ -36,28 +36,51 @@ export function useOrganizationMembership() {
     queryFn: async () => {
       if (!user?.id) return null;
 
-      // 1. Verificar ativamente se o usuario e o proprietario (owner) de alguma organizacao no banco
-      const { data: orgData, error: orgError } = await supabase
-        .from('organizations')
-        .select('id')
-        .eq('owner_user_id', user.id)
+      // 1. Obter a organizacao ativa vinculada ao perfil do usuario
+      const { data: profileData } = await supabase
+        .from('profiles')
+        .select('organization_id')
+        .eq('user_id', user.id)
         .maybeSingle();
 
-      if (orgError) {
-        console.error('Error fetching owned organization:', orgError);
-      }
+      const activeOrgId = profileData?.organization_id;
 
-      // 2. Buscar membresias ativas
-      const { data: memberData, error: memberError } = await supabase
+      // 2. Buscar membresias ativas (filtrando pela organizacao ativa se existir)
+      let memberQuery = supabase
         .from('organization_members')
         .select('id, organization_id, user_id, role, active, created_at')
         .eq('user_id', user.id)
-        .eq('active', true)
+        .eq('active', true);
+
+      if (activeOrgId) {
+        memberQuery = memberQuery.eq('organization_id', activeOrgId);
+      }
+
+      const { data: memberData, error: memberError } = await memberQuery
         .order('created_at', { ascending: true });
 
       if (memberError) {
         console.error('Error fetching organization membership:', memberError);
         throw memberError;
+      }
+
+      // 3. Verificar se e proprietario da organizacao ativa ou de alguma organizacao no banco
+      let orgData = null;
+      if (activeOrgId) {
+        const { data } = await supabase
+          .from('organizations')
+          .select('id')
+          .eq('id', activeOrgId)
+          .eq('owner_user_id', user.id)
+          .maybeSingle();
+        orgData = data;
+      } else {
+        const { data } = await supabase
+          .from('organizations')
+          .select('id')
+          .eq('owner_user_id', user.id)
+          .maybeSingle();
+        orgData = data;
       }
 
       const memberships = (memberData || [])

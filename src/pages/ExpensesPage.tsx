@@ -51,6 +51,7 @@ import {
 import { cn } from '@/lib/utils';
 import { getLocalTodayDate } from '@/lib/dateUtils';
 import { useBusinessContext } from '@/hooks/useBusinessContext';
+import { useRolePermissions } from '@/hooks/useRolePermissions';
 
 const DEFAULT_EXPENSE_CATEGORIES = [
   'Aluguel',
@@ -71,6 +72,10 @@ const getMonthName = (month: number): string => {
 
 export default function ExpensesPage() {
   const { isArena } = useBusinessContext();
+  const rolePermissions = useRolePermissions();
+  const canCreateExpenses = rolePermissions.can('expenses', 'create');
+  const canUpdateExpenses = rolePermissions.can('expenses', 'update');
+  const canDeleteExpenses = rolePermissions.can('expenses', 'delete');
   const { expenses, loadingExpenses, addExpense, updateExpense, deleteExpense, markExpensePaid, markExpenseUnpaid, isAddingExpense } = useExpenses();
   const [monthOffset, setMonthOffset] = useState(0);
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -149,6 +154,14 @@ export default function ExpensesPage() {
   };
 
   const handleSubmit = async () => {
+    if (editingExpense && !canUpdateExpenses) {
+      toast.error('Seu cargo nao permite editar despesas.');
+      return;
+    }
+    if (!editingExpense && !canCreateExpenses) {
+      toast.error('Seu cargo nao permite registrar despesas.');
+      return;
+    }
     if (!formDescription.trim()) {
       toast.error('Informe a descrição da despesa.');
       return;
@@ -204,12 +217,14 @@ export default function ExpensesPage() {
           </div>
 
           <Dialog open={isFormOpen} onOpenChange={(open) => { setIsFormOpen(open); if (!open) resetForm(); }}>
-            <DialogTrigger asChild>
-              <Button className="btn-primary-gradient w-full sm:w-auto">
-                <Plus className="mr-2 h-4 w-4" />
-                Nova Despesa
-              </Button>
-            </DialogTrigger>
+            {canCreateExpenses && (
+              <DialogTrigger asChild>
+                <Button className="btn-primary-gradient w-full sm:w-auto">
+                  <Plus className="mr-2 h-4 w-4" />
+                  Nova Despesa
+                </Button>
+              </DialogTrigger>
+            )}
             <DialogContent className="sm:max-w-md">
               <DialogHeader>
                 <DialogTitle>{editingExpense ? 'Editar Despesa' : 'Nova Despesa'}</DialogTitle>
@@ -388,8 +403,10 @@ export default function ExpensesPage() {
                     {/* Status Toggle */}
                     <button
                       onClick={() => expense.paid ? markExpenseUnpaid(expense.id) : markExpensePaid(expense.id)}
+                      disabled={!canUpdateExpenses}
                       className={cn(
                         'h-8 w-8 rounded-full border-2 flex items-center justify-center shrink-0 transition-all',
+                        !canUpdateExpenses && 'cursor-not-allowed opacity-60',
                         expense.paid
                           ? 'bg-green-500 border-green-500 text-white'
                           : 'border-muted-foreground/30 hover:border-primary'
@@ -426,9 +443,12 @@ export default function ExpensesPage() {
 
                     {/* Actions */}
                     <div className="flex items-center gap-1 shrink-0">
+                      {canUpdateExpenses && (
                       <Button variant="ghost" size="icon" className="h-7 w-7 rounded-full" onClick={() => openEditForm(expense)}>
                         <Pencil className="h-3 w-3" />
                       </Button>
+                      )}
+                      {canDeleteExpenses && (
                       <AlertDialog>
                         <AlertDialogTrigger asChild>
                           <Button variant="ghost" size="icon" className="h-7 w-7 rounded-full text-destructive hover:text-destructive">
@@ -453,6 +473,7 @@ export default function ExpensesPage() {
                           </AlertDialogFooter>
                         </AlertDialogContent>
                       </AlertDialog>
+                      )}
                     </div>
                   </div>
                 ))}

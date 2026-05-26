@@ -12,6 +12,8 @@ import { AppProvider } from "@/contexts/AppContext";
 import { useProfile } from "./hooks/queries/useProfile";
 import { getAuthenticatedHomePath } from "./lib/authRouting";
 import { canAccessBusinessRoute } from "./lib/businessRouteAccess";
+import { useBusinessContext } from "@/hooks/useBusinessContext";
+import { canAccessPath as canAccessRolePath } from "./lib/rolePermissions";
 
 const LoginPage = lazy(() => import("./pages/LoginPage"));
 const LandingPage = lazy(() => import("./pages/LandingPage"));
@@ -78,12 +80,18 @@ function ProtectedRoute({ children }: { children: ReactNode }) {
   const location = useLocation();
   const { user, loading: authLoading } = useAuth();
   const { profile, loadingProfile, isErrorProfile, errorProfile } = useProfile();
+  const {
+    businessType,
+    organizationRole,
+    isLoadingOrganizationRole,
+    isRolePermissionFilterActive,
+  } = useBusinessContext();
 
   if (isErrorProfile) {
     throw new Error(`Falha ao carregar o perfil: ${getErrorMessage(errorProfile)}`);
   }
 
-  if (authLoading || (user && loadingProfile)) {
+  if (authLoading || (user && (loadingProfile || isLoadingOrganizationRole))) {
     return <FullScreenLoader />;
   }
 
@@ -104,6 +112,17 @@ function ProtectedRoute({ children }: { children: ReactNode }) {
 
   if (!canAccessBusinessRoute(profile?.business_type, location.pathname)) {
     return <Navigate to="/dashboard" replace />;
+  }
+
+  if (
+    isRolePermissionFilterActive
+    && !canAccessRolePath({
+      role: organizationRole,
+      businessType,
+      pathname: location.pathname,
+    })
+  ) {
+    return <Navigate to={homePath === location.pathname ? "/dashboard" : homePath} replace />;
   }
 
   return <>{children}</>;

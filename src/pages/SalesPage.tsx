@@ -39,6 +39,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Link } from 'react-router-dom';
+import { useRolePermissions } from '@/hooks/useRolePermissions';
 
 interface CartItem {
   productId: string;
@@ -102,6 +103,10 @@ function getSaleTransactionKey(sale: Sale) {
 export default function SalesPage() {
   const { activeProducts, loadingProducts } = useProducts();
   const { sales, loadingSales, checkoutCartSale, deleteSale, isCheckingOutCart } = useSales();
+  const rolePermissions = useRolePermissions();
+  const canCreateSales = rolePermissions.can('sales', 'create');
+  const canDeleteSales = rolePermissions.can('sales', 'delete');
+  const canViewProducts = rolePermissions.can('products', 'view');
   const [cart, setCart] = useState<CartItem[]>([]);
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('dinheiro');
   const [historyPeriod, setHistoryPeriod] = useState<SalesHistoryPeriod>('today');
@@ -191,12 +196,14 @@ export default function SalesPage() {
             </h1>
             <p className="text-muted-foreground mt-1">Registre vendas rápidas de produtos.</p>
           </div>
-          <Link to="/produtos">
-            <Button variant="outline" size="sm">
-              <Package className="mr-2 h-4 w-4" />
-              Gerenciar Produtos
-            </Button>
-          </Link>
+          {canViewProducts && (
+            <Link to="/produtos">
+              <Button variant="outline" size="sm">
+                <Package className="mr-2 h-4 w-4" />
+                Gerenciar Produtos
+              </Button>
+            </Link>
+          )}
         </div>
 
         {/* Today Summary */}
@@ -214,6 +221,7 @@ export default function SalesPage() {
           </CardContent>
         </Card>
 
+        {canCreateSales ? (
         <div className="grid lg:grid-cols-3 gap-6">
           {/* Products Grid — Left side */}
           <div className="lg:col-span-2">
@@ -357,6 +365,13 @@ export default function SalesPage() {
             </Card>
           </div>
         </div>
+        ) : (
+          <Card className="border-dashed border-border/70 bg-muted/10">
+            <CardContent className="p-6 text-center text-sm text-muted-foreground">
+              Seu cargo permite consultar o histórico de vendas, mas não registrar novas vendas diretas.
+            </CardContent>
+          </Card>
+        )}
 
         <Card>
           <CardHeader className="space-y-4">
@@ -456,7 +471,7 @@ export default function SalesPage() {
                         <span className="text-[10px] font-semibold text-muted-foreground text-right max-w-[90px]">
                           Estorne pela comanda
                         </span>
-                      ) : (
+                      ) : canDeleteSales ? (
                         <AlertDialog>
                           <AlertDialogTrigger asChild>
                             <Button variant="ghost" size="icon" className="h-7 w-7 rounded-full text-destructive hover:text-destructive">
@@ -478,6 +493,10 @@ export default function SalesPage() {
                             </AlertDialogFooter>
                           </AlertDialogContent>
                         </AlertDialog>
+                      ) : (
+                        <span className="text-[10px] font-semibold text-muted-foreground text-right max-w-[90px]">
+                          Sem permissao para cancelar
+                        </span>
                       )}
                     </div>
                   );

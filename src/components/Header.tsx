@@ -17,7 +17,7 @@ export function Header() {
   const location = useLocation();
   const { signOut, user } = useAuth();
   const { profile } = useProfile();
-  const { navModules } = useBusinessContext();
+  const { navModules, canViewSettings } = useBusinessContext();
 
   useEffect(() => {
     if (isDark) {
@@ -82,11 +82,13 @@ export function Header() {
         <div className="flex items-center gap-0.5 shrink-0">
           <NotificationBell />
           <div className="hidden md:flex items-center gap-0.5">
-            <Link to="/configuracoes">
-              <Button variant="ghost" size="icon" className="rounded-full h-8 w-8" title="Configurações">
-                <Settings className="h-3.5 w-3.5" />
-              </Button>
-            </Link>
+            {canViewSettings && (
+              <Link to="/configuracoes">
+                <Button variant="ghost" size="icon" className="rounded-full h-8 w-8" title="Configurações">
+                  <Settings className="h-3.5 w-3.5" />
+                </Button>
+              </Link>
+            )}
             <Button
               variant="ghost"
               size="icon"
@@ -138,18 +140,19 @@ export function Header() {
               </Link>
             ))}
 
-            {/* Settings always visible */}
-            <Link
-              to="/configuracoes"
-              className={cn(
-                'flex items-center px-4 py-3 rounded-lg text-sm font-medium transition-colors',
-                location.pathname === '/configuracoes'
-                  ? 'text-primary bg-primary/10 font-semibold'
-                  : 'text-muted-foreground hover:text-foreground hover:bg-muted'
-              )}
-            >
-              Configurações
-            </Link>
+            {canViewSettings && (
+              <Link
+                to="/configuracoes"
+                className={cn(
+                  'flex items-center px-4 py-3 rounded-lg text-sm font-medium transition-colors',
+                  location.pathname === '/configuracoes'
+                    ? 'text-primary bg-primary/10 font-semibold'
+                    : 'text-muted-foreground hover:text-foreground hover:bg-muted'
+                )}
+              >
+                Configurações
+              </Link>
+            )}
 
             <div className="pt-2 border-t border-border mt-2 space-y-1">
               <button

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Search, Users, UserCheck, UserMinus, UserX, Download } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Header } from '@/components/Header';
@@ -21,13 +21,14 @@ import {
   getStudentsWithoutPlan 
 } from '@/lib/studentHelpers';
 import { useBusinessContext } from '@/hooks/useBusinessContext';
+import { cn } from '@/lib/utils';
 
 export default function StudentsPage() {
   const { students, loadingStudents } = useStudents();
   const { plans, loadingPlans } = usePlans();
   const { modalities } = useModalities();
   const { groups } = useGroups();
-  const { labels } = useBusinessContext();
+  const { labels, isArena } = useBusinessContext();
   
   const loading = loadingStudents || loadingPlans;
 
@@ -40,13 +41,20 @@ export default function StudentsPage() {
   const [statusFilter, setStatusFilter] = useState('all');
   const [modalityFilter, setModalityFilter] = useState('all');
 
+  useEffect(() => {
+    if (!isArena) return;
+
+    setLevelFilter('all');
+    setStatusFilter((current) => current === 'trial' ? 'all' : current);
+  }, [isArena]);
+
   const filteredStudents = students.filter((student) => {
     const matchesSearch = student.name.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesLevel = levelFilter === 'all' || student.level === levelFilter;
+    const matchesLevel = isArena || levelFilter === 'all' || student.level === levelFilter;
     const matchesStatus = statusFilter === 'all' || 
       (statusFilter === 'active' && student.active) || 
       (statusFilter === 'inactive' && !student.active) ||
-      (statusFilter === 'trial' && student.isTrial);
+      (!isArena && statusFilter === 'trial' && student.isTrial);
     const matchesModality = modalityFilter === 'all' || student.modalityId === modalityFilter;
     return matchesSearch && matchesLevel && matchesStatus && matchesModality;
   }).sort((a, b) => a.name.localeCompare(b.name, 'pt-BR'));
@@ -73,12 +81,12 @@ export default function StudentsPage() {
                   'Nome': s.name,
                   'CPF': s.cpf || '',
                   'Status': s.active ? 'Ativo' : 'Inativo',
-                  'Experimental': s.isTrial ? 'Sim' : 'Não',
+                  ...(!isArena ? { 'Experimental': s.isTrial ? 'Sim' : 'Não' } : {}),
                   'Telefone': s.phone || '',
                   'Email': s.email || '',
                   [labels.planLabelSingular]: plan?.name || `Sem ${labels.planLabelSingular.toLowerCase()}`,
                   [labels.modalityLabelSingular]: modality?.name || '',
-                  'Nível': s.level || '',
+                  ...(!isArena ? { 'Nível': s.level || '' } : {}),
                   [labels.groupLabel]: studentGroups,
                   'Dia Vencimento': s.paymentDueDay || '',
                   'Data de Entrada': s.joinDate ? new Date(s.joinDate).toLocaleDateString('pt-BR') : '',
@@ -127,23 +135,25 @@ export default function StudentsPage() {
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input placeholder={`Buscar ${labels.studentLabelSingular.toLowerCase()}...`} value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="pl-10" />
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 lg:flex lg:w-auto">
-              <Select value={levelFilter} onValueChange={setLevelFilter}>
-                <SelectTrigger className="w-full lg:w-[140px]"><SelectValue placeholder="Nível" /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Todos os níveis</SelectItem>
-                  <SelectItem value="iniciante">Iniciante</SelectItem>
-                  <SelectItem value="intermediário">Intermediário</SelectItem>
-                  <SelectItem value="avançado">Avançado</SelectItem>
-                </SelectContent>
-              </Select>
+            <div className={cn('grid grid-cols-1 gap-2 lg:flex lg:w-auto', isArena ? 'sm:grid-cols-2' : 'sm:grid-cols-3')}>
+              {!isArena && (
+                <Select value={levelFilter} onValueChange={setLevelFilter}>
+                  <SelectTrigger className="w-full lg:w-[140px]"><SelectValue placeholder="Nível" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todos os níveis</SelectItem>
+                    <SelectItem value="iniciante">Iniciante</SelectItem>
+                    <SelectItem value="intermediário">Intermediário</SelectItem>
+                    <SelectItem value="avançado">Avançado</SelectItem>
+                  </SelectContent>
+                </Select>
+              )}
               <Select value={statusFilter} onValueChange={setStatusFilter}>
                 <SelectTrigger className="w-full lg:w-[120px]"><SelectValue placeholder="Status" /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Todos</SelectItem>
                   <SelectItem value="active">Ativos</SelectItem>
                   <SelectItem value="inactive">Inativos</SelectItem>
-                  <SelectItem value="trial">Experimentais</SelectItem>
+                  {!isArena && <SelectItem value="trial">Experimentais</SelectItem>}
                 </SelectContent>
               </Select>
               <Select value={modalityFilter} onValueChange={setModalityFilter}>

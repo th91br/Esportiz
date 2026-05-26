@@ -25,6 +25,7 @@ import {
   Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter
 } from '@/components/ui/dialog';
 import { useBusinessContext } from '@/hooks/useBusinessContext';
+import { useRolePermissions } from '@/hooks/useRolePermissions';
 import { getLocalTodayDate } from '@/lib/dateUtils';
 import {
   getPaymentFinancialStatus,
@@ -43,6 +44,11 @@ export default function PaymentsPage() {
   const [privacyMode, togglePrivacyMode] = usePrivacyMode();
   const [searchTerm, setSearchTerm] = useState('');
   const { labels, isArena } = useBusinessContext();
+  const rolePermissions = useRolePermissions();
+  const canExportPayments = rolePermissions.can('payments', 'export');
+  const canReceivePayments = rolePermissions.can('payments', 'receive_payment');
+  const canReopenPayments = rolePermissions.can('payments', 'reopen_payment');
+  const canDeletePayments = rolePermissions.can('payments', 'delete');
   
   const [receivingPayment, setReceivingPayment] = useState<typeof payments[0] | null>(null);
   const [receiptAmount, setReceiptAmount] = useState<string>('');
@@ -175,6 +181,7 @@ export default function PaymentsPage() {
             <p className="text-sm text-muted-foreground">Controle de pagamentos mensais dos(as) {labels.studentLabel.toLowerCase()}</p>
           </div>
           <div className="flex items-center gap-2 w-full sm:w-auto overflow-x-auto pb-1 sm:pb-0">
+            {canExportPayments && (
             <Button
               variant="outline"
               size="sm"
@@ -197,6 +204,7 @@ export default function PaymentsPage() {
             >
               <Download className="h-4 w-4" /> <span className="hidden sm:inline">Exportar</span>
             </Button>
+            )}
             <Button
               variant="ghost"
               size="icon"
@@ -339,6 +347,7 @@ export default function PaymentsPage() {
                 const courtName = court?.name || 'Quadra Desconhecida';
                 const status = reservation.paymentStatus;
                 const isOverdue = status === 'pending' && reservation.date < todayStr;
+                const canChangeReservationPayment = status === 'paid' ? canReopenPayments : canReceivePayments;
 
                 return (
                   <div key={reservation.id} className="card-elevated p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 hover:border-primary/20 transition-all">
@@ -380,6 +389,7 @@ export default function PaymentsPage() {
                         )}
                       </div>
                     </div>
+                    {canChangeReservationPayment && (
                     <div className="flex items-center gap-2 self-stretch sm:self-auto justify-end mt-2 sm:mt-0">
                       <Button
                         size="sm"
@@ -407,6 +417,7 @@ export default function PaymentsPage() {
                         )}
                       </Button>
                     </div>
+                    )}
                   </div>
                 );
               })}
@@ -448,8 +459,9 @@ export default function PaymentsPage() {
                     </Badge>
                   )}
                 </div>
-                {selectedPayments.length > 0 && (
+                {selectedPayments.length > 0 && (canReceivePayments || canReopenPayments) && (
                   <div className="flex items-center gap-2">
+                    {canReceivePayments && (
                     <Button
                       size="sm"
                       className="btn-primary-gradient text-xs font-bold"
@@ -460,6 +472,8 @@ export default function PaymentsPage() {
                     >
                       <Check className="h-3.5 w-3.5 mr-1" /> Marcar como Pagos
                     </Button>
+                    )}
+                    {canReopenPayments && (
                     <Button
                       size="sm"
                       variant="outline"
@@ -471,6 +485,7 @@ export default function PaymentsPage() {
                     >
                       <X className="h-3.5 w-3.5 mr-1" /> Desmarcar
                     </Button>
+                    )}
                   </div>
                 )}
               </div>
@@ -543,6 +558,7 @@ export default function PaymentsPage() {
                   </div>
                   <div className="flex items-center gap-2">
                       {payment.paid ? (
+                        canReopenPayments && (
                         <Button
                           variant="outline"
                           size="sm"
@@ -551,7 +567,9 @@ export default function PaymentsPage() {
                         >
                           <X className="h-4 w-4 mr-1" /> Desmarcar
                         </Button>
+                        )
                       ) : (
+                        canReceivePayments && (
                         <Button
                           size="sm"
                           className="btn-primary-gradient text-xs"
@@ -562,7 +580,9 @@ export default function PaymentsPage() {
                         >
                           <Check className="h-4 w-4 mr-1" /> Marcar Pago
                         </Button>
+                        )
                       )}
+                      {canDeletePayments && (
                       <AlertDialog>
                         <AlertDialogTrigger asChild>
                           <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10">
@@ -584,6 +604,7 @@ export default function PaymentsPage() {
                           </AlertDialogFooter>
                         </AlertDialogContent>
                       </AlertDialog>
+                      )}
                     </div>
                   </div>
                 );

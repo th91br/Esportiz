@@ -8,6 +8,9 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
 import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from '@/components/ui/select';
+import {
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -19,7 +22,7 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { toast } from 'sonner';
-import { UploadCloud, Save, Building, Trash2, Calendar, FileSpreadsheet, CheckCircle2, AlertCircle, Loader2, Tag, GraduationCap, CheckCircle, Copy, ExternalLink } from 'lucide-react';
+import { UploadCloud, Save, Building, Trash2, Calendar, FileSpreadsheet, CheckCircle2, AlertCircle, Loader2, Tag, GraduationCap, CheckCircle, Copy, ExternalLink, UsersRound, ShieldCheck } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useBusinessContext } from '@/hooks/useBusinessContext';
 import { ModalityManager } from '@/components/ModalityManager';
@@ -28,6 +31,9 @@ import { type BusinessType } from '@/hooks/queries/useProfile';
 import { cn } from '@/lib/utils';
 import { getErrorMessage } from '@/lib/errorUtils';
 import { getDefaultCommunicationTemplate } from '@/lib/communicationContracts';
+import { useRolePermissions } from '@/hooks/useRolePermissions';
+import { useOrganizationTeamMembers } from '@/hooks/queries/useOrganizationTeamMembers';
+import type { OrganizationRole } from '@/lib/rolePermissions';
 
 const BUSINESS_OPTIONS: { type: BusinessType; title: string; description: string; emoji: string }[] = [
   { type: 'sport_school', title: 'Escola Esportiva', description: 'Esportiz Sport — Futevôlei, Vôlei, Futebol, Artes Marciais...', emoji: '🏐' },
@@ -36,6 +42,42 @@ const BUSINESS_OPTIONS: { type: BusinessType; title: string; description: string
 
 function getBusinessTypeLabel(type: BusinessType | null | undefined) {
   return type === 'arena' ? 'Arena / CT de Quadras' : 'Escola Esportiva';
+}
+
+const TEAM_ROLE_LABELS: Record<OrganizationRole, { label: string; description: string }> = {
+  owner: {
+    label: 'Dono / CEO',
+    description: 'Acesso completo, equipe, configuracoes e areas sensiveis.',
+  },
+  manager: {
+    label: 'Gerente',
+    description: 'Operacao ampla sem gestao de equipe nem auditoria.',
+  },
+  receptionist: {
+    label: 'Recepcao',
+    description: 'Agenda, cadastros, atendimento e baixas do dia a dia.',
+  },
+  instructor: {
+    label: 'Professor',
+    description: 'Aulas, presencas e solicitacoes de treino.',
+  },
+  finance: {
+    label: 'Financeiro',
+    description: 'Pagamentos, despesas, relatorios e caixa.',
+  },
+};
+
+type InvitableOrganizationRole = Exclude<OrganizationRole, 'owner'>;
+
+const TEAM_INVITE_ROLE_OPTIONS: Array<{ role: InvitableOrganizationRole; label: string }> = [
+  { role: 'manager', label: TEAM_ROLE_LABELS.manager.label },
+  { role: 'receptionist', label: TEAM_ROLE_LABELS.receptionist.label },
+  { role: 'instructor', label: TEAM_ROLE_LABELS.instructor.label },
+  { role: 'finance', label: TEAM_ROLE_LABELS.finance.label },
+];
+
+function getShortUserId(userId: string) {
+  return `${userId.slice(0, 8)}...${userId.slice(-4)}`;
 }
 
 const GOOGLE_CLIENT_ID = '101916210739-8dd7avpijkt4oc5t053fg7tqtahfakdr.apps.googleusercontent.com';
@@ -191,8 +233,22 @@ export default function SettingsPage() {
   const [showNicheConfirmation, setShowNicheConfirmation] = useState(false);
   const [pendingBusinessType, setPendingBusinessType] = useState<BusinessType | null>(null);
   const { user } = useAuth();
-  const { labels } = useBusinessContext();
+  const { labels, organizationId } = useBusinessContext();
+  const rolePermissions = useRolePermissions();
+  const canViewTeam = rolePermissions.can('team', 'view');
+  const {
+    teamMembers,
+    loadingTeamMembers,
+    isErrorTeamMembers,
+    refetchTeamMembers,
+  } = useOrganizationTeamMembers({
+    organizationId,
+    enabled: canViewTeam,
+  });
   const [selectedBusinessType, setSelectedBusinessType] = useState<BusinessType>('sport_school');
+  const [teamInviteEmail, setTeamInviteEmail] = useState('');
+  const [teamInviteRole, setTeamInviteRole] = useState<InvitableOrganizationRole>('receptionist');
+  const [isInvitingTeamMember, setIsInvitingTeamMember] = useState(false);
 
   const [ctName, setCtName] = useState('');
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
@@ -365,6 +421,44 @@ export default function SettingsPage() {
     }
 
     window.open(studentPortalUrl, '_blank', 'noopener,noreferrer');
+  };
+
+  const handleInviteTeamMember = async () => {
+    const email = teamInviteEmail.trim().toLowerCase();
+
+    if (!organizationId) {
+      toast.error('Organizacao nao identificada. Atualize a pagina e tente novamente.');
+      return;
+    }
+
+    if (!email || !email.includes('@')) {
+      toast.error('Informe um e-mail valido para o convite.');
+      return;
+    }
+
+    setIsInvitingTeamMember(true);
+    const toastId = toast.loading('Enviando convite da equipe...');
+
+    try {
+      const { error } = await supabase.functions.invoke('team-invite', {
+        body: {
+          organization_id: organizationId,
+          email,
+          role: teamInviteRole,
+        },
+      });
+
+      if (error) throw error;
+
+      setTeamInviteEmail('');
+      setTeamInviteRole('receptionist');
+      await refetchTeamMembers();
+      toast.success('Convite enviado e membro registrado na equipe.', { id: toastId });
+    } catch (error) {
+      toast.error('Nao foi possivel enviar o convite: ' + getErrorMessage(error), { id: toastId });
+    } finally {
+      setIsInvitingTeamMember(false);
+    }
   };
 
   const handleLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -667,6 +761,142 @@ export default function SettingsPage() {
                 <p className="text-xs text-muted-foreground">
                   O link já inclui o identificador seguro da sua escola.
                 </p>
+              </CardContent>
+            </Card>
+          </div>
+        )}
+
+        {canViewTeam && (
+          <div className="grid gap-6 md:grid-cols-3">
+            <div className="md:col-span-1 space-y-1">
+              <h3 className="font-medium">Equipe e Permissoes</h3>
+              <p className="text-sm text-muted-foreground">
+                Visao segura dos membros vinculados a sua organizacao.
+              </p>
+            </div>
+
+            <Card className="md:col-span-2 border-primary/10">
+              <CardHeader className="pb-3">
+                <CardTitle className="flex items-center gap-2 text-lg">
+                  <UsersRound className="h-5 w-5 text-primary" />
+                  Equipe
+                </CardTitle>
+                <CardDescription>
+                  Nesta etapa, os cargos aparecem apenas para conferencia. Convites e alteracoes entram em uma proxima fase controlada.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {organizationId && (
+                  <div className="rounded-xl border bg-muted/20 p-3">
+                    <div className="grid gap-3 lg:grid-cols-[1fr_190px_auto]">
+                      <div className="space-y-1.5">
+                        <Label htmlFor="team-invite-email">E-mail do novo membro</Label>
+                        <Input
+                          id="team-invite-email"
+                          type="email"
+                          placeholder="nome@exemplo.com"
+                          value={teamInviteEmail}
+                          onChange={(event) => setTeamInviteEmail(event.target.value)}
+                          disabled={isInvitingTeamMember}
+                        />
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label>Cargo</Label>
+                        <Select
+                          value={teamInviteRole}
+                          onValueChange={(value) => setTeamInviteRole(value as InvitableOrganizationRole)}
+                          disabled={isInvitingTeamMember}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Cargo" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {TEAM_INVITE_ROLE_OPTIONS.map((option) => (
+                              <SelectItem key={option.role} value={option.role}>
+                                {option.label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="flex items-end">
+                        <Button
+                          type="button"
+                          className="w-full"
+                          onClick={handleInviteTeamMember}
+                          disabled={isInvitingTeamMember || !teamInviteEmail.trim()}
+                        >
+                          {isInvitingTeamMember ? (
+                            <>
+                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                              Enviando
+                            </>
+                          ) : (
+                            'Convidar'
+                          )}
+                        </Button>
+                      </div>
+                    </div>
+                    <p className="mt-2 text-xs text-muted-foreground">
+                      O convite cria o acesso no Supabase Auth e vincula o cargo a esta organizacao. Apenas dono pode executar esta acao.
+                    </p>
+                  </div>
+                )}
+
+                {!organizationId ? (
+                  <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
+                    Organizacao ainda nao identificada para este perfil. As permissoes seguem em modo de compatibilidade.
+                  </div>
+                ) : loadingTeamMembers ? (
+                  <div className="flex items-center gap-2 rounded-lg border bg-muted/30 p-3 text-sm text-muted-foreground">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Carregando membros da equipe...
+                  </div>
+                ) : isErrorTeamMembers ? (
+                  <div className="rounded-lg border border-destructive/20 bg-destructive/5 p-3 text-sm text-destructive">
+                    Nao foi possivel carregar a equipe agora. Tente novamente em instantes.
+                  </div>
+                ) : teamMembers.length === 0 ? (
+                  <div className="rounded-lg border bg-muted/30 p-3 text-sm text-muted-foreground">
+                    Nenhum membro ativo encontrado para esta organizacao.
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {teamMembers.map((member) => {
+                      const roleInfo = TEAM_ROLE_LABELS[member.role];
+                      const memberLabel = member.invitedEmail
+                        || (member.userId === user?.id && user?.email ? user.email : `Usuario ${getShortUserId(member.userId)}`);
+
+                      return (
+                        <div
+                          key={member.id}
+                          className="flex flex-col gap-3 rounded-xl border bg-background p-3 sm:flex-row sm:items-center sm:justify-between"
+                        >
+                          <div className="min-w-0 space-y-1">
+                            <div className="flex flex-wrap items-center gap-2">
+                              <p className="truncate text-sm font-semibold text-foreground">{memberLabel}</p>
+                              {member.userId === user?.id && (
+                                <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-primary">
+                                  Voce
+                                </span>
+                              )}
+                              {!member.active && (
+                                <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                                  Inativo
+                                </span>
+                              )}
+                            </div>
+                            <p className="text-xs text-muted-foreground">{roleInfo.description}</p>
+                          </div>
+                          <div className="flex shrink-0 items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-3 py-1 text-xs font-semibold text-primary">
+                            <ShieldCheck className="h-3.5 w-3.5" />
+                            {roleInfo.label}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
               </CardContent>
             </Card>
           </div>

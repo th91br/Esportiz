@@ -1,5 +1,7 @@
 import { useMemo } from 'react';
 import { useProfile, type BusinessType } from '@/hooks/queries/useProfile';
+import { useOrganizationMembership } from '@/hooks/queries/useOrganizationMembership';
+import { canAccessPath } from '@/lib/rolePermissions';
 
 export interface BusinessLabels {
   studentLabel: string;
@@ -107,16 +109,48 @@ function buildNavModules(type: BusinessType, labels: BusinessLabels): NavModule[
 
 export function useBusinessContext() {
   const { profile } = useProfile();
+  const {
+    effectiveRole,
+    organizationId,
+    loadingMembership,
+    isErrorMembership,
+    isRoleKnown,
+  } = useOrganizationMembership();
 
   const rawBusinessType = profile?.business_type;
   const businessType: BusinessType = rawBusinessType === 'arena' ? 'arena' : 'sport_school';
   const labels = useMemo(() => LABELS[businessType], [businessType]);
-  const navModules = useMemo(() => buildNavModules(businessType, labels), [businessType, labels]);
+  const baseNavModules = useMemo(() => buildNavModules(businessType, labels), [businessType, labels]);
+  const shouldApplyRolePermissions = isRoleKnown && !loadingMembership && !isErrorMembership;
+  const navModules = useMemo(() => {
+    if (!shouldApplyRolePermissions) return baseNavModules;
+
+    return baseNavModules.filter((module) => (
+      canAccessPath({
+        role: effectiveRole,
+        businessType,
+        pathname: module.path,
+      })
+    ));
+  }, [baseNavModules, businessType, effectiveRole, shouldApplyRolePermissions]);
+  const canViewSettings = useMemo(() => (
+    !shouldApplyRolePermissions
+    || canAccessPath({
+      role: effectiveRole,
+      businessType,
+      pathname: '/configuracoes',
+    })
+  ), [businessType, effectiveRole, shouldApplyRolePermissions]);
 
   return {
     businessType,
     labels,
     navModules,
+    canViewSettings,
+    organizationRole: effectiveRole,
+    organizationId,
+    isLoadingOrganizationRole: loadingMembership,
+    isRolePermissionFilterActive: shouldApplyRolePermissions,
     isSportSchool: businessType === 'sport_school',
     isArena: businessType === 'arena',
   };

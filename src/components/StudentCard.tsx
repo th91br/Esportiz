@@ -167,11 +167,11 @@ export function StudentCard({ student, onClick }: StudentCardProps) {
     });
   };
 
-  const levelBorderColor = {
+  const levelBorderColor = isArena ? 'bg-primary' : ({
     iniciante: 'bg-emerald-500',
     intermediário: 'bg-amber-500',
     avançado: 'bg-violet-500',
-  }[student.level] || 'bg-primary';
+  }[student.level] || 'bg-primary');
 
   const handleCardClick = () => {
     navigate(`/alunos/${student.id}`);
@@ -217,7 +217,7 @@ export function StudentCard({ student, onClick }: StudentCardProps) {
                   )}
                 </div>
                 {!student.active && <span className="px-2 py-0.5 rounded-full text-[10px] uppercase font-bold tracking-wider bg-destructive/10 text-destructive border border-destructive/20">Inativo</span>}
-                {student.isTrial && (
+                {!isArena && student.isTrial && (
                   <span className="px-2 py-0.5 rounded-full text-[10px] uppercase font-bold tracking-wider bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 flex items-center gap-1">
                     <Beaker className="h-2.5 w-2.5" />Experimental
                   </span>

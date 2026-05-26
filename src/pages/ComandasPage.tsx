@@ -25,11 +25,18 @@ import {
   ChevronRight, ArrowRight, User, Hash, Utensils, Beer, RefreshCw, Lock
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useRolePermissions } from '@/hooks/useRolePermissions';
 
 export default function ComandasPage() {
   const { comandas, loadingComandas, openComanda, addComandaItem, updateItemQuantity, deleteComandaItem, closeComanda, reopenComanda, deleteComanda } = useComandas();
   const { activeProducts, loadingProducts } = useProducts();
   const [privacyMode] = usePrivacyMode();
+  const rolePermissions = useRolePermissions();
+  const canCreateComandas = rolePermissions.can('comandas', 'create');
+  const canUpdateComandas = rolePermissions.can('comandas', 'update');
+  const canDeleteComandas = rolePermissions.can('comandas', 'delete');
+  const canCloseComandas = rolePermissions.can('comandas', 'close_comanda');
+  const canReopenComandas = rolePermissions.can('comandas', 'reopen_payment');
 
   // Navigation and UI states
   const [activeTab, setActiveTab] = useState<'open' | 'closed'>('open');
@@ -97,6 +104,10 @@ export default function ComandasPage() {
 
   const handleOpenComanda = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!canCreateComandas) {
+      toast.error('Seu cargo nao permite abrir comandas.');
+      return;
+    }
     if (!newComandaName.trim()) {
       toast.warning('Digite um nome ou número para a comanda.');
       return;
@@ -116,6 +127,10 @@ export default function ComandasPage() {
 
   const handleAddProduct = async (product: Product) => {
     if (!selectedComanda) return;
+    if (!canUpdateComandas) {
+      toast.error('Seu cargo nao permite alterar comandas.');
+      return;
+    }
     try {
       await addComandaItem({
         comandaId: selectedComanda.id,
@@ -131,6 +146,10 @@ export default function ComandasPage() {
   };
 
   const handleQuantityChange = async (item: ComandaItem, delta: number) => {
+    if (!canUpdateComandas) {
+      toast.error('Seu cargo nao permite alterar comandas.');
+      return;
+    }
     const newQty = item.quantity + delta;
     try {
       await updateItemQuantity({
@@ -144,6 +163,10 @@ export default function ComandasPage() {
 
   const handleCloseComandaSubmit = async () => {
     if (!closingComanda || isClosingSubmitting) return;
+    if (!canCloseComandas) {
+      toast.error('Seu cargo nao permite fechar comandas.');
+      return;
+    }
     setIsClosingSubmitting(true);
     try {
       await closeComanda({
@@ -193,13 +216,15 @@ export default function ComandasPage() {
               Gerencie o consumo de mesas e clientes no bar ou cantina da Arena.
             </p>
           </div>
-          <Button 
-            onClick={() => setOpenModalOpen(true)} 
-            className="btn-primary-gradient w-full sm:w-auto shrink-0 shadow-lg shadow-primary/20"
-          >
-            <Plus className="h-5 w-5 mr-1" />
-            Abrir Nova Comanda
-          </Button>
+          {canCreateComandas && (
+            <Button 
+              onClick={() => setOpenModalOpen(true)} 
+              className="btn-primary-gradient w-full sm:w-auto shrink-0 shadow-lg shadow-primary/20"
+            >
+              <Plus className="h-5 w-5 mr-1" />
+              Abrir Nova Comanda
+            </Button>
+          )}
         </div>
 
         {/* Filters and Search Bar */}
@@ -281,7 +306,7 @@ export default function ComandasPage() {
                   ? 'Não há comandas abertas no momento. Abra uma para começar o consumo.'
                   : 'Histórico de comandas fechadas está vazio.'}
               </p>
-              {!searchQuery && activeTab === 'open' && (
+              {!searchQuery && activeTab === 'open' && canCreateComandas && (
                 <Button onClick={() => setOpenModalOpen(true)} className="mt-4 btn-primary-gradient shadow-md">
                   <Plus className="h-4 w-4 mr-1" />
                   Abrir Primeira Comanda
@@ -343,7 +368,7 @@ export default function ComandasPage() {
                       {pv(formatCurrency(comanda.totalAmount))}
                     </span>
                   </div>
-                  {comanda.status === 'open' && comanda.items.length > 0 && (
+                  {comanda.status === 'open' && comanda.items.length > 0 && canCloseComandas && (
                     <Button
                       size="sm"
                       onClick={(e) => {
@@ -438,7 +463,7 @@ export default function ComandasPage() {
                 </div>
                 
                 {/* Cancel Comanda (Only if open and empty) */}
-                {selectedComanda.status === 'open' && selectedComanda.items.length === 0 && (
+                {selectedComanda.status === 'open' && selectedComanda.items.length === 0 && canDeleteComandas && (
                   <Button 
                     variant="ghost" 
                     onClick={() => setComandaToCancel(selectedComanda)}
@@ -449,7 +474,7 @@ export default function ComandasPage() {
                 )}
 
                 {/* Reopen Comanda (Only if closed) */}
-                {selectedComanda.status === 'closed' && (
+                {selectedComanda.status === 'closed' && canReopenComandas && (
                   <Button 
                     variant="outline" 
                     onClick={() => setComandaToReopen(selectedComanda)}
@@ -526,7 +551,7 @@ export default function ComandasPage() {
                           
                           {/* Item Quantity Modifier (Only if comanda is open) */}
                           <div className="flex w-full items-center justify-between gap-3 sm:w-auto sm:justify-end">
-                            {selectedComanda.status === 'open' ? (
+                            {selectedComanda.status === 'open' && canUpdateComandas ? (
                               <div className="flex items-center rounded-lg border border-border/80 bg-background overflow-hidden shrink-0 shadow-sm">
                                 <button 
                                   onClick={() => handleQuantityChange(item, -1)}
@@ -555,7 +580,7 @@ export default function ComandasPage() {
                             </span>
 
                             {/* Direct delete button */}
-                            {selectedComanda.status === 'open' && (
+                            {selectedComanda.status === 'open' && canUpdateComandas && (
                               <button 
                                 onClick={() => setItemToRemove(item)}
                                 className="text-muted-foreground/60 hover:text-destructive p-1 rounded hover:bg-destructive/5 transition-colors"
@@ -578,7 +603,7 @@ export default function ComandasPage() {
                       </span>
                     </div>
 
-                    {selectedComanda.status === 'open' && (
+                    {selectedComanda.status === 'open' && canCloseComandas && (
                       <Button
                         onClick={() => setClosingComanda(selectedComanda)}
                         disabled={selectedComanda.items.length === 0}
@@ -593,7 +618,7 @@ export default function ComandasPage() {
                 </div>
 
                 {/* RIGHT COLUMN: Product Catalog (Disabled if closed) */}
-                {selectedComanda.status === 'open' ? (
+                {selectedComanda.status === 'open' && canUpdateComandas ? (
                   <div className={cn(
                     "w-full md:w-[45%] flex flex-col p-4 md:p-5 bg-muted/15 overflow-y-auto min-h-0",
                     modalTab !== 'catalog' && 'hidden md:flex'
@@ -682,8 +707,11 @@ export default function ComandasPage() {
                     <Lock className="h-10 w-10 text-muted-foreground/30 mb-2" />
                     <p className="font-bold text-sm text-muted-foreground">Consumo Bloqueado</p>
                     <p className="text-xs text-muted-foreground/70 max-w-xs mt-0.5 mb-4">
-                      Esta comanda já foi fechada e paga. Não é possível adicionar novos itens.
+                      {selectedComanda.status === 'closed'
+                        ? 'Esta comanda ja foi fechada e paga. Nao e possivel adicionar novos itens.'
+                        : 'Seu cargo permite visualizar a comanda, mas nao alterar o consumo.'}
                     </p>
+                    {selectedComanda.status === 'closed' && canReopenComandas && (
                     <Button 
                       variant="outline" 
                       onClick={() => setComandaToReopen(selectedComanda)}
@@ -691,6 +719,7 @@ export default function ComandasPage() {
                     >
                       <RefreshCw className="h-4 w-4" /> Reabrir Comanda
                     </Button>
+                    )}
                   </div>
                 )}
 
@@ -806,7 +835,7 @@ export default function ComandasPage() {
                 <Button 
                   type="button" 
                   onClick={handleCloseComandaSubmit}
-                  disabled={isClosingSubmitting}
+                  disabled={isClosingSubmitting || !canCloseComandas}
                   className="w-full sm:flex-1 h-11 bg-success text-success-foreground hover:bg-success/95 font-bold shadow-md shadow-success/10 flex items-center justify-center gap-1.5"
                 >
                   {isClosingSubmitting ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
@@ -832,6 +861,7 @@ export default function ComandasPage() {
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
               onClick={async () => {
                 if (!comandaToCancel) return;
+                if (!canDeleteComandas) return;
                 await deleteComanda(comandaToCancel.id);
                 setSelectedComanda(null);
                 setComandaToCancel(null);
@@ -857,6 +887,7 @@ export default function ComandasPage() {
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
               onClick={async () => {
                 if (!itemToRemove) return;
+                if (!canUpdateComandas) return;
                 await deleteComandaItem(itemToRemove.id);
                 setItemToRemove(null);
               }}
@@ -880,6 +911,7 @@ export default function ComandasPage() {
             <AlertDialogAction
               onClick={async () => {
                 if (!comandaToReopen) return;
+                if (!canReopenComandas) return;
                 await reopenComanda(comandaToReopen.id);
                 setSelectedComanda(null);
                 setComandaToReopen(null);

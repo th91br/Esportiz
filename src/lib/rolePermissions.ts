@@ -216,6 +216,8 @@ const INSTRUCTOR_PERMISSIONS: Partial<Record<PermissionModule, readonly Permissi
   reservants: ['view'],
   attendance: ['view', 'create', 'update'],
   groups: ['view'],
+  birthdays: ['view'],              // Professor precisa saber aniversarios dos alunos
+  communication: ['view'],          // Acesso de leitura a comunicacoes
   student_training_requests: ['view', 'update', 'approve_request'],
   settings: ['view'],
   team: ['view'],
@@ -227,7 +229,9 @@ const FINANCE_PERMISSIONS: Partial<Record<PermissionModule, readonly PermissionA
   expenses: ['view', 'create', 'update', 'export', 'view_sensitive_financials'],
   sales: ['view', 'export'],
   comandas: ['view'],
+  reservants: ['view'],             // Financeiro precisa identificar quem paga na Arena
   reports: ['view', 'export', 'view_sensitive_financials'],
+  communication: ['view'],          // Acesso de leitura a comunicacoes para referencia
   settings: ['view'],
   team: ['view'],
 };

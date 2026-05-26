@@ -22,10 +22,11 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { toast } from 'sonner';
-import { UploadCloud, Save, Building, Trash2, Calendar, FileSpreadsheet, CheckCircle2, AlertCircle, Loader2, Tag, GraduationCap, CheckCircle, Copy, ExternalLink, UsersRound, ShieldCheck, Eye, EyeOff, UserCheck, UserX } from 'lucide-react';
+import { UploadCloud, Save, Building, Trash2, Calendar, FileSpreadsheet, CheckCircle2, AlertCircle, Loader2, Tag, GraduationCap, CheckCircle, Copy, ExternalLink, UsersRound, ShieldCheck, Eye, EyeOff, UserCheck, UserX, Crown, BookOpen, Calculator, Phone, Info, Users } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useBusinessContext } from '@/hooks/useBusinessContext';
 import { ModalityManager } from '@/components/ModalityManager';
+import { RolePermissionsPanel } from '@/components/RolePermissionsPanel';
 import { supabase, SUPABASE_PUBLISHABLE_KEY, SUPABASE_URL } from '@/integrations/supabase/client';
 import { type BusinessType } from '@/hooks/queries/useProfile';
 import { cn } from '@/lib/utils';
@@ -44,41 +45,67 @@ function getBusinessTypeLabel(type: BusinessType | null | undefined) {
   return type === 'arena' ? 'Arena / CT de Quadras' : 'Escola Esportiva';
 }
 
-const TEAM_ROLE_LABELS: Record<OrganizationRole, { label: string; description: string }> = {
+const TEAM_ROLE_LABELS: Record<OrganizationRole, { label: string; description: string; color: string; bg: string; border: string }> = {
   owner: {
-    label: 'Dono / CEO',
-    description: 'Acesso completo, equipe, configuracoes e areas sensiveis.',
+    label: 'CEO / Dono',
+    description: 'Acesso irrestrito: configuracoes, equipe, financeiro e todas as areas sensiveis do sistema.',
+    color: 'text-amber-600 dark:text-amber-400',
+    bg: 'bg-amber-50 dark:bg-amber-950/30',
+    border: 'border-amber-200 dark:border-amber-800',
   },
   manager: {
     label: 'Gerente',
-    description: 'Operacao ampla sem gestao de equipe nem auditoria.',
+    description: 'Operacao ampla: agenda, clientes, pagamentos e relatorios. Sem acesso a equipe nem configuracoes avancadas.',
+    color: 'text-violet-600 dark:text-violet-400',
+    bg: 'bg-violet-50 dark:bg-violet-950/30',
+    border: 'border-violet-200 dark:border-violet-800',
   },
   receptionist: {
-    label: 'Recepcao',
-    description: 'Agenda, cadastros, atendimento e baixas do dia a dia.',
+    label: 'Recepcao / Atendente',
+    description: 'Atendimento ao cliente: agenda, cadastros, vendas, comandas e baixas de pagamento do dia a dia.',
+    color: 'text-rose-600 dark:text-rose-400',
+    bg: 'bg-rose-50 dark:bg-rose-950/30',
+    border: 'border-rose-200 dark:border-rose-800',
   },
   instructor: {
-    label: 'Professor',
-    description: 'Aulas, presencas e solicitacoes de treino.',
+    label: 'Professor / Instrutor',
+    description: 'Foco pedagogico: aulas, presenças, turmas e aprovacao de solicitacoes de treino dos alunos.',
+    color: 'text-emerald-600 dark:text-emerald-400',
+    bg: 'bg-emerald-50 dark:bg-emerald-950/30',
+    border: 'border-emerald-200 dark:border-emerald-800',
   },
   finance: {
     label: 'Financeiro',
-    description: 'Pagamentos, despesas, relatorios e caixa.',
+    description: 'Gestao financeira: pagamentos, despesas, relatorios e caixa. Acesso a dados sensiveis de faturamento.',
+    color: 'text-blue-600 dark:text-blue-400',
+    bg: 'bg-blue-50 dark:bg-blue-950/30',
+    border: 'border-blue-200 dark:border-blue-800',
   },
 };
 
+function getRoleIcon(role: OrganizationRole): React.ElementType {
+  switch (role) {
+    case 'owner': return Crown;
+    case 'manager': return ShieldCheck;
+    case 'receptionist': return Phone;
+    case 'instructor': return BookOpen;
+    case 'finance': return Calculator;
+    default: return Users;
+  }
+}
+
 type InvitableOrganizationRole = Exclude<OrganizationRole, 'owner'>;
 
-const SCHOOL_TEAM_INVITE_OPTIONS: Array<{ role: InvitableOrganizationRole; label: string }> = [
-  { role: 'instructor', label: TEAM_ROLE_LABELS.instructor.label },
-  { role: 'finance', label: TEAM_ROLE_LABELS.finance.label },
-  { role: 'manager', label: TEAM_ROLE_LABELS.manager.label },
+const SCHOOL_TEAM_INVITE_OPTIONS: Array<{ role: InvitableOrganizationRole; label: string; description: string }> = [
+  { role: 'instructor', label: TEAM_ROLE_LABELS.instructor.label, description: 'Aulas, presencas e solicitacoes de treino' },
+  { role: 'manager', label: TEAM_ROLE_LABELS.manager.label, description: 'Operacao ampla exceto equipe' },
+  { role: 'finance', label: TEAM_ROLE_LABELS.finance.label, description: 'Pagamentos, despesas e relatorios' },
 ];
 
-const ARENA_TEAM_INVITE_OPTIONS: Array<{ role: InvitableOrganizationRole; label: string }> = [
-  { role: 'receptionist', label: TEAM_ROLE_LABELS.receptionist.label },
-  { role: 'finance', label: TEAM_ROLE_LABELS.finance.label },
-  { role: 'manager', label: TEAM_ROLE_LABELS.manager.label },
+const ARENA_TEAM_INVITE_OPTIONS: Array<{ role: InvitableOrganizationRole; label: string; description: string }> = [
+  { role: 'receptionist', label: TEAM_ROLE_LABELS.receptionist.label, description: 'Agenda, vendas e comandas do dia a dia' },
+  { role: 'manager', label: TEAM_ROLE_LABELS.manager.label, description: 'Operacao ampla exceto equipe' },
+  { role: 'finance', label: TEAM_ROLE_LABELS.finance.label, description: 'Pagamentos, despesas e relatorios' },
 ];
 
 function getShortUserId(userId: string) {
@@ -880,10 +907,28 @@ export default function SettingsPage() {
               </CardHeader>
               <CardContent className="space-y-3">
                 {organizationId && rolePermissions.can('team', 'manage_team') && (
-                  <div className="rounded-xl border bg-muted/20 p-3 animate-fade-in">
-                    <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-[1fr_1fr_160px_auto] items-end">
+                  <div className="rounded-xl border-2 border-primary/10 bg-muted/10 p-4 animate-fade-in space-y-4">
+                    {/* Cabecalho do formulario com indicador de modalidade */}
+                    <div className="flex items-center justify-between">
+                      <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
+                        Adicionar novo membro
+                      </p>
+                      <span className={cn(
+                        'flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider border',
+                        selectedBusinessType === 'arena'
+                          ? 'bg-primary/10 text-primary border-primary/20'
+                          : 'bg-emerald-500/10 text-emerald-600 border-emerald-200 dark:border-emerald-800 dark:text-emerald-400'
+                      )}>
+                        {selectedBusinessType === 'arena' ? '🏟️ Arena' : '🏐 Escola Esportiva'}
+                      </span>
+                    </div>
+
+                    {/* Linha 1 — E-mail + Senha */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       <div className="space-y-1.5">
-                        <Label htmlFor="team-invite-email">E-mail do novo membro</Label>
+                        <Label htmlFor="team-invite-email" className="text-xs font-semibold">
+                          E-mail do novo membro
+                        </Label>
                         <Input
                           id="team-invite-email"
                           type="email"
@@ -891,24 +936,27 @@ export default function SettingsPage() {
                           value={teamInviteEmail}
                           onChange={(event) => setTeamInviteEmail(event.target.value)}
                           disabled={isInvitingTeamMember}
+                          className="h-9"
                         />
                       </div>
                       <div className="space-y-1.5">
-                        <Label htmlFor="team-invite-password">Senha Provisória</Label>
+                        <Label htmlFor="team-invite-password" className="text-xs font-semibold">
+                          Senha Provisória
+                        </Label>
                         <div className="relative">
                           <Input
                             id="team-invite-password"
-                            type={showInvitePassword ? "text" : "password"}
+                            type={showInvitePassword ? 'text' : 'password'}
                             placeholder="Mínimo 6 caracteres"
                             value={teamInvitePassword}
                             onChange={(event) => setTeamInvitePassword(event.target.value)}
                             disabled={isInvitingTeamMember}
-                            className="pr-10"
+                            className="pr-10 h-9"
                           />
                           <button
                             type="button"
                             onClick={() => setShowInvitePassword(!showInvitePassword)}
-                            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
                           >
                             {showInvitePassword ? (
                               <EyeOff className="h-4 w-4" />
@@ -918,29 +966,62 @@ export default function SettingsPage() {
                           </button>
                         </div>
                       </div>
+                    </div>
+
+                    {/* Linha 2 — Cargo + Botao */}
+                    <div className="grid grid-cols-1 sm:grid-cols-[1fr_auto] gap-3 items-start">
                       <div className="space-y-1.5">
-                        <Label>Cargo</Label>
+                        <Label className="text-xs font-semibold">Cargo</Label>
                         <Select
                           value={teamInviteRole}
                           onValueChange={(value) => setTeamInviteRole(value as InvitableOrganizationRole)}
                           disabled={isInvitingTeamMember}
                         >
-                          <SelectTrigger>
-                            <SelectValue placeholder="Cargo" />
+                          <SelectTrigger className="h-9">
+                            <SelectValue placeholder="Selecione o cargo" />
                           </SelectTrigger>
                           <SelectContent>
-                            {(selectedBusinessType === 'sport_school' ? SCHOOL_TEAM_INVITE_OPTIONS : ARENA_TEAM_INVITE_OPTIONS).map((option) => (
-                              <SelectItem key={option.role} value={option.role}>
-                                {option.label}
-                              </SelectItem>
-                            ))}
+                            {(selectedBusinessType === 'sport_school' ? SCHOOL_TEAM_INVITE_OPTIONS : ARENA_TEAM_INVITE_OPTIONS).map((option) => {
+                              const RoleIc = getRoleIcon(option.role);
+                              const roleStyle = TEAM_ROLE_LABELS[option.role];
+                              return (
+                                <SelectItem key={option.role} value={option.role}>
+                                  <div className="flex items-center gap-2 py-0.5">
+                                    <RoleIc className={cn('h-3.5 w-3.5 shrink-0', roleStyle.color)} />
+                                    <div>
+                                      <p className="text-sm font-medium">{option.label}</p>
+                                      <p className="text-[10px] text-muted-foreground">{option.description}</p>
+                                    </div>
+                                  </div>
+                                </SelectItem>
+                              );
+                            })}
                           </SelectContent>
                         </Select>
+                        {/* Descricao do cargo selecionado */}
+                        {(() => {
+                          const opts = selectedBusinessType === 'sport_school' ? SCHOOL_TEAM_INVITE_OPTIONS : ARENA_TEAM_INVITE_OPTIONS;
+                          const selected = opts.find(o => o.role === teamInviteRole);
+                          const roleStyle = selected ? TEAM_ROLE_LABELS[selected.role] : null;
+                          const RoleIc = selected ? getRoleIcon(selected.role) : null;
+                          return selected && roleStyle && RoleIc ? (
+                            <div className={cn(
+                              'flex items-start gap-2 rounded-lg px-2.5 py-1.5 text-[11px] border mt-1',
+                              roleStyle.bg, roleStyle.border
+                            )}>
+                              <RoleIc className={cn('h-3.5 w-3.5 mt-0.5 shrink-0', roleStyle.color)} />
+                              <span className={cn('font-medium leading-snug', roleStyle.color)}>
+                                {selected.description}
+                              </span>
+                            </div>
+                          ) : null;
+                        })()}
                       </div>
-                      <div className="w-full">
+
+                      <div className="sm:pt-6">
                         <Button
                           type="button"
-                          className="w-full btn-primary-gradient"
+                          className="w-full sm:w-auto btn-primary-gradient h-9 px-5 whitespace-nowrap"
                           onClick={handleInviteTeamMember}
                           disabled={isInvitingTeamMember || !teamInviteEmail.trim() || !teamInvitePassword.trim()}
                         >
@@ -950,16 +1031,23 @@ export default function SettingsPage() {
                               Criando...
                             </>
                           ) : (
-                            'Adicionar'
+                            'Adicionar Membro'
                           )}
                         </Button>
                       </div>
                     </div>
-                    <p className="mt-2 text-xs text-muted-foreground">
-                      A criação direta registra a conta no Supabase Auth e vincula o cargo a esta organização. O funcionário poderá logar imediatamente com estes dados.
-                    </p>
+
+                    {/* Nota de seguranca */}
+                    <div className="flex items-start gap-2 rounded-lg bg-background/60 border border-border/50 px-3 py-2">
+                      <Info className="h-3.5 w-3.5 text-muted-foreground shrink-0 mt-0.5" />
+                      <p className="text-[11px] text-muted-foreground leading-relaxed">
+                        A conta é criada diretamente no sistema e vinculada ao cargo desta organização.
+                        O funcionário poderá entrar imediatamente com estes dados.
+                      </p>
+                    </div>
                   </div>
                 )}
+
 
                 {!organizationId ? (
                   <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
@@ -981,48 +1069,68 @@ export default function SettingsPage() {
                 ) : (
                   <div className="space-y-2">
                     {teamMembers
-                      .filter((member) => rolePermissions.organizationRole === 'owner' || member.userId === user?.id)
+                      .filter((member) => rolePermissions.organizationRole === 'owner' || rolePermissions.organizationRole === 'manager' || member.userId === user?.id)
+                      .sort((a, b) => {
+                        const roleOrder: Record<string, number> = { owner: 0, manager: 1, finance: 2, receptionist: 3, instructor: 4 };
+                        return (roleOrder[a.role] ?? 5) - (roleOrder[b.role] ?? 5);
+                      })
                       .map((member) => {
                       const roleInfo = TEAM_ROLE_LABELS[member.role];
+                      const RoleIcon = getRoleIcon(member.role);
                       const memberLabel = member.invitedEmail
-                        || (member.userId === user?.id && user?.email ? user.email : `Usuario ${getShortUserId(member.userId)}`);
+                        || (member.userId === user?.id && user?.email ? user.email : `Funcionário ${getShortUserId(member.userId)}`);
+                      const isCurrentUser = member.userId === user?.id;
+                      const isOwnerRole = member.role === 'owner';
+                      const canManageThisMember = !isCurrentUser && !isOwnerRole && rolePermissions.can('team', 'manage_team');
 
                       return (
                         <div
                           key={member.id}
-                          className="flex flex-col gap-3 rounded-xl border bg-background p-3 sm:flex-row sm:items-center sm:justify-between hover:bg-muted/10 transition-colors"
+                          className={cn(
+                            'flex flex-col gap-3 rounded-xl border-2 p-3 sm:flex-row sm:items-center sm:justify-between transition-all duration-200',
+                            roleInfo.border,
+                            !member.active && 'opacity-60',
+                            isCurrentUser && 'ring-1 ring-primary/30',
+                          )}
                         >
-                          <div className="min-w-0 space-y-1">
-                            <div className="flex flex-wrap items-center gap-2">
-                              <p className="truncate text-sm font-semibold text-foreground">{memberLabel}</p>
-                              {member.userId === user?.id && (
-                                <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-primary">
-                                  Você
-                                </span>
-                              )}
-                              {!member.active && (
-                                <span className="rounded-full bg-amber-500/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-amber-600">
-                                  Inativo
-                                </span>
-                              )}
+                          <div className="flex items-center gap-3 min-w-0">
+                            <div className={cn('flex items-center justify-center h-9 w-9 rounded-lg shrink-0', roleInfo.bg)}>
+                              <RoleIcon className={cn('h-4 w-4', roleInfo.color)} />
                             </div>
-                            <p className="text-xs text-muted-foreground">{roleInfo.description}</p>
+                            <div className="min-w-0">
+                              <div className="flex flex-wrap items-center gap-1.5">
+                                <p className="truncate text-sm font-semibold text-foreground">{memberLabel}</p>
+                                {isCurrentUser && (
+                                  <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-primary">
+                                    Você
+                                  </span>
+                                )}
+                                {!member.active && (
+                                  <span className="rounded-full bg-amber-500/10 border border-amber-300 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-amber-600">
+                                    Inativo
+                                  </span>
+                                )}
+                              </div>
+                              <p className="text-[11px] text-muted-foreground leading-snug mt-0.5 line-clamp-1">{roleInfo.description}</p>
+                            </div>
                           </div>
-                          
-                          <div className="flex flex-wrap items-center gap-3 shrink-0">
-                            <div className="flex shrink-0 items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-3 py-1 text-xs font-semibold text-primary">
-                              <ShieldCheck className="h-3.5 w-3.5" />
+
+                          <div className="flex flex-wrap items-center gap-2 shrink-0">
+                            <div className={cn(
+                              'flex shrink-0 items-center gap-1.5 rounded-full border px-3 py-1 text-[11px] font-bold',
+                              roleInfo.color, roleInfo.bg, roleInfo.border
+                            )}>
+                              <RoleIcon className="h-3 w-3" />
                               {roleInfo.label}
                             </div>
 
-                            {member.userId !== user?.id && rolePermissions.can('team', 'manage_team') && (
-                              <div className="flex items-center gap-1.5 border-l pl-3 border-border">
-                                {/* Toggle Active Status Button */}
+                            {canManageThisMember && (
+                              <div className="flex items-center gap-1.5 border-l pl-2 border-border">
                                 <Button
                                   variant="outline"
                                   size="sm"
                                   className={cn(
-                                    "h-8 px-2.5 text-xs font-medium transition-colors",
+                                    "h-7 px-2.5 text-[11px] font-medium transition-colors",
                                     member.active
                                       ? "text-amber-600 hover:text-amber-700 hover:bg-amber-50 border-amber-200"
                                       : "text-green-600 hover:text-green-700 hover:bg-green-50 border-green-200"
@@ -1044,17 +1152,23 @@ export default function SettingsPage() {
                                     </>
                                   )}
                                 </Button>
-
-                                {/* Delete Member Button */}
                                 <Button
                                   variant="ghost"
                                   size="icon"
-                                  className="h-8 w-8 text-destructive hover:bg-destructive/10 hover:text-destructive transition-colors"
+                                  className="h-7 w-7 text-destructive hover:bg-destructive/10 hover:text-destructive transition-colors"
                                   onClick={() => setMemberToConfirmDelete(member)}
                                   disabled={isTogglingStatus !== null || isDeletingMember}
+                                  title="Excluir funcionário permanentemente"
                                 >
                                   <Trash2 className="h-3.5 w-3.5" />
                                 </Button>
+                              </div>
+                            )}
+
+                            {isOwnerRole && !isCurrentUser && (
+                              <div className="flex items-center gap-1 text-[10px] text-muted-foreground border-l pl-2 border-border">
+                                <Crown className="h-3 w-3 text-amber-500" />
+                                <span>Protegido</span>
                               </div>
                             )}
                           </div>
@@ -1063,6 +1177,32 @@ export default function SettingsPage() {
                     })}
                   </div>
                 )}
+              </CardContent>
+            </Card>
+          </div>
+        )}
+
+        {/* Painel de Permissoes por Cargo */}
+        {canViewTeam && (
+          <div className="grid gap-6 md:grid-cols-3">
+            <div className="md:col-span-1 space-y-1">
+              <h3 className="font-medium">Permissoes por Cargo</h3>
+              <p className="text-sm text-muted-foreground">
+                O que cada cargo pode acessar e executar em cada modalidade do sistema.
+              </p>
+            </div>
+            <Card className="md:col-span-2 border-primary/10">
+              <CardHeader className="pb-3">
+                <CardTitle className="flex items-center gap-2 text-lg">
+                  <ShieldCheck className="h-5 w-5 text-primary" />
+                  Matriz de Acesso
+                </CardTitle>
+                <CardDescription>
+                  Cada cargo tem permissoes especificas para Escola Esportiva e Arena. Clique em um cargo para expandir.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <RolePermissionsPanel businessType={selectedBusinessType} />
               </CardContent>
             </Card>
           </div>

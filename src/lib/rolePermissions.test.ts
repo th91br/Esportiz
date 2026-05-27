@@ -112,7 +112,7 @@ describe('rolePermissions', () => {
 
     expect(canAccessPath({ role: 'owner', businessType: 'arena', pathname: '/agenda' })).toBe(true);
     expect(canAccessPath({ role: 'manager', businessType: 'arena', pathname: '/configuracoes' })).toBe(true);
-    expect(canAccessPath({ role: 'receptionist', businessType: 'arena', pathname: '/configuracoes' })).toBe(false);
+    expect(canAccessPath({ role: 'receptionist', businessType: 'arena', pathname: '/configuracoes' })).toBe(true); // Conforme especificação (pode visualizar configurações)
     expect(canAccessPath({ role: 'receptionist', businessType: 'arena', pathname: '/despesas' })).toBe(false);
     expect(canAccessPath({ role: 'instructor', businessType: 'sport_school', pathname: '/presenca' })).toBe(true);
     expect(canAccessPath({ role: 'instructor', businessType: 'arena', pathname: '/produtos' })).toBe(false);
@@ -155,22 +155,22 @@ describe('rolePermissions', () => {
     expectRouteMatrix({
       role: 'receptionist',
       businessType: 'sport_school',
-      allowed: ['/dashboard', '/calendario', '/alunos', '/presenca', '/aniversariantes', '/pagamentos', '/comunicacao'],
-      denied: ['/planos', '/modalidades', '/turmas', '/contratos', '/despesas', '/relatorios', '/configuracoes', '/agenda'],
+      allowed: ['/dashboard', '/calendario', '/alunos', '/presenca', '/aniversariantes', '/pagamentos', '/comunicacao', '/configuracoes', '/relatorios'],
+      denied: ['/planos', '/modalidades', '/turmas', '/contratos', '/despesas', '/agenda'],
     });
 
     expectRouteMatrix({
       role: 'instructor',
       businessType: 'sport_school',
-      allowed: ['/dashboard', '/calendario', '/alunos', '/presenca', '/turmas'],
-      denied: ['/pagamentos', '/despesas', '/relatorios', '/configuracoes', '/planos', '/modalidades', '/contratos'],
+      allowed: ['/dashboard', '/calendario', '/alunos', '/presenca', '/turmas', '/configuracoes'],
+      denied: ['/pagamentos', '/despesas', '/relatorios', '/planos', '/modalidades', '/contratos'],
     });
 
     expectRouteMatrix({
       role: 'finance',
       businessType: 'sport_school',
-      allowed: ['/dashboard', '/pagamentos', '/despesas', '/relatorios'],
-      denied: ['/calendario', '/alunos', '/presenca', '/turmas', '/configuracoes', '/vendas'],
+      allowed: ['/dashboard', '/pagamentos', '/despesas', '/relatorios', '/configuracoes'],
+      denied: ['/calendario', '/alunos', '/presenca', '/turmas', '/vendas'],
     });
   });
 
@@ -205,22 +205,22 @@ describe('rolePermissions', () => {
     expectRouteMatrix({
       role: 'receptionist',
       businessType: 'arena',
-      allowed: ['/dashboard', '/agenda', '/reservantes', '/quadras', '/comandas', '/produtos', '/vendas', '/pagamentos', '/comunicacao'],
-      denied: ['/despesas', '/relatorios', '/configuracoes', '/calendario', '/alunos'],
+      allowed: ['/dashboard', '/agenda', '/reservantes', '/quadras', '/comandas', '/produtos', '/vendas', '/pagamentos', '/comunicacao', '/configuracoes', '/relatorios'],
+      denied: ['/despesas', '/calendario', '/alunos'],
     });
 
     expectRouteMatrix({
       role: 'instructor',
       businessType: 'arena',
-      allowed: ['/dashboard', '/agenda', '/reservantes'],
-      denied: ['/quadras', '/comandas', '/produtos', '/vendas', '/pagamentos', '/despesas', '/relatorios', '/configuracoes'],
+      allowed: ['/dashboard', '/agenda', '/reservantes', '/configuracoes'],
+      denied: ['/quadras', '/comandas', '/produtos', '/vendas', '/pagamentos', '/despesas', '/relatorios'],
     });
 
     expectRouteMatrix({
       role: 'finance',
       businessType: 'arena',
-      allowed: ['/dashboard', '/pagamentos', '/despesas', '/relatorios', '/vendas', '/comandas'],
-      denied: ['/agenda', '/reservantes', '/quadras', '/produtos', '/configuracoes', '/calendario', '/alunos'],
+      allowed: ['/dashboard', '/pagamentos', '/despesas', '/relatorios', '/vendas', '/comandas', '/reservantes', '/configuracoes'],
+      denied: ['/agenda', '/quadras', '/produtos', '/calendario', '/alunos'],
     });
   });
 });

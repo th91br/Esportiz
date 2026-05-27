@@ -98,6 +98,7 @@ type InvitableOrganizationRole = Exclude<OrganizationRole, 'owner'>;
 
 const SCHOOL_TEAM_INVITE_OPTIONS: Array<{ role: InvitableOrganizationRole; label: string; description: string }> = [
   { role: 'instructor', label: TEAM_ROLE_LABELS.instructor.label, description: 'Aulas, presencas e solicitacoes de treino' },
+  { role: 'receptionist', label: TEAM_ROLE_LABELS.receptionist.label, description: 'Atendimento, matriculas, calendario e recebimentos' },
   { role: 'manager', label: TEAM_ROLE_LABELS.manager.label, description: 'Operacao ampla exceto equipe' },
   { role: 'finance', label: TEAM_ROLE_LABELS.finance.label, description: 'Pagamentos, despesas e relatorios' },
 ];

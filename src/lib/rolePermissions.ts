@@ -166,23 +166,27 @@ const ROLE_ALIASES: Record<string, OrganizationRole> = {
 };
 
 const MANAGER_PERMISSIONS: Partial<Record<PermissionModule, readonly PermissionAction[]>> = {
-  dashboard: ['view'],
+  // Dashboard — acesso completo a todos os KPIs e graficos
+  dashboard: MODULE_ACTIONS.dashboard,
+  // Escola Esportiva
   calendar: MODULE_ACTIONS.calendar,
-  agenda: MODULE_ACTIONS.agenda,
   students: MODULE_ACTIONS.students,
-  reservants: MODULE_ACTIONS.reservants,
   attendance: MODULE_ACTIONS.attendance,
   plans: MODULE_ACTIONS.plans,
   modalities: MODULE_ACTIONS.modalities,
   groups: MODULE_ACTIONS.groups,
   birthdays: MODULE_ACTIONS.birthdays,
   contracts: MODULE_ACTIONS.contracts,
-  payments: ['view', 'create', 'update', 'receive_payment', 'reopen_payment', 'export'],
-  expenses: ['view', 'create', 'update', 'export', 'view_sensitive_financials'],
+  // Arena
+  agenda: MODULE_ACTIONS.agenda,
+  reservants: MODULE_ACTIONS.reservants,
   products: MODULE_ACTIONS.products,
   sales: MODULE_ACTIONS.sales,
-  comandas: MODULE_ACTIONS.comandas,
+  comandas: ['view', 'create', 'update', 'close_comanda'], // Criar, editar e fechar comandas (sem excluir/reabrir pagamentos)
   courts: MODULE_ACTIONS.courts,
+  // Compartilhados — acesso parcial (sem excluir em financeiro nem gerenciar equipe)
+  payments: ['view', 'create', 'update', 'receive_payment', 'reopen_payment', 'export'],
+  expenses: ['view', 'create', 'update', 'export', 'view_sensitive_financials'],
   reports: MODULE_ACTIONS.reports,
   communication: MODULE_ACTIONS.communication,
   settings: ['view', 'update', 'manage_settings'],
@@ -202,9 +206,10 @@ const RECEPTIONIST_PERMISSIONS: Partial<Record<PermissionModule, readonly Permis
   sales: ['view', 'create'],
   comandas: ['view', 'create', 'update', 'close_comanda'],
   courts: ['view'],
+  reports: ['view'], // Permite visualizar relatorios básicos/operacionais
   communication: ['view', 'send_message'],
   student_training_requests: ['view', 'update'],
-  settings: ['view'],
+  settings: ['view'], // Permite visualizar configurações básicas
   team: ['view'],
 };
 
@@ -219,21 +224,23 @@ const INSTRUCTOR_PERMISSIONS: Partial<Record<PermissionModule, readonly Permissi
   birthdays: ['view'],              // Professor precisa saber aniversarios dos alunos
   communication: ['view'],          // Acesso de leitura a comunicacoes
   student_training_requests: ['view', 'update', 'approve_request'],
-  settings: ['view'],
+  settings: ['view'], // Permite visualizar configurações básicas
   team: ['view'],
 };
 
 const FINANCE_PERMISSIONS: Partial<Record<PermissionModule, readonly PermissionAction[]>> = {
+  // Compartilhados (Escola Esportiva e Arena)
   dashboard: ['view'],
   payments: ['view', 'create', 'update', 'receive_payment', 'reopen_payment', 'export'],
   expenses: ['view', 'create', 'update', 'export', 'view_sensitive_financials'],
+  reports: ['view', 'export', 'view_sensitive_financials'],
+  communication: ['view'],
+  settings: ['view'], // Permite visualizar configurações básicas
+  team: ['view'],
+  // Arena apenas — filtrados automaticamente pelo scope em sport_school
   sales: ['view', 'export'],
   comandas: ['view'],
-  reservants: ['view'],             // Financeiro precisa identificar quem paga na Arena
-  reports: ['view', 'export', 'view_sensitive_financials'],
-  communication: ['view'],          // Acesso de leitura a comunicacoes para referencia
-  settings: ['view'],
-  team: ['view'],
+  reservants: ['view'], // Permite consultar reservantes de referência
 };
 
 const ROLE_PERMISSIONS: Record<Exclude<OrganizationRole, 'owner'>, Partial<Record<PermissionModule, readonly PermissionAction[]>>> = {

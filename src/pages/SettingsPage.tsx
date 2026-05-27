@@ -1183,30 +1183,42 @@ export default function SettingsPage() {
         )}
 
         {/* Painel de Permissoes por Cargo */}
-        {canViewTeam && (
-          <div className="grid gap-6 md:grid-cols-3">
-            <div className="md:col-span-1 space-y-1">
-              <h3 className="font-medium">Permissoes por Cargo</h3>
-              <p className="text-sm text-muted-foreground">
-                O que cada cargo pode acessar e executar em cada modalidade do sistema.
-              </p>
+        {canViewTeam && (() => {
+          const isOwnerRole = rolePermissions.organizationRole === 'owner';
+          return (
+            <div className="grid gap-6 md:grid-cols-3">
+              <div className="md:col-span-1 space-y-1">
+                <h3 className="font-medium">
+                  {isOwnerRole ? 'Permissoes por Cargo' : 'Minhas Permissoes'}
+                </h3>
+                <p className="text-sm text-muted-foreground">
+                  {isOwnerRole
+                    ? 'O que cada cargo pode acessar e executar em cada modalidade do sistema.'
+                    : 'O que o seu cargo permite acessar e executar no sistema.'}
+                </p>
+              </div>
+              <Card className="md:col-span-2 border-primary/10">
+                <CardHeader className="pb-3">
+                  <CardTitle className="flex items-center gap-2 text-lg">
+                    <ShieldCheck className="h-5 w-5 text-primary" />
+                    {isOwnerRole ? 'Matriz de Acesso' : 'Minhas Permissoes'}
+                  </CardTitle>
+                  <CardDescription>
+                    {isOwnerRole
+                      ? 'Cada cargo tem permissoes especificas para Escola Esportiva e Arena. Clique em um cargo para expandir.'
+                      : 'Estas sao as acoes e modulos disponiveis para o seu cargo na modalidade ativa.'}
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <RolePermissionsPanel
+                    businessType={selectedBusinessType}
+                    organizationRole={rolePermissions.organizationRole}
+                  />
+                </CardContent>
+              </Card>
             </div>
-            <Card className="md:col-span-2 border-primary/10">
-              <CardHeader className="pb-3">
-                <CardTitle className="flex items-center gap-2 text-lg">
-                  <ShieldCheck className="h-5 w-5 text-primary" />
-                  Matriz de Acesso
-                </CardTitle>
-                <CardDescription>
-                  Cada cargo tem permissoes especificas para Escola Esportiva e Arena. Clique em um cargo para expandir.
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <RolePermissionsPanel businessType={selectedBusinessType} />
-              </CardContent>
-            </Card>
-          </div>
-        )}
+          );
+        })()}
 
         {/* Delete Member Confirmation Modal */}
         <AlertDialog 

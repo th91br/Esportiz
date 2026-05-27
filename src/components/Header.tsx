@@ -36,9 +36,9 @@ export function Header() {
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="container flex h-14 items-center gap-1">
-        {/* Logo */}
-        <Link to="/dashboard" className="flex items-center gap-1.5 shrink-0 transition-transform hover:scale-105 active:scale-95" title={profile?.ct_name || 'Dashboard'}>
+      <div className="container flex h-14 items-center">
+        {/* Logo — sempre à esquerda */}
+        <Link to="/dashboard" className="flex items-center gap-1.5 shrink-0 transition-transform hover:scale-105 active:scale-95 mr-2" title={profile?.ct_name || 'Dashboard'}>
           {profile?.logo_url ? (
             <img
               src={profile.logo_url}
@@ -55,7 +55,7 @@ export function Header() {
           )}
         </Link>
 
-        {/* Desktop Navigation */}
+        {/* Desktop Navigation — flex-1 ocupa espaco central */}
         <div className="hidden md:block flex-1 min-w-0 mx-1 relative">
           {/* Fade indicators */}
           <div className="pointer-events-none absolute left-0 top-0 bottom-0 w-4 bg-gradient-to-r from-background/95 to-transparent z-10" />
@@ -78,8 +78,8 @@ export function Header() {
           </nav>
         </div>
 
-        {/* Actions */}
-        <div className="flex items-center gap-0.5 shrink-0">
+        {/* Actions — sempre à direita (ml-auto no mobile) */}
+        <div className="flex items-center gap-0.5 shrink-0 ml-auto">
           <NotificationBell />
           <div className="hidden md:flex items-center gap-0.5">
             {canViewSettings && (

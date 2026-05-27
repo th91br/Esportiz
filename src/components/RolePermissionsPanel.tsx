@@ -334,12 +334,56 @@ function RoleAccordionCard({ card, defaultOpen = false }: { card: RoleCard; defa
   );
 }
 
+import type { OrganizationRole } from '@/lib/rolePermissions';
+
 interface RolePermissionsPanelProps {
   businessType: 'sport_school' | 'arena';
+  organizationRole?: OrganizationRole;
 }
 
-export function RolePermissionsPanel({ businessType }: RolePermissionsPanelProps) {
+export function RolePermissionsPanel({ businessType, organizationRole }: RolePermissionsPanelProps) {
+  const isOwner = !organizationRole || organizationRole === 'owner';
   const [tab, setTab] = useState<BusinessTab>(businessType);
+
+  // Para nao-CEO: mostra apenas o card do proprio cargo na modalidade ativa
+  if (!isOwner) {
+    const roles = businessType === 'sport_school' ? SCHOOL_ROLES : ARENA_ROLES;
+    const myCard = roles.find(r => r.role === organizationRole);
+
+    if (!myCard) return null;
+
+    const modalityLabel = businessType === 'arena' ? 'Arena / CT Quadra' : 'Escola Esportiva';
+    const modalityEmoji = businessType === 'arena' ? '🏟️' : '🏐';
+
+    return (
+      <div className="space-y-4">
+        {/* Cabecalho contextual */}
+        <div className="flex items-center gap-2">
+          <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Suas permissoes em</span>
+          <span className="inline-flex items-center gap-1 text-[10px] font-bold bg-primary/10 text-primary border border-primary/20 rounded-full px-2 py-0.5">
+            {modalityEmoji} {modalityLabel}
+          </span>
+        </div>
+
+        {/* Legenda */}
+        <AccessLegend />
+
+        {/* Card do proprio cargo — sempre expandido */}
+        <RoleAccordionCard card={myCard} defaultOpen={true} />
+
+        {/* Nota informativa */}
+        <div className="flex items-start gap-2 rounded-lg border border-border/40 bg-muted/20 px-3 py-2.5">
+          <Key className="h-3.5 w-3.5 text-muted-foreground shrink-0 mt-0.5" />
+          <p className="text-[11px] text-muted-foreground leading-relaxed">
+            Estas sao as permissoes atribuidas ao seu cargo. Acesso restrito ao necessario para o exercicio da sua funcao.
+            Qualquer acesso fora deste escopo nao esta disponivel no sistema.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  // CEO: visao completa com tabs e todos os cargos
   const roles = tab === 'sport_school' ? SCHOOL_ROLES : ARENA_ROLES;
 
   return (
@@ -381,7 +425,7 @@ export function RolePermissionsPanel({ businessType }: RolePermissionsPanelProps
         <AccessLegend />
       </div>
 
-      {/* Cards por cargo */}
+      {/* Cards por cargo — CEO ve todos */}
       <div className="space-y-2">
         {roles.map((card, index) => (
           <RoleAccordionCard

@@ -37,6 +37,7 @@ interface RoleCard {
 }
 
 function AccessBadge({ access, detail }: { access: PermissionItem['access']; detail?: string }) {
+  // Sem acesso — inalterado
   if (access === 'none') {
     return (
       <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-muted-foreground/50 uppercase tracking-wide">
@@ -45,22 +46,34 @@ function AccessBadge({ access, detail }: { access: PermissionItem['access']; det
       </span>
     );
   }
+
+  // Ver — icone + texto curto "Ver"
   if (access === 'view') {
     return (
-      <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-sky-600 dark:text-sky-400 uppercase tracking-wide">
+      <span
+        className="inline-flex items-center gap-1 text-[10px] font-semibold text-sky-600 dark:text-sky-400 uppercase tracking-wide"
+        title={detail}
+      >
         <Eye className="h-3 w-3" />
-        {detail || 'Somente leitura'}
+        Ver
       </span>
     );
   }
+
+  // Parcial — icone + "Parcial" sempre visivel; detalhe completo no tooltip (hover desktop)
   if (access === 'limited') {
     return (
-      <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-amber-600 dark:text-amber-400 uppercase tracking-wide">
+      <span
+        className="inline-flex items-center gap-1 text-[10px] font-semibold text-amber-600 dark:text-amber-400 uppercase tracking-wide cursor-help"
+        title={detail || 'Acesso parcial'}
+      >
         <Pencil className="h-3 w-3" />
-        {detail || 'Acesso parcial'}
+        Parcial
       </span>
     );
   }
+
+  // Completo — icone + detalhe descritivo sempre visivel
   return (
     <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-emerald-600 dark:text-emerald-400 uppercase tracking-wide">
       <CheckCircle2 className="h-3 w-3" />
@@ -68,6 +81,7 @@ function AccessBadge({ access, detail }: { access: PermissionItem['access']; det
     </span>
   );
 }
+
 
 const SCHOOL_ROLES: RoleCard[] = [
   {
@@ -270,12 +284,19 @@ const ARENA_ROLES: RoleCard[] = [
 
 function AccessLegend() {
   return (
-    <div className="flex flex-wrap items-center gap-3 text-[10px] font-semibold uppercase tracking-wide">
+    <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-[10px] font-semibold uppercase tracking-wide">
       <span className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400">
         <CheckCircle2 className="h-3 w-3" /> Completo
       </span>
-      <span className="flex items-center gap-1 text-amber-600 dark:text-amber-400">
-        <Pencil className="h-3 w-3" /> Parcial
+      <span
+        className="flex items-center gap-1.5 text-amber-600 dark:text-amber-400 cursor-help"
+        title="Passe o mouse sobre o badge para ver o detalhe do acesso parcial"
+      >
+        <Pencil className="h-3 w-3" />
+        <span>Parcial</span>
+        <span className="text-amber-400/60 dark:text-amber-600/60 normal-case font-normal tracking-normal hidden sm:inline">
+          (passe o mouse)
+        </span>
       </span>
       <span className="flex items-center gap-1 text-sky-600 dark:text-sky-400">
         <Eye className="h-3 w-3" /> Ver
@@ -286,6 +307,7 @@ function AccessLegend() {
     </div>
   );
 }
+
 
 function RoleAccordionCard({ card, defaultOpen = false }: { card: RoleCard; defaultOpen?: boolean }) {
   const [open, setOpen] = useState(defaultOpen);

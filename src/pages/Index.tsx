@@ -66,12 +66,16 @@ export default function Index() {
   const rolePermissions = useRolePermissions();
   const { organizationRole } = rolePermissions;
   const { labels, isSportSchool, isArena } = useBusinessContext();
-  const canViewFinancials = organizationRole === 'owner' 
-    || organizationRole === 'manager' 
-    || organizationRole === 'finance';
-  const isEmployee = organizationRole === 'receptionist' || organizationRole === 'instructor';
+
+  // Permissoes derivadas do sistema centralizado de roles
+  const canViewFinancials = rolePermissions.can('expenses', 'view_sensitive_financials');
+  const canViewPayments   = rolePermissions.can('payments', 'view');
+  const canViewStudents   = rolePermissions.can('students', 'view') || rolePermissions.can('reservants', 'view');
+  const canViewModalities = rolePermissions.can('modalities', 'view') || rolePermissions.can('courts', 'view');
+
+  const isEmployee     = organizationRole === 'receptionist' || organizationRole === 'instructor';
   const isReceptionist = organizationRole === 'receptionist';
-  const isInstructor = organizationRole === 'instructor';
+  const isInstructor   = organizationRole === 'instructor';
 
   const { students, loadingStudents } = useStudents();
   const { plans, loadingPlans } = usePlans();
@@ -267,43 +271,94 @@ export default function Index() {
       <main className="container py-6 md:py-8 space-y-6 md:space-y-8">
         {/* ── Hero Banner ── */}
         <section className="animate-fade-up">
-          <div className="bg-gradient-hero rounded-2xl p-6 md:p-8 text-white">
-            <div className="max-w-2xl">
-              <p className="text-white/80 text-sm font-medium mb-2">
-                {greeting}, seja bem-vindo(a) de volta!
-              </p>
-              <div className="flex items-center gap-3 mb-2">
-                {profile?.logo_url ? (
-                  <img
-                    src={profile.logo_url}
-                    alt={profile.ct_name || ''}
-                    className="h-10 w-10 md:h-12 md:w-12 object-contain rounded-xl bg-white/10 p-1"
-                  />
-                ) : (
-                  <div className="bg-white/10 p-2 rounded-xl">
-                    <Logo size="sm" variant="white" />
-                  </div>
-                )}
-                <h1 className="font-display text-2xl md:text-3xl lg:text-4xl font-extrabold">
-                  {profile?.ct_name || 'Esportiz'}
-                </h1>
+          <div className="bg-gradient-hero rounded-2xl p-5 md:p-8 text-white">
+            <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
+              {/* Lado esquerdo — identidade */}
+              <div className="flex-1 min-w-0">
+                <p className="text-white/70 text-xs font-semibold uppercase tracking-wider mb-2">
+                  {greeting}
+                </p>
+                <div className="flex items-center gap-3 mb-3">
+                  {profile?.logo_url ? (
+                    <img
+                      src={profile.logo_url}
+                      alt={profile.ct_name || ''}
+                      className="h-10 w-10 md:h-12 md:w-12 object-contain rounded-xl bg-white/10 p-1 shrink-0"
+                    />
+                  ) : (
+                    <div className="bg-white/10 p-2 rounded-xl shrink-0">
+                      <Logo size="sm" variant="white" />
+                    </div>
+                  )}
+                  <h1 className="font-display text-2xl md:text-3xl lg:text-4xl font-extrabold truncate">
+                    {profile?.ct_name || 'Esportiz'}
+                  </h1>
+                </div>
+
+                {/* Badges de contexto */}
+                <div className="flex flex-wrap gap-2">
+                  {/* Badge da modalidade */}
+                  <span className="bg-white/15 border border-white/20 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider inline-flex items-center gap-1.5">
+                    {isArena ? '🏟️' : '🏐'}
+                    {isArena ? 'Arena / CT Quadra' : 'Escola Esportiva'}
+                  </span>
+
+                  {/* Badge de cargo */}
+                  {organizationRole && (
+                    <span className={cn(
+                      'px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider inline-flex items-center gap-1.5 border',
+                      organizationRole === 'owner'       && 'bg-amber-400/20 border-amber-300/40 text-amber-100',
+                      organizationRole === 'manager'     && 'bg-violet-400/20 border-violet-300/40 text-violet-100',
+                      organizationRole === 'receptionist'&& 'bg-rose-400/20 border-rose-300/40 text-rose-100',
+                      organizationRole === 'instructor'  && 'bg-emerald-400/20 border-emerald-300/40 text-emerald-100',
+                      organizationRole === 'finance'     && 'bg-blue-400/20 border-blue-300/40 text-blue-100',
+                    )}>
+                      {organizationRole === 'owner'        && '👑 CEO / Dono'}
+                      {organizationRole === 'manager'      && '🛡️ Gerente'}
+                      {organizationRole === 'receptionist' && '📞 Recepção'}
+                      {organizationRole === 'instructor'   && '📚 Professor'}
+                      {organizationRole === 'finance'      && '💼 Financeiro'}
+                    </span>
+                  )}
+
+                  {/* Indicador de treinos/reservas de hoje */}
+                  <span className="bg-white/15 border border-white/20 px-3 py-1 rounded-full text-xs font-semibold inline-flex items-center gap-1.5">
+                    <Calendar className="h-3.5 w-3.5" />
+                    {loading
+                      ? '...'
+                      : isArena
+                        ? todayReservationsCount > 0
+                          ? `${todayReservationsCount} reserva(s) hoje`
+                          : 'Nenhuma reserva hoje'
+                        : todayTrainings > 0
+                          ? `${todayTrainings} ${labels.trainingLabelSingular.toLowerCase()}(s) hoje`
+                          : `Nenhum(a) ${labels.trainingLabelSingular.toLowerCase()} hoje`}
+                  </span>
+                </div>
               </div>
-              <div className="flex flex-col sm:flex-row gap-3 mt-4 text-sm font-medium text-white/90">
-                <span className="bg-white/20 px-3 py-1.5 rounded-full inline-flex items-center gap-2 w-fit">
-                  <Calendar className="h-4 w-4" />
-                  {loading
-                    ? '...'
-                    : todayTrainings > 0
-                    ? `${todayTrainings} ${labels.trainingLabelSingular.toLowerCase()}(s) hoje`
-                    : `Nenhum(a) ${labels.trainingLabelSingular.toLowerCase()} hoje`}
-                </span>
-              </div>
+
+              {/* Lado direito — resumo financeiro (só para quem pode ver) */}
+              {canViewFinancials && !loading && (
+                <div className="bg-white/10 border border-white/15 rounded-xl px-4 py-3 text-right shrink-0 min-w-[160px]">
+                  <p className="text-white/60 text-[10px] font-bold uppercase tracking-wider mb-1">
+                    Recebido no Mês
+                  </p>
+                  <p className="text-white font-extrabold text-xl md:text-2xl font-display">
+                    {privacyMode ? '••••' : formatCurrency(receivedRevenue)}
+                  </p>
+                  {!privacyMode && expectedRevenue > 0 && (
+                    <p className="text-white/60 text-[10px] mt-0.5">
+                      de {formatCurrency(expectedRevenue)} esperado
+                    </p>
+                  )}
+                </div>
+              )}
             </div>
           </div>
         </section>
 
-        {/* ── Overdue Alert ── */}
-        {rolePermissions.can('payments', 'view') && (
+        {/* ── Overdue Alert — apenas para quem pode ver pagamentos ── */}
+        {canViewPayments && (
           <OverdueAlert privacyMode={privacyMode} />
         )}
 
@@ -382,12 +437,14 @@ export default function Index() {
           {/* ── Linha 1: KPIs operacionais por tipo ── */}
           {isSportSchool && (
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
-              <StatCard
-                title={`${labels.studentLabel} Ativos`}
-                value={loading ? '...' : pv(activeStudents)}
-                icon={Users}
-                description={privacyMode ? '' : `de ${totalStudents} total`}
-              />
+              {canViewStudents && (
+                <StatCard
+                  title={`${labels.studentLabel} Ativos`}
+                  value={loading ? '...' : pv(activeStudents)}
+                  icon={Users}
+                  description={privacyMode ? '' : `de ${totalStudents} total`}
+                />
+              )}
               <StatCard
                 title={`${labels.trainingLabel} de Hoje`}
                 value={loading ? '...' : pv(todayTrainings)}
@@ -487,8 +544,8 @@ export default function Index() {
           )}
         </section>
 
-        {/* ── Quadras / Modalidades — sport_school e arena ── */}
-        {(isSportSchool || isArena) && modalities.length > 0 && (
+        {/* ── Quadras / Modalidades — apenas para quem tem acesso ── */}
+        {canViewModalities && (isSportSchool || isArena) && modalities.length > 0 && (
           <section className="animate-fade-up" style={{ animationDelay: '0.05s' }}>
             <div className="flex items-center gap-2 mb-4 px-1">
               {isArena ? (
@@ -583,13 +640,13 @@ export default function Index() {
                   />
                 </>
               )}
-              {/* Coluna de alunos ativos — visível para todos os funcionários */}
-              {isSportSchool && (
+              {/* Coluna de alunos ativos — visivel para funcionarios com acesso a estudantes */}
+              {isSportSchool && canViewStudents && (
                 <StatCard
                   title={`${labels.studentLabel} Ativos`}
-                  value={loading ? '...' : activeStudents}
+                  value={loading ? '...' : pv(activeStudents)}
                   icon={Users}
-                  description={`de ${totalStudents} total`}
+                  description={privacyMode ? '' : `de ${totalStudents} total`}
                 />
               )}
               {isArena && (

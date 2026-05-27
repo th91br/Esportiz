@@ -15,6 +15,8 @@ import { useReservations } from '@/hooks/queries/useReservations';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { toast } from 'sonner';
 import { getLocalTodayDate, toLocalDateString } from '@/lib/dateUtils';
+import { getRemainingPaymentAmount } from '@/lib/financialContracts';
+import { formatCurrency } from '@/lib/formatCurrency';
 import {
   applyCommunicationTemplate,
   buildPixDetails,
@@ -165,17 +167,37 @@ export default function CommunicationPage() {
     }
   }, [students, plans, payments, reservations, audience]);
 
-  const getPendingBalanceForStudent = (studentId: string) => {
-    if (!isArena) return 0;
-    const pendingReservations = reservations.filter(
-      r => r.paymentStatus === 'pending' && r.remainingBalance > 0 && r.reservanteIds.includes(studentId)
-    );
-    return pendingReservations.reduce((sum, r) => sum + r.remainingBalance, 0);
+  // Calcula o saldo devedor real do aluno (arena = reservas pendentes, escola = mensalidades atrasadas/vencendo)
+  const getOverdueBalanceForStudent = (studentId: string) => {
+    if (isArena) {
+      // Arena: saldo de reservas pendentes
+      const pendingReservations = reservations.filter(
+        r => r.paymentStatus === 'pending' && r.remainingBalance > 0 && r.reservanteIds.includes(studentId)
+      );
+      return pendingReservations.reduce((sum, r) => sum + r.remainingBalance, 0);
+    }
+
+    // Escola Esportiva: soma o saldo restante de pagamentos não pagos (vencidos ou a vencer)
+    const todayStr = getLocalTodayDate();
+    const sevenDaysFromNow = new Date();
+    sevenDaysFromNow.setDate(sevenDaysFromNow.getDate() + 7);
+    const sevenDaysStr = toLocalDateString(sevenDaysFromNow);
+
+    const relevantPayments = payments.filter(p => {
+      if (p.paid) return false;
+      if (p.studentId !== studentId) return false;
+      // Inclui atrasados e os que vencem nos próximos 7 dias
+      if (audience === 'overdue') return p.dueDate < todayStr;
+      if (audience === 'due_7_days') return p.dueDate >= todayStr && p.dueDate <= sevenDaysStr;
+      return p.dueDate < todayStr; // fallback: atrasados
+    });
+
+    return relevantPayments.reduce((sum, p) => sum + getRemainingPaymentAmount(p), 0);
   };
 
   // Função para limpar o telefone
   const buildTemplateVariables = (studentId: string, studentName: string) => {
-    const pendingVal = getPendingBalanceForStudent(studentId);
+    const pendingVal = getOverdueBalanceForStudent(studentId);
     return {
       nome: getFirstName(studentName),
       nome_completo: studentName,
@@ -184,7 +206,7 @@ export default function CommunicationPage() {
       beneficiario_pix: profile?.pix_receiver || '',
       pix_key: profile?.pix_key || '',
       pix_receiver: profile?.pix_receiver || '',
-      valor: pendingVal.toFixed(2),
+      valor: pendingVal > 0 ? formatCurrency(pendingVal) : '',
     };
   };
 

@@ -16,6 +16,8 @@ import { Link } from 'react-router-dom';
 import { toast } from '@/hooks/use-toast';
 import { getLocalTodayDate, toLocalDateString } from '@/lib/dateUtils';
 import { syncAfterScheduleMutation } from '@/lib/querySync';
+import { getRemainingPaymentAmount } from '@/lib/financialContracts';
+import { formatCurrency } from '@/lib/formatCurrency';
 
 // ── localStorage dismiss (only for manual "X" dismiss, NOT for completed status) ──
 type DismissedNotifications = {
@@ -424,14 +426,17 @@ export function NotificationBell() {
                         Pagamentos Atrasados
                       </p>
                       <p className="text-[12px] font-medium text-destructive/80 mt-1">
-                        Total pendente: <span className="font-black">R$ {overduePayments.reduce((s, p) => s + p.amount, 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+                        Total pendente: <span className="font-black">{formatCurrency(overduePayments.reduce((s, p) => s + getRemainingPaymentAmount(p), 0))}</span>
                       </p>
                       <div className="flex flex-wrap gap-2 mt-3">
                         {Array.from(overdueStudentIds).slice(0, 3).map((sid) => {
                           const student = students.find((s) => s.id === sid);
+                          const studentPayments = overduePayments.filter(p => p.studentId === sid);
+                          const studentRemaining = studentPayments.reduce((s, p) => s + getRemainingPaymentAmount(p), 0);
+                          const hasPartial = studentPayments.some(p => (p.paidAmount || 0) > 0);
                           return student ? (
-                            <span key={sid} className="px-2 py-1 rounded-md bg-destructive/10 text-destructive text-[11px] font-bold">
-                              {student.name.split(' ')[0]}
+                            <span key={sid} className={`px-2 py-1 rounded-md text-[11px] font-bold ${hasPartial ? 'bg-amber-500/10 text-amber-700 dark:text-amber-400' : 'bg-destructive/10 text-destructive'}`}>
+                              {student.name.split(' ')[0]} • Falta {formatCurrency(studentRemaining)}
                             </span>
                           ) : null;
                         })}

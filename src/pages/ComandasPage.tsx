@@ -236,7 +236,7 @@ export default function ComandasPage() {
               className={cn(
                 'flex-1 md:flex-none px-5 py-2 text-sm font-semibold rounded-lg transition-all flex items-center justify-center gap-2',
                 activeTab === 'open' 
-                  ? 'bg-primary text-primary-foreground shadow-md shadow-primary/10' 
+                  ? 'bg-emerald-600 text-emerald-foreground shadow-md shadow-emerald-600/10' 
                   : 'text-muted-foreground hover:bg-muted hover:text-foreground'
               )}
             >
@@ -254,7 +254,7 @@ export default function ComandasPage() {
               className={cn(
                 'flex-1 md:flex-none px-5 py-2 text-sm font-semibold rounded-lg transition-all flex items-center justify-center gap-2',
                 activeTab === 'closed' 
-                  ? 'bg-primary text-primary-foreground shadow-md shadow-primary/10' 
+                  ? 'bg-indigo-600 text-indigo-foreground shadow-md shadow-indigo-600/10' 
                   : 'text-muted-foreground hover:bg-muted hover:text-foreground'
               )}
             >
@@ -322,7 +322,7 @@ export default function ComandasPage() {
                 onClick={() => setSelectedComanda(comanda)}
                 className={cn(
                   'card-interactive p-5 flex flex-col justify-between border-primary/5 hover:border-primary/20 transition-all cursor-pointer bg-card',
-                  comanda.status === 'open' ? 'border-l-4 border-l-primary' : 'border-l-4 border-l-success'
+                  comanda.status === 'open' ? 'border-l-4 border-l-emerald-500' : 'border-l-4 border-l-indigo-600 dark:border-l-indigo-400'
                 )}
               >
                 <div className="space-y-3">
@@ -336,12 +336,12 @@ export default function ComandasPage() {
                       </h3>
                     </div>
                     {comanda.status === 'open' ? (
-                      <span className="text-[10px] bg-primary/10 text-primary px-2.5 py-1 rounded-full font-extrabold uppercase tracking-wider flex items-center gap-1">
-                        <span className="h-1.5 w-1.5 rounded-full bg-primary animate-ping" />
+                      <span className="text-[10px] bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 px-2.5 py-1 rounded-full font-extrabold uppercase tracking-wider flex items-center gap-1">
+                        <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-ping" />
                         Ativa
                       </span>
                     ) : (
-                      <span className="text-[10px] bg-success/15 text-success px-2.5 py-1 rounded-full font-extrabold uppercase tracking-wider flex items-center gap-1">
+                      <span className="text-[10px] bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 px-2.5 py-1 rounded-full font-extrabold uppercase tracking-wider flex items-center gap-1">
                         Pago
                       </span>
                     )}
@@ -446,11 +446,11 @@ export default function ComandasPage() {
                     <h2 className="font-display font-bold text-lg md:text-xl text-foreground flex flex-wrap items-center gap-2">
                       <span className="min-w-0 truncate">{selectedComanda.name}</span>
                       {selectedComanda.status === 'open' ? (
-                        <span className="text-[10px] bg-primary/10 text-primary px-2.5 py-1 rounded-full font-extrabold uppercase tracking-wider">
+                        <span className="text-[10px] bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 px-2.5 py-1 rounded-full font-extrabold uppercase tracking-wider">
                           Aberta
                         </span>
                       ) : (
-                        <span className="text-[10px] bg-success/20 text-success px-2.5 py-1 rounded-full font-extrabold uppercase tracking-wider">
+                        <span className="text-[10px] bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 px-2.5 py-1 rounded-full font-extrabold uppercase tracking-wider">
                           Fechada
                         </span>
                       )}

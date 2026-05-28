@@ -1577,147 +1577,9 @@ footer{padding:60px 0 30px;border-top:1px solid rgba(255,255,255,.06);background
 }
 
 
-/* --- PREMIUM MOCKUP COMPONENTS FOR EXPANSION --- */
-
-/* Student Portal Circular Progress & Mockups */
-.portal-progress-circle {
-  position: relative;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-}
-.portal-progress-percentage {
-  position: absolute;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  font-family: 'Syne', sans-serif;
-  font-weight: 800;
-  color: #0F172A;
-}
-
-/* WhatsApp variable tag highlighter */
-.wa-tag-highlight {
-  background: rgba(55, 138, 221, 0.1);
-  color: #378ADD;
-  padding: 1px 4px;
-  border-radius: 4px;
-  font-size: 10px;
-  font-weight: 700;
-}
-
-/* Multi-user permissions panel styles */
-.perm-card {
-  border-radius: 12px;
-  border: 1px solid rgba(255,255,255,0.08);
-  background: rgba(255,255,255,0.02);
-  overflow: hidden;
-  transition: all 0.3s ease;
-  margin-bottom: 8px;
-}
-.perm-card-header {
-  padding: 10px 14px;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  cursor: pointer;
-  background: rgba(255,255,255,0.01);
-  border-bottom: 1px solid rgba(255,255,255,0.04);
-}
-.perm-card-body {
-  padding: 12px;
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 6px;
-  background: rgba(0,0,0,0.15);
-}
-.perm-row-item {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 6px 8px;
-  background: rgba(255,255,255,0.03);
-  border: 1px solid rgba(255,255,255,0.05);
-  border-radius: 6px;
-  font-size: 10px;
-  font-weight: 500;
-  color: rgba(255,255,255,0.8);
-}
-.perm-badge-pill {
-  display: inline-flex;
-  align-items: center;
-  gap: 3px;
-  font-size: 8px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.3px;
-}
-.perm-badge-pill.full { color: #10B981; }
-.perm-badge-pill.partial { color: #F59E0B; }
-.perm-badge-pill.none { color: rgba(255,255,255,0.3); }
-
-/* Booking calendar grid styling */
-.booking-calendar-day {
-  aspect-ratio: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  border-radius: 8px;
-  font-size: 9px;
-  font-weight: 600;
-  transition: all 0.2s ease;
-  cursor: pointer;
-}
-.booking-calendar-day.active {
-  background: #378ADD;
-  color: #fff;
-  box-shadow: 0 4px 12px rgba(55, 138, 221, 0.3);
-}
-.booking-time-chip {
-  padding: 6px;
-  border-radius: 6px;
-  border: 1px solid #E2E8F0;
-  background: #fff;
-  font-size: 9px;
-  font-weight: 700;
-  text-align: center;
-  color: #475569;
-  cursor: pointer;
-}
-.booking-time-chip.active {
-  border-color: #378ADD;
-  background: rgba(55, 138, 221, 0.08);
-  color: #378ADD;
-}
-
-/* Dedicated Smartphone Mockup system to bypass global aspect-ratio auto overrides */
-.phone-mockup-sys {
-  aspect-ratio: 9/16;
-  width: 280px;
-  max-width: 100%;
-  margin: 0 auto;
-  padding: 12px;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  font-family: 'DM Sans', sans-serif;
-  box-sizing: border-box;
-}
-
 @media(max-width: 1024px) {
   .niche-selector-tabs {
     justify-content: center;
-  }
-}
-
-@media (max-width: 480px) {
-  .perm-card-body {
-    grid-template-columns: 1fr !important;
-  }
-  .phone-mockup-sys {
-    width: 100% !important;
-    max-width: 280px !important;
   }
 }
 
@@ -3087,13 +2949,14 @@ footer{padding:60px 0 30px;border-top:1px solid rgba(255,255,255,.06);background
     <!-- CENTRAL WHATSAPP -->
     <div class="zebra-row reveal" data-niche-view="sport">
       <div class="zebra-text">
-        <h3 class="zebra-title">Disparo em Massa & CRM WhatsApp</h3>
-        <p class="zebra-desc">Conecte-se com sua base de forma inteligente. Dispare lembretes de cobrança com chave Pix ou avisos gerais em 1 clique para públicos ultra-segmentados.</p>
+        <h3 class="zebra-title">Comunicação inteligente via WhatsApp</h3>
+        <p class="zebra-desc">Envie cobranças, lembretes e avisos para alunos e turmas usando templates prontos e segmentação inteligente.</p>
         <ul class="zebra-list">
-          <li><svg class="zebra-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg><span><strong>7 Segmentações de CRM:</strong> Filtros para ativos, inadimplentes, aniversariantes, experimentais (leads), sem plano ou ex-alunos (recuperação).</span></li>
-          <li><svg class="zebra-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg><span><strong>Tags Dinâmicas:</strong> Mensagens customizadas automaticamente com variáveis como <span class="wa-tag-highlight">{nome}</span>, <span class="wa-tag-highlight">{valor}</span> e <span class="wa-tag-highlight">{chave_pix}</span>.</span></li>
-          <li><svg class="zebra-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg><span><strong>Fim da Cobrança Chata:</strong> Lembretes amigáveis e respeitosos reduzem a inadimplência sem atritos com alunos ou pais.</span></li>
-          <li><svg class="zebra-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg><span><strong>Segurança Anti-Spam:</strong> Sistema inteligente de direcionamento sequencial que respeita as diretrizes de spam do WhatsApp.</span></li>
+          <li><svg class="zebra-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Cobranças rápidas</li>
+          <li><svg class="zebra-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Avisos para turmas específicas</li>
+          <li><svg class="zebra-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Templates prontos</li>
+          <li><svg class="zebra-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Comunicação organizada</li>
+          <li><svg class="zebra-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Mais agilidade no dia a dia</li>
         </ul>
       </div>
       <div class="zebra-img-wrap">
@@ -3131,86 +2994,6 @@ footer{padding:60px 0 30px;border-top:1px solid rgba(255,255,255,.06);background
                 </div>
               </div>
             </div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- PORTAL DO ALUNO 360º -->
-    <div class="zebra-row reveal" data-niche-view="sport">
-      <div class="zebra-text">
-        <h3 class="zebra-title">Portal do Aluno 360º</h3>
-        <p class="zebra-desc">Ofereça um canal de comunicação e transparência completo para seus alunos. Acesso simplificado e seguro diretamente do celular.</p>
-        <ul class="zebra-list">
-          <li><svg class="zebra-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Acesso rápido via CPF + Data de Nascimento.</li>
-          <li><svg class="zebra-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Copiar chave Pix e ver faturas (Pago/Atrasado/Pendente).</li>
-          <li><svg class="zebra-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Solicitar novos Treinos ou Reposições direto para a secretaria.</li>
-          <li><svg class="zebra-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Acompanhar frequência em tempo real com indicador visual.</li>
-        </ul>
-      </div>
-      <div class="zebra-img-wrap">
-        <div class="zebra-mockup">
-          <div class="zebra-mockup-bar"><span class="dot-r"></span><span class="dot-y"></span><span class="dot-g"></span></div>
-          <div class="phone-mockup-sys" style="background: #FAF9F6;">
-            
-            <!-- Cabeçalho CT do Aluno -->
-            <div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #E2E8F0; padding-bottom: 8px; margin-bottom: 12px;">
-              <div style="display: flex; align-items: center; gap: 6px;">
-                <div style="width: 24px; height: 24px; background: #378ADD; border-radius: 6px; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 10px; font-weight: 800;">CT</div>
-                <div>
-                  <div style="font-size: 9px; font-weight: 900; color: #1e293b; line-height:1.1;">Escola CT Pro</div>
-                  <span style="font-size: 7px; color: #378ADD; font-weight: 700; text-transform: uppercase;">Portal do Aluno</span>
-                </div>
-              </div>
-              <span style="font-size: 8px; padding: 2px 6px; border-radius: 100px; background: #D1FAE5; color: #065F46; font-weight: 700;">Ativo</span>
-            </div>
-
-            <div style="font-size: 11px; font-weight: 800; color: #0F172A; margin-bottom: 1px;">Olá, Arthur Silva</div>
-            <div style="font-size: 7px; color: #64748B; margin-bottom: 12px;">Plano: Quadra Mensal Pro</div>
-
-            <!-- Gráfico de Frequência Circular -->
-            <div style="background: #fff; border: 1px solid #E2E8F0; border-radius: 10px; padding: 10px; display: flex; align-items: center; gap: 14px; margin-bottom: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.02);">
-              <div class="portal-progress-circle">
-                <svg width="48" height="48" viewBox="0 0 48 48" class="transform -rotate-90">
-                  <circle cx="24" cy="24" r="20" stroke="#f1f5f9" stroke-width="4.5" fill="transparent" />
-                  <circle cx="24" cy="24" r="20" stroke="#1DB874" stroke-width="4.5" stroke-dasharray="125.6" stroke-dashoffset="12.5" stroke-linecap="round" fill="transparent" />
-                </svg>
-                <div class="portal-progress-percentage">
-                  <span style="font-size: 9px; font-weight: 900;">90%</span>
-                </div>
-              </div>
-              <div>
-                <div style="font-size: 9px; font-weight: 800; color: #1F2937;">Frequência de Aulas</div>
-                <div style="font-size: 7px; color: #64748B; margin-top: 2px;">Excelente! Frequência acima da meta mínima de 85%.</div>
-              </div>
-            </div>
-
-            <!-- Fatura Pendente Pix -->
-            <div style="background: #fff; border: 1px solid #E2E8F0; border-radius: 10px; padding: 10px; margin-bottom: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.02); display: flex; flex-direction: column; gap: 6px;">
-              <div style="display: flex; justify-content: space-between; align-items: center;">
-                <span style="font-size: 8px; font-weight: 800; color: #1e293b;">Mensalidade de Maio</span>
-                <span style="font-size: 7px; font-weight: 700; background: rgba(245, 158, 11, 0.1); color: #D97706; padding: 1px 5px; border-radius: 4px;">Pendente</span>
-              </div>
-              <div style="display: flex; justify-content: space-between; align-items: flex-end; border-top: 1px dashed #F1F5F9; padding-top: 6px;">
-                <div>
-                  <span style="font-size: 7px; color: #64748B; display: block;">Valor devido</span>
-                  <span style="font-size: 11px; font-weight: 900; color: #0F172A;">R$ 150,00</span>
-                </div>
-                <div style="background: #0D1F3C; color: #fff; font-size: 8px; padding: 4px 8px; border-radius: 6px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 3px;">
-                  ⚡ Copiar Pix
-                </div>
-              </div>
-            </div>
-
-            <!-- Pedido de Reposição móvel -->
-            <div style="background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 10px; padding: 8px; display: flex; align-items: center; justify-content: space-between; margin-top: auto;">
-              <div>
-                <span style="font-size: 8px; font-weight: 800; color: #1E293B; display:block;">Solicitar Reposição</span>
-                <span style="font-size: 6.5px; color: #64748B;">Perdeu a aula? Peça compensação.</span>
-              </div>
-              <div style="background: #fff; border: 1px solid #CBD5E1; color: #1E293B; font-size: 8px; padding: 3px 6px; border-radius: 4px; font-weight: 700;">Solicitar</div>
-            </div>
-
           </div>
         </div>
       </div>
@@ -3269,84 +3052,6 @@ footer{padding:60px 0 30px;border-top:1px solid rgba(255,255,255,.06);background
                </div>
              </div>
           </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- CARGOS E PERMISSÕES MULTIUSUÁRIO -->
-    <div class="zebra-row reveal" data-niche-view="both">
-      <div class="zebra-text">
-        <h3 class="zebra-title">Controle de Acessos Multisuário</h3>
-        <p class="zebra-desc">Proteja seu caixa e seus dados. Delegue acessos cirúrgicos para sua equipe com base no cargo real de cada colaborador.</p>
-        <ul class="zebra-list">
-          <li><svg class="zebra-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Cargos customizados: CEO/Dono, Gerente, Recepção, Professor e Financeiro.</li>
-          <li><svg class="zebra-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Segurança absoluta: Relação cirúrgica de permissões por módulo.</li>
-          <li><svg class="zebra-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Recepção pode agendar e cobrar, mas não vê faturamento macro.</li>
-          <li><svg class="zebra-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Professor vê apenas sua grade de treinos e chamada de seus alunos.</li>
-        </ul>
-      </div>
-      <div class="zebra-img-wrap">
-        <div class="zebra-mockup" style="background: rgba(13, 31, 60, 0.98); border-radius: 16px; padding: 16px; border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 20px 40px rgba(0,0,0,0.4);">
-          
-          <div style="font-size: 11px; font-weight: 800; color: #fff; margin-bottom: 3px; display:flex; align-items:center; gap:6px; font-family:'Syne',sans-serif;">
-            🔒 Gestão de Permissões da Equipe
-          </div>
-          <p style="font-size: 8px; color: rgba(255,255,255,0.6); margin-bottom: 12px; margin-top: 0;">Regras de acesso aplicadas de forma automatizada e segura.</p>
-
-          <!-- Card 1: CEO/Dono -->
-          <div class="perm-card" style="border-color: rgba(245, 158, 11, 0.3); background: rgba(245, 158, 11, 0.03);">
-            <div class="perm-card-header">
-              <span style="font-size: 11px;">👑</span>
-              <div style="flex:1;">
-                <span style="font-size: 9px; font-weight: 800; color: #F59E0B; display:block; line-height:1.1;">CEO / Dono</span>
-                <span style="font-size: 7px; color: rgba(255,255,255,0.4);">Acesso total irrestrito</span>
-              </div>
-              <span class="perm-badge-pill full" style="font-size:7px;">✓ Total</span>
-            </div>
-          </div>
-
-          <!-- Card 2: Recepção (Expandido) -->
-          <div class="perm-card" style="border-color: rgba(244, 63, 94, 0.3); background: rgba(244, 63, 94, 0.02);">
-            <div class="perm-card-header" style="border-bottom-color: rgba(255,255,255,0.06);">
-              <span style="font-size: 11px;">📞</span>
-              <div style="flex:1;">
-                <span style="font-size: 9px; font-weight: 800; color: #FB7185; display:block; line-height:1.1;">Recepção / Atendente</span>
-                <span style="font-size: 7px; color: rgba(255,255,255,0.4);">Acessos operacionais diários</span>
-              </div>
-              <span class="perm-badge-pill partial" style="font-size:7px;">⚠ Parcial</span>
-            </div>
-            <div class="perm-card-body">
-              <div class="perm-row-item">
-                <span>Agenda</span>
-                <span class="perm-badge-pill partial" style="font-size:6.5px;">Parcial</span>
-              </div>
-              <div class="perm-row-item">
-                <span>Alunos</span>
-                <span class="perm-badge-pill partial" style="font-size:6.5px;">Parcial</span>
-              </div>
-              <div class="perm-row-item">
-                <span>Pagamentos</span>
-                <span class="perm-badge-pill partial" style="font-size:6.5px;">Baixas</span>
-              </div>
-              <div class="perm-row-item" style="opacity: 0.4;">
-                <span>Despesas</span>
-                <span class="perm-badge-pill none" style="font-size:6.5px;">Nenhum</span>
-              </div>
-            </div>
-          </div>
-
-          <!-- Card 3: Professor -->
-          <div class="perm-card" style="border-color: rgba(16, 185, 129, 0.3); background: rgba(16, 185, 129, 0.02);">
-            <div class="perm-card-header">
-              <span style="font-size: 11px;">📖</span>
-              <div style="flex:1;">
-                <span style="font-size: 9px; font-weight: 800; color: #34D399; display:block; line-height:1.1;">Professor / Instrutor</span>
-                <span style="font-size: 7px; color: rgba(255,255,255,0.4);">Visualização de treinos e presenças</span>
-              </div>
-              <span class="perm-badge-pill partial" style="font-size:7px;">⚠ Parcial</span>
-            </div>
-          </div>
-
         </div>
       </div>
     </div>
@@ -3431,77 +3136,6 @@ footer{padding:60px 0 30px;border-top:1px solid rgba(255,255,255,.06);background
               <div style="font-size: 10px; font-weight: 700;">Mensalista Beach Tennis</div>
               <div style="font-size: 9px; color: #6B7280;">Sábados — 09h</div>
             </div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- PORTAL DE RESERVAS ONLINE 24H -->
-    <div class="zebra-row reveal hidden-niche" data-niche-view="arena">
-      <div class="zebra-text">
-        <h3 class="zebra-title">Portal de Reservas Online 24h</h3>
-        <p class="zebra-desc">Abra sua agenda para locações 24/7 sem precisar responder chat no WhatsApp. Seus clientes reservam e pagam em segundos.</p>
-        <ul class="zebra-list">
-          <li><svg class="zebra-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Link público personalizado (agendar?ct=sua_arena) para colocar na Bio do Instagram.</li>
-          <li><svg class="zebra-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Calendário inteligente que exibe apenas horários de quadras disponíveis.</li>
-          <li><svg class="zebra-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Definição de duração de reserva flexível (60, 90 ou 120 minutos).</li>
-          <li><svg class="zebra-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Validação automática de segurança (CPF, Telefone e E-mail) integrada.</li>
-        </ul>
-      </div>
-      <div class="zebra-img-wrap">
-        <div class="zebra-mockup">
-          <div class="zebra-mockup-bar"><span class="dot-r"></span><span class="dot-y"></span><span class="dot-g"></span></div>
-          <div class="phone-mockup-sys" style="background: #fff; color: #1e293b;">
-            
-            <!-- Logo & Nome da Arena -->
-            <div style="display: flex; flex-direction: column; align-items: center; text-align: center; border-bottom: 1px solid #F1F5F9; padding-bottom: 8px; margin-bottom: 10px; gap: 4px;">
-              <div style="width: 28px; height: 28px; background: #0D1F3C; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 11px; font-weight: 800;">🏟️</div>
-              <h4 style="font-size: 10px; font-weight: 800; color: #0F172A; margin: 0;">Esportiz Arena Beach</h4>
-              <span style="font-size: 7px; color: #64748B; font-weight: 600;">Agendamento de Quadras Online</span>
-            </div>
-
-            <!-- Seleção de data (Chrono Bar) -->
-            <span style="font-size: 7px; font-weight: 800; color: #64748B; text-transform: uppercase; margin-bottom: 4px;">1. Selecione o Dia</span>
-            <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; margin-bottom: 8px;">
-              <div class="booking-calendar-day">
-                <span style="color:#64748B; font-size:6px;">TER</span>
-                <span>26</span>
-              </div>
-              <div class="booking-calendar-day">
-                <span style="color:#64748B; font-size:6px;">QUA</span>
-                <span>27</span>
-              </div>
-              <div class="booking-calendar-day active">
-                <span style="color:#fff; font-size:6px; opacity:0.8;">QUI</span>
-                <span>28</span>
-              </div>
-              <div class="booking-calendar-day">
-                <span style="color:#64748B; font-size:6px;">SEX</span>
-                <span>29</span>
-              </div>
-            </div>
-
-            <!-- Seleção de quadra -->
-            <span style="font-size: 7px; font-weight: 800; color: #64748B; text-transform: uppercase; margin-bottom: 4px;">2. Escolha a Quadra</span>
-            <div style="border: 1px solid #E2E8F0; border-radius: 8px; padding: 6px 8px; font-size: 8px; font-weight: 700; color: #0F172A; display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-              <span>Quadra 1 (Areia - Beach Tennis / Futevôlei)</span>
-              <span style="font-size: 8px; color: #378ADD;">▼</span>
-            </div>
-
-            <!-- Seleção de horários -->
-            <span style="font-size: 7px; font-weight: 800; color: #64748B; text-transform: uppercase; margin-bottom: 4px;">3. Horários Disponíveis</span>
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 4px; margin-bottom: 12px;">
-              <div class="booking-time-chip">18:00 - 19:00</div>
-              <div class="booking-time-chip active">19:00 - 20:00</div>
-              <div class="booking-time-chip">20:00 - 21:00</div>
-              <div class="booking-time-chip">21:00 - 22:00</div>
-            </div>
-
-            <!-- Botão de avanço -->
-            <div style="background: #378ADD; color: #fff; font-size: 9px; font-weight: 800; text-align: center; padding: 8px; border-radius: 8px; margin-top: auto; display: flex; align-items: center; justify-content: center; gap: 4px; cursor: pointer; box-shadow: 0 4px 12px rgba(55, 138, 221, 0.2);">
-              Continuar Reserva <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
-            </div>
-
           </div>
         </div>
       </div>
@@ -4172,8 +3806,8 @@ footer{padding:60px 0 30px;border-top:1px solid rgba(255,255,255,.06);background
         <div class="faq-body">Sim! O módulo de Comunicação Inteligente permite segmentar sua base (inadimplentes, novos alunos, experimentais) e enviar mensagens personalizadas via WhatsApp com templates automáticos — tudo sem risco de banimento.</div>
       </details>
       <details class="reveal">
-        <summary>O sistema gera contratos e termos de adesão?</summary>
-        <div class="faq-body">Sim! Com a ferramenta de Contratos Digitais, o Esportiz autogera em 1 clique um contrato completo de prestação de serviços esportivos. O documento é preenchido dinamicamente com o logotipo da sua escola, os dados cadastrais do aluno (CPF, RG, endereço), a modalidade de treino e os valores exatos do plano contratado. Perfeito para imprimir ou salvar em PDF.</div>
+        <summary>O sistema gera contratos?</summary>
+        <div class="faq-body">Sim. O Esportiz gera contratos profissionais em PDF com o logo do seu CT, dados do aluno, plano contratado e termos personalizados. Tudo automático, pronto para download e assinatura.</div>
       </details>
       <details class="reveal">
         <summary>Consigo exportar dados para Excel?</summary>
@@ -4184,8 +3818,8 @@ footer{padding:60px 0 30px;border-top:1px solid rgba(255,255,255,.06);background
         <div class="faq-body">São 14 dias grátis com acesso completo a todas as funcionalidades — dashboard, comunicação, contratos, relatórios, tudo. Sem cartão de crédito, sem compromisso. Cancele quando quiser.</div>
       </details>
       <details class="reveal">
-        <summary>Posso cadastrar minha equipe? Os dados são seguros?</summary>
-        <div class="faq-body">Sim, com total segurança! O Esportiz possui controle de acesso multiusuário (RBAC) com isolamento cirúrgico de dados via banco de dados (Supabase RLS). Você pode cadastrar sua equipe e atribuir 5 cargos específicos (CEO, Gerente, Recepção, Professor e Financeiro). A recepção pode receber mensalidades mas não vê a receita líquida macro, e o professor vê apenas sua chamada móvel de alunos, garantindo integridade e confidencialidade financeira total.</div>
+        <summary>Meus dados ficam seguros?</summary>
+        <div class="faq-body">Sim. Usamos infraestrutura Supabase com criptografia em repouso e em trânsito, além de backups automáticos diários. Cada escola tem dados 100% isolados com Row Level Security (RLS).</div>
       </details>
       <details class="reveal">
         <summary>Consigo migrar de planilha para o Esportiz?</summary>
@@ -4202,10 +3836,6 @@ footer{padding:60px 0 30px;border-top:1px solid rgba(255,255,255,.06);background
       <details class="reveal">
         <summary>O plano Elite já está disponível?</summary>
         <div class="faq-body">O plano Elite está em desenvolvimento final. Você pode entrar na lista de espera clicando no botão do card e será o primeiro a saber quando abrir — com condições especiais de lançamento.</div>
-      </details>
-      <details class="reveal">
-        <summary>O Esportiz tem controle de bar, comandas e vendas de produtos (PDV)?</summary>
-        <div class="faq-body">Sim! O Esportiz conta com um ecossistema completo de vendas. Donos de Arenas e CTs podem gerenciar o bar através do Sistema de Comandas (com abertura de comanda vinculada a reservas ou clientes e suporte a pagamentos parciais) e fazer vendas rápidas no balcão (PDV para fardamentos, materiais, acessórios) com controle de estoque integrado e baixa automatizada na quantidade de produtos.</div>
       </details>
     </div>
   </div>

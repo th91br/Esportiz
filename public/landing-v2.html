@@ -3561,9 +3561,52 @@ footer{padding:60px 0 30px;border-top:1px solid rgba(255,255,255,.06);background
         <div class="int-badge">Disponível</div>
         <h3>Google Agenda</h3>
         <p>Sincronize aulas, reservas e treinos automaticamente.</p>
-        <div class="int-illus-new">
-          <img src="/assets/integrations/calendar.png" alt="Integração Google Agenda" class="int-img" loading="lazy" />
-          <div class="int-glow blue"></div>
+        <div class="int-illus-new" style="display: flex; flex-direction: column; height: 160px; background: rgba(8, 16, 32, 0.65); border-radius: 16px; border: 1px solid rgba(255,255,255,0.08); overflow: hidden; margin-top: auto; font-family: 'DM Sans', sans-serif; position: relative;">
+          <!-- Linha superior de degradê característico do Google no app real -->
+          <div style="height: 3px; background: linear-gradient(to right, #4285F4, #EA4335, #FBBC05, #34A853); width: 100%;"></div>
+          <!-- Header do Widget integrado -->
+          <div style="background: rgba(66, 133, 244, 0.06); border-bottom: 1px solid rgba(66, 133, 244, 0.12); padding: 6px 10px; display: flex; align-items: center; justify-content: space-between;">
+            <div style="display: flex; align-items: center; gap: 5px;">
+              <span style="font-size: 8px; color: #4285F4; font-weight: 700; text-transform: uppercase; letter-spacing: 0.3px;">Configuração da Agenda</span>
+            </div>
+            <span style="font-size: 6px; color: #10B981; font-weight: 700; background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.2); padding: 1px 5px; border-radius: 100px; display: flex; align-items: center; gap: 2px;">
+              <span style="width: 3px; height: 3px; background: #10B981; border-radius: 50%;"></span> Conectado
+            </span>
+          </div>
+          <!-- Calendário Simulador do App Real -->
+          <div style="flex: 1; padding: 10px 8px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px; background: rgba(8, 16, 32, 0.35);">
+            <!-- Seg -->
+            <div style="display: flex; flex-direction: column; gap: 3px;">
+              <span style="font-size: 6px; color: rgba(255,255,255,0.4); font-weight: 700; text-align: center; text-transform: uppercase;">Seg</span>
+              <div style="background: rgba(16, 185, 129, 0.12); border: 1px solid rgba(16, 185, 129, 0.25); border-radius: 4px; padding: 3px 5px; display: flex; flex-direction: column; gap: 0.5px;">
+                <span style="font-size: 6.5px; font-weight: 700; color: #10B981; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Futebol A</span>
+                <span style="font-size: 5px; color: rgba(255,255,255,0.5);">07h-08h</span>
+              </div>
+            </div>
+            <!-- Qua -->
+            <div style="display: flex; flex-direction: column; gap: 3px;">
+              <span style="font-size: 6px; color: rgba(255,255,255,0.4); font-weight: 700; text-align: center; text-transform: uppercase;">Qua</span>
+              <div style="background: rgba(55, 138, 221, 0.12); border: 1px solid rgba(55, 138, 221, 0.25); border-radius: 4px; padding: 3px 5px; display: flex; flex-direction: column; gap: 0.5px;">
+                <span style="font-size: 6.5px; font-weight: 700; color: #378ADD; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Beach Tennis</span>
+                <span style="font-size: 5px; color: rgba(255,255,255,0.5);">09h-10h</span>
+              </div>
+            </div>
+            <!-- Qui -->
+            <div style="display: flex; flex-direction: column; gap: 3px;">
+              <span style="font-size: 6px; color: rgba(255,255,255,0.4); font-weight: 700; text-align: center; text-transform: uppercase;">Qui</span>
+              <div style="background: rgba(245, 158, 11, 0.12); border: 1px solid rgba(245, 158, 11, 0.25); border-radius: 4px; padding: 3px 5px; display: flex; flex-direction: column; gap: 0.5px;">
+                <span style="font-size: 6.5px; font-weight: 700; color: #F59E0B; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Treino Vôlei</span>
+                <span style="font-size: 5px; color: rgba(255,255,255,0.5);">18h-19h</span>
+              </div>
+            </div>
+          </div>
+          <!-- Botão Conector idêntico ao real do sistema -->
+          <div style="padding: 6px; background: rgba(8, 16, 32, 0.65); border-top: 1px solid rgba(255,255,255,0.05); display: flex; justify-content: flex-end; align-items: center; gap: 6px;">
+            <span style="font-size: 5.5px; color: rgba(255,255,255,0.45);">Sincronização Ativa 24h</span>
+            <div style="background: transparent; border: 1px solid rgba(255,255,255,0.15); color: rgba(255,255,255,0.9); font-size: 6.5px; font-weight: 700; padding: 3px 8px; border-radius: 4px; cursor: pointer;">Reconectar Google Agenda</div>
+          </div>
+          <!-- Brilho dinâmico traseiro -->
+          <div class="int-glow blue" style="opacity: 0.12;"></div>
         </div>
       </div>
 
@@ -3572,9 +3615,49 @@ footer{padding:60px 0 30px;border-top:1px solid rgba(255,255,255,.06);background
         <div class="int-badge">Disponível</div>
         <h3>Google Sheets</h3>
         <p>Exporte relatórios financeiros e operacionais em segundos.</p>
-        <div class="int-illus-new">
-          <img src="/assets/integrations/sheets.png" alt="Integração Google Sheets" class="int-img" loading="lazy" />
-          <div class="int-glow green"></div>
+        <div class="int-illus-new" style="display: flex; flex-direction: column; height: 160px; background: rgba(8, 16, 32, 0.65); border-radius: 16px; border: 1px solid rgba(255,255,255,0.08); overflow: hidden; margin-top: auto; font-family: 'DM Sans', sans-serif; position: relative;">
+          <!-- Linha superior de degradê verde característico do Excel/Sheets no app real -->
+          <div style="height: 3px; background: linear-gradient(to right, #1D723A, #217346); width: 100%;"></div>
+          <!-- Header do Widget integrado -->
+          <div style="background: rgba(29, 184, 116, 0.06); border-bottom: 1px solid rgba(29, 184, 116, 0.12); padding: 6px 10px; display: flex; align-items: center; justify-content: space-between;">
+            <div style="display: flex; align-items: center; gap: 5px;">
+              <span style="font-size: 8px; color: #1DB874; font-weight: 700; text-transform: uppercase; letter-spacing: 0.3px;">Controle Financeiro</span>
+            </div>
+            <span style="font-size: 6px; color: #10B981; font-weight: 700; background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.2); padding: 1px 5px; border-radius: 100px; display: flex; align-items: center; gap: 2px;">
+              <span style="width: 3px; height: 3px; background: #10B981; border-radius: 50%;"></span> Planilha pronta
+            </span>
+          </div>
+          <!-- Inputs Reais do App do Esportiz -->
+          <div style="flex: 1; padding: 10px; display: flex; flex-direction: column; gap: 6px; background: rgba(8, 16, 32, 0.35);">
+            <!-- ID input -->
+            <div style="display: flex; flex-direction: column; gap: 2px;">
+              <label style="font-size: 6px; font-weight: 700; color: rgba(255,255,255,0.4); text-transform: uppercase;">ID da Planilha Google</label>
+              <div style="background: rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.08); border-radius: 4px; padding: 4px; font-size: 7.5px; color: rgba(255,255,255,0.9); font-family: monospace; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: flex; justify-content: space-between; align-items: center;">
+                <span>1T_H39xPzK2s8Wd_9Z2026_Esportiz_Sheet</span>
+                <span style="font-size: 6px; color: #1DB874;">✓ Salvo</span>
+              </div>
+            </div>
+            <!-- Simulador de Tabela real da planilha -->
+            <div style="display: flex; flex-direction: column; gap: 3px; margin-top: 2px;">
+              <div style="display: grid; grid-template-columns: 1.5fr 1fr 1fr; border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 3px; font-size: 6px; font-weight: 700; color: rgba(255,255,255,0.3); text-transform: uppercase;">
+                <span>Aluno</span>
+                <span style="text-align: center;">Plano</span>
+                <span style="text-align: right;">Status</span>
+              </div>
+              <div style="display: grid; grid-template-columns: 1.5fr 1fr 1fr; align-items: center; font-size: 7px; color: rgba(255,255,255,0.8);">
+                <span style="font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Lucas Andrade</span>
+                <span style="text-align: center; color: rgba(255,255,255,0.5);">Mensal</span>
+                <span style="font-size: 5.5px; font-weight: 700; color: #10B981; text-align: right; background: rgba(16, 185, 129, 0.1); padding: 0.5px 3px; border-radius: 3px; justify-self: flex-end;">PAGO</span>
+              </div>
+            </div>
+          </div>
+          <!-- Rodapé com botão real -->
+          <div style="padding: 6px; background: rgba(8, 16, 32, 0.65); border-top: 1px solid rgba(255,255,255,0.05); display: flex; justify-content: flex-end; align-items: center; gap: 6px;">
+            <span style="font-size: 5.5px; color: rgba(255,255,255,0.45); font-style: italic;">docs.google.com/spreadsheets...</span>
+            <div style="background: #1D723A; border: none; color: #fff; font-size: 6.5px; font-weight: 700; padding: 4px 8px; border-radius: 4px; cursor: pointer; box-shadow: 0 2px 6px rgba(29, 114, 58, 0.2);">Pronto para Sincronizar</div>
+          </div>
+          <!-- Brilho dinâmico traseiro -->
+          <div class="int-glow green" style="opacity: 0.12;"></div>
         </div>
       </div>
 

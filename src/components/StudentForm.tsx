@@ -283,11 +283,15 @@ export function StudentForm({ student, trigger }: StudentFormProps) {
       await supabase.rpc('cleanup_student_future_trainings', { p_student_id: schedulePromptData.studentId });
 
       // 2. Generate future dates for the next 3 months via backend
+      const studentGroup = groups.find(g => selectedGroups.includes(g.id));
+      const groupDuration = studentGroup ? studentGroup.durationMinutes : 60;
+
       const { error } = await supabase.rpc('generate_student_schedule', {
         p_user_id: user?.id,
         p_student_id: schedulePromptData.studentId,
         p_schedules: selectedSchedules,
-        p_months_ahead: 3
+        p_months_ahead: 3,
+        p_duration_minutes: groupDuration
       });
 
       if (error) throw error;

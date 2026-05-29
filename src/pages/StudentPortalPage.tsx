@@ -21,6 +21,7 @@ import {
   isTodayOrPastDate,
   isValidCpf,
 } from '@/lib/publicPortalSecurity';
+import { getEndTime } from '@/data/mockData';
 
 interface AttendanceLog {
   date: string;
@@ -60,10 +61,10 @@ interface GroupPortalData {
   id: string;
   name: string;
   location?: string;
+  durationMinutes?: number;
   schedule: Array<{
-    day: string;
-    startTime: string;
-    endTime: string;
+    dayOfWeek: number;
+    time: string;
   }>;
 }
 
@@ -86,6 +87,16 @@ interface AttendanceStats {
 }
 
 const monthNames = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
+
+const WEEKDAY_NAMES = [
+  'Domingo',
+  'Segunda-feira',
+  'Terça-feira',
+  'Quarta-feira',
+  'Quinta-feira',
+  'Sexta-feira',
+  'Sábado'
+];
 
 const getPortalSessionKey = (ownerId: string | null) => ownerId ? `esportiz:student-portal:${ownerId}` : null;
 
@@ -768,8 +779,8 @@ export default function StudentPortalPage() {
                             <div key={idx} className="flex items-center gap-3 bg-background border border-border/40 p-2.5 rounded-lg text-xs font-medium">
                               <Calendar className="h-4 w-4 text-primary shrink-0" />
                               <div>
-                                <span className="text-foreground capitalize font-semibold block">{slot.day}</span>
-                                <span className="text-muted-foreground text-[11px]">{slot.startTime} - {slot.endTime}</span>
+                                <span className="text-foreground capitalize font-semibold block">{WEEKDAY_NAMES[slot.dayOfWeek] || 'Dia'}</span>
+                                <span className="text-muted-foreground text-[11px]">{slot.time} - {getEndTime(slot.time, g.durationMinutes || 60)}</span>
                               </div>
                             </div>
                           ))

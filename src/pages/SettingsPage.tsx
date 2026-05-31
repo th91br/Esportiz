@@ -33,7 +33,7 @@ import { cn } from '@/lib/utils';
 import { getErrorMessage } from '@/lib/errorUtils';
 import { getDefaultCommunicationTemplate } from '@/lib/communicationContracts';
 import { useRolePermissions } from '@/hooks/useRolePermissions';
-import { useOrganizationTeamMembers } from '@/hooks/queries/useOrganizationTeamMembers';
+import { useOrganizationTeamMembers, type OrganizationTeamMember } from '@/hooks/queries/useOrganizationTeamMembers';
 import type { OrganizationRole } from '@/lib/rolePermissions';
 
 const BUSINESS_OPTIONS: { type: BusinessType; title: string; description: string; emoji: string }[] = [
@@ -285,7 +285,7 @@ export default function SettingsPage() {
   const [teamInvitePassword, setTeamInvitePassword] = useState('');
   const [showInvitePassword, setShowInvitePassword] = useState(false);
   const [isInvitingTeamMember, setIsInvitingTeamMember] = useState(false);
-  const [memberToConfirmDelete, setMemberToConfirmDelete] = useState<any | null>(null);
+  const [memberToConfirmDelete, setMemberToConfirmDelete] = useState<OrganizationTeamMember | null>(null);
   const [isDeletingMember, setIsDeletingMember] = useState(false);
   const [isTogglingStatus, setIsTogglingStatus] = useState<string | null>(null);
 
@@ -515,7 +515,7 @@ export default function SettingsPage() {
     }
   };
 
-  const handleToggleMemberStatus = async (member: any) => {
+  const handleToggleMemberStatus = async (member: OrganizationTeamMember) => {
     if (member.userId === user?.id) {
       toast.error('Voce nao pode alterar o seu proprio status.');
       return;

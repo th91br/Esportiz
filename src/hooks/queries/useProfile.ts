@@ -77,8 +77,14 @@ const PROFILE_SELECT = `
   )
 `;
 
+type ProfileWithOrganization = Profile & {
+  organizations?: {
+    owner_user_id?: string | null;
+  } | null;
+};
+
 function normalizeProfile(data: unknown): Profile {
-  const profile = data as any;
+  const profile = data as ProfileWithOrganization;
   const owner_user_id = profile?.organizations?.owner_user_id || profile?.user_id || null;
   return {
     ...profile,

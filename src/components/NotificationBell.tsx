@@ -100,6 +100,7 @@ export function NotificationBell() {
           studentId: r.reservanteIds[0] || '',
           dueDate: r.date,
           paid: false,
+          paidAmount: 0,
         }));
     }
     return payments.filter((p) => !p.paid && p.dueDate < today);

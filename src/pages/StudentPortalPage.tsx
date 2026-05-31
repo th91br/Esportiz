@@ -63,8 +63,11 @@ interface GroupPortalData {
   location?: string;
   durationMinutes?: number;
   schedule: Array<{
-    dayOfWeek: number;
-    time: string;
+    day?: string;
+    dayOfWeek?: number;
+    time?: string;
+    startTime?: string;
+    endTime?: string;
   }>;
 }
 
@@ -97,6 +100,20 @@ const WEEKDAY_NAMES = [
   'Sexta-feira',
   'Sábado'
 ];
+
+function getScheduleDayLabel(slot: GroupPortalData['schedule'][number]) {
+  if (slot.day) return slot.day;
+  if (typeof slot.dayOfWeek === 'number') return WEEKDAY_NAMES[slot.dayOfWeek] || 'Dia';
+  return 'Dia';
+}
+
+function getScheduleTimeLabel(slot: GroupPortalData['schedule'][number], durationMinutes = 60) {
+  const startTime = slot.startTime || slot.time;
+  if (!startTime) return 'Horário não definido';
+
+  const endTime = slot.endTime || getEndTime(startTime, durationMinutes);
+  return `${startTime} - ${endTime}`;
+}
 
 const getPortalSessionKey = (ownerId: string | null) => ownerId ? `esportiz:student-portal:${ownerId}` : null;
 
@@ -779,8 +796,8 @@ export default function StudentPortalPage() {
                             <div key={idx} className="flex items-center gap-3 bg-background border border-border/40 p-2.5 rounded-lg text-xs font-medium">
                               <Calendar className="h-4 w-4 text-primary shrink-0" />
                               <div>
-                                <span className="text-foreground capitalize font-semibold block">{WEEKDAY_NAMES[slot.dayOfWeek] || 'Dia'}</span>
-                                <span className="text-muted-foreground text-[11px]">{slot.time} - {getEndTime(slot.time, g.durationMinutes || 60)}</span>
+                                <span className="text-foreground capitalize font-semibold block">{getScheduleDayLabel(slot)}</span>
+                                <span className="text-muted-foreground text-[11px]">{getScheduleTimeLabel(slot, g.durationMinutes || 60)}</span>
                               </div>
                             </div>
                           ))

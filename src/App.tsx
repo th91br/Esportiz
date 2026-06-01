@@ -1,4 +1,4 @@
-import { lazy, Suspense, type ReactNode } from "react";
+import { lazy, Suspense, useEffect, type ReactNode } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Analytics } from "@vercel/analytics/react";
@@ -14,6 +14,7 @@ import { getAuthenticatedHomePath } from "./lib/authRouting";
 import { canAccessBusinessRoute } from "./lib/businessRouteAccess";
 import { useBusinessContext } from "@/hooks/useBusinessContext";
 import { canAccessPath as canAccessRolePath } from "./lib/rolePermissions";
+import { shouldRevokeOrganizationSession } from "./lib/organizationAccess";
 
 const LoginPage = lazy(() => import("./pages/LoginPage"));
 const LandingPage = lazy(() => import("./pages/LandingPage"));
@@ -78,14 +79,31 @@ function LoginRoute() {
 
 function ProtectedRoute({ children }: { children: ReactNode }) {
   const location = useLocation();
-  const { user, loading: authLoading } = useAuth();
+  const { user, loading: authLoading, signOut } = useAuth();
   const { profile, loadingProfile, isErrorProfile, errorProfile } = useProfile();
   const {
     businessType,
     organizationRole,
+    hasActiveOrganizationAccess,
     isLoadingOrganizationRole,
     isRolePermissionFilterActive,
+    isRoleKnown,
   } = useBusinessContext();
+
+  const shouldRevokeSession = shouldRevokeOrganizationSession({
+    isAuthenticated: Boolean(user),
+    profileOrganizationId: profile?.organization_id,
+    onboardingCompleted: profile?.onboarding_completed,
+    isMembershipLoading: isLoadingOrganizationRole,
+    isRoleKnown,
+    hasActiveOrganizationAccess,
+  });
+
+  useEffect(() => {
+    if (shouldRevokeSession) {
+      void signOut();
+    }
+  }, [shouldRevokeSession, signOut]);
 
   if (isErrorProfile) {
     throw new Error(`Falha ao carregar o perfil: ${getErrorMessage(errorProfile)}`);
@@ -97,6 +115,10 @@ function ProtectedRoute({ children }: { children: ReactNode }) {
 
   if (!user) {
     return <Navigate to="/login?mode=login" replace />;
+  }
+
+  if (shouldRevokeSession) {
+    return <FullScreenLoader />;
   }
 
   const isOnboardingRoute = location.pathname === "/onboarding";

@@ -102,7 +102,9 @@ export function useOrganizationMembership() {
       };
     },
     enabled: !!user?.id,
-    staleTime: 5 * 60 * 1000,
+    staleTime: 30 * 1000,
+    refetchInterval: 60 * 1000,
+    refetchOnWindowFocus: true,
   });
 
   const effectiveRole = useMemo<OrganizationRole>(() => {
@@ -129,6 +131,10 @@ export function useOrganizationMembership() {
 
   return {
     membership: membershipQuery.data?.member || null,
+    hasActiveOrganizationAccess: Boolean(
+      membershipQuery.data?.member || membershipQuery.data?.isOwner,
+    ),
+    isOrganizationOwner: Boolean(membershipQuery.data?.isOwner),
     effectiveRole,
     organizationId,
     loadingMembership: membershipQuery.isLoading,

@@ -112,6 +112,8 @@ export function useBusinessContext() {
   const {
     effectiveRole,
     organizationId,
+    hasActiveOrganizationAccess,
+    isOrganizationOwner,
     loadingMembership,
     isErrorMembership,
     isRoleKnown,
@@ -149,8 +151,11 @@ export function useBusinessContext() {
     canViewSettings,
     organizationRole: effectiveRole,
     organizationId,
+    hasActiveOrganizationAccess,
+    isOrganizationOwner,
     isLoadingOrganizationRole: loadingMembership,
     isRolePermissionFilterActive: shouldApplyRolePermissions,
+    isRoleKnown,
     isSportSchool: businessType === 'sport_school',
     isArena: businessType === 'arena',
   };

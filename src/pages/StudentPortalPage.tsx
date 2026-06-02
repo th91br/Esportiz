@@ -17,10 +17,10 @@ import { cn } from '@/lib/utils';
 import { getLocalTodayDate } from '@/lib/dateUtils';
 import { resolvePublicOwnerScope } from '@/lib/publicAccessContracts';
 import {
-  formatCpf,
   isTodayOrPastDate,
   isValidCpf,
 } from '@/lib/publicPortalSecurity';
+import { formatCpfInputValue } from '@/lib/cpfInput';
 import { getEndTime } from '@/data/mockData';
 
 interface AttendanceLog {
@@ -192,7 +192,7 @@ export default function StudentPortalPage() {
     if (!scopedOwnerId) return;
 
     const { data, error } = await supabase.rpc('get_student_portal_requests', {
-      p_cpf: formatCpf(loginCpf),
+      p_cpf: formatCpfInputValue(loginCpf),
       p_birth_date: loginBirthDate,
       p_user_id: scopedOwnerId,
     });
@@ -226,7 +226,7 @@ export default function StudentPortalPage() {
     setAuthenticating(true);
     try {
       const { data, error } = await supabase.rpc('get_student_portal_data', {
-        p_cpf: formatCpf(loginCpf),
+        p_cpf: formatCpfInputValue(loginCpf),
         p_birth_date: loginBirthDate,
         p_user_id: scopedOwnerId,
       });
@@ -244,7 +244,7 @@ export default function StudentPortalPage() {
         const sessionKey = getPortalSessionKey(scopedOwnerId);
         if (sessionKey) {
           sessionStorage.setItem(sessionKey, JSON.stringify({
-            cpf: formatCpf(loginCpf),
+            cpf: formatCpfInputValue(loginCpf),
             birthDate: loginBirthDate,
           }));
         }
@@ -280,7 +280,7 @@ export default function StudentPortalPage() {
       const parsed = JSON.parse(savedSession) as { cpf?: string; birthDate?: string };
 
       if (parsed.cpf && parsed.birthDate && isValidCpf(parsed.cpf) && isTodayOrPastDate(parsed.birthDate)) {
-        setCpf(formatCpf(parsed.cpf));
+        setCpf(formatCpfInputValue(parsed.cpf));
         setBirthDate(parsed.birthDate);
         authenticate(parsed.cpf, parsed.birthDate);
         return;
@@ -326,10 +326,8 @@ export default function StudentPortalPage() {
     };
   }, [hasInvalidOwnerId, scopedOwnerId]);
 
-  // Mask CPF
   const handleCpfChange = (val: string) => {
-    const clean = val.replace(/\D/g, '');
-    setCpf(formatCpf(clean));
+    setCpf(formatCpfInputValue(val));
   };
 
   const handleManualLogin = (e: React.FormEvent) => {

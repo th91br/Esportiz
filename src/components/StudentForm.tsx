@@ -29,6 +29,7 @@ import { getDayName } from '@/data/mockData';
 import { useBusinessContext } from '@/hooks/useBusinessContext';
 import { getLocalTodayDate, toLocalDateString } from '@/lib/dateUtils';
 import { syncAfterScheduleMutation } from '@/lib/querySync';
+import { formatCpfInputValue } from '@/lib/cpfInput';
 
 const studentSchema = z.object({
   name: z.string().min(3, "Nome deve ter no mínimo 3 caracteres"),
@@ -98,7 +99,7 @@ export function StudentForm({ student, trigger }: StudentFormProps) {
       paymentDueDay: student?.paymentDueDay ? String(student.paymentDueDay) : '',
       birthDate: student?.birthDate || '',
       modalityId: student?.modalityId || 'none',
-      cpf: student?.cpf || '',
+      cpf: student?.cpf ? formatCpfInputValue(student.cpf) : '',
       rg: student?.rg || '',
       address: student?.address || '',
       city: student?.city || '',
@@ -123,7 +124,7 @@ export function StudentForm({ student, trigger }: StudentFormProps) {
           paymentDueDay: student.paymentDueDay ? String(student.paymentDueDay) : '',
           birthDate: student.birthDate || '',
           modalityId: student.modalityId || 'none',
-          cpf: student.cpf || '',
+          cpf: student.cpf ? formatCpfInputValue(student.cpf) : '',
           rg: student.rg || '',
           address: student.address || '',
           city: student.city || '',
@@ -198,7 +199,7 @@ export function StudentForm({ student, trigger }: StudentFormProps) {
         birthDate: formData.birthDate || null,
         modalityId: formData.modalityId && formData.modalityId !== 'none' ? formData.modalityId : null,
         photo: photoUrl || null,
-        cpf: formData.cpf || null,
+        cpf: formData.cpf ? formatCpfInputValue(formData.cpf) : null,
         rg: formData.rg || null,
         address: formData.address || null,
         city: formData.city || null,
@@ -452,7 +453,18 @@ export function StudentForm({ student, trigger }: StudentFormProps) {
                 <FormField control={form.control} name="cpf" render={({ field }) => (
                   <FormItem>
                     <FormLabel>CPF</FormLabel>
-                    <FormControl><Input placeholder="000.000.000-00" {...field} /></FormControl>
+                    <FormControl>
+                      <Input
+                        placeholder="000.000.000-00"
+                        inputMode="numeric"
+                        autoComplete="off"
+                        value={field.value || ''}
+                        onChange={(event) => field.onChange(formatCpfInputValue(event.target.value))}
+                        onBlur={field.onBlur}
+                        name={field.name}
+                        ref={field.ref}
+                      />
+                    </FormControl>
                     <FormMessage />
                   </FormItem>
                 )} />

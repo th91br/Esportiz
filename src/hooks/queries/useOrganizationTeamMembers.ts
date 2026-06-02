@@ -15,22 +15,33 @@ export interface OrganizationTeamMember {
 
 interface UseOrganizationTeamMembersOptions {
   organizationId: string | null;
+  currentUserId?: string | null;
   enabled?: boolean;
+  viewAllMembers?: boolean;
 }
 
 export function useOrganizationTeamMembers({
   organizationId,
+  currentUserId = null,
   enabled = true,
+  viewAllMembers = false,
 }: UseOrganizationTeamMembersOptions) {
   const teamMembersQuery = useQuery({
-    queryKey: ['organization-team-members', organizationId],
+    queryKey: ['organization-team-members', organizationId, viewAllMembers ? 'all' : currentUserId],
     queryFn: async () => {
       if (!organizationId) return [];
+      if (!viewAllMembers && !currentUserId) return [];
 
-      const { data, error } = await supabase
+      let query = supabase
         .from('organization_members')
         .select('id, organization_id, user_id, role, active, invited_email, created_at, updated_at')
-        .eq('organization_id', organizationId)
+        .eq('organization_id', organizationId);
+
+      if (!viewAllMembers) {
+        query = query.eq('user_id', currentUserId);
+      }
+
+      const { data, error } = await query
         .order('active', { ascending: false })
         .order('created_at', { ascending: true });
 

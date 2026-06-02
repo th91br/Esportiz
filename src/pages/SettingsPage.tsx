@@ -270,6 +270,9 @@ export default function SettingsPage() {
   const rolePermissions = useRolePermissions();
   const canViewTeam = rolePermissions.can('team', 'view');
   const canUpdateSettings = rolePermissions.can('settings', 'update');
+  const canManageSensitiveSettings = rolePermissions.can('settings', 'manage_settings');
+  const canManageTeam = rolePermissions.can('team', 'manage_team');
+  const canViewAllTeamMembers = rolePermissions.organizationRole === 'owner' || canManageTeam;
   const {
     teamMembers,
     loadingTeamMembers,
@@ -277,7 +280,9 @@ export default function SettingsPage() {
     refetchTeamMembers,
   } = useOrganizationTeamMembers({
     organizationId,
+    currentUserId: user?.id,
     enabled: canViewTeam,
+    viewAllMembers: canViewAllTeamMembers,
   });
   const [selectedBusinessType, setSelectedBusinessType] = useState<BusinessType>('sport_school');
   const [teamInviteEmail, setTeamInviteEmail] = useState('');
@@ -892,7 +897,9 @@ export default function SettingsPage() {
             <div className="md:col-span-1 space-y-1">
               <h3 className="font-medium">Equipe e Permissoes</h3>
               <p className="text-sm text-muted-foreground">
-                Visao segura dos membros vinculados a sua organizacao.
+                {rolePermissions.organizationRole === 'owner'
+                  ? 'Visao segura dos membros vinculados a sua organizacao.'
+                  : 'Visao segura do seu vinculo e das permissoes do seu cargo.'}
               </p>
             </div>
 
@@ -903,7 +910,9 @@ export default function SettingsPage() {
                   Equipe
                 </CardTitle>
                 <CardDescription>
-                  Adicione novos membros com e-mail e senha inicial, ou gerencie os acessos ativos da sua equipe.
+                  {rolePermissions.can('team', 'manage_team')
+                    ? 'Adicione novos membros com e-mail e senha inicial, ou gerencie os acessos ativos da sua equipe.'
+                    : 'Consulte o seu cargo ativo nesta organizacao e as permissoes vinculadas a ele.'}
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-3">
@@ -1070,7 +1079,7 @@ export default function SettingsPage() {
                 ) : (
                   <div className="space-y-2">
                     {teamMembers
-                      .filter((member) => rolePermissions.organizationRole === 'owner' || rolePermissions.organizationRole === 'manager' || member.userId === user?.id)
+                      .filter((member) => rolePermissions.organizationRole === 'owner' || member.userId === user?.id)
                       .sort((a, b) => {
                         const roleOrder: Record<string, number> = { owner: 0, manager: 1, finance: 2, receptionist: 3, instructor: 4 };
                         return (roleOrder[a.role] ?? 5) - (roleOrder[b.role] ?? 5);
@@ -1307,6 +1316,7 @@ export default function SettingsPage() {
                 />
               </div>
 
+              {canManageSensitiveSettings && (
               <div className="border-t border-border/30 pt-4 space-y-4">
                 <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Configuração de Recebimentos (Pix)</p>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -1317,7 +1327,7 @@ export default function SettingsPage() {
                       placeholder="Ex: CNPJ, E-mail, Celular, etc."
                       value={pixKey}
                       onChange={(e) => setPixKey(e.target.value)}
-                      disabled={!canUpdateSettings}
+                      disabled={!canManageSensitiveSettings}
                     />
                   </div>
                   <div className="space-y-2">
@@ -1327,7 +1337,7 @@ export default function SettingsPage() {
                       placeholder="Ex: Nome do Dono ou Razão Social"
                       value={pixReceiver}
                       onChange={(e) => setPixReceiver(e.target.value)}
-                      disabled={!canUpdateSettings}
+                      disabled={!canManageSensitiveSettings}
                     />
                   </div>
                 </div>
@@ -1335,6 +1345,7 @@ export default function SettingsPage() {
                   Se configurados, estes dados serão incluídos automaticamente nas mensagens de cobrança enviadas aos clientes.
                 </p>
               </div>
+              )}
 
               {/* Logo Section */}
               <div className="space-y-3">
@@ -1498,6 +1509,7 @@ export default function SettingsPage() {
           </Card>
         </div>
 
+        {canManageSensitiveSettings && (
         <div className="grid gap-6 md:grid-cols-3 pt-6 border-t">
           <div className="md:col-span-1 space-y-1">
             <h3 className="font-medium">Integrações Profissionais</h3>
@@ -1724,6 +1736,7 @@ export default function SettingsPage() {
             </Card>
           </div>
         </div>
+        )}
       </main>
 
       {/* Modal de Confirmação de Mudança de Segmento (Nicho) */}

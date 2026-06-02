@@ -71,6 +71,8 @@ describe('rolePermissions', () => {
     expect(canPerformAction({ role: 'manager', businessType: 'arena', module: 'agenda', action: 'update' })).toBe(true);
     expect(canPerformAction({ role: 'manager', businessType: 'sport_school', module: 'payments', action: 'receive_payment' })).toBe(true);
     expect(canPerformAction({ role: 'manager', businessType: 'arena', module: 'reports', action: 'view_sensitive_financials' })).toBe(true);
+    expect(canPerformAction({ role: 'manager', businessType: 'arena', module: 'settings', action: 'update' })).toBe(true);
+    expect(canPerformAction({ role: 'manager', businessType: 'arena', module: 'settings', action: 'manage_settings' })).toBe(false);
     expect(canPerformAction({ role: 'manager', businessType: 'arena', module: 'team', action: 'manage_team' })).toBe(false);
     expect(canAccessModule({ role: 'manager', businessType: 'arena', module: 'audit' })).toBe(false);
   });

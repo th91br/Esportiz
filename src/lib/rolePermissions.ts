@@ -189,7 +189,7 @@ const MANAGER_PERMISSIONS: Partial<Record<PermissionModule, readonly PermissionA
   expenses: ['view', 'create', 'update', 'export', 'view_sensitive_financials'],
   reports: MODULE_ACTIONS.reports,
   communication: MODULE_ACTIONS.communication,
-  settings: ['view', 'update', 'manage_settings'],
+  settings: ['view', 'update'],
   team: ['view'],
 };
 

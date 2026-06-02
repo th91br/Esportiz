@@ -24,6 +24,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { formatCurrency } from '@/lib/formatCurrency';
+import { useRolePermissions } from '@/hooks/useRolePermissions';
 
 const SPORT_TYPES = [
   'beach_tennis', 'futevolei', 'volei_praia', 'society',
@@ -311,6 +312,10 @@ function CourtStatusBadge({ court, reservations }: { court: Court; reservations:
 export default function CourtsPage() {
   const { courts, loadingCourts, deleteCourt } = useCourts();
   const { reservations } = useReservations();
+  const rolePermissions = useRolePermissions();
+  const canCreateCourts = rolePermissions.can('courts', 'create');
+  const canUpdateCourts = rolePermissions.can('courts', 'update');
+  const canDeleteCourts = rolePermissions.can('courts', 'delete');
 
   const [formOpen, setFormOpen] = useState(false);
   const [editingCourt, setEditingCourt] = useState<Court | undefined>();
@@ -340,6 +345,9 @@ export default function CourtsPage() {
   const occupancyRate = totalHoursAvailable > 0 ? Math.round((totalHoursBooked / totalHoursAvailable) * 100) : 0;
 
   const openForm = (court?: Court) => {
+    if (court && !canUpdateCourts) return;
+    if (!court && !canCreateCourts) return;
+
     setEditingCourt(court);
     setFormOpen(true);
   };
@@ -362,9 +370,11 @@ export default function CourtsPage() {
             <h1 className="font-display font-extrabold text-3xl md:text-4xl tracking-tight">Quadras</h1>
             <p className="text-muted-foreground mt-1">Gerencie as quadras físicas da sua arena</p>
           </div>
-          <Button className="btn-primary-gradient gap-2 w-full sm:w-auto" onClick={() => openForm()}>
-            <Plus className="h-4 w-4" /> Nova Quadra
-          </Button>
+          {canCreateCourts && (
+            <Button className="btn-primary-gradient gap-2 w-full sm:w-auto" onClick={() => openForm()}>
+              <Plus className="h-4 w-4" /> Nova Quadra
+            </Button>
+          )}
         </div>
 
         {/* Stats */}
@@ -385,9 +395,11 @@ export default function CourtsPage() {
               <h3 className="font-display font-bold text-xl">Nenhuma quadra cadastrada</h3>
               <p className="text-muted-foreground mt-1">Cadastre sua primeira quadra para começar a gerenciar reservas.</p>
             </div>
-            <Button className="btn-primary-gradient gap-2" onClick={() => openForm()}>
-              <Plus className="h-4 w-4" /> Cadastrar Primeira Quadra
-            </Button>
+            {canCreateCourts && (
+              <Button className="btn-primary-gradient gap-2" onClick={() => openForm()}>
+                <Plus className="h-4 w-4" /> Cadastrar Primeira Quadra
+              </Button>
+            )}
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 md:gap-5">
@@ -476,22 +488,26 @@ export default function CourtsPage() {
                       >
                         <Calendar className="h-3.5 w-3.5" /> Ver Agenda
                       </Button>
-                      <Button
-                        variant="outline"
-                        size="icon"
-                        className="h-8 w-8"
-                        onClick={() => openForm(court)}
-                      >
-                        <Pencil className="h-3.5 w-3.5" />
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="icon"
-                        className="h-8 w-8 text-destructive hover:text-destructive"
-                        onClick={() => setDeleteId(court.id)}
-                      >
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </Button>
+                      {canUpdateCourts && (
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          className="h-8 w-8"
+                          onClick={() => openForm(court)}
+                        >
+                          <Pencil className="h-3.5 w-3.5" />
+                        </Button>
+                      )}
+                      {canDeleteCourts && (
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          className="h-8 w-8 text-destructive hover:text-destructive"
+                          onClick={() => setDeleteId(court.id)}
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -502,14 +518,18 @@ export default function CourtsPage() {
       </main>
 
       {/* FAB Mobile */}
-      <button
-        className="fixed bottom-6 right-6 md:hidden h-14 w-14 rounded-full btn-primary-gradient shadow-xl flex items-center justify-center z-50"
-        onClick={() => openForm()}
-      >
-        <Plus className="h-6 w-6 text-white" />
-      </button>
+      {canCreateCourts && (
+        <button
+          className="fixed bottom-6 right-6 md:hidden h-14 w-14 rounded-full btn-primary-gradient shadow-xl flex items-center justify-center z-50"
+          onClick={() => openForm()}
+        >
+          <Plus className="h-6 w-6 text-white" />
+        </button>
+      )}
 
-      <CourtFormDialog open={formOpen} onOpenChange={setFormOpen} court={editingCourt} />
+      {(canCreateCourts || canUpdateCourts) && (
+        <CourtFormDialog open={formOpen} onOpenChange={setFormOpen} court={editingCourt} />
+      )}
 
       <ReservationModal
         open={reservationModalOpen}

@@ -29,12 +29,18 @@ import { toast } from 'sonner';
 import { formatCurrency } from '@/lib/formatCurrency';
 import { Plus, Package, Pencil, Power, PowerOff, TrendingUp, AlertTriangle, Coins, PlusCircle, MinusCircle, Search, RefreshCw, BarChart4 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useRolePermissions } from '@/hooks/useRolePermissions';
 
 const PRODUCT_CATEGORIES = ['Bebidas', 'Alimentação', 'Material Esportivo', 'Acessórios', 'Geral'];
 
 export default function ProductsPage() {
   const { products, loadingProducts, addProduct, updateProduct, deleteProduct, isAddingProduct } = useProducts();
   const { isArena } = useBusinessContext();
+  const rolePermissions = useRolePermissions();
+  const canCreateProducts = rolePermissions.can('products', 'create');
+  const canUpdateProducts = rolePermissions.can('products', 'update');
+  const canDeleteProducts = rolePermissions.can('products', 'delete');
+  const canManageStock = rolePermissions.can('products', 'manage_stock');
   const [activeTab, setActiveTab] = useState<'catalog' | 'inventory'>('catalog');
   const [stockSearchQuery, setStockSearchQuery] = useState('');
   const [onlyAlertsFilter, setOnlyAlertsFilter] = useState(false);
@@ -90,6 +96,7 @@ export default function ProductsPage() {
   };
 
   const openEdit = (p: typeof products[0]) => {
+    if (!canUpdateProducts) return;
     setEditingId(p.id);
     setFormName(p.name);
     setFormPrice(String(p.price));
@@ -101,6 +108,9 @@ export default function ProductsPage() {
   };
 
   const handleSubmit = async () => {
+    if (editingId && !canUpdateProducts) return;
+    if (!editingId && !canCreateProducts) return;
+
     if (!formName.trim()) { toast.error('Informe o nome do produto.'); return; }
     const price = parseFloat(formPrice);
     if (isNaN(price) || price <= 0) { toast.error('Informe um preço válido.'); return; }
@@ -150,13 +160,16 @@ export default function ProductsPage() {
             <p className="text-muted-foreground mt-1">Cadastre os itens disponíveis para venda no seu negócio.</p>
           </div>
 
+          {(canCreateProducts || canUpdateProducts) && (
           <Dialog open={isFormOpen} onOpenChange={(open) => { setIsFormOpen(open); if (!open) resetForm(); }}>
-            <DialogTrigger asChild>
-              <Button className="btn-primary-gradient w-full sm:w-auto">
-                <Plus className="mr-2 h-4 w-4" />
-                Novo Produto
-              </Button>
-            </DialogTrigger>
+            {canCreateProducts && (
+              <DialogTrigger asChild>
+                <Button className="btn-primary-gradient w-full sm:w-auto">
+                  <Plus className="mr-2 h-4 w-4" />
+                  Novo Produto
+                </Button>
+              </DialogTrigger>
+            )}
             <DialogContent className="sm:max-w-md">
               <DialogHeader>
                 <DialogTitle>{editingId ? 'Editar Produto' : 'Novo Produto'}</DialogTitle>
@@ -240,6 +253,7 @@ export default function ProductsPage() {
               </DialogFooter>
             </DialogContent>
           </Dialog>
+          )}
         </div>
 
         {/* Tab Switcher - Exclusivo Arena */}
@@ -296,7 +310,9 @@ export default function ProductsPage() {
                 <CardContent className="text-center py-12 text-muted-foreground">
                   <Package className="h-12 w-12 mx-auto mb-3 opacity-30" />
                   <p className="font-medium">Nenhum produto cadastrado</p>
-                  <p className="text-sm mt-1">Clique em "Novo Produto" para começar.</p>
+                  {canCreateProducts && (
+                    <p className="text-sm mt-1">Clique em "Novo Produto" para começar.</p>
+                  )}
                 </CardContent>
               </Card>
             ) : (
@@ -333,20 +349,28 @@ export default function ProductsPage() {
                           {formatCurrency(product.price)}
                         </span>
                       </div>
-                      <div className="flex items-center gap-1 mt-4 pt-3 border-t">
-                        <Button variant="ghost" size="icon" className="h-7 w-7 rounded-full" onClick={() => openEdit(product)}>
-                          <Pencil className="h-3 w-3" />
-                        </Button>
-                        {product.active ? (
-                          <Button variant="ghost" size="icon" className="h-7 w-7 rounded-full text-destructive hover:text-destructive" onClick={() => deleteProduct(product.id)} title="Desativar">
-                            <PowerOff className="h-3 w-3" />
-                          </Button>
-                        ) : (
-                          <Button variant="ghost" size="icon" className="h-7 w-7 rounded-full text-green-600 hover:text-green-600" onClick={() => updateProduct({ id: product.id, active: true })} title="Reativar">
-                            <Power className="h-3 w-3" />
-                          </Button>
-                        )}
-                      </div>
+                      {(canUpdateProducts || canDeleteProducts) && (
+                        <div className="flex items-center gap-1 mt-4 pt-3 border-t">
+                          {canUpdateProducts && (
+                            <Button variant="ghost" size="icon" className="h-7 w-7 rounded-full" onClick={() => openEdit(product)}>
+                              <Pencil className="h-3 w-3" />
+                            </Button>
+                          )}
+                          {product.active ? (
+                            canDeleteProducts && (
+                              <Button variant="ghost" size="icon" className="h-7 w-7 rounded-full text-destructive hover:text-destructive" onClick={() => deleteProduct(product.id)} title="Desativar">
+                                <PowerOff className="h-3 w-3" />
+                              </Button>
+                            )
+                          ) : (
+                            canUpdateProducts && (
+                              <Button variant="ghost" size="icon" className="h-7 w-7 rounded-full text-green-600 hover:text-green-600" onClick={() => updateProduct({ id: product.id, active: true })} title="Reativar">
+                                <Power className="h-3 w-3" />
+                              </Button>
+                            )
+                          )}
+                        </div>
+                      )}
                     </CardContent>
                   </Card>
                 ))}
@@ -445,7 +469,7 @@ export default function ProductsPage() {
                         <th className="p-4 text-right">Valor Unitário</th>
                         <th className="p-4 text-right">Total Estocado</th>
                         <th className="p-4 text-center">Status</th>
-                        <th className="p-4 text-center">Ajuste Rápido</th>
+                        {canManageStock && <th className="p-4 text-center">Ajuste Rápido</th>}
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-border/40">
@@ -477,37 +501,41 @@ export default function ProductsPage() {
                                 </span>
                               )}
                             </td>
-                            <td className="p-4">
-                              <div className="flex items-center justify-center gap-1.5">
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  onClick={() => updateProduct({ id: p.id, stockQuantity: Math.max(0, p.stockQuantity - 1) })}
-                                  className="h-7 w-7 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-lg"
-                                  title="Subtrair 1"
-                                >
-                                  <MinusCircle className="h-4 w-4" />
-                                </Button>
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  onClick={() => updateProduct({ id: p.id, stockQuantity: p.stockQuantity + 1 })}
-                                  className="h-7 w-7 text-muted-foreground hover:text-success hover:bg-success/10 rounded-lg"
-                                  title="Adicionar 1"
-                                >
-                                  <PlusCircle className="h-4 w-4" />
-                                </Button>
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  onClick={() => openEdit(p)}
-                                  className="h-7 w-7 text-muted-foreground hover:text-foreground rounded-lg"
-                                  title="Editar Produto"
-                                >
-                                  <Pencil className="h-3.5 w-3.5" />
-                                </Button>
-                              </div>
-                            </td>
+                            {canManageStock && (
+                              <td className="p-4">
+                                <div className="flex items-center justify-center gap-1.5">
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={() => updateProduct({ id: p.id, stockQuantity: Math.max(0, p.stockQuantity - 1) })}
+                                    className="h-7 w-7 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-lg"
+                                    title="Subtrair 1"
+                                  >
+                                    <MinusCircle className="h-4 w-4" />
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={() => updateProduct({ id: p.id, stockQuantity: p.stockQuantity + 1 })}
+                                    className="h-7 w-7 text-muted-foreground hover:text-success hover:bg-success/10 rounded-lg"
+                                    title="Adicionar 1"
+                                  >
+                                    <PlusCircle className="h-4 w-4" />
+                                  </Button>
+                                  {canUpdateProducts && (
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      onClick={() => openEdit(p)}
+                                      className="h-7 w-7 text-muted-foreground hover:text-foreground rounded-lg"
+                                      title="Editar Produto"
+                                    >
+                                      <Pencil className="h-3.5 w-3.5" />
+                                    </Button>
+                                  )}
+                                </div>
+                              </td>
+                            )}
                           </tr>
                         );
                       })}

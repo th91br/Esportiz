@@ -309,6 +309,12 @@ export default function SettingsPage() {
   const dynamicCtLabelShort = selectedBusinessType === 'sport_school' ? 'Escola' : 'CT';
   const ctPreposition = selectedBusinessType === 'sport_school' ? 'da' : 'do';
   const ctGenderedPronoun = selectedBusinessType === 'sport_school' ? 'sua' : 'seu';
+  const teamInviteOptions = selectedBusinessType === 'sport_school'
+    ? SCHOOL_TEAM_INVITE_OPTIONS
+    : ARENA_TEAM_INVITE_OPTIONS;
+  const selectedTeamInviteOption = teamInviteOptions.find((option) => option.role === teamInviteRole);
+  const selectedTeamInviteRoleStyle = selectedTeamInviteOption ? TEAM_ROLE_LABELS[selectedTeamInviteOption.role] : null;
+  const SelectedTeamInviteRoleIcon = selectedTeamInviteOption ? getRoleIcon(selectedTeamInviteOption.role) : null;
   const isGoogleConnected = Boolean(profile?.google_access_token);
   const hasGoogleSpreadsheetId = Boolean(profile?.sheets_spreadsheet_id?.trim());
   const studentPortalUrl = profile?.owner_user_id || user?.id 
@@ -987,15 +993,22 @@ export default function SettingsPage() {
                           onValueChange={(value) => setTeamInviteRole(value as InvitableOrganizationRole)}
                           disabled={isInvitingTeamMember}
                         >
-                          <SelectTrigger className="h-9">
-                            <SelectValue placeholder="Selecione o cargo" />
+                          <SelectTrigger className="h-10">
+                            {selectedTeamInviteOption && selectedTeamInviteRoleStyle && SelectedTeamInviteRoleIcon ? (
+                              <div className="flex min-w-0 items-center gap-2">
+                                <SelectedTeamInviteRoleIcon className={cn('h-3.5 w-3.5 shrink-0', selectedTeamInviteRoleStyle.color)} />
+                                <span className="truncate text-sm font-medium">{selectedTeamInviteOption.label}</span>
+                              </div>
+                            ) : (
+                              <SelectValue placeholder="Selecione o cargo" />
+                            )}
                           </SelectTrigger>
                           <SelectContent>
-                            {(selectedBusinessType === 'sport_school' ? SCHOOL_TEAM_INVITE_OPTIONS : ARENA_TEAM_INVITE_OPTIONS).map((option) => {
+                            {teamInviteOptions.map((option) => {
                               const RoleIc = getRoleIcon(option.role);
                               const roleStyle = TEAM_ROLE_LABELS[option.role];
                               return (
-                                <SelectItem key={option.role} value={option.role}>
+                                <SelectItem key={option.role} value={option.role} textValue={option.label}>
                                   <div className="flex items-center gap-2 py-0.5">
                                     <RoleIc className={cn('h-3.5 w-3.5 shrink-0', roleStyle.color)} />
                                     <div>
@@ -1009,23 +1022,17 @@ export default function SettingsPage() {
                           </SelectContent>
                         </Select>
                         {/* Descricao do cargo selecionado */}
-                        {(() => {
-                          const opts = selectedBusinessType === 'sport_school' ? SCHOOL_TEAM_INVITE_OPTIONS : ARENA_TEAM_INVITE_OPTIONS;
-                          const selected = opts.find(o => o.role === teamInviteRole);
-                          const roleStyle = selected ? TEAM_ROLE_LABELS[selected.role] : null;
-                          const RoleIc = selected ? getRoleIcon(selected.role) : null;
-                          return selected && roleStyle && RoleIc ? (
+                        {selectedTeamInviteOption && selectedTeamInviteRoleStyle && SelectedTeamInviteRoleIcon ? (
                             <div className={cn(
                               'flex items-start gap-2 rounded-lg px-2.5 py-1.5 text-[11px] border mt-1',
-                              roleStyle.bg, roleStyle.border
+                              selectedTeamInviteRoleStyle.bg, selectedTeamInviteRoleStyle.border
                             )}>
-                              <RoleIc className={cn('h-3.5 w-3.5 mt-0.5 shrink-0', roleStyle.color)} />
-                              <span className={cn('font-medium leading-snug', roleStyle.color)}>
-                                {selected.description}
+                              <SelectedTeamInviteRoleIcon className={cn('h-3.5 w-3.5 mt-0.5 shrink-0', selectedTeamInviteRoleStyle.color)} />
+                              <span className={cn('font-medium leading-snug', selectedTeamInviteRoleStyle.color)}>
+                                {selectedTeamInviteOption.description}
                               </span>
                             </div>
-                          ) : null;
-                        })()}
+                        ) : null}
                       </div>
 
                       <div className="sm:pt-6">

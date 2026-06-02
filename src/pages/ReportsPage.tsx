@@ -47,6 +47,11 @@ const filterLabels: Record<FilterPeriod, string> = {
   all: 'Todos',
 };
 
+function truncateChartLabel(value: unknown, maxLength = 16) {
+  const label = String(value ?? '');
+  return label.length > maxLength ? `${label.slice(0, maxLength - 1)}...` : label;
+}
+
 type FinancialOriginKey = 'payments' | 'reservations' | 'direct_sales' | 'comandas';
 type ReportPaymentMethod = SalePaymentMethod | ReservationPaymentMethod;
 
@@ -984,10 +989,11 @@ export default function ReportsPage() {
                     <YAxis 
                       type="category" 
                       dataKey="name" 
+                      tickFormatter={(value) => truncateChartLabel(value)}
                       tick={{ fontSize: 12, fill: 'hsl(var(--foreground))', fontWeight: 500 }} 
                       axisLine={false} 
                       tickLine={false} 
-                      width={160}
+                      width={116}
                     />
                     <Tooltip contentStyle={customTooltipStyle} cursor={{ fill: 'hsl(var(--muted)/0.3)' }} formatter={(value: number) => [privacyMode ? '••••' : `${value} ${labels.studentLabelSingular.toLowerCase()}(s)`, 'Aderência']} />
                     <Bar dataKey={studentKey} fill={COLORS.primary} radius={[0, 4, 4, 0]} barSize={28}>

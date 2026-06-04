@@ -1185,6 +1185,12 @@ export type Database = {
         }
         Returns: Json
       }
+      restore_cancelled_payment_atomic: {
+        Args: {
+          p_payment_id: string
+        }
+        Returns: Json
+      }
       receive_payments_batch_atomic: {
         Args: {
           p_payment_ids: string[]

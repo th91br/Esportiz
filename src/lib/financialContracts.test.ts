@@ -5,6 +5,7 @@ import {
   getRemainingPaymentAmount,
   getReservationPaidAmount,
   getReservationRemainingAmount,
+  isCancelledPayment,
   summarizePayments,
   summarizeReservationReceivables,
   type FinancialPayment,
@@ -56,6 +57,12 @@ describe('financialContracts', () => {
       totalPending: 450,
       overdueCount: 1,
     });
+  });
+
+  it('identifies technically cancelled payments without counting normal zero-value records', () => {
+    expect(isCancelledPayment(makePayment({ amount: 0, fullPrice: -1, paid: true }))).toBe(true);
+    expect(isCancelledPayment(makePayment({ amount: 0, fullPrice: 0, paid: true }))).toBe(false);
+    expect(isCancelledPayment(makePayment({ amount: 100, fullPrice: undefined, paid: false }))).toBe(false);
   });
 
   it('summarizes arena receivables without counting cancelled reservations', () => {

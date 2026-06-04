@@ -7,6 +7,7 @@ export interface FinancialPayment {
   paid: boolean;
   paidAmount?: number | null;
   paidAt?: string | null;
+  fullPrice?: number | null;
 }
 
 export interface FinancialReservation {
@@ -62,6 +63,10 @@ export interface ReceivableSummary {
 
 function paidAmountOf(payment: FinancialPayment): number {
   return Number(payment.paidAmount || 0);
+}
+
+export function isCancelledPayment(payment: FinancialPayment): boolean {
+  return Number(payment.fullPrice ?? 0) === -1;
 }
 
 export function getRemainingPaymentAmount(payment: FinancialPayment): number {

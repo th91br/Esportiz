@@ -12,7 +12,7 @@ import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { ArenaPartialPaymentDialog } from '@/components/arena/ArenaPartialPaymentDialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Check, X, DollarSign, AlertTriangle, Clock, TrendingUp, Eye, EyeOff, Percent, Trash2, Download, Search, CalendarDays } from 'lucide-react';
+import { Check, X, DollarSign, AlertTriangle, Clock, TrendingUp, Eye, EyeOff, Percent, Trash2, Download, Search, CalendarDays, RotateCcw } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { exportToCSV } from '@/lib/exportUtils';
 import { Input } from '@/components/ui/input';
@@ -38,7 +38,7 @@ const monthNames = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 
 export default function PaymentsPage() {
   const { students } = useStudents();
   const { plans } = usePlans();
-  const { payments, generateMonthlyPayments, markAsPaid, markAsUnpaid, markBatchAsPaid, markBatchAsUnpaid, deletePayment, loadingPayments } = usePayments();
+  const { payments, cancelledPayments, generateMonthlyPayments, markAsPaid, markAsUnpaid, markBatchAsPaid, markBatchAsUnpaid, deletePayment, restorePayment, loadingPayments } = usePayments();
   const { reservations, setReservationPaymentStatus } = useReservations();
   const { courts } = useCourts();
   const [privacyMode, togglePrivacyMode] = usePrivacyMode();
@@ -90,6 +90,10 @@ export default function PaymentsPage() {
     return payments.filter(p => p.monthRef === monthRef);
   }, [payments, monthRef]);
 
+  const monthCancelledPayments = useMemo(() => {
+    return cancelledPayments.filter(p => p.monthRef === monthRef);
+  }, [cancelledPayments, monthRef]);
+
   const filteredPayments = useMemo(() => {
     return monthPayments
       .filter(p => {
@@ -103,6 +107,23 @@ export default function PaymentsPage() {
         return nameA.localeCompare(nameB, 'pt-BR');
       });
   }, [monthPayments, students, searchTerm]);
+
+  const filteredCancelledPayments = useMemo(() => {
+    return monthCancelledPayments
+      .filter(p => {
+        const student = students.find(s => s.id === p.studentId);
+        if (!student) return false;
+        return student.name.toLowerCase().includes(searchTerm.toLowerCase());
+      })
+      .sort((a, b) => {
+        const nameA = students.find(s => s.id === a.studentId)?.name || '';
+        const nameB = students.find(s => s.id === b.studentId)?.name || '';
+        return nameA.localeCompare(nameB, 'pt-BR');
+      });
+  }, [monthCancelledPayments, students, searchTerm]);
+
+  const hasMonthlyPaymentRecords = monthPayments.length > 0 || monthCancelledPayments.length > 0;
+  const hasFilteredPaymentRecords = filteredPayments.length > 0 || filteredCancelledPayments.length > 0;
 
   const handleSelectAll = () => {
     if (selectedPayments.length === filteredPayments.length) {
@@ -425,13 +446,13 @@ export default function PaymentsPage() {
           )
         ) : (
           // --- VIEW 2: MENSALISTAS / PACOTES (PRO-RATA / REGULARES) ---
-          monthPayments.length === 0 ? (
+          !hasMonthlyPaymentRecords ? (
             <div className="card-elevated p-12 text-center">
               <DollarSign className="h-12 w-12 mx-auto text-muted-foreground/30 mb-4" />
               <h3 className="font-display font-semibold text-lg text-foreground">Nenhum pagamento para {monthNames[selectedMonth - 1]}/{selectedYear}</h3>
               <p className="text-sm text-muted-foreground mt-1">{labels.studentLabel} com {labels.planLabel.toLowerCase()} mensal e dia de vencimento definido aparecerão aqui automaticamente.</p>
             </div>
-          ) : filteredPayments.length === 0 ? (
+          ) : !hasFilteredPaymentRecords ? (
             <div className="card-elevated p-12 text-center">
               <Search className="h-12 w-12 mx-auto text-muted-foreground/30 mb-4" />
               <h3 className="font-display font-semibold text-lg text-foreground">Nenhum(a) {labels.studentLabelSingular.toLowerCase()} encontrado(a)</h3>
@@ -443,6 +464,7 @@ export default function PaymentsPage() {
           ) : (
             <div className="space-y-3">
               {/* Barra de Ações em Lote */}
+              {filteredPayments.length > 0 && (
               <div className="flex flex-wrap items-center justify-between gap-3 p-3 bg-muted/40 rounded-xl border border-border/50">
                 <div className="flex items-center gap-2.5">
                   <Checkbox 
@@ -489,6 +511,7 @@ export default function PaymentsPage() {
                   </div>
                 )}
               </div>
+              )}
 
               {filteredPayments.map(payment => {
                 const student = students.find(s => s.id === payment.studentId);
@@ -591,15 +614,15 @@ export default function PaymentsPage() {
                         </AlertDialogTrigger>
                         <AlertDialogContent>
                           <AlertDialogHeader>
-                            <AlertDialogTitle>Excluir pagamento?</AlertDialogTitle>
+                            <AlertDialogTitle>Cancelar cobran&ccedil;a?</AlertDialogTitle>
                             <AlertDialogDescription>
-                              Deseja excluir o pagamento de {student.name} ({monthNames[selectedMonth - 1]}/{selectedYear})? Você pode regenerá-lo depois.
+                              Esta cobran&ccedil;a de {student.name} ({monthNames[selectedMonth - 1]}/{selectedYear}) ser&aacute; ocultada da lista ativa. Se foi um engano, voc&ecirc; poder&aacute; restaur&aacute;-la depois.
                             </AlertDialogDescription>
                           </AlertDialogHeader>
                           <AlertDialogFooter>
                             <AlertDialogCancel>Cancelar</AlertDialogCancel>
                             <AlertDialogAction onClick={() => deletePayment(payment.id)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-                              Excluir
+                              Cancelar cobran&ccedil;a
                             </AlertDialogAction>
                           </AlertDialogFooter>
                         </AlertDialogContent>
@@ -609,6 +632,59 @@ export default function PaymentsPage() {
                   </div>
                 );
               })}
+
+              {canDeletePayments && filteredCancelledPayments.length > 0 && (
+                <div className="mt-5 rounded-2xl border border-amber-200 bg-amber-50/80 p-4 dark:border-amber-900/60 dark:bg-amber-950/20">
+                  <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                    <div>
+                      <h3 className="font-display text-base font-semibold text-amber-950 dark:text-amber-100">
+                        Cobran&ccedil;as canceladas
+                      </h3>
+                      <p className="text-sm text-amber-800/80 dark:text-amber-200/80">
+                        Use apenas para recuperar cobran&ccedil;as canceladas por engano neste m&ecirc;s.
+                      </p>
+                    </div>
+                    <Badge className="w-fit bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-200">
+                      {filteredCancelledPayments.length} cancelada(s)
+                    </Badge>
+                  </div>
+
+                  <div className="mt-3 space-y-2">
+                    {filteredCancelledPayments.map(payment => {
+                      const student = students.find(s => s.id === payment.studentId);
+                      const plan = plans.find(p => p.id === payment.planId);
+                      if (!student) return null;
+
+                      return (
+                        <div
+                          key={payment.id}
+                          className="flex flex-col gap-3 rounded-xl border border-amber-200/80 bg-background/80 p-3 sm:flex-row sm:items-center sm:justify-between dark:border-amber-900/60"
+                        >
+                          <div className="min-w-0">
+                            <div className="flex flex-wrap items-center gap-2">
+                              <span className="font-semibold text-foreground">{student.name}</span>
+                              <Badge variant="outline" className="border-amber-300 text-amber-700 dark:border-amber-800 dark:text-amber-300">
+                                Cancelada
+                              </Badge>
+                            </div>
+                            <p className="mt-1 text-sm text-muted-foreground">
+                              {plan?.name || `${labels.planLabelSingular} atual`} | {monthNames[selectedMonth - 1]}/{selectedYear}
+                            </p>
+                          </div>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="w-full border-amber-300 text-amber-800 hover:bg-amber-100 sm:w-auto dark:border-amber-800 dark:text-amber-200 dark:hover:bg-amber-900/30"
+                            onClick={() => restorePayment(payment.id)}
+                          >
+                            <RotateCcw className="mr-1 h-4 w-4" /> Restaurar cobran&ccedil;a
+                          </Button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
             </div>
           )
         )}

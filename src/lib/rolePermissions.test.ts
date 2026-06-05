@@ -101,6 +101,10 @@ describe('rolePermissions', () => {
     expect(canPerformAction({ role: 'financeiro', businessType: 'sport_school', module: 'expenses', action: 'view_sensitive_financials' })).toBe(true);
     expect(canPerformAction({ role: 'financeiro', businessType: 'arena', module: 'expenses', action: 'create' })).toBe(true);
     expect(canPerformAction({ role: 'finance', businessType: 'arena', module: 'reports', action: 'export' })).toBe(true);
+    expect(canAccessModule({ role: 'finance', businessType: 'sport_school', module: 'expenses' })).toBe(true);
+    expect(canAccessModule({ role: 'finance', businessType: 'arena', module: 'expenses' })).toBe(true);
+    expect(canAccessModule({ role: 'finance', businessType: 'sport_school', module: 'communication' })).toBe(false);
+    expect(canAccessModule({ role: 'finance', businessType: 'arena', module: 'communication' })).toBe(false);
     expect(canPerformAction({ role: 'finance', businessType: 'arena', module: 'sales', action: 'create' })).toBe(false);
     expect(canAccessModule({ role: 'finance', businessType: 'arena', module: 'agenda' })).toBe(false);
     expect(canPerformAction({ role: 'finance', businessType: 'arena', module: 'settings', action: 'manage_settings' })).toBe(false);
@@ -172,7 +176,7 @@ describe('rolePermissions', () => {
       role: 'finance',
       businessType: 'sport_school',
       allowed: ['/dashboard', '/pagamentos', '/despesas', '/relatorios', '/configuracoes'],
-      denied: ['/calendario', '/alunos', '/presenca', '/turmas', '/vendas'],
+      denied: ['/calendario', '/alunos', '/presenca', '/turmas', '/vendas', '/comunicacao'],
     });
   });
 
@@ -222,7 +226,7 @@ describe('rolePermissions', () => {
       role: 'finance',
       businessType: 'arena',
       allowed: ['/dashboard', '/pagamentos', '/despesas', '/relatorios', '/vendas', '/comandas', '/reservantes', '/configuracoes'],
-      denied: ['/agenda', '/quadras', '/produtos', '/calendario', '/alunos'],
+      denied: ['/agenda', '/quadras', '/produtos', '/calendario', '/alunos', '/comunicacao'],
     });
   });
 });

@@ -234,7 +234,6 @@ const FINANCE_PERMISSIONS: Partial<Record<PermissionModule, readonly PermissionA
   payments: ['view', 'create', 'update', 'receive_payment', 'reopen_payment', 'export'],
   expenses: ['view', 'create', 'update', 'export', 'view_sensitive_financials'],
   reports: ['view', 'export', 'view_sensitive_financials'],
-  communication: ['view'],
   settings: ['view'], // Permite visualizar configurações básicas
   team: ['view'],
   // Arena apenas — filtrados automaticamente pelo scope em sport_school

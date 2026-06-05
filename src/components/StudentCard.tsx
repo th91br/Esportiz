@@ -10,6 +10,7 @@ import { usePlans } from '@/hooks/queries/usePlans';
 import { useTrainings } from '@/hooks/queries/useTrainings';
 import { useGroups } from '@/hooks/queries/useGroups';
 import { useBusinessContext } from '@/hooks/useBusinessContext';
+import { useRolePermissions } from '@/hooks/useRolePermissions';
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
@@ -47,6 +48,10 @@ export function StudentCard({ student, onClick }: StudentCardProps) {
   const { trainings } = useTrainings();
   const { groups } = useGroups();
   const { labels, isArena } = useBusinessContext();
+  const rolePermissions = useRolePermissions();
+  const studentModule = isArena ? 'reservants' : 'students';
+  const canUpdateStudent = rolePermissions.can(studentModule, 'update');
+  const canDeleteStudent = rolePermissions.can(studentModule, 'delete');
   const { user } = useAuth();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -312,7 +317,7 @@ export function StudentCard({ student, onClick }: StudentCardProps) {
       
       {/* Actions Footer */}
       <div className="bg-muted/30 border-t border-border/50 px-4 py-2.5 flex items-center justify-between gap-4" onClick={e => e.stopPropagation()}>
-        {student.active ? (
+        {canUpdateStudent && student.active ? (
           /* Desativar — with confirmation dialog */
           <AlertDialog>
             <AlertDialogTrigger asChild>
@@ -345,11 +350,13 @@ export function StudentCard({ student, onClick }: StudentCardProps) {
               </AlertDialogFooter>
             </AlertDialogContent>
           </AlertDialog>
-        ) : (
+        ) : canUpdateStudent ? (
           /* Ativar — simple button, no side effects */
           <Button variant="ghost" size="sm" className="h-7 text-[11px] font-semibold text-primary hover:bg-primary/10 transition-colors px-2" onClick={(e) => { e.stopPropagation(); handleReactivate(); }}>
             Ativar {labels.studentLabelSingular}
           </Button>
+        ) : (
+          <span className="text-[11px] font-medium text-muted-foreground">Somente leitura</span>
         )}
         
         <div className="flex items-center gap-0.5">
@@ -362,15 +369,18 @@ export function StudentCard({ student, onClick }: StudentCardProps) {
           >
             <ExternalLink className="h-3.5 w-3.5" />
           </Button>
-          <StudentForm
-            student={student}
-            trigger={
-              <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors" onClick={(e) => e.stopPropagation()}>
-                <Pencil className="h-3.5 w-3.5" />
-              </Button>
-            }
-          />
-          <AlertDialog>
+          {canUpdateStudent && (
+            <StudentForm
+              student={student}
+              trigger={
+                <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors" onClick={(e) => e.stopPropagation()}>
+                  <Pencil className="h-3.5 w-3.5" />
+                </Button>
+              }
+            />
+          )}
+          {canDeleteStudent && (
+            <AlertDialog>
             <AlertDialogTrigger asChild>
               <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors" onClick={(e) => e.stopPropagation()}>
                 <Trash2 className="h-3.5 w-3.5" />
@@ -390,7 +400,8 @@ export function StudentCard({ student, onClick }: StudentCardProps) {
                 <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Remover</AlertDialogAction>
               </AlertDialogFooter>
             </AlertDialogContent>
-          </AlertDialog>
+            </AlertDialog>
+          )}
         </div>
       </div>
     </div>

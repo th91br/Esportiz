@@ -62,6 +62,7 @@ export default function CommunicationPage() {
   const { profile, updateProfile, isUpdatingProfile } = useProfile();
   const isArena = profile?.business_type === 'arena';
   const canSaveCommunicationTemplate = rolePermissions.can('settings', 'update');
+  const canSendCommunicationMessages = rolePermissions.can('communication', 'send_message');
   
   // Nome dinâmico do negócio com fallbacks personalizados por modalidade
   const businessName = profile?.ct_name || (
@@ -233,6 +234,11 @@ export default function CommunicationPage() {
   const previewMessage = previewStudent ? buildMessageForStudent(previewStudent.id, previewStudent.name) : '';
 
   const handleCopyPreview = () => {
+    if (!canSendCommunicationMessages) {
+      toast.error('Seu cargo permite visualizar comunicacoes, mas nao copiar ou enviar mensagens.');
+      return;
+    }
+
     if (!previewMessage) {
       toast.error('Nenhuma mensagem disponivel para copiar.');
       return;
@@ -243,6 +249,11 @@ export default function CommunicationPage() {
   };
 
   const handleCopyStudentMessage = (studentId: string, studentName: string) => {
+    if (!canSendCommunicationMessages) {
+      toast.error('Seu cargo permite visualizar comunicacoes, mas nao copiar ou enviar mensagens.');
+      return;
+    }
+
     const message = buildMessageForStudent(studentId, studentName);
     if (!message) {
       toast.error('Mensagem vazia para este contato.');
@@ -254,10 +265,21 @@ export default function CommunicationPage() {
   };
 
   const handleSendWhatsApp = (studentId: string, studentName: string, studentPhone: string | null) => {
+    if (!canSendCommunicationMessages) {
+      toast.error('Seu cargo permite visualizar comunicacoes, mas nao enviar mensagens.');
+      return;
+    }
+
     setSendingStudent({ id: studentId, name: studentName, phone: studentPhone });
   };
 
   const handleConfirmSend = () => {
+    if (!canSendCommunicationMessages) {
+      toast.error('Seu cargo permite visualizar comunicacoes, mas nao enviar mensagens.');
+      setSendingStudent(null);
+      return;
+    }
+
     if (!sendingStudent) return;
     const message = buildMessageForStudent(sendingStudent.id, sendingStudent.name);
     const safeAction = buildWhatsAppAction({ phone: sendingStudent.phone, message });
@@ -355,17 +377,19 @@ export default function CommunicationPage() {
                       {previewStudent ? `Exemplo para ${previewStudent.name}` : 'Selecione um público com contatos.'}
                     </p>
                   </div>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    className="h-8 gap-1.5 text-xs"
-                    onClick={handleCopyPreview}
-                    disabled={!previewMessage}
-                  >
-                    <Copy className="h-3.5 w-3.5" />
-                    Copiar
-                  </Button>
+                  {canSendCommunicationMessages && (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="h-8 gap-1.5 text-xs"
+                      onClick={handleCopyPreview}
+                      disabled={!previewMessage}
+                    >
+                      <Copy className="h-3.5 w-3.5" />
+                      Copiar
+                    </Button>
+                  )}
                 </div>
                 <pre className="max-h-44 overflow-y-auto whitespace-pre-wrap break-words rounded-md bg-background p-3 text-xs leading-relaxed text-foreground border border-border/40">
                   {previewMessage || 'Nenhuma mensagem para visualizar.'}
@@ -375,7 +399,9 @@ export default function CommunicationPage() {
               <div className="bg-primary/10 border border-primary/20 rounded-lg p-4 flex gap-3 mt-4">
                 <AlertCircle className="h-5 w-5 text-primary shrink-0" />
                 <p className="text-xs text-muted-foreground">
-                  Para evitar bloqueios pelo WhatsApp (Anti-Spam), você precisará clicar em "Enviar" {labels.studentLabelSingular.toLowerCase()} por {labels.studentLabelSingular.toLowerCase()}. A mensagem já será preenchida automaticamente.
+                  {canSendCommunicationMessages
+                    ? <>Para evitar bloqueios pelo WhatsApp (Anti-Spam), você precisará clicar em "Enviar" {labels.studentLabelSingular.toLowerCase()} por {labels.studentLabelSingular.toLowerCase()}. A mensagem já será preenchida automaticamente.</>
+                    : <>Seu cargo possui acesso de leitura a comunicacoes. O envio e a copia de mensagens ficam restritos aos cargos autorizados.</>}
                 </p>
               </div>
             </div>
@@ -427,26 +453,32 @@ export default function CommunicationPage() {
                             </p>
                           </div>
                         </div>
-                        <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
-                          <Button
-                            type="button"
-                            onClick={() => handleCopyStudentMessage(student.id, student.name)}
-                            variant="outline"
-                            className="w-full sm:w-auto shrink-0"
-                          >
-                            <Copy className="h-4 w-4 mr-2" />
-                            Copiar
-                          </Button>
-                          <Button
-                            onClick={() => handleSendWhatsApp(student.id, student.name, student.phone)}
-                            variant={isSent ? 'outline' : 'default'}
-                            className={`w-full sm:w-auto shrink-0 ${isSent ? 'text-success border-success/30 hover:bg-success/10' : ''}`}
-                            disabled={!canSend}
-                          >
-                            <MessageCircle className="h-4 w-4 mr-2" />
-                            {isSent ? 'Reenviar' : 'Enviar'}
-                          </Button>
-                        </div>
+                        {canSendCommunicationMessages ? (
+                          <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
+                            <Button
+                              type="button"
+                              onClick={() => handleCopyStudentMessage(student.id, student.name)}
+                              variant="outline"
+                              className="w-full sm:w-auto shrink-0"
+                            >
+                              <Copy className="h-4 w-4 mr-2" />
+                              Copiar
+                            </Button>
+                            <Button
+                              onClick={() => handleSendWhatsApp(student.id, student.name, student.phone)}
+                              variant={isSent ? 'outline' : 'default'}
+                              className={`w-full sm:w-auto shrink-0 ${isSent ? 'text-success border-success/30 hover:bg-success/10' : ''}`}
+                              disabled={!canSend}
+                            >
+                              <MessageCircle className="h-4 w-4 mr-2" />
+                              {isSent ? 'Reenviar' : 'Enviar'}
+                            </Button>
+                          </div>
+                        ) : (
+                          <span className="rounded-full border border-border/60 bg-muted px-3 py-1 text-xs font-semibold text-muted-foreground">
+                            Somente leitura
+                          </span>
+                        )}
                       </div>
                     );
                   })}

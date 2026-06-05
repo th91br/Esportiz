@@ -23,6 +23,7 @@ import {
   Tooltip, TooltipContent, TooltipProvider, TooltipTrigger,
 } from '@/components/ui/tooltip';
 import { useBusinessContext } from '@/hooks/useBusinessContext';
+import { useRolePermissions } from '@/hooks/useRolePermissions';
 
 import { toast } from '@/hooks/use-toast';
 import { getLocalTodayDate, toLocalDateString } from '@/lib/dateUtils';
@@ -272,7 +273,7 @@ function TrainingFormDialog({
 }
 
 // Annual calendar mini-view with hover tooltips
-function AnnualCalendar({ year, trainings, students, onDayClick }: { year: number; trainings: Training[]; students: { id: string; name: string }[]; onDayClick?: (dateStr: string) => void }) {
+function AnnualCalendar({ year, trainings, students, onDayClick, canSchedule = false }: { year: number; trainings: Training[]; students: { id: string; name: string }[]; onDayClick?: (dateStr: string) => void; canSchedule?: boolean }) {
   const { labels } = useBusinessContext();
   const months = Array.from({ length: 12 }, (_, i) => i);
   const studentMap = useMemo(() => {
@@ -317,7 +318,8 @@ function AnnualCalendar({ year, trainings, students, onDayClick }: { year: numbe
                           <span
                             onClick={() => onDayClick?.(dateStr)}
                             className={cn(
-                              'text-[11px] leading-5 rounded-sm cursor-pointer hover:ring-2 hover:ring-primary/40 transition-all',
+                              'text-[11px] leading-5 rounded-sm transition-all',
+                              canSchedule && 'cursor-pointer hover:ring-2 hover:ring-primary/40',
                               isToday && 'bg-primary text-primary-foreground font-bold',
                               hasTraining && !isToday && 'bg-primary/20 text-primary font-semibold',
                             )}>
@@ -331,7 +333,7 @@ function AnnualCalendar({ year, trainings, students, onDayClick }: { year: numbe
                               <p key={name} className="text-xs text-muted-foreground">• {name.split(' ')[0]}</p>
                             ))}
                           </div>
-                          <p className="text-xs text-primary mt-1 font-medium">Clique para agendar</p>
+                          {canSchedule && <p className="text-xs text-primary mt-1 font-medium">Clique para agendar</p>}
                         </TooltipContent>
                       </Tooltip>
                     );
@@ -341,7 +343,8 @@ function AnnualCalendar({ year, trainings, students, onDayClick }: { year: numbe
                     <span key={day}
                       onClick={() => onDayClick?.(dateStr)}
                       className={cn(
-                        'text-[11px] leading-5 rounded-sm cursor-pointer hover:ring-2 hover:ring-primary/40 transition-all',
+                        'text-[11px] leading-5 rounded-sm transition-all',
+                        canSchedule && 'cursor-pointer hover:ring-2 hover:ring-primary/40',
                         isToday && 'bg-primary text-primary-foreground font-bold',
                       )}>
                       {day}
@@ -373,6 +376,10 @@ export default function CalendarPage() {
   const [modalityFilter, setModalityFilter] = useState('all');
   const { modalities } = useModalities();
   const { labels } = useBusinessContext();
+  const rolePermissions = useRolePermissions();
+  const canCreateTraining = rolePermissions.can('calendar', 'create');
+  const canUpdateTraining = rolePermissions.can('calendar', 'update');
+  const canDeleteTraining = rolePermissions.can('calendar', 'delete');
 
   const weekDates = useMemo(() => getWeekDatesArray(weekOffset), [weekOffset]);
   const weekStart = weekDates[0];
@@ -400,6 +407,7 @@ export default function CalendarPage() {
   };
 
   const handleDeleteTraining = async (training: Training) => {
+    if (!canDeleteTraining) return;
     await deleteTraining(training.id);
     toast({ title: `${labels.trainingLabelSingular} removido(a)` });
   };
@@ -416,7 +424,9 @@ export default function CalendarPage() {
     setWeekOffset(offset);
     setSelectedDate(dateStr);
     setViewMode('week');
-    setNewTrainingOpen(true);
+    if (canCreateTraining) {
+      setNewTrainingOpen(true);
+    }
   };
 
   return (
@@ -449,14 +459,20 @@ export default function CalendarPage() {
                 ))}
               </SelectContent>
             </Select>
-            <Button className="btn-primary-gradient shrink-0" onClick={() => setNewTrainingOpen(true)}>
-              <Plus className="h-4 w-4 sm:mr-2" /><span className="hidden sm:inline">Novo(a) {labels.trainingLabelSingular}</span>
-            </Button>
+            {canCreateTraining && (
+              <Button className="btn-primary-gradient shrink-0" onClick={() => setNewTrainingOpen(true)}>
+                <Plus className="h-4 w-4 sm:mr-2" /><span className="hidden sm:inline">Novo(a) {labels.trainingLabelSingular}</span>
+              </Button>
+            )}
           </div>
         </div>
 
-        <TrainingFormDialog open={newTrainingOpen} onOpenChange={setNewTrainingOpen} selectedDate={selectedDate} onSaved={handleTrainingSaved} />
-        <TrainingFormDialog key={editingTraining?.id || 'new-edit'} open={editOpen} onOpenChange={(o) => { setEditOpen(o); if (!o) setEditingTraining(undefined); }} training={editingTraining} selectedDate={selectedDate} onSaved={handleTrainingSaved} />
+        {canCreateTraining && (
+          <TrainingFormDialog open={newTrainingOpen} onOpenChange={setNewTrainingOpen} selectedDate={selectedDate} onSaved={handleTrainingSaved} />
+        )}
+        {canUpdateTraining && (
+          <TrainingFormDialog key={editingTraining?.id || 'new-edit'} open={editOpen} onOpenChange={(o) => { setEditOpen(o); if (!o) setEditingTraining(undefined); }} training={editingTraining} selectedDate={selectedDate} onSaved={handleTrainingSaved} />
+        )}
 
         {viewMode === 'year' ? (
           /* Annual View */
@@ -466,7 +482,7 @@ export default function CalendarPage() {
               <h2 className="font-display font-bold text-xl">{yearView}</h2>
               <Button variant="ghost" size="icon" onClick={() => setYearView((y) => y + 1)}><ChevronRight className="h-5 w-5" /></Button>
             </div>
-            <AnnualCalendar year={yearView} trainings={trainings} students={students} onDayClick={handleAnnualDayClick} />
+            <AnnualCalendar year={yearView} trainings={trainings} students={students} onDayClick={handleAnnualDayClick} canSchedule={canCreateTraining} />
           </div>
         ) : (
           <>
@@ -560,11 +576,14 @@ export default function CalendarPage() {
                               <div className="flex items-center gap-1.5 text-muted-foreground"><MapPin className="h-3.5 w-3.5" />{training.location}</div>
                               <div className="flex items-center gap-1.5 text-muted-foreground"><Users className="h-3.5 w-3.5" />{trainingStudents.length} {trainingStudents.length !== 1 ? labels.studentLabel.toLowerCase() : labels.studentLabelSingular.toLowerCase()}</div>
                             </div>
-                            <Button variant="ghost" size="icon" className="h-8 w-8"
+                            {canUpdateTraining && (
+                              <Button variant="ghost" size="icon" className="h-8 w-8"
                               onClick={() => { setEditingTraining(training); setEditOpen(true); }}>
                               <Pencil className="h-4 w-4" />
-                            </Button>
-                            <AlertDialog>
+                              </Button>
+                            )}
+                            {canDeleteTraining && (
+                              <AlertDialog>
                               <AlertDialogTrigger asChild>
                                 <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive"><Trash2 className="h-4 w-4" /></Button>
                               </AlertDialogTrigger>
@@ -578,7 +597,8 @@ export default function CalendarPage() {
                                   <AlertDialogAction onClick={() => handleDeleteTraining(training)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Remover</AlertDialogAction>
                                 </AlertDialogFooter>
                               </AlertDialogContent>
-                            </AlertDialog>
+                              </AlertDialog>
+                            )}
                           </div>
                         </div>
                         <div className="mt-3 pt-3 border-t border-border/50">
@@ -604,9 +624,11 @@ export default function CalendarPage() {
               ) : (
                 <div className="text-center py-8">
                   <p className="text-muted-foreground">Nenhum(a) {labels.trainingLabelSingular.toLowerCase()} agendado(a) para este dia</p>
-                  <Button className="mt-4" variant="outline" onClick={() => setNewTrainingOpen(true)}>
-                    <Plus className="h-4 w-4 mr-2" />Agendar {labels.trainingLabelSingular.toLowerCase()}
-                  </Button>
+                  {canCreateTraining && (
+                    <Button className="mt-4" variant="outline" onClick={() => setNewTrainingOpen(true)}>
+                      <Plus className="h-4 w-4 mr-2" />Agendar {labels.trainingLabelSingular.toLowerCase()}
+                    </Button>
+                  )}
                 </div>
               )}
             </div>

@@ -87,11 +87,14 @@ describe('rolePermissions', () => {
     expect(canAccessModule({ role: 'receptionist', businessType: 'arena', module: 'expenses' })).toBe(false);
     expect(canPerformAction({ role: 'receptionist', businessType: 'arena', module: 'expenses', action: 'create' })).toBe(false);
     expect(canPerformAction({ role: 'receptionist', businessType: 'arena', module: 'reports', action: 'view_sensitive_financials' })).toBe(false);
+    expect(canPerformAction({ role: 'receptionist', businessType: 'arena', module: 'communication', action: 'send_message' })).toBe(true);
   });
 
   it('keeps instructors away from financial and inventory actions', () => {
     expect(canPerformAction({ role: 'instructor', businessType: 'sport_school', module: 'attendance', action: 'create' })).toBe(true);
     expect(canPerformAction({ role: 'professor', businessType: 'sport_school', module: 'student_training_requests', action: 'approve_request' })).toBe(true);
+    expect(canAccessModule({ role: 'instructor', businessType: 'sport_school', module: 'communication' })).toBe(true);
+    expect(canPerformAction({ role: 'instructor', businessType: 'sport_school', module: 'communication', action: 'send_message' })).toBe(false);
     expect(canAccessModule({ role: 'instructor', businessType: 'sport_school', module: 'payments' })).toBe(false);
     expect(canAccessModule({ role: 'instructor', businessType: 'arena', module: 'products' })).toBe(false);
   });

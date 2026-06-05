@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Header } from '@/components/Header';
 import { useStudents } from '@/hooks/queries/useStudents';
@@ -20,6 +20,7 @@ import {
 import { formatCurrency } from '@/lib/formatCurrency';
 import { cn } from '@/lib/utils';
 import { useBusinessContext } from '@/hooks/useBusinessContext';
+import { useRolePermissions } from '@/hooks/useRolePermissions';
 import { getLocalTodayDate } from '@/lib/dateUtils';
 
 const DEFAULT_CONTRACT_CITY = 'Balneario Camboriu';
@@ -35,12 +36,17 @@ export default function StudentProfilePage() {
   const { students, loadingStudents } = useStudents();
   const { plans } = usePlans();
   const { trainings } = useTrainings();
-  const { payments } = usePayments();
   const { modalities } = useModalities();
   const { groups } = useGroups();
   const { profile } = useProfile();
   const { attendance } = useAttendance();
   const { labels, isArena } = useBusinessContext();
+  const rolePermissions = useRolePermissions();
+  const studentModule = isArena ? 'reservants' : 'students';
+  const canUpdateStudent = rolePermissions.can(studentModule, 'update');
+  const canViewStudentFinance = rolePermissions.can('payments', 'view');
+  const canViewContracts = rolePermissions.can('contracts', 'view');
+  const { payments } = usePayments({ enabled: canViewStudentFinance });
 
   const [activeTab, setActiveTab] = useState('overview');
 
@@ -50,6 +56,15 @@ export default function StudentProfilePage() {
   const [clauseRules, setClauseRules] = useState('É dever do CONTRATANTE zelar pelas instalações, equipamentos e respeitar rigorosamente os horários preestabelecidos para os treinos. Em caso de falta injustificada, não haverá direito a reposição de aula.');
   const [clauseTerms, setClauseTerms] = useState('O CONTRATANTE autoriza, a título gratuito, o uso da imagem e voz do aluno em campanhas publicitárias, redes sociais e materiais de divulgação do Centro de Treinamento.');
   const [contractCity, setContractCity] = useState(DEFAULT_CONTRACT_CITY);
+
+  useEffect(() => {
+    if (activeTab === 'finance' && !canViewStudentFinance) {
+      setActiveTab('overview');
+    }
+    if (activeTab === 'documents' && !canViewContracts) {
+      setActiveTab('overview');
+    }
+  }, [activeTab, canViewStudentFinance, canViewContracts]);
 
   const handleResetContract = () => {
     setContractTitle('CONTRATO DE PRESTAÇÃO DE SERVIÇOS ESPORTIVOS');
@@ -125,11 +140,13 @@ export default function StudentProfilePage() {
             <ArrowLeft className="h-4 w-4" />
             Voltar para lista
           </Button>
-          <StudentForm student={student} trigger={
-            <Button variant="outline" className="gap-2">
-              <Edit className="h-4 w-4" /> Editar {labels.studentLabelSingular}
-            </Button>
-          } />
+          {canUpdateStudent && (
+            <StudentForm student={student} trigger={
+              <Button variant="outline" className="gap-2">
+                <Edit className="h-4 w-4" /> Editar {labels.studentLabelSingular}
+              </Button>
+            } />
+          )}
         </div>
 
         {/* Header Profile Card */}
@@ -179,9 +196,9 @@ export default function StudentProfilePage() {
         <Tabs value={activeTab} onValueChange={setActiveTab} className="print:hidden">
           <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 md:w-auto md:inline-flex h-auto p-1 bg-muted/50 gap-1 sm:gap-0">
             <TabsTrigger value="overview" className="gap-2 py-2.5"><User className="h-4 w-4 hidden sm:block" />Visão Geral</TabsTrigger>
-            <TabsTrigger value="finance" className="gap-2 py-2.5"><DollarSign className="h-4 w-4 hidden sm:block" />Financeiro</TabsTrigger>
+            {canViewStudentFinance && <TabsTrigger value="finance" className="gap-2 py-2.5"><DollarSign className="h-4 w-4 hidden sm:block" />Financeiro</TabsTrigger>}
             {!isArena && <TabsTrigger value="attendance" className="gap-2 py-2.5"><Activity className="h-4 w-4 hidden sm:block" />Frequência</TabsTrigger>}
-            <TabsTrigger value="documents" className="gap-2 py-2.5"><FileSignature className="h-4 w-4 hidden sm:block" />Contratos</TabsTrigger>
+            {canViewContracts && <TabsTrigger value="documents" className="gap-2 py-2.5"><FileSignature className="h-4 w-4 hidden sm:block" />Contratos</TabsTrigger>}
           </TabsList>
 
           {/* OVERVIEW TAB */}
@@ -253,6 +270,7 @@ export default function StudentProfilePage() {
           </TabsContent>
 
           {/* FINANCE TAB */}
+          {canViewStudentFinance && (
           <TabsContent value="finance" className="mt-6 space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
              <Card>
                 <CardHeader>
@@ -318,6 +336,7 @@ export default function StudentProfilePage() {
                 </CardContent>
              </Card>
           </TabsContent>
+          )}
 
           {/* ATTENDANCE TAB */}
           {!isArena && (
@@ -386,6 +405,7 @@ export default function StudentProfilePage() {
           )}
 
           {/* DOCUMENTS/CONTRACTS TAB (Exclusivo para sport_school) */}
+          {canViewContracts && (
           <TabsContent value="documents" className="mt-6 space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
               
@@ -529,11 +549,13 @@ export default function StudentProfilePage() {
 
             </div>
           </TabsContent>
+          )}
         </Tabs>
 
       </main>
 
       {/* Print-only layout for the contract */}
+      {canViewContracts && (
       <div className="hidden print:block font-serif text-black p-8 bg-white">
         <div className="flex flex-col items-center justify-center mb-10 border-b-2 border-black pb-8">
           {profile?.logo_url && (
@@ -588,6 +610,7 @@ export default function StudentProfilePage() {
           {contractCity}, {new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' })}
         </p>
       </div>
+      )}
 
     </div>
   );

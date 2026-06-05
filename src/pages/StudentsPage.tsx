@@ -21,6 +21,7 @@ import {
   getStudentsWithoutPlan 
 } from '@/lib/studentHelpers';
 import { useBusinessContext } from '@/hooks/useBusinessContext';
+import { useRolePermissions } from '@/hooks/useRolePermissions';
 import { cn } from '@/lib/utils';
 
 export default function StudentsPage() {
@@ -29,6 +30,10 @@ export default function StudentsPage() {
   const { modalities } = useModalities();
   const { groups } = useGroups();
   const { labels, isArena } = useBusinessContext();
+  const rolePermissions = useRolePermissions();
+  const canCreateStudents = rolePermissions.can(isArena ? 'reservants' : 'students', 'create');
+  const canUpdateStudents = rolePermissions.can(isArena ? 'reservants' : 'students', 'update');
+  const canExportStudents = canCreateStudents || canUpdateStudents;
   
   const loading = loadingStudents || loadingPlans;
 
@@ -72,7 +77,8 @@ export default function StudentsPage() {
             </p>
           </div>
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
-            <Button variant="outline" className="gap-2 bg-background hover:bg-muted" onClick={() => {
+            {canExportStudents && (
+              <Button variant="outline" className="gap-2 bg-background hover:bg-muted" onClick={() => {
               const exportData = students.map(s => {
                 const plan = plans.find(p => p.id === s.planId);
                 const modality = modalities.find(m => m.id === s.modalityId);
@@ -95,8 +101,9 @@ export default function StudentsPage() {
               exportToCSV(exportData, `${labels.studentLabel}_Esportiz`);
             }} disabled={loading || students.length === 0}>
               <Download className="h-4 w-4" /> Exportar (CSV)
-            </Button>
-            <StudentForm />
+              </Button>
+            )}
+            {canCreateStudents && <StudentForm />}
           </div>
         </div>
 
@@ -181,7 +188,11 @@ export default function StudentsPage() {
           <div className="card-elevated p-12 text-center">
             <Users className="h-12 w-12 mx-auto text-muted-foreground/50 mb-3" />
             <p className="text-lg font-medium text-muted-foreground">Nenhum {labels.studentLabelSingular.toLowerCase()} encontrado</p>
-            <p className="text-sm text-muted-foreground/70 mt-1">Tente ajustar os filtros ou adicione um(a) novo(a) {labels.studentLabelSingular.toLowerCase()}</p>
+            <p className="text-sm text-muted-foreground/70 mt-1">
+              {canCreateStudents
+                ? `Tente ajustar os filtros ou adicione um(a) novo(a) ${labels.studentLabelSingular.toLowerCase()}`
+                : 'Tente ajustar os filtros para encontrar outro registro.'}
+            </p>
           </div>
         )}
       </main>

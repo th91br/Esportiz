@@ -17,6 +17,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, Dialog
 import { cn } from '@/lib/utils';
 import { getEndTime } from '@/data/mockData';
 import { useBusinessContext } from '@/hooks/useBusinessContext';
+import { useRolePermissions } from '@/hooks/useRolePermissions';
 
 const DAY_NAMES = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
 const COLORS = ['#6366f1', '#f43f5e', '#f97316', '#22c55e', '#06b6d4', '#8b5cf6', '#ec4899', '#eab308'];
@@ -287,6 +288,10 @@ export default function GroupsPage() {
   const { students } = useStudents();
   const { modalities } = useModalities();
   const { labels } = useBusinessContext();
+  const rolePermissions = useRolePermissions();
+  const canCreateGroups = rolePermissions.can('groups', 'create');
+  const canUpdateGroups = rolePermissions.can('groups', 'update');
+  const canDeleteGroups = rolePermissions.can('groups', 'delete');
   const [formOpen, setFormOpen] = useState(false);
   const [editingGroup, setEditingGroup] = useState<Group | undefined>();
   const [expandedGroup, setExpandedGroup] = useState<string | null>(null);
@@ -339,16 +344,19 @@ export default function GroupsPage() {
   }, [groups, searchQuery]);
 
   const handleEdit = (group: Group) => {
+    if (!canUpdateGroups) return;
     setEditingGroup(group);
     setFormOpen(true);
   };
 
   const handleDelete = async (group: Group) => {
+    if (!canDeleteGroups) return;
     if (!confirm(`Remover a ${labels.groupLabelSingular.toLowerCase()} "${group.name}"? Os ${labels.studentLabel.toLowerCase()} não serão excluídos.`)) return;
     await deleteGroup(group.id);
   };
 
   const handleNewGroup = () => {
+    if (!canCreateGroups) return;
     setEditingGroup(undefined);
     setFormOpen(true);
   };
@@ -364,9 +372,11 @@ export default function GroupsPage() {
             <h1 className="section-title text-2xl md:text-3xl">{labels.groupLabel}</h1>
             <p className="text-muted-foreground mt-1">Organize seus {labels.studentLabel.toLowerCase()} em {labels.groupLabel.toLowerCase()} com horários fixos</p>
           </div>
-          <Button onClick={handleNewGroup} className="btn-primary-gradient gap-2">
-            <Plus className="h-4 w-4" />Novo(a) {labels.groupLabelSingular}
-          </Button>
+          {canCreateGroups && (
+            <Button onClick={handleNewGroup} className="btn-primary-gradient gap-2">
+              <Plus className="h-4 w-4" />Novo(a) {labels.groupLabelSingular}
+            </Button>
+          )}
         </div>
 
         {/* Stats */}
@@ -397,7 +407,7 @@ export default function GroupsPage() {
             <p className="text-sm text-muted-foreground/70 mt-1">
               {searchQuery ? 'Tente outro termo de busca' : `Crie sua primeira ${labels.groupLabelSingular.toLowerCase()} para organizar seus ${labels.studentLabel.toLowerCase()}`}
             </p>
-            {!searchQuery && (
+            {!searchQuery && canCreateGroups && (
               <Button onClick={handleNewGroup} className="mt-4 btn-primary-gradient gap-2">
                 <Plus className="h-4 w-4" />Criar {labels.groupLabelSingular}
               </Button>
@@ -438,14 +448,20 @@ export default function GroupsPage() {
                           </div>
                         )}
                       </div>
-                      <div className="flex gap-1 shrink-0">
-                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleEdit(group)}>
-                          <Pencil className="h-3.5 w-3.5" />
-                        </Button>
-                        <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => handleDelete(group)}>
-                          <Trash2 className="h-3.5 w-3.5" />
-                        </Button>
-                      </div>
+                      {(canUpdateGroups || canDeleteGroups) && (
+                        <div className="flex gap-1 shrink-0">
+                          {canUpdateGroups && (
+                            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleEdit(group)}>
+                              <Pencil className="h-3.5 w-3.5" />
+                            </Button>
+                          )}
+                          {canDeleteGroups && (
+                            <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => handleDelete(group)}>
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </Button>
+                          )}
+                        </div>
+                      )}
                     </div>
 
                     {/* Info */}
@@ -518,7 +534,9 @@ export default function GroupsPage() {
         )}
       </main>
 
-      <GroupFormDialog open={formOpen} onOpenChange={setFormOpen} group={editingGroup} />
+      {(canCreateGroups || canUpdateGroups) && (
+        <GroupFormDialog open={formOpen} onOpenChange={setFormOpen} group={editingGroup} />
+      )}
     </div>
   );
 }

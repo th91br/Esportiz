@@ -6,17 +6,21 @@ import { useRolePermissions } from '@/hooks/useRolePermissions';
 
 export function QuickActions() {
   const { isArena, labels } = useBusinessContext();
-  const { canAccessPath } = useRolePermissions();
+  const rolePermissions = useRolePermissions();
+  const { canAccessPath } = rolePermissions;
+  const canCreateArenaReservation = rolePermissions.can('agenda', 'create');
+  const canCreateSportStudent = rolePermissions.can('students', 'create');
+  const canCreateArenaReservant = rolePermissions.can('reservants', 'create');
 
   const actions = isArena ? [
-    { label: 'Nova Reserva', icon: CalendarPlus, href: '/agenda', color: 'text-emerald-500', bg: 'bg-emerald-500/10 hover:bg-emerald-500/20' },
+    { label: canCreateArenaReservation ? 'Nova Reserva' : 'Ver Agenda', icon: CalendarPlus, href: '/agenda', color: 'text-emerald-500', bg: 'bg-emerald-500/10 hover:bg-emerald-500/20' },
     { label: 'Receber Pgto', icon: CreditCard, href: '/pagamentos', color: 'text-blue-500', bg: 'bg-blue-500/10 hover:bg-blue-500/20' },
-    { label: `Novo ${labels.studentLabelSingular}`, icon: UserPlus, href: '/reservantes', color: 'text-violet-500', bg: 'bg-violet-500/10 hover:bg-violet-500/20' },
+    { label: canCreateArenaReservant ? `Novo ${labels.studentLabelSingular}` : `Ver ${labels.studentLabel}`, icon: UserPlus, href: '/reservantes', color: 'text-violet-500', bg: 'bg-violet-500/10 hover:bg-violet-500/20' },
     { label: 'Visão Geral', icon: Activity, href: '/relatorios', color: 'text-amber-500', bg: 'bg-amber-500/10 hover:bg-amber-500/20' },
   ] : [
     { label: 'Fazer Chamada', icon: CalendarCheck, href: '/presenca', color: 'text-emerald-500', bg: 'bg-emerald-500/10 hover:bg-emerald-500/20' },
     { label: 'Receber Pgto', icon: CreditCard, href: '/pagamentos', color: 'text-blue-500', bg: 'bg-blue-500/10 hover:bg-blue-500/20' },
-    { label: `Novo ${labels.studentLabelSingular}`, icon: UserPlus, href: '/alunos', color: 'text-violet-500', bg: 'bg-violet-500/10 hover:bg-violet-500/20' },
+    { label: canCreateSportStudent ? `Novo ${labels.studentLabelSingular}` : `Ver ${labels.studentLabel}`, icon: UserPlus, href: '/alunos', color: 'text-violet-500', bg: 'bg-violet-500/10 hover:bg-violet-500/20' },
     { label: 'Visão Geral', icon: Activity, href: '/relatorios', color: 'text-amber-500', bg: 'bg-amber-500/10 hover:bg-amber-500/20' },
   ];
 

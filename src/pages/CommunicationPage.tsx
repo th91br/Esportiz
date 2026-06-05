@@ -12,6 +12,7 @@ import { usePlans } from '@/hooks/queries/usePlans';
 import { useBusinessContext } from '@/hooks/useBusinessContext';
 import { useProfile } from '@/hooks/queries/useProfile';
 import { useReservations } from '@/hooks/queries/useReservations';
+import { useRolePermissions } from '@/hooks/useRolePermissions';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { toast } from 'sonner';
 import { getLocalTodayDate, toLocalDateString } from '@/lib/dateUtils';
@@ -57,8 +58,10 @@ export default function CommunicationPage() {
   const { plans, loadingPlans } = usePlans();
   const { reservations, loadingReservations } = useReservations();
   const { labels } = useBusinessContext();
+  const rolePermissions = useRolePermissions();
   const { profile, updateProfile, isUpdatingProfile } = useProfile();
   const isArena = profile?.business_type === 'arena';
+  const canSaveCommunicationTemplate = rolePermissions.can('settings', 'update');
   
   // Nome dinâmico do negócio com fallbacks personalizados por modalidade
   const businessName = profile?.ct_name || (
@@ -97,6 +100,11 @@ export default function CommunicationPage() {
 
   const handleSaveTemplate = async () => {
     if (!profile) return;
+    if (!canSaveCommunicationTemplate) {
+      toast.error('Seu cargo nao permite alterar modelos padrao.');
+      return;
+    }
+
     const activeNicheType = profile.business_type || 'sport_school';
     const templateKey = `mass_${audience}`;
     
@@ -322,7 +330,8 @@ export default function CommunicationPage() {
                   value={messageTemplate}
                   onChange={(e) => setMessageTemplate(e.target.value)}
                 />
-                <Button 
+                {canSaveCommunicationTemplate && (
+                  <Button
                   onClick={handleSaveTemplate}
                   disabled={isUpdatingProfile}
                   variant="outline"
@@ -334,7 +343,8 @@ export default function CommunicationPage() {
                     <Save className="h-4 w-4 text-primary" />
                   )}
                   Salvar Modelo como Padrão
-                </Button>
+                  </Button>
+                )}
               </div>
 
               <div className="space-y-3 rounded-lg border border-border/50 bg-muted/20 p-4">

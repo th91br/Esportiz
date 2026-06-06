@@ -27,10 +27,11 @@ import { getErrorMessage } from '@/lib/errorUtils';
 
 import { useProfile } from '@/hooks/queries/useProfile';
 
-export function useReservations() {
+export function useReservations(options: { enabled?: boolean } = {}) {
   const { user } = useAuth();
   const { profile } = useProfile();
   const queryClient = useQueryClient();
+  const reservationsEnabled = options.enabled ?? true;
 
   const tenantId = profile?.owner_user_id || user?.id;
 
@@ -48,7 +49,7 @@ export function useReservations() {
       if (error) throw error;
       return (data || []).map(toReservation);
     },
-    enabled: !!tenantId,
+    enabled: reservationsEnabled && !!tenantId,
   });
 
   const addReservation = useMutation({

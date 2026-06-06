@@ -15,6 +15,7 @@ interface DashboardChartsProps {
     isArena?: boolean;
     reservations?: Reservation[];
     sales?: Sale[];
+    financialOnly?: boolean;
 }
 
 export function DashboardCharts({ 
@@ -23,7 +24,8 @@ export function DashboardCharts({
     privacyMode, 
     isArena = false, 
     reservations = [], 
-    sales = [] 
+    sales = [],
+    financialOnly = false,
 }: DashboardChartsProps) {
     const { theme } = useTheme();
 
@@ -119,7 +121,7 @@ export function DashboardCharts({
     const maxSecondValue = Math.max(0, ...secondChartData.map(d => isArena ? (d.Total || 0) : ((d.Presenças || 0) + (d.Ausências || 0))));
 
     return (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className={financialOnly ? 'grid grid-cols-1 gap-4' : 'grid grid-cols-1 md:grid-cols-2 gap-4'}>
             <Card>
                 <CardHeader>
                     <CardTitle>Receita Mensal</CardTitle>
@@ -160,7 +162,7 @@ export function DashboardCharts({
                 </CardContent>
             </Card>
 
-            <Card>
+            {!financialOnly && <Card>
                 <CardHeader>
                     <CardTitle>{isArena ? 'Volume de Locações' : 'Frequência (Últimos 7 dias)'}</CardTitle>
                     <CardDescription>
@@ -210,7 +212,7 @@ export function DashboardCharts({
                         )}
                     </div>
                 </CardContent>
-            </Card>
+            </Card>}
         </div>
     );
 }

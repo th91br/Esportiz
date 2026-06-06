@@ -108,10 +108,11 @@ function toCourt(row: Tables<'modalities'>): Court {
 
 import { useProfile } from '@/hooks/queries/useProfile';
 
-export function useCourts() {
+export function useCourts(options: { enabled?: boolean } = {}) {
   const { user } = useAuth();
   const { profile } = useProfile();
   const queryClient = useQueryClient();
+  const courtsEnabled = options.enabled ?? true;
 
   const tenantId = profile?.owner_user_id || user?.id;
 
@@ -128,7 +129,7 @@ export function useCourts() {
       if (error) throw error;
       return (data || []).map(toCourt);
     },
-    enabled: !!tenantId,
+    enabled: courtsEnabled && !!tenantId,
   });
 
   const addCourt = useMutation({

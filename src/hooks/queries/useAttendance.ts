@@ -8,10 +8,11 @@ import { useCallback } from 'react';
 import { syncAfterScheduleMutation } from '@/lib/querySync';
 import type { Tables, TablesUpdate } from '@/integrations/supabase/types';
 
-export function useAttendance() {
+export function useAttendance(options: { enabled?: boolean } = {}) {
     const queryClient = useQueryClient();
     const { user } = useAuth();
     const { profile } = useProfile();
+    const attendanceEnabled = options.enabled ?? true;
 
     const tenantId = profile?.owner_user_id || user?.id;
 
@@ -35,7 +36,7 @@ export function useAttendance() {
                 date: a.date,
             })) as Attendance[];
         },
-        enabled: !!tenantId,
+        enabled: attendanceEnabled && !!tenantId,
     });
 
     const toggleAttendanceMutation = useMutation({

@@ -18,10 +18,11 @@ function getErrorMessage(error: unknown) {
   return error instanceof Error ? error.message : 'Erro inesperado';
 }
 
-export function useModalities() {
+export function useModalities(options: { enabled?: boolean } = {}) {
   const { user } = useAuth();
   const { profile } = useProfile();
   const queryClient = useQueryClient();
+  const modalitiesEnabled = options.enabled ?? true;
 
   const tenantId = profile?.owner_user_id || user?.id;
 
@@ -40,7 +41,7 @@ export function useModalities() {
       if (error) throw error;
       return data as Modality[];
     },
-    enabled: !!tenantId
+    enabled: modalitiesEnabled && !!tenantId
   });
 
   const addModality = useMutation({

@@ -13,10 +13,11 @@ export interface Plan {
   billingType: 'monthly' | 'per_session';
 }
 
-export function usePlans() {
+export function usePlans(options: { enabled?: boolean } = {}) {
   const { user } = useAuth();
   const { profile } = useProfile();
   const queryClient = useQueryClient();
+  const plansEnabled = options.enabled ?? true;
 
   const tenantId = profile?.owner_user_id || user?.id;
 
@@ -42,7 +43,7 @@ export function usePlans() {
         billingType: p.billing_type as 'monthly' | 'per_session',
       })) as Plan[];
     },
-    enabled: !!tenantId
+    enabled: plansEnabled && !!tenantId
   });
 
   const addPlanMutation = useMutation({

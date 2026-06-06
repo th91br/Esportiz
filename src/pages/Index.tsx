@@ -46,6 +46,7 @@ import { Logo } from '@/components/Logo';
 import { useMemo } from 'react';
 import { useRolePermissions } from '@/hooks/useRolePermissions';
 import { useComandas } from '@/hooks/queries/useComandas';
+import { getDashboardAccess } from '@/lib/dashboardAccess';
 
 type ArenaCourtMetadata = {
   isActive?: boolean;
@@ -65,7 +66,8 @@ function parseArenaCourtMetadata(metadata: unknown): ArenaCourtMetadata {
 export default function Index() {
   const rolePermissions = useRolePermissions();
   const { organizationRole } = rolePermissions;
-  const { labels, isSportSchool, isArena } = useBusinessContext();
+  const { businessType, labels, isSportSchool, isArena } = useBusinessContext();
+  const dashboardAccess = getDashboardAccess(organizationRole, businessType);
 
   // Permissoes derivadas do sistema centralizado de roles
   const canViewFinancials = rolePermissions.can('reports', 'view_sensitive_financials');
@@ -77,23 +79,23 @@ export default function Index() {
   const isReceptionist = organizationRole === 'receptionist';
   const isInstructor   = organizationRole === 'instructor';
 
-  const { students, loadingStudents } = useStudents();
-  const { plans, loadingPlans } = usePlans();
-  const { trainings, loadingTrainings } = useTrainings();
-  const { attendance, loadingAttendance } = useAttendance();
+  const { students, loadingStudents } = useStudents({ enabled: dashboardAccess.loadStudents });
+  const { plans, loadingPlans } = usePlans({ enabled: dashboardAccess.loadPlans });
+  const { trainings, loadingTrainings } = useTrainings({ enabled: dashboardAccess.loadTrainings });
+  const { attendance, loadingAttendance } = useAttendance({ enabled: dashboardAccess.loadAttendance });
   const { payments, loadingPayments } = usePayments();
   const { expenses, loadingExpenses } = useExpenses();
-  const { sales } = useSales();
-  const { activeProducts } = useProducts();
-  const { reservations, loadingReservations } = useReservations();
-  const { courts, loadingCourts } = useCourts();
-  const { comandas } = useComandas();
+  const { sales } = useSales({ enabled: dashboardAccess.loadSales });
+  const { activeProducts } = useProducts({ enabled: dashboardAccess.loadProducts });
+  const { reservations, loadingReservations } = useReservations({ enabled: dashboardAccess.loadReservations });
+  const { courts, loadingCourts } = useCourts({ enabled: dashboardAccess.loadCourts });
+  const { comandas } = useComandas({ enabled: dashboardAccess.loadComandas });
 
   const lowStockProducts = useMemo(() => {
     if (!isArena) return [];
     return activeProducts.filter((p) => p.trackStock && p.stockQuantity <= p.minStock);
   }, [isArena, activeProducts]);
-  const { groups, loadingGroups } = useGroups();
+  const { groups, loadingGroups } = useGroups({ enabled: dashboardAccess.loadGroups });
   const loading =
     loadingStudents ||
     loadingPlans ||
@@ -107,7 +109,7 @@ export default function Index() {
 
   const [privacyMode, togglePrivacyMode] = usePrivacyMode();
   const { profile } = useProfile();
-  const { modalities } = useModalities();
+  const { modalities } = useModalities({ enabled: dashboardAccess.loadModalities });
 
   const activeGroups = useMemo(() => {
     return groups.filter((g) => g.active);
@@ -322,18 +324,20 @@ export default function Index() {
                   )}
 
                   {/* Indicador de treinos/reservas de hoje */}
-                  <span className="bg-white/15 border border-white/20 px-3 py-1 rounded-full text-xs font-semibold inline-flex items-center gap-1.5">
-                    <Calendar className="h-3.5 w-3.5" />
-                    {loading
-                      ? '...'
-                      : isArena
-                        ? todayReservationsCount > 0
-                          ? `${todayReservationsCount} reserva(s) hoje`
-                          : 'Nenhuma reserva hoje'
-                        : todayTrainings > 0
-                          ? `${todayTrainings} ${labels.trainingLabelSingular.toLowerCase()}(s) hoje`
-                          : `Nenhum(a) ${labels.trainingLabelSingular.toLowerCase()} hoje`}
-                  </span>
+                  {dashboardAccess.showOperationalContext && (
+                    <span className="bg-white/15 border border-white/20 px-3 py-1 rounded-full text-xs font-semibold inline-flex items-center gap-1.5">
+                      <Calendar className="h-3.5 w-3.5" />
+                      {loading
+                        ? '...'
+                        : isArena
+                          ? todayReservationsCount > 0
+                            ? `${todayReservationsCount} reserva(s) hoje`
+                            : 'Nenhuma reserva hoje'
+                          : todayTrainings > 0
+                            ? `${todayTrainings} ${labels.trainingLabelSingular.toLowerCase()}(s) hoje`
+                            : `Nenhum(a) ${labels.trainingLabelSingular.toLowerCase()} hoje`}
+                    </span>
+                  )}
                 </div>
               </div>
 
@@ -394,7 +398,7 @@ export default function Index() {
         )}
 
         {/* ── Aniversários de hoje (só sport_school) ── */}
-        {isSportSchool && birthdaysToday.length > 0 && (
+        {dashboardAccess.showOperationalSections && isSportSchool && birthdaysToday.length > 0 && (
           <section className="animate-fade-up">
             <div className="bg-primary/10 border-2 border-primary/20 rounded-2xl p-4 md:p-6 flex flex-col md:flex-row items-center justify-between gap-4">
               <div className="flex items-center gap-4 text-center md:text-left">
@@ -435,7 +439,7 @@ export default function Index() {
           </div>
 
           {/* ── Linha 1: KPIs operacionais por tipo ── */}
-          {isSportSchool && (
+          {dashboardAccess.showOperationalSections && isSportSchool && (
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
               {canViewStudents && (
                 <StatCard
@@ -465,7 +469,7 @@ export default function Index() {
             </div>
           )}
 
-          {isArena && (
+          {dashboardAccess.showOperationalSections && isArena && (
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
               <StatCard
                 title="Quadras Ativas"
@@ -545,7 +549,7 @@ export default function Index() {
         </section>
 
         {/* ── Quadras / Modalidades — apenas para quem tem acesso ── */}
-        {canViewModalities && (isSportSchool || isArena) && modalities.length > 0 && (
+        {dashboardAccess.showOperationalSections && canViewModalities && (isSportSchool || isArena) && modalities.length > 0 && (
           <section className="animate-fade-up" style={{ animationDelay: '0.05s' }}>
             <div className="flex items-center gap-2 mb-4 px-1">
               {isArena ? (
@@ -672,22 +676,32 @@ export default function Index() {
               isArena={isArena}
               reservations={reservations}
               sales={sales}
+              financialOnly={dashboardAccess.isFinancialOnly}
             />
           </section>
         )}
 
         {/* ── Agenda + Quick Actions ── */}
-        <div
-          className="grid lg:grid-cols-3 gap-6 animate-fade-up"
-          style={{ animationDelay: '0.2s' }}
-        >
-          <div className="lg:col-span-2">
-            {isArena ? <ArenaTodaySchedule /> : <TodaySchedule />}
+        {dashboardAccess.showOperationalSections ? (
+          <div
+            className="grid lg:grid-cols-3 gap-6 animate-fade-up"
+            style={{ animationDelay: '0.2s' }}
+          >
+            <div className="lg:col-span-2">
+              {isArena ? <ArenaTodaySchedule /> : <TodaySchedule />}
+            </div>
+            <div className="lg:col-span-1 border border-border/50 rounded-2xl bg-muted/5 flex flex-col pt-1 p-0.5">
+              <QuickActions />
+            </div>
           </div>
-          <div className="lg:col-span-1 border border-border/50 rounded-2xl bg-muted/5 flex flex-col pt-1 p-0.5">
+        ) : (
+          <div
+            className="max-w-xl animate-fade-up border border-border/50 rounded-2xl bg-muted/5 p-0.5"
+            style={{ animationDelay: '0.2s' }}
+          >
             <QuickActions />
           </div>
-        </div>
+        )}
       </main>
     </div>
   );

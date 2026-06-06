@@ -25,10 +25,11 @@ function getErrorMessage(error: unknown) {
   return error instanceof Error ? error.message : 'Erro inesperado';
 }
 
-export function useStudents() {
+export function useStudents(options: { enabled?: boolean } = {}) {
   const { user } = useAuth();
   const { profile } = useProfile();
   const queryClient = useQueryClient();
+  const studentsEnabled = options.enabled ?? true;
 
   const tenantId = profile?.owner_user_id || user?.id;
 
@@ -76,7 +77,7 @@ export function useStudents() {
         discountStartMonth: s.discount_start_month,
       })) as Student[];
     },
-    enabled: !!tenantId
+    enabled: studentsEnabled && !!tenantId
   });
 
   const addStudent = useMutation({

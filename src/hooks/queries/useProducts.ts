@@ -13,10 +13,11 @@ import {
 
 export type Product = CommerceProduct;
 
-export function useProducts() {
+export function useProducts(options: { enabled?: boolean } = {}) {
   const { user } = useAuth();
   const { profile } = useProfile();
   const queryClient = useQueryClient();
+  const productsEnabled = options.enabled ?? true;
 
   const tenantId = profile?.owner_user_id || user?.id;
 
@@ -34,7 +35,7 @@ export function useProducts() {
       if (error) throw error;
       return (data || []).map(mapProductRow);
     },
-    enabled: !!tenantId,
+    enabled: productsEnabled && !!tenantId,
   });
 
   const addProductMutation = useMutation({

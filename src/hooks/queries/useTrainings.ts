@@ -11,10 +11,11 @@ type TrainingRowWithStudents = Tables<'trainings'> & {
     training_students?: Pick<Tables<'training_students'>, 'student_id'>[] | null;
 };
 
-export function useTrainings() {
+export function useTrainings(options: { enabled?: boolean } = {}) {
     const queryClient = useQueryClient();
     const { user } = useAuth();
     const { profile } = useProfile();
+    const trainingsEnabled = options.enabled ?? true;
 
     const tenantId = profile?.owner_user_id || user?.id;
 
@@ -46,7 +47,7 @@ export function useTrainings() {
                 durationMinutes: t.duration_minutes ?? 60,
             })) as Training[];
         },
-        enabled: !!tenantId,
+        enabled: trainingsEnabled && !!tenantId,
     });
 
     const addTrainingMutation = useMutation({

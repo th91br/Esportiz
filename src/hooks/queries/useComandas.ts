@@ -28,10 +28,11 @@ type CloseComandaResult = {
   closed_at?: string;
 };
 
-export function useComandas() {
+export function useComandas(options: { enabled?: boolean } = {}) {
   const { user } = useAuth();
   const { profile, loadingProfile } = useProfile();
   const queryClient = useQueryClient();
+  const comandasEnabled = options.enabled ?? true;
 
   // tenantId é o owner da organização (compartilhado entre todos os membros da equipe).
   // Aguarda o profile carregar para evitar race condition onde user?.id do funcionário
@@ -58,7 +59,7 @@ export function useComandas() {
       return (data || []).map(mapComandaRow);
     },
     // Só executa quando o tenantId estiver resolvido (aguarda profile carregar)
-    enabled: !!tenantId && !loadingProfile,
+    enabled: comandasEnabled && !!tenantId && !loadingProfile,
   });
 
   const openComandaMutation = useMutation({

@@ -60,10 +60,11 @@ function getErrorMessage(error: unknown) {
   return error instanceof Error ? error.message : 'Erro inesperado';
 }
 
-export function useGroups() {
+export function useGroups(options: { enabled?: boolean } = {}) {
   const { user } = useAuth();
   const { profile } = useProfile();
   const queryClient = useQueryClient();
+  const groupsEnabled = options.enabled ?? true;
 
   const tenantId = profile?.owner_user_id || user?.id;
 
@@ -96,7 +97,7 @@ export function useGroups() {
         studentIds: getActiveStudentIdsFromGroupLinks(g.group_students),
       })) as Group[];
     },
-    enabled: !!tenantId,
+    enabled: groupsEnabled && !!tenantId,
   });
 
   const addGroup = useMutation({

@@ -25,10 +25,11 @@ type CheckoutCartResult = {
   total_amount?: number;
 };
 
-export function useSales() {
+export function useSales(options: { enabled?: boolean } = {}) {
   const { user } = useAuth();
   const { profile } = useProfile();
   const queryClient = useQueryClient();
+  const salesEnabled = options.enabled ?? true;
 
   const tenantId = profile?.owner_user_id || user?.id;
 
@@ -46,7 +47,7 @@ export function useSales() {
       if (error) throw error;
       return (data || []).map(mapSaleRow);
     },
-    enabled: !!tenantId,
+    enabled: salesEnabled && !!tenantId,
   });
 
   const addSaleMutation = useMutation({

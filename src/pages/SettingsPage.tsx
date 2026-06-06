@@ -77,7 +77,7 @@ const TEAM_ROLE_LABELS: Record<OrganizationRole, { label: string; description: s
   },
   finance: {
     label: 'Financeiro',
-    description: 'Gestao financeira: pagamentos, despesas, relatorios e caixa. Acesso a dados sensiveis de faturamento.',
+    description: 'Gestao financeira: pagamentos, relatorios e caixa. Acesso a dados sensiveis de faturamento.',
     color: 'text-blue-600 dark:text-blue-400',
     bg: 'bg-blue-50 dark:bg-blue-950/30',
     border: 'border-blue-200 dark:border-blue-800',
@@ -101,7 +101,7 @@ const SCHOOL_TEAM_INVITE_OPTIONS: Array<{ role: InvitableOrganizationRole; label
   { role: 'instructor', label: TEAM_ROLE_LABELS.instructor.label, description: 'Aulas, presencas e solicitacoes de treino' },
   { role: 'receptionist', label: TEAM_ROLE_LABELS.receptionist.label, description: 'Atendimento, matriculas, calendario e recebimentos' },
   { role: 'manager', label: TEAM_ROLE_LABELS.manager.label, description: 'Operacao ampla exceto equipe' },
-  { role: 'finance', label: TEAM_ROLE_LABELS.finance.label, description: 'Pagamentos, despesas e relatorios' },
+  { role: 'finance', label: TEAM_ROLE_LABELS.finance.label, description: 'Pagamentos e relatorios' },
 ];
 
 const ARENA_TEAM_INVITE_OPTIONS: Array<{ role: InvitableOrganizationRole; label: string; description: string }> = [

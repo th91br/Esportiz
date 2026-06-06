@@ -812,8 +812,12 @@ export default function ReportsPage() {
                     <Bar dataKey="Recebido" stackId="a" name="Recebido" fill={COLORS.success} radius={pendingRevenue === 0 && overdueRevenue === 0 ? [4, 4, 0, 0] : [0, 0, 4, 4]} />
                     <Bar dataKey="Pendente" stackId="a" name="Pendente" fill={COLORS.slate} radius={overdueRevenue === 0 ? [4, 4, 0, 0] : [0, 0, 0, 0]} />
                     <Bar dataKey="Atrasado" stackId="a" name="Atrasado" fill={COLORS.destructive} radius={[4, 4, 0, 0]} />
-                    <Bar dataKey="Despesas" name="Despesas" fill={COLORS.amber} radius={[4, 4, 0, 0]} />
-                    <Bar dataKey="Lucro" name="Lucro Líquido" fill={COLORS.emerald} radius={[4, 4, 0, 0]} />
+                    {isArena && (
+                      <Bar dataKey="Despesas" name="Despesas" fill={COLORS.amber} radius={[4, 4, 0, 0]} />
+                    )}
+                    {isArena && (
+                      <Bar dataKey="Lucro" name="Lucro Líquido" fill={COLORS.emerald} radius={[4, 4, 0, 0]} />
+                    )}
                     <Legend wrapperStyle={{ paddingTop: '20px', fontSize: '12px' }} iconType="circle" />
                   </BarChart>
                 </ResponsiveContainer>

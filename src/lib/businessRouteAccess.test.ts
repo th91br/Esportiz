@@ -3,7 +3,7 @@ import { canAccessBusinessRoute, getRouteAccessScope } from './businessRouteAcce
 
 describe('businessRouteAccess', () => {
   it('keeps shared routes available for both business types', () => {
-    for (const route of ['/dashboard', '/pagamentos', '/relatorios', '/configuracoes', '/despesas']) {
+    for (const route of ['/dashboard', '/pagamentos', '/relatorios', '/configuracoes']) {
       expect(getRouteAccessScope(route)).toBe('shared');
       expect(canAccessBusinessRoute('sport_school', route)).toBe(true);
       expect(canAccessBusinessRoute('arena', route)).toBe(true);
@@ -19,7 +19,7 @@ describe('businessRouteAccess', () => {
   });
 
   it('allows arena routes only for arena profiles', () => {
-    for (const route of ['/quadras', '/agenda', '/reservantes', '/reservantes/123', '/comandas', '/produtos', '/vendas']) {
+    for (const route of ['/quadras', '/agenda', '/reservantes', '/reservantes/123', '/comandas', '/produtos', '/vendas', '/despesas']) {
       expect(getRouteAccessScope(route)).toBe('arena');
       expect(canAccessBusinessRoute('arena', route)).toBe(true);
       expect(canAccessBusinessRoute('sport_school', route)).toBe(false);

@@ -73,7 +73,7 @@ interface RoutePermissionCheck {
 const MODULE_SCOPES: Record<PermissionModule, ModuleScope> = {
   dashboard: 'shared',
   payments: 'shared',
-  expenses: 'shared',
+  expenses: 'arena',
   reports: 'shared',
   communication: 'shared',
   settings: 'shared',

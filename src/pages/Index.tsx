@@ -68,7 +68,7 @@ export default function Index() {
   const { labels, isSportSchool, isArena } = useBusinessContext();
 
   // Permissoes derivadas do sistema centralizado de roles
-  const canViewFinancials = rolePermissions.can('expenses', 'view_sensitive_financials');
+  const canViewFinancials = rolePermissions.can('reports', 'view_sensitive_financials');
   const canViewPayments   = rolePermissions.can('payments', 'view');
   const canViewStudents   = rolePermissions.can('students', 'view') || rolePermissions.can('reservants', 'view');
   const canViewModalities = rolePermissions.can('modalities', 'view') || rolePermissions.can('courts', 'view');

@@ -31,6 +31,7 @@ import { supabase, SUPABASE_PUBLISHABLE_KEY, SUPABASE_URL } from '@/integrations
 import { type BusinessType } from '@/hooks/queries/useProfile';
 import { cn } from '@/lib/utils';
 import { getErrorMessage } from '@/lib/errorUtils';
+import { getFunctionErrorMessage } from '@/lib/functionErrorUtils';
 import { getDefaultCommunicationTemplate } from '@/lib/communicationContracts';
 import { useRolePermissions } from '@/hooks/useRolePermissions';
 import { useOrganizationTeamMembers, type OrganizationTeamMember } from '@/hooks/queries/useOrganizationTeamMembers';
@@ -520,7 +521,8 @@ export default function SettingsPage() {
       await refetchTeamMembers();
       toast.success('Conta criada e membro registrado na equipe com sucesso!', { id: toastId });
     } catch (error) {
-      toast.error('Nao foi possivel criar a conta: ' + getErrorMessage(error), { id: toastId });
+      const message = await getFunctionErrorMessage(error);
+      toast.error('Nao foi possivel criar a conta: ' + message, { id: toastId });
     } finally {
       setIsInvitingTeamMember(false);
     }
@@ -574,7 +576,8 @@ export default function SettingsPage() {
       toast.success('Membro excluido permanentemente da equipe.', { id: toastId });
       setMemberToConfirmDelete(null);
     } catch (err) {
-      toast.error('Erro ao excluir membro: ' + getErrorMessage(err), { id: toastId });
+      const message = await getFunctionErrorMessage(err);
+      toast.error('Erro ao excluir membro: ' + message, { id: toastId });
     } finally {
       setIsDeletingMember(false);
     }

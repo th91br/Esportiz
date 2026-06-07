@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, type KeyboardEvent } from 'react';
 import { Header } from '@/components/Header';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -200,6 +200,14 @@ export default function ComandasPage() {
 
   const pv = (val: string | number) => (privacyMode ? '••••' : val);
 
+  const handleComandaCardKeyDown = (event: KeyboardEvent<HTMLDivElement>, comanda: Comanda) => {
+    if (event.target !== event.currentTarget) return;
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      setSelectedComanda(comanda);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <Header />
@@ -236,7 +244,7 @@ export default function ComandasPage() {
               className={cn(
                 'flex-1 md:flex-none px-5 py-2 text-sm font-semibold rounded-lg transition-all flex items-center justify-center gap-2',
                 activeTab === 'open' 
-                  ? 'bg-emerald-600 text-emerald-foreground shadow-md shadow-emerald-600/10' 
+                  ? 'bg-success text-success-foreground shadow-md shadow-success/10'
                   : 'text-muted-foreground hover:bg-muted hover:text-foreground'
               )}
             >
@@ -254,7 +262,7 @@ export default function ComandasPage() {
               className={cn(
                 'flex-1 md:flex-none px-5 py-2 text-sm font-semibold rounded-lg transition-all flex items-center justify-center gap-2',
                 activeTab === 'closed' 
-                  ? 'bg-indigo-600 text-indigo-foreground shadow-md shadow-indigo-600/10' 
+                  ? 'bg-secondary text-secondary-foreground shadow-md shadow-secondary/10'
                   : 'text-muted-foreground hover:bg-muted hover:text-foreground'
               )}
             >
@@ -320,9 +328,15 @@ export default function ComandasPage() {
               <div
                 key={comanda.id}
                 onClick={() => setSelectedComanda(comanda)}
+                onKeyDown={(event) => handleComandaCardKeyDown(event, comanda)}
+                role="button"
+                tabIndex={0}
+                aria-label={`Abrir comanda ${comanda.name}`}
                 className={cn(
-                  'card-interactive p-5 flex flex-col justify-between border-primary/5 hover:border-primary/20 transition-all cursor-pointer bg-card',
-                  comanda.status === 'open' ? 'border-l-4 border-l-emerald-500' : 'border-l-4 border-l-indigo-600 dark:border-l-indigo-400'
+                  'card-interactive p-5 flex flex-col justify-between border transition-all cursor-pointer bg-card focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40 focus-visible:ring-offset-2 focus-visible:ring-offset-background',
+                  comanda.status === 'open'
+                    ? 'border-success/25 bg-success/[0.03] hover:border-success/40'
+                    : 'border-secondary/10 hover:border-secondary/25 dark:border-primary/20 dark:hover:border-primary/35'
                 )}
               >
                 <div className="space-y-3">
@@ -336,12 +350,12 @@ export default function ComandasPage() {
                       </h3>
                     </div>
                     {comanda.status === 'open' ? (
-                      <span className="text-[10px] bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 px-2.5 py-1 rounded-full font-extrabold uppercase tracking-wider flex items-center gap-1">
-                        <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-ping" />
+                      <span className="text-[10px] bg-success/10 text-success border border-success/20 px-2.5 py-1 rounded-full font-extrabold uppercase tracking-wider flex items-center gap-1">
+                        <span className="h-1.5 w-1.5 rounded-full bg-success" />
                         Ativa
                       </span>
                     ) : (
-                      <span className="text-[10px] bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 px-2.5 py-1 rounded-full font-extrabold uppercase tracking-wider flex items-center gap-1">
+                      <span className="text-[10px] bg-secondary/10 text-secondary border border-secondary/10 dark:bg-primary/10 dark:text-primary dark:border-primary/20 px-2.5 py-1 rounded-full font-extrabold uppercase tracking-wider flex items-center gap-1">
                         Pago
                       </span>
                     )}
@@ -446,11 +460,11 @@ export default function ComandasPage() {
                     <h2 className="font-display font-bold text-lg md:text-xl text-foreground flex flex-wrap items-center gap-2">
                       <span className="min-w-0 truncate">{selectedComanda.name}</span>
                       {selectedComanda.status === 'open' ? (
-                        <span className="text-[10px] bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 px-2.5 py-1 rounded-full font-extrabold uppercase tracking-wider">
+                        <span className="text-[10px] bg-success/10 text-success border border-success/20 px-2.5 py-1 rounded-full font-extrabold uppercase tracking-wider">
                           Aberta
                         </span>
                       ) : (
-                        <span className="text-[10px] bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 px-2.5 py-1 rounded-full font-extrabold uppercase tracking-wider">
+                        <span className="text-[10px] bg-secondary/10 text-secondary border border-secondary/10 dark:bg-primary/10 dark:text-primary dark:border-primary/20 px-2.5 py-1 rounded-full font-extrabold uppercase tracking-wider">
                           Fechada
                         </span>
                       )}

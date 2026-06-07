@@ -1,0 +1,205 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-06-07T00:00:00-03:00",
+  "title": "Design System: Esportiz",
+  "extensions": {
+    "colorMeta": {
+      "background": {
+        "role": "neutral",
+        "displayName": "Cool Operational Background",
+        "canonical": "hsl(216 33% 96%)",
+        "tonalRamp": ["#0a1629", "#182639", "#2f3f58", "#5c6e8a", "#94a2b8", "#d1d7e0", "#e7eaef", "#f1f4f8"]
+      },
+      "foreground": {
+        "role": "neutral",
+        "displayName": "Trust Navy Ink",
+        "canonical": "hsl(216 60% 10%)",
+        "tonalRamp": ["#050b15", "#0a1629", "#102542", "#1f2f47", "#46566d", "#7b899e", "#c1cad8", "#f1f4f8"]
+      },
+      "primary": {
+        "role": "primary",
+        "displayName": "Operational Green",
+        "canonical": "hsl(151 83% 28%)",
+        "tonalRamp": ["#031c0f", "#06361e", "#0c5d35", "#0c8349", "#1aa968", "#58c996", "#a3e6c8", "#e6fbf1"]
+      },
+      "primary-bright": {
+        "role": "primary",
+        "displayName": "Bright Field Green",
+        "canonical": "hsl(154 73% 42%)",
+        "tonalRamp": ["#052316", "#0b442b", "#0f7046", "#1db976", "#4fce97", "#8ee1bb", "#c9f3df", "#edfcf5"]
+      },
+      "success": {
+        "role": "state",
+        "displayName": "Confirmed Success Green",
+        "canonical": "hsl(154 73% 30%)",
+        "tonalRamp": ["#042014", "#083a25", "#0f6140", "#158454", "#2eaa73", "#72d1a3", "#b8edd2", "#ecfbf4"]
+      },
+      "warning": {
+        "role": "state",
+        "displayName": "Due Soon Amber",
+        "canonical": "hsl(38 92% 50%)",
+        "tonalRamp": ["#2b1600", "#5a3203", "#9a5b05", "#f59f0a", "#f8ba47", "#fbd281", "#fde8bd", "#fff6e2"]
+      },
+      "destructive": {
+        "role": "state",
+        "displayName": "Operational Risk Red",
+        "canonical": "hsl(0 84% 60%)",
+        "tonalRamp": ["#2d0707", "#5b1010", "#9b2020", "#ef4343", "#f47676", "#f9aaaa", "#fcd6d6", "#fff0f0"]
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "Montserrat Display",
+        "purpose": "Page titles and dashboard section titles."
+      },
+      "body": {
+        "displayName": "Inter Body",
+        "purpose": "Dense operational reading and form content."
+      },
+      "label": {
+        "displayName": "Montserrat Label",
+        "purpose": "Short status labels, tabs, and metadata."
+      }
+    },
+    "shadows": [
+      {
+        "name": "low-structure",
+        "value": "0 1px 2px 0 hsl(216 60% 10% / 0.05)",
+        "purpose": "Quiet separation for small controls."
+      },
+      {
+        "name": "card-lift",
+        "value": "0 3px 8px -4px hsl(216 60% 10% / 0.18)",
+        "purpose": "Default elevated card and CTA rest state."
+      },
+      {
+        "name": "interactive-lift",
+        "value": "0 8px 14px -8px hsl(216 60% 10% / 0.2)",
+        "purpose": "Hover or selected hierarchy."
+      },
+      {
+        "name": "controlled-glow",
+        "value": "0 0 16px hsl(154 73% 30% / 0.22)",
+        "purpose": "Rare accent feedback."
+      }
+    ],
+    "motion": [
+      {
+        "name": "state-standard",
+        "value": "150ms to 250ms ease-out",
+        "purpose": "Default feedback for hover, focus, active, and sheet transitions."
+      },
+      {
+        "name": "reduced-motion",
+        "value": "prefers-reduced-motion disables transform-heavy motion",
+        "purpose": "Keeps operational flow readable for motion-sensitive users."
+      }
+    ],
+    "breakpoints": [
+      { "name": "sm", "value": "640px" },
+      { "name": "md", "value": "768px" },
+      { "name": "lg", "value": "1024px" },
+      { "name": "xl", "value": "1280px" },
+      { "name": "2xl", "value": "1400px" }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Main operational action with restrained green and visible focus.",
+      "html": "<button class=\"ds-btn-primary\">Save changes</button>",
+      "css": ".ds-btn-primary{display:inline-flex;align-items:center;justify-content:center;gap:.5rem;height:2.5rem;padding:.5rem 1rem;border:0;border-radius:.625rem;background:#0c8349;color:#fff;font-family:Montserrat,sans-serif;font-size:.875rem;font-weight:700;box-shadow:0 3px 8px -4px hsl(216 60% 10% / .18);transition:background-color .18s ease-out,box-shadow .18s ease-out,transform .18s ease-out}.ds-btn-primary:hover{background:#0a7040;box-shadow:0 8px 14px -8px hsl(216 60% 10% / .2);transform:scale(1.01)}.ds-btn-primary:focus-visible{outline:2px solid #1db976;outline-offset:2px}.ds-btn-primary:active{transform:scale(.98)}"
+    },
+    {
+      "name": "Outline Button",
+      "kind": "button",
+      "refersTo": "button-outline",
+      "description": "Secondary action for cancellation, navigation, and lower-priority choices.",
+      "html": "<button class=\"ds-btn-outline\">Cancel</button>",
+      "css": ".ds-btn-outline{display:inline-flex;align-items:center;justify-content:center;height:2.5rem;padding:.5rem 1rem;border:1px solid #d1d7e0;border-radius:.625rem;background:#fff;color:#0a1629;font-family:Inter,sans-serif;font-size:.875rem;font-weight:600;transition:background-color .18s ease-out,border-color .18s ease-out,color .18s ease-out}.ds-btn-outline:hover{background:#e7eaef;color:#0a1629}.ds-btn-outline:focus-visible{outline:2px solid #1db976;outline-offset:2px}.ds-btn-outline:active{background:#d1d7e0}"
+    },
+    {
+      "name": "Operational Card",
+      "kind": "card",
+      "refersTo": "card",
+      "description": "Dense card for entities such as comandas, students, schedules, and financial rows.",
+      "html": "<article class=\"ds-card\"><div class=\"ds-card-row\"><div><p class=\"ds-card-label\">Open tab</p><h3 class=\"ds-card-title\">Court 2</h3></div><span class=\"ds-chip-success\">Active</span></div><p class=\"ds-card-body\">3 items consumed</p></article>",
+      "css": ".ds-card{padding:1.25rem;border:1px solid #d1d7e0;border-radius:.75rem;background:#fff;color:#0a1629;box-shadow:0 3px 8px -4px hsl(216 60% 10% / .18);font-family:Inter,sans-serif}.ds-card-row{display:flex;align-items:flex-start;justify-content:space-between;gap:1rem}.ds-card-label{margin:0 0 .25rem;color:#5c6e8a;font-family:Montserrat,sans-serif;font-size:.625rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase}.ds-card-title{margin:0;color:#0a1629;font-family:Montserrat,sans-serif;font-size:1rem;font-weight:800;line-height:1.2}.ds-card-body{margin:.75rem 0 0;color:#5c6e8a;font-size:.875rem}.ds-chip-success{display:inline-flex;border:1px solid rgba(21,132,84,.18);border-radius:999px;background:rgba(21,132,84,.1);color:#158454;padding:.25rem .625rem;font-family:Montserrat,sans-serif;font-size:.625rem;font-weight:800;text-transform:uppercase}"
+    },
+    {
+      "name": "Search Input",
+      "kind": "input",
+      "refersTo": "input",
+      "description": "Readable 44px field for fast operational search.",
+      "html": "<label class=\"ds-field\"><span class=\"ds-field-label\">Search</span><input class=\"ds-input\" placeholder=\"Find by name or number\" /></label>",
+      "css": ".ds-field{display:grid;gap:.5rem;font-family:Inter,sans-serif}.ds-field-label{color:#0a1629;font-size:.875rem;font-weight:700}.ds-input{height:2.75rem;border:1px solid #d1d7e0;border-radius:.625rem;background:#fff;color:#0a1629;padding:.625rem .75rem;font-size:.875rem;transition:border-color .18s ease-out,box-shadow .18s ease-out}.ds-input::placeholder{color:#5c6e8a}.ds-input:focus{outline:0;border-color:#1db976;box-shadow:0 0 0 2px rgba(29,185,118,.2)}"
+    },
+    {
+      "name": "Status Chip",
+      "kind": "chip",
+      "refersTo": "chip",
+      "description": "Compact status indicator with color plus text.",
+      "html": "<span class=\"ds-chip-warning\">Due today</span>",
+      "css": ".ds-chip-warning{display:inline-flex;align-items:center;border-radius:999px;background:rgba(245,159,10,.14);color:#7a4b00;padding:.25rem .625rem;font-family:Montserrat,sans-serif;font-size:.625rem;font-weight:800;letter-spacing:.04em;text-transform:uppercase}.ds-chip-warning:focus-visible{outline:2px solid #f59f0a;outline-offset:2px}"
+    },
+    {
+      "name": "Notification Sheet Card",
+      "kind": "custom",
+      "refersTo": "notification-sheet-card",
+      "description": "Queue item for payment, agenda, birthday, or portal notification without decorative side stripes.",
+      "html": "<section class=\"ds-notification\"><div class=\"ds-icon\">!</div><div><p class=\"ds-notification-title\">Payments due</p><p class=\"ds-notification-copy\">2 invoices need attention today.</p></div></section>",
+      "css": ".ds-notification{display:flex;gap:.75rem;padding:1rem;border:1px solid rgba(245,159,10,.28);border-radius:1rem;background:linear-gradient(180deg,rgba(245,159,10,.08),#fff);font-family:Inter,sans-serif;color:#0a1629;box-shadow:0 1px 2px 0 hsl(216 60% 10% / .05)}.ds-icon{display:flex;align-items:center;justify-content:center;flex:0 0 2.5rem;height:2.5rem;border-radius:.75rem;background:rgba(245,159,10,.14);color:#7a4b00;font-weight:900}.ds-notification-title{margin:0;color:#7a4b00;font-family:Montserrat,sans-serif;font-size:.8125rem;font-weight:900;text-transform:uppercase}.ds-notification-copy{margin:.25rem 0 0;color:#5c6e8a;font-size:.75rem;line-height:1.4}"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Arena Operations Desk",
+    "overview": "Esportiz should feel like the control desk of a well-run sports arena: fast, clear, confident, and quietly premium. The interface serves owners, managers, reception teams, instructors, finance operators, and students who need to move through daily operations without stopping to decode the UI.\n\nThe system is product-first. Premium comes from alignment, spacing, contrast, predictable components, and disciplined state language. Visual effects are allowed only when they make priority, status, or feedback easier to understand.",
+    "keyCharacteristics": [
+      "Operational clarity before decoration.",
+      "Restrained green as the action color, deep navy as the trust color.",
+      "Compact, readable cards that preserve speed on desktop and mobile.",
+      "Skeletons, clear empty states, and visible focus states for secure daily use.",
+      "Dark mode that feels calm and usable, never overdecorated."
+    ],
+    "rules": [
+      {
+        "name": "The Action Rarity Rule",
+        "body": "Green is for action, selected state, and meaningful positive status. Do not use it as decoration.",
+        "section": "colors"
+      },
+      {
+        "name": "The Status Requires Language Rule",
+        "body": "Color never carries status alone. Every warning, success, destructive, or payment state needs text, icon, or both.",
+        "section": "colors"
+      },
+      {
+        "name": "The Product Type Rule",
+        "body": "No display theatrics in task UI. Typography earns trust by making data faster to scan.",
+        "section": "typography"
+      },
+      {
+        "name": "The Flat At Rest Rule",
+        "body": "Surfaces should read as stable at rest. Lift appears for hierarchy, hover, focus, or overlay separation.",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "Do make the next operational action obvious before adding visual effect.",
+      "Do use the shared Button, Card, Dialog, Sheet, Input, and token vocabulary before creating one-off visuals.",
+      "Do keep primary green rare: primary actions, active tabs, selected state, and positive status.",
+      "Do test contrast, touch target size, reduced motion, keyboard focus, and mobile readability for every polished surface.",
+      "Do use skeletons for loading state when content shape is known."
+    ],
+    "donts": [
+      "Don't make Esportiz look like a generic SaaS dashboard.",
+      "Don't create an overdecorated dark interface with excessive glow.",
+      "Don't regress into an old bureaucratic admin panel.",
+      "Don't build a visual experiment that slows routine work.",
+      "Don't use decorative effects, vague marketing polish, or inconsistent component styles when they compete with clarity.",
+      "Don't use `border-left` or `border-right` greater than 1px as a colored accent on cards, list items, callouts, or alerts.",
+      "Don't use gradient text. Emphasis comes from hierarchy, weight, spacing, and semantic color."
+    ]
+  }
+}

@@ -1,0 +1,28 @@
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
+import { describe, expect, it } from 'vitest';
+
+describe('premium UI polish contracts', () => {
+  const notificationBell = readFileSync(resolve(process.cwd(), 'src/components/NotificationBell.tsx'), 'utf-8');
+  const comandasPage = readFileSync(resolve(process.cwd(), 'src/pages/ComandasPage.tsx'), 'utf-8');
+
+  it('does not use thick colored side stripes on polished operational cards', () => {
+    expect(notificationBell).not.toContain('border-l-4');
+    expect(comandasPage).not.toContain('border-l-4');
+    expect(comandasPage).not.toContain('animate-ping');
+  });
+
+  it('keeps notification controls named and tab state accessible', () => {
+    expect(notificationBell).toContain('aria-label={notificationTriggerLabel}');
+    expect(notificationBell).toContain('aria-label="Fechar notificações"');
+    expect(notificationBell).toContain('aria-pressed={isActive}');
+    expect(notificationBell).toContain('Notificações de aniversariantes');
+  });
+
+  it('keeps comanda cards operable by keyboard without changing the nested action buttons', () => {
+    expect(comandasPage).toContain('const handleComandaCardKeyDown');
+    expect(comandasPage).toContain('role="button"');
+    expect(comandasPage).toContain('tabIndex={0}');
+    expect(comandasPage).toContain("if (event.target !== event.currentTarget) return;");
+  });
+});

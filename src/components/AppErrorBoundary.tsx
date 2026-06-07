@@ -1,6 +1,11 @@
 import { Component, type ErrorInfo, type ReactNode } from 'react';
 import { AlertTriangle, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import {
+  hasAttemptedAppRecovery,
+  isDynamicImportLoadError,
+  recoverAppRuntime,
+} from '@/lib/appRecovery';
 
 type AppErrorBoundaryProps = {
   children: ReactNode;
@@ -9,10 +14,11 @@ type AppErrorBoundaryProps = {
 type AppErrorBoundaryState = {
   hasError: boolean;
   error: Error | null;
+  isRecovering: boolean;
 };
 
 export class AppErrorBoundary extends Component<AppErrorBoundaryProps, AppErrorBoundaryState> {
-  state: AppErrorBoundaryState = { hasError: false, error: null };
+  state: AppErrorBoundaryState = { hasError: false, error: null, isRecovering: false };
 
   static getDerivedStateFromError(error: Error) {
     return { hasError: true, error };
@@ -20,28 +26,16 @@ export class AppErrorBoundary extends Component<AppErrorBoundaryProps, AppErrorB
 
   componentDidCatch(error: Error, info: ErrorInfo) {
     console.error('App render error:', error, info);
+
+    if (isDynamicImportLoadError(error) && !hasAttemptedAppRecovery()) {
+      this.setState({ isRecovering: true });
+      void recoverAppRuntime();
+    }
   }
 
   handleRecovery = async () => {
-    sessionStorage.setItem('esportiz_recovery_attempted', 'true');
-
-    try {
-      // Limpar caches
-      if ('caches' in window) {
-        const keys = await caches.keys();
-        await Promise.all(keys.map(key => caches.delete(key)));
-      }
-
-      // Desregistrar service workers
-      if ('serviceWorker' in navigator) {
-        const registrations = await navigator.serviceWorker.getRegistrations();
-        await Promise.all(registrations.map(r => r.unregister()));
-      }
-    } catch (error) {
-      console.error('Error during recovery:', error);
-    } finally {
-      window.location.reload();
-    }
+    this.setState({ isRecovering: true });
+    await recoverAppRuntime({ force: true });
   };
 
   render() {
@@ -49,7 +43,7 @@ export class AppErrorBoundary extends Component<AppErrorBoundaryProps, AppErrorB
       return this.props.children;
     }
 
-    const attempted = typeof window !== 'undefined' ? sessionStorage.getItem('esportiz_recovery_attempted') : null;
+    const attempted = hasAttemptedAppRecovery();
 
     return (
       <div className="min-h-screen bg-background flex items-center justify-center px-4">
@@ -62,7 +56,7 @@ export class AppErrorBoundary extends Component<AppErrorBoundaryProps, AppErrorB
           </h1>
           <p className="mt-2 text-sm leading-6 text-muted-foreground">
             {attempted 
-              ? "Já tentamos recuperar o app automaticamente. Se o problema persistir, por favor, limpe os dados do navegador ou reinstale o PWA."
+              ? "Já tentamos recuperar o app automaticamente. Clique abaixo para limpar caches novamente e buscar a versão atual."
               : "Ocorreu um erro inesperado. Clique abaixo para tentar corrigir e atualizar o app."}
           </p>
           
@@ -75,18 +69,20 @@ export class AppErrorBoundary extends Component<AppErrorBoundaryProps, AppErrorB
           {!attempted ? (
             <Button
               className="mt-5 w-full btn-primary-gradient gap-2"
-              onClick={this.handleRecovery}
+              onClick={() => void this.handleRecovery()}
+              disabled={this.state.isRecovering}
             >
               <RefreshCw className="h-4 w-4" />
-              Corrigir e atualizar app
+              {this.state.isRecovering ? 'Corrigindo...' : 'Corrigir e atualizar app'}
             </Button>
           ) : (
             <Button
               className="mt-5 w-full btn-primary-gradient gap-2"
-              onClick={() => window.location.reload()}
+              onClick={() => void this.handleRecovery()}
+              disabled={this.state.isRecovering}
             >
               <RefreshCw className="h-4 w-4" />
-              Tentar recarregar
+              {this.state.isRecovering ? 'Recarregando...' : 'Tentar recarregar'}
             </Button>
           )}
         </div>

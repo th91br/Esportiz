@@ -242,6 +242,9 @@ export function NotificationBell() {
     payments: (showOverdue ? 1 : 0) + (showUpcoming ? 1 : 0),
     birthdays: todayBirthdays.length,
   };
+  const notificationTriggerLabel = totalActive > 0
+    ? `Notificações (${totalActive} ativas)`
+    : 'Notificações';
 
   return (
     <Sheet open={open} onOpenChange={setOpen}>
@@ -253,6 +256,7 @@ export function NotificationBell() {
             open && 'bg-primary/10 text-primary border-primary/20 shadow-inner'
           )}
           title="Notificações"
+          aria-label={notificationTriggerLabel}
         >
           <Bell className={cn("h-5 w-5 transition-transform", totalActive > 0 && "animate-[wiggle_1s_ease-in-out]")} />
           {totalActive > 0 && (
@@ -285,13 +289,17 @@ export function NotificationBell() {
                   onClick={dismissAll}
                   className="flex items-center gap-1.5 text-[10px] font-black text-primary hover:bg-primary/10 px-3 py-2 rounded-lg transition-all active:scale-95 border border-primary/10 uppercase tracking-wider"
                   title="Limpar todas as notificações"
+                  aria-label="Limpar todas as notificações"
                 >
                   <CheckCheck className="h-3.5 w-3.5" />
                   <span>Limpar</span>
                 </button>
               )}
               <SheetClose asChild>
-                <button className="text-muted-foreground hover:text-foreground p-2 rounded-lg hover:bg-muted transition-all active:scale-90">
+                <button
+                  className="text-muted-foreground hover:text-foreground p-2 rounded-lg hover:bg-muted transition-all active:scale-90"
+                  aria-label="Fechar notificações"
+                >
                   <X className="h-5 w-5" />
                 </button>
               </SheetClose>
@@ -305,12 +313,15 @@ export function NotificationBell() {
             ? (['all', 'trainings', 'payments'] as const) 
             : (['all', 'trainings', 'payments', 'birthdays'] as const)
           ).map((t) => {
-            const labels = { all: 'Todas', trainings: isArena ? 'Horários' : 'Treinos', payments: 'Pagamentos', birthdays: '🎂' };
+            const labels = { all: 'Todas', trainings: isArena ? 'Horários' : 'Treinos', payments: 'Pagamentos', birthdays: 'Anivers.' };
+            const ariaLabels = { all: 'Todas as notificações', trainings: isArena ? 'Notificações de horários' : 'Notificações de treinos', payments: 'Notificações de pagamentos', birthdays: 'Notificações de aniversariantes' };
             const isActive = tab === t;
             return (
               <button
                 key={t}
                 onClick={() => setTab(t)}
+                aria-label={ariaLabels[t]}
+                aria-pressed={isActive}
                 className={cn(
                   'flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-xs font-bold transition-all duration-300',
                   isActive
@@ -351,7 +362,7 @@ export function NotificationBell() {
           {/* Birthday Section */}
           {!isArena && showBirthdays && todayBirthdays.length > 0 && (
             <div className="p-4 border-b border-border/30">
-              <div className="rounded-2xl bg-card border-l-4 border-pink-500 p-4 shadow-sm relative overflow-hidden">
+              <div className="rounded-2xl bg-pink-500/[0.04] border border-pink-500/20 p-4 shadow-sm ring-1 ring-pink-500/10 relative overflow-hidden">
                 <div className="absolute top-0 right-0 p-4 opacity-5 pointer-events-none">
                   <Cake className="h-24 w-24" />
                 </div>
@@ -379,7 +390,7 @@ export function NotificationBell() {
           {/* Upcoming Payments Section */}
           {showPayments && showUpcoming && (
             <div className="p-4 border-b border-border/30">
-              <div className="rounded-2xl bg-card border-l-4 border-amber-500 p-4 shadow-sm">
+              <div className="rounded-2xl bg-warning/5 border border-warning/25 p-4 shadow-sm ring-1 ring-warning/10">
                 <div className="flex items-start gap-3">
                   <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400">
                     <CreditCard className="h-5 w-5" />
@@ -416,7 +427,7 @@ export function NotificationBell() {
           {/* Overdue Payments Section */}
           {showPayments && showOverdue && (
             <div className="p-4 border-b border-border/30">
-              <div className="rounded-2xl bg-card border-l-4 border-destructive p-4 shadow-sm ring-1 ring-destructive/10">
+              <div className="rounded-2xl bg-destructive/5 border border-destructive/25 p-4 shadow-sm ring-1 ring-destructive/10">
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex items-start gap-3 flex-1 min-w-0">
                     <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-destructive/10 text-destructive">
@@ -460,6 +471,7 @@ export function NotificationBell() {
                     onClick={dismissOverdue}
                     className="p-1.5 rounded-lg text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-all shrink-0"
                     title="Dispensar"
+                    aria-label="Dispensar pagamentos atrasados"
                   >
                     <X className="h-4 w-4" />
                   </button>
@@ -517,13 +529,15 @@ export function NotificationBell() {
                     <div className="grid grid-cols-2 gap-2 mt-4">
                       <button
                         onClick={() => void resolveRequest(request.id, 'approved')}
-                        className="h-9 rounded-lg bg-primary/10 text-primary hover:bg-primary hover:text-white text-xs font-black uppercase tracking-wider transition-all"
+                        className="h-9 rounded-lg bg-primary/10 text-primary hover:bg-primary hover:text-primary-foreground text-xs font-black uppercase tracking-wider transition-all"
+                        aria-label={`Marcar solicitação de ${request.studentName} como atendida`}
                       >
                         Atendida
                       </button>
                       <button
                         onClick={() => void resolveRequest(request.id, 'rejected')}
                         className="h-9 rounded-lg bg-muted text-muted-foreground hover:bg-destructive/10 hover:text-destructive text-xs font-black uppercase tracking-wider transition-all"
+                        aria-label={`Recusar solicitação de ${request.studentName}`}
                       >
                         Recusar
                       </button>
@@ -596,8 +610,9 @@ export function NotificationBell() {
                       <div className="flex items-center gap-1.5 shrink-0 pl-2 border-l border-border/50">
                         <button
                           onClick={() => handleMarkComplete(t.id)}
-                          className="h-9 w-9 flex items-center justify-center rounded-lg bg-primary/10 text-primary hover:bg-primary hover:text-white transition-all"
+                          className="h-9 w-9 flex items-center justify-center rounded-lg bg-primary/10 text-primary hover:bg-primary hover:text-primary-foreground transition-all"
                           title={isArena ? 'Marcar horario como concluido' : 'Marcar como concluido'}
+                          aria-label={isArena ? `Marcar horário das ${t.time} como concluído` : `Marcar treino das ${t.time} como concluído`}
                         >
                           <Check className="h-4 w-4 stroke-[3]" />
                         </button>
@@ -605,6 +620,7 @@ export function NotificationBell() {
                           onClick={() => dismissTraining(t.id)}
                           className="h-9 w-9 flex items-center justify-center rounded-lg text-muted-foreground hover:bg-muted transition-all"
                           title="Dispensar aviso"
+                          aria-label={isArena ? `Dispensar aviso do horário das ${t.time}` : `Dispensar aviso do treino das ${t.time}`}
                         >
                           <X className="h-4 w-4" />
                         </button>
@@ -618,11 +634,11 @@ export function NotificationBell() {
 
           {/* Today's Trainings — Completed Section */}
           {showTrainings && completedTrainings.length > 0 && (
-            <div className="p-4 border-t border-border/30 bg-emerald-500/[0.02]">
+            <div className="p-4 border-t border-border/30 bg-success/5">
               <div className="flex items-center justify-between px-1 mb-4">
                 <div className="flex items-center gap-2">
-                  <div className="w-1.5 h-3.5 rounded-full bg-emerald-500/40" />
-                  <span className="text-[11px] font-bold uppercase tracking-widest text-emerald-600 dark:text-emerald-400">
+                  <div className="w-1.5 h-3.5 rounded-full bg-success/40" />
+                  <span className="text-[11px] font-bold uppercase tracking-widest text-success">
                     Executados ({completedTrainings.length})
                   </span>
                 </div>
@@ -632,16 +648,16 @@ export function NotificationBell() {
                   return (
                     <div
                       key={t.id}
-                      className="flex items-center gap-3 rounded-xl border border-emerald-500/20 bg-card p-3 shadow-sm opacity-80 hover:opacity-100 transition-opacity"
+                      className="flex items-center gap-3 rounded-xl border border-success/20 bg-card p-3 shadow-sm opacity-80 hover:opacity-100 transition-opacity"
                     >
-                      <div className="flex flex-col items-center justify-center rounded-lg px-3 py-2 min-w-[64px] shrink-0 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+                      <div className="flex flex-col items-center justify-center rounded-lg px-3 py-2 min-w-[64px] shrink-0 bg-success/10 text-success">
                         <span className="text-sm font-black">{t.time}</span>
                       </div>
 
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-1.5">
-                          <Check className="h-3 w-3 text-emerald-500 stroke-[4]" />
-                          <span className="text-[10px] font-black uppercase tracking-widest text-emerald-600 dark:text-emerald-400">Concluído</span>
+                          <Check className="h-3 w-3 text-success stroke-[4]" />
+                          <span className="text-[10px] font-black uppercase tracking-widest text-success">Concluído</span>
                         </div>
                         {t.completedAt && (
                           <span className="text-[10px] font-medium text-muted-foreground mt-1 block">
@@ -652,8 +668,9 @@ export function NotificationBell() {
 
                       <button
                         onClick={() => handleUndoComplete(t.id)}
-                        className="h-8 w-8 flex items-center justify-center rounded-lg text-muted-foreground hover:bg-emerald-500 hover:text-white transition-all shrink-0"
+                        className="h-8 w-8 flex items-center justify-center rounded-lg text-muted-foreground hover:bg-success hover:text-success-foreground transition-all shrink-0"
                         title={isArena ? 'Reabrir horario' : 'Reabrir treino'}
+                        aria-label={isArena ? `Reabrir horário das ${t.time}` : `Reabrir treino das ${t.time}`}
                       >
                         <Undo2 className="h-4 w-4" />
                       </button>

@@ -9,7 +9,11 @@ describe('Vite manual chunk strategy', () => {
     ['C:/repo/node_modules/@tanstack/react-query/build/index.js', 'vendor-query'],
     ['C:/repo/node_modules/@supabase/supabase-js/dist/module/index.js', 'vendor-supabase'],
     ['C:/repo/node_modules/recharts/es6/chart/BarChart.js', 'vendor-charts'],
+    ['C:/repo/node_modules/recharts-scale/es6/index.js', 'vendor-charts'],
     ['C:/repo/node_modules/d3-scale/src/index.js', 'vendor-charts'],
+    ['C:/repo/node_modules/internmap/src/index.js', 'vendor-charts'],
+    ['C:/repo/node_modules/lodash/isFunction.js', 'vendor-charts'],
+    ['C:/repo/node_modules/react-is/index.js', 'vendor-charts'],
     ['C:/repo/node_modules/lucide-react/dist/esm/icons/bell.js', 'vendor-icons'],
     ['C:/repo/node_modules/@radix-ui/react-dialog/dist/index.js', 'vendor-ui'],
     ['C:/repo/node_modules/date-fns/format.js', 'vendor-date'],
@@ -21,6 +25,11 @@ describe('Vite manual chunk strategy', () => {
 
   it('leaves application modules to route-level code splitting', () => {
     expect(getManualChunk('C:/repo/src/pages/Index.tsx')).toBeUndefined();
+  });
+
+  it('keeps Rollup CommonJS helpers in the foundational React chunk', () => {
+    expect(getManualChunk('\0commonjsHelpers.js')).toBe('vendor-react');
+    expect(getManualChunk('\0vite/preload-helper.js')).toBe('vendor-react');
   });
 
   it('keeps unmatched node_modules out of route chunks with a misc vendor fallback', () => {

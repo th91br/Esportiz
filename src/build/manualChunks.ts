@@ -22,7 +22,16 @@ const manualChunkRules: ManualChunkRule[] = [
   },
   {
     chunkName: 'vendor-charts',
-    packages: ['recharts', 'd3-', 'victory-vendor', 'decimal.js-light'],
+    packages: [
+      'recharts',
+      'recharts-scale',
+      'd3-',
+      'victory-vendor',
+      'decimal.js-light',
+      'internmap',
+      'lodash',
+      'react-is',
+    ],
   },
   {
     chunkName: 'vendor-icons',
@@ -70,6 +79,10 @@ function packageMatcher(packageName: string) {
 
 export function getManualChunk(id: string) {
   const normalizedId = normalizeModuleId(id);
+
+  if (normalizedId.includes('commonjsHelpers') || normalizedId.includes('vite/preload-helper')) {
+    return 'vendor-react';
+  }
 
   if (!normalizedId.includes('/node_modules/')) {
     return undefined;

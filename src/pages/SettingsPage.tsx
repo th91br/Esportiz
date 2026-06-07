@@ -23,7 +23,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { toast } from 'sonner';
 import { UploadCloud, Save, Building, Trash2, Calendar, FileSpreadsheet, CheckCircle2, AlertCircle, Loader2, Tag, GraduationCap, CheckCircle, Copy, ExternalLink, UsersRound, ShieldCheck, Eye, EyeOff, UserCheck, UserX, Crown, BookOpen, Calculator, Phone, Info, Users } from 'lucide-react';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth } from '@/contexts/auth';
 import { useBusinessContext } from '@/hooks/useBusinessContext';
 import { ModalityManager } from '@/components/ModalityManager';
 import { RolePermissionsPanel } from '@/components/RolePermissionsPanel';

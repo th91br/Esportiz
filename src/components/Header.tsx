@@ -5,7 +5,7 @@ import { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth } from '@/contexts/auth';
 import { useProfile } from '@/hooks/queries/useProfile';
 import { useBusinessContext } from '@/hooks/useBusinessContext';
 import { Logo } from '@/components/Logo';

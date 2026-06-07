@@ -20,11 +20,10 @@ const badgeVariants = cva(
   },
 );
 
-// eslint-disable-next-line @typescript-eslint/no-empty-object-type
 export interface BadgeProps extends React.HTMLAttributes<HTMLDivElement>, VariantProps<typeof badgeVariants> {}
 
 function Badge({ className, variant, ...props }: BadgeProps) {
   return <div className={cn(badgeVariants({ variant }), className)} {...props} />;
 }
 
-export { Badge, badgeVariants };
+export { Badge };

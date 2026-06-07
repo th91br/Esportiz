@@ -24,7 +24,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import * as z from 'zod';
 import { useTrainings } from '@/hooks/queries/useTrainings';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth } from '@/contexts/auth';
 import { getDayName } from '@/data/mockData';
 import { useBusinessContext } from '@/hooks/useBusinessContext';
 import { getLocalTodayDate, toLocalDateString } from '@/lib/dateUtils';

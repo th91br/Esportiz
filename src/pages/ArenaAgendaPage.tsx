@@ -6,7 +6,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sh
 import { useCourts, SPORT_LABELS } from '@/hooks/queries/useCourts';
 import { useReservations, type Reservation } from '@/hooks/queries/useReservations';
 import { useStudents } from '@/hooks/queries/useStudents';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth } from '@/contexts/auth';
 import { useProfile } from '@/hooks/queries/useProfile';
 import { toast } from 'sonner';
 import {

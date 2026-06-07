@@ -19,7 +19,7 @@ vi.mock('@/components/Logo', () => ({
   Logo: () => <span>Esportiz</span>,
 }));
 
-vi.mock('@/contexts/AuthContext', () => ({
+vi.mock('@/contexts/auth', () => ({
   useAuth: () => ({
     signOut: mocks.signOut,
     user: { id: 'user-1' },

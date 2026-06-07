@@ -3,7 +3,7 @@ import { useEffect, useMemo, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import type { Payment } from '@/data/mockData';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth } from '@/contexts/auth';
 import { useProfile } from '@/hooks/queries/useProfile';
 import { getLocalTodayDate } from '@/lib/dateUtils';
 import { syncAfterPaymentMutation } from '@/lib/querySync';

@@ -21,7 +21,7 @@ import { formatCurrency } from '@/lib/formatCurrency';
 import { supabase } from '@/integrations/supabase/client';
 import { useModalities } from '@/hooks/queries/useModalities';
 import { getLocalTodayDate } from '@/lib/dateUtils';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth } from '@/contexts/auth';
 import { syncAfterStudentMutation } from '@/lib/querySync';
 
 interface StudentCardProps {

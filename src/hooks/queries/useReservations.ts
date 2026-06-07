@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth } from '@/contexts/auth';
 import { toast } from 'sonner';
 import type { Json, TablesUpdate } from '@/integrations/supabase/types';
 import { syncAfterReservationMutation } from '@/lib/querySync';

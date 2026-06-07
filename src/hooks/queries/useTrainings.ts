@@ -2,7 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import type { Training, TimeSlot } from '@/data/mockData';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth } from '@/contexts/auth';
 import { useProfile } from '@/hooks/queries/useProfile';
 import { syncAfterScheduleMutation } from '@/lib/querySync';
 import type { Tables, TablesInsert, TablesUpdate } from '@/integrations/supabase/types';

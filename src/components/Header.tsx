@@ -1,4 +1,4 @@
-import { Menu, X, LogOut, Moon, Sun, UserCircle } from 'lucide-react';
+import { Menu, X, LogOut, Moon, Sun } from 'lucide-react';
 import { NotificationBell } from '@/components/NotificationBell';
 import { InstallPWAButton } from '@/components/InstallPWAButton';
 import { useState, useEffect } from 'react';
@@ -15,9 +15,11 @@ export function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isDark, setIsDark] = useState(() => document.documentElement.classList.contains('dark'));
   const location = useLocation();
-  const { signOut, user } = useAuth();
+  const { signOut } = useAuth();
   const { profile } = useProfile();
   const { navModules, canViewSettings } = useBusinessContext();
+  const mobileMenuLabel = isMenuOpen ? 'Fechar menu principal' : 'Abrir menu principal';
+  const themeToggleLabel = isDark ? 'Alternar para modo claro' : 'Alternar para modo escuro';
 
   useEffect(() => {
     if (isDark) {
@@ -60,7 +62,7 @@ export function Header() {
           {/* Fade indicators */}
           <div className="pointer-events-none absolute left-0 top-0 bottom-0 w-4 bg-gradient-to-r from-background/95 to-transparent z-10" />
           <div className="pointer-events-none absolute right-0 top-0 bottom-0 w-4 bg-gradient-to-l from-background/95 to-transparent z-10" />
-          <nav className="flex items-center justify-center gap-0.5 overflow-x-auto no-scrollbar px-3">
+          <nav aria-label="Navegação principal" className="flex items-center justify-center gap-0.5 overflow-x-auto no-scrollbar px-3">
             {navModules.map((item) => (
               <Link
                 key={item.path}
@@ -84,7 +86,13 @@ export function Header() {
           <div className="hidden md:flex items-center gap-0.5">
             {canViewSettings && (
               <Link to="/configuracoes">
-                <Button variant="ghost" size="icon" className="rounded-full h-8 w-8" title="Configurações">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="rounded-full h-8 w-8"
+                  title="Configurações"
+                  aria-label="Abrir configurações"
+                >
                   <Settings className="h-3.5 w-3.5" />
                 </Button>
               </Link>
@@ -95,6 +103,7 @@ export function Header() {
               className="rounded-full h-8 w-8"
               onClick={() => setIsDark(!isDark)}
               title={isDark ? 'Modo claro' : 'Modo escuro'}
+              aria-label={themeToggleLabel}
             >
               {isDark ? <Sun className="h-3.5 w-3.5" /> : <Moon className="h-3.5 w-3.5" />}
             </Button>
@@ -104,6 +113,7 @@ export function Header() {
               className="rounded-full h-8 w-8"
               onClick={signOut}
               title="Sair"
+              aria-label="Sair do sistema"
             >
               <LogOut className="h-3.5 w-3.5" />
             </Button>
@@ -114,7 +124,9 @@ export function Header() {
             size="icon"
             className="md:hidden"
             onClick={() => setIsMenuOpen(!isMenuOpen)}
-            aria-label="Menu"
+            aria-controls="mobile-navigation"
+            aria-expanded={isMenuOpen}
+            aria-label={mobileMenuLabel}
           >
             {isMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
           </Button>
@@ -123,7 +135,7 @@ export function Header() {
 
       {/* Mobile Navigation — same navModules list */}
       {isMenuOpen && (
-        <nav className="md:hidden border-t border-border bg-background animate-fade-in">
+        <nav id="mobile-navigation" aria-label="Menu principal mobile" className="md:hidden border-t border-border bg-background animate-fade-in">
           <div className="container py-4 space-y-1">
             {navModules.map((item) => (
               <Link
@@ -157,6 +169,7 @@ export function Header() {
             <div className="pt-2 border-t border-border mt-2 space-y-1">
               <button
                 onClick={() => setIsDark(!isDark)}
+                aria-label={themeToggleLabel}
                 className="w-full flex items-center gap-2 px-4 py-3 rounded-lg text-sm font-medium text-muted-foreground hover:bg-muted transition-colors"
               >
                 {isDark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
@@ -164,6 +177,7 @@ export function Header() {
               </button>
               <button
                 onClick={signOut}
+                aria-label="Sair do sistema"
                 className="w-full flex items-center gap-2 px-4 py-3 rounded-lg text-sm font-medium text-destructive hover:bg-muted transition-colors"
               >
                 <LogOut className="h-4 w-4" />

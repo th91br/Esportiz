@@ -17,7 +17,7 @@
     --popover-foreground: 216 60% 10%;
 
     /* CTA/Buttons - Gramado */
-    --primary: 151 83% 30%;
+    --primary: 151 83% 28%;
     --primary-foreground: 0 0% 100%;
 
     /* Deep Navy - Trust & Professionalism */
@@ -33,12 +33,12 @@
     --accent-foreground: 0 0% 100%;
 
     /* Success - Green for attendance */
-    --success: 154 73% 42%;
+    --success: 154 73% 30%;
     --success-foreground: 0 0% 100%;
 
     /* Warning - Amber */
     --warning: 38 92% 50%;
-    --warning-foreground: 0 0% 100%;
+    --warning-foreground: 216 60% 10%;
 
     --destructive: 0 84% 60%;
     --destructive-foreground: 210 40% 98%;
@@ -50,17 +50,17 @@
     --radius: 0.75rem;
 
     /* Custom gradients */
-    --gradient-primary: linear-gradient(135deg, hsl(151, 83%, 30%) 0%, hsl(154, 73%, 42%) 100%);
+    --gradient-primary: linear-gradient(135deg, hsl(151, 83%, 28%) 0%, hsl(154, 73%, 30%) 100%);
     --gradient-hero: linear-gradient(135deg, hsl(216, 60%, 10%) 0%, hsl(216, 60%, 20%) 100%);
     --gradient-card: linear-gradient(180deg, hsl(0, 0%, 100%) 0%, hsl(216, 33%, 98%) 100%);
     --gradient-beach: linear-gradient(135deg, hsl(216, 20%, 96%) 0%, hsl(210, 71%, 95%) 100%);
 
     /* Shadows */
     --shadow-sm: 0 1px 2px 0 hsl(216 60% 10% / 0.05);
-    --shadow-md: 0 4px 6px -1px hsl(216 60% 10% / 0.1), 0 2px 4px -2px hsl(216 60% 10% / 0.1);
-    --shadow-lg: 0 10px 15px -3px hsl(216 60% 10% / 0.1), 0 4px 6px -4px hsl(216 60% 10% / 0.1);
-    --shadow-xl: 0 20px 25px -5px hsl(216 60% 10% / 0.1), 0 8px 10px -6px hsl(216 60% 10% / 0.1);
-    --shadow-glow: 0 0 20px hsl(154 73% 42% / 0.3);
+    --shadow-md: 0 3px 8px -4px hsl(216 60% 10% / 0.18);
+    --shadow-lg: 0 8px 14px -8px hsl(216 60% 10% / 0.2);
+    --shadow-xl: 0 16px 24px -14px hsl(216 60% 10% / 0.22);
+    --shadow-glow: 0 0 16px hsl(154 73% 30% / 0.22);
 
     --sidebar-background: 0 0% 98%;
     --sidebar-foreground: 240 5.3% 26.1%;
@@ -83,7 +83,7 @@
     --popover-foreground: 216 33% 96%;
 
     --primary: 154 73% 42%;
-    --primary-foreground: 0 0% 100%;
+    --primary-foreground: 216 60% 10%;
 
     --secondary: 216 40% 20%;
     --secondary-foreground: 216 33% 96%;
@@ -95,7 +95,7 @@
     --accent-foreground: 216 33% 96%;
 
     --success: 154 73% 42%;
-    --success-foreground: 0 0% 100%;
+    --success-foreground: 216 60% 10%;
 
     --warning: 38 92% 55%;
     --warning-foreground: 0 0% 0%;
@@ -153,8 +153,8 @@
   }
 
   .btn-primary-gradient:hover {
-    box-shadow: var(--shadow-glow);
-    @apply scale-[1.02];
+    box-shadow: var(--shadow-lg);
+    @apply scale-[1.01];
   }
 
   .section-title {
@@ -245,5 +245,36 @@
   .mask-edges {
     mask-image: linear-gradient(to right, transparent, black 10px, black calc(100% - 10px), transparent);
     -webkit-mask-image: linear-gradient(to right, transparent, black 10px, black calc(100% - 10px), transparent);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      scroll-behavior: auto !important;
+      transition-duration: 0.01ms !important;
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+    }
+
+    .animate-fade-up,
+    .animate-scale-in,
+    .animate-fade-in,
+    .animate-in {
+      animation: none !important;
+      opacity: 1 !important;
+      transform: none !important;
+    }
+
+    .animate-spin,
+    .animate-pulse {
+      animation: none !important;
+    }
+
+    .card-interactive:hover,
+    .btn-primary-gradient:hover {
+      transform: none !important;
+      box-shadow: var(--shadow-md);
+    }
   }
 }

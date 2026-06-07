@@ -1,5 +1,6 @@
 import { LucideIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { Skeleton } from '@/components/ui/skeleton';
 
 interface StatCardProps {
   title: string;
@@ -26,6 +27,8 @@ export function StatCard({
   progress,
   variant = 'default',
 }: StatCardProps) {
+  const isLoading = value === '...';
+
   const variants = {
     default: 'bg-card',
     primary: 'bg-gradient-hero text-white border-none',
@@ -37,7 +40,7 @@ export function StatCard({
     default: 'bg-primary/10 text-primary',
     primary: 'bg-white/20 text-white',
     success: 'bg-white/20 text-white',
-    warning: 'bg-white/20 text-white',
+    warning: 'bg-warning-foreground/10 text-warning-foreground',
   };
 
   return (
@@ -68,17 +71,28 @@ export function StatCard({
       </div>
       
       <div className="space-y-1">
-        <p
-          className={cn(
-            'stat-value font-extrabold tracking-tight truncate',
-            String(value).length > 8
-              ? 'text-lg min-[400px]:text-xl lg:text-xl xl:text-2xl'
-              : 'text-xl min-[400px]:text-2xl lg:text-3xl'
-          )}
-          title={String(value)}
-        >
-          {value}
-        </p>
+        {isLoading ? (
+          <div
+            role="status"
+            aria-label={`Carregando ${title}`}
+            className="py-1"
+          >
+            <Skeleton className="h-8 w-24 max-w-full rounded-lg bg-muted/70" />
+            <span className="sr-only">Carregando {title}</span>
+          </div>
+        ) : (
+          <p
+            className={cn(
+              'stat-value font-extrabold tracking-tight truncate',
+              String(value).length > 8
+                ? 'text-lg min-[400px]:text-xl lg:text-xl xl:text-2xl'
+                : 'text-xl min-[400px]:text-2xl lg:text-3xl'
+            )}
+            title={String(value)}
+          >
+            {value}
+          </p>
+        )}
         
         {description && !progress && (
           <p

@@ -151,7 +151,7 @@ function ProtectedRoute({ children }: { children: ReactNode }) {
   return <>{children}</>;
 }
 
-function AppRoutes() {
+export function AppRoutes() {
   return (
     <Suspense fallback={<FullScreenLoader />}>
       <Routes>

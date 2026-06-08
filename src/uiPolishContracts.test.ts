@@ -1,15 +1,22 @@
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 describe('premium UI polish contracts', () => {
   const notificationBell = readFileSync(resolve(process.cwd(), 'src/components/NotificationBell.tsx'), 'utf-8');
   const comandasPage = readFileSync(resolve(process.cwd(), 'src/pages/ComandasPage.tsx'), 'utf-8');
+  const globalCss = readFileSync(resolve(process.cwd(), 'src/index.css'), 'utf-8');
 
   it('does not use thick colored side stripes on polished operational cards', () => {
     expect(notificationBell).not.toContain('border-l-4');
     expect(comandasPage).not.toContain('border-l-4');
     expect(comandasPage).not.toContain('animate-ping');
+  });
+
+  it('keeps global styles free of starter-template leftovers and gradient text utilities', () => {
+    expect(existsSync(resolve(process.cwd(), 'src/App.css'))).toBe(false);
+    expect(globalCss).not.toContain('.text-gradient-primary');
+    expect(globalCss).not.toContain('background-clip: text');
   });
 
   it('keeps notification controls named and tab state accessible', () => {

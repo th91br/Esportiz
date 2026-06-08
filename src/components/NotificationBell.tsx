@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect, useCallback } from 'react';
 import { Bell, Clock, Users, MapPin, AlertTriangle, X, Check, Trash2, CheckCheck, Calendar, Cake, CreditCard, Undo2, ClipboardList } from 'lucide-react';
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger, SheetClose } from '@/components/ui/sheet';
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger, SheetClose } from '@/components/ui/sheet';
 import { cn } from '@/lib/utils';
 import { useQueryClient } from '@tanstack/react-query';
 import { useStudents } from '@/hooks/queries/useStudents';
@@ -280,7 +280,9 @@ export function NotificationBell() {
               </div>
               <div>
                 <SheetTitle className="font-display font-bold text-base text-foreground leading-none">Notificações</SheetTitle>
-                <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-[0.1em] mt-1.5 opacity-80">Painel de Atividades</p>
+                <SheetDescription className="text-[10px] text-muted-foreground font-bold uppercase tracking-[0.1em] mt-1.5 opacity-80">
+                  Painel de atividades, treinos, pagamentos e aniversários.
+                </SheetDescription>
               </div>
             </div>
             <div className="flex items-center gap-2">

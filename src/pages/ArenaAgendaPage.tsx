@@ -2,7 +2,7 @@ import { useState, useMemo } from 'react';
 import { Header } from '@/components/Header';
 import { Button } from '@/components/ui/button';
 import { ReservationModal } from '@/components/ReservationModal';
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { useCourts, SPORT_LABELS } from '@/hooks/queries/useCourts';
 import { useReservations, type Reservation } from '@/hooks/queries/useReservations';
 import { useStudents } from '@/hooks/queries/useStudents';
@@ -782,7 +782,9 @@ export default function ArenaAgendaPage() {
             <SheetTitle className="font-display font-extrabold text-2xl tracking-tight flex items-center gap-2 text-foreground">
               <DollarSign className="h-6 w-6 text-orange-500" /> Recebimentos Pendentes
             </SheetTitle>
-            <p className="text-xs text-muted-foreground">Controle de caixa de reservas e plays em aberto</p>
+            <SheetDescription className="text-xs text-muted-foreground">
+              Controle de caixa de reservas e plays em aberto.
+            </SheetDescription>
           </SheetHeader>
 
           {/* List Area */}

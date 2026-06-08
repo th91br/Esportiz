@@ -5,6 +5,8 @@ import { describe, expect, it } from 'vitest';
 describe('premium UI polish contracts', () => {
   const notificationBell = readFileSync(resolve(process.cwd(), 'src/components/NotificationBell.tsx'), 'utf-8');
   const comandasPage = readFileSync(resolve(process.cwd(), 'src/pages/ComandasPage.tsx'), 'utf-8');
+  const arenaAgendaPage = readFileSync(resolve(process.cwd(), 'src/pages/ArenaAgendaPage.tsx'), 'utf-8');
+  const sidebar = readFileSync(resolve(process.cwd(), 'src/components/ui/sidebar.tsx'), 'utf-8');
   const globalCss = readFileSync(resolve(process.cwd(), 'src/index.css'), 'utf-8');
 
   it('does not use thick colored side stripes on polished operational cards', () => {
@@ -17,6 +19,14 @@ describe('premium UI polish contracts', () => {
     expect(existsSync(resolve(process.cwd(), 'src/App.css'))).toBe(false);
     expect(globalCss).not.toContain('.text-gradient-primary');
     expect(globalCss).not.toContain('background-clip: text');
+  });
+
+  it('keeps operational sheets described for assistive technology', () => {
+    expect(notificationBell).toContain('SheetDescription');
+    expect(arenaAgendaPage).toContain('SheetDescription');
+    expect(sidebar).toContain('SheetDescription');
+    expect(sidebar).toContain('SheetTitle');
+    expect(sidebar).toContain('sr-only');
   });
 
   it('keeps notification controls named and tab state accessible', () => {

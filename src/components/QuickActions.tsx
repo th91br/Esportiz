@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useBusinessContext } from '@/hooks/useBusinessContext';
 import { useRolePermissions } from '@/hooks/useRolePermissions';
+import { Link } from 'react-router-dom';
 
 export function QuickActions() {
   const { isArena, labels } = useBusinessContext();
@@ -36,12 +37,12 @@ export function QuickActions() {
       <CardContent className="grid grid-cols-2 gap-3 flex-1 px-4 pb-6">
         {allowedActions.map((action, idx) => (
           <Button key={idx} variant="outline" className="h-full min-h-[90px] flex-col items-center justify-center p-3 gap-2 bg-background hover:bg-muted/30 border-border/50 hover:border-primary/30 transition-all duration-300 group" asChild>
-            <a href={action.href}>
+            <Link to={action.href}>
               <div className={`p-2.5 rounded-xl ${action.bg} transition-colors duration-300`}>
                 <action.icon className={`h-5 w-5 ${action.color}`} />
               </div>
               <span className="text-xs font-semibold text-foreground/80">{action.label}</span>
-            </a>
+            </Link>
           </Button>
         ))}
       </CardContent>

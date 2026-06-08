@@ -6,6 +6,7 @@ import { useCourts, SPORT_LABELS } from '@/hooks/queries/useCourts';
 import { useStudents } from '@/hooks/queries/useStudents';
 import { getDayName, formatDate, getEndTime, getTimePeriod } from '@/data/mockData';
 import { formatCurrency } from '@/lib/formatCurrency';
+import { Link } from 'react-router-dom';
 
 const periodIcons = { manhã: Sun, tarde: Sunset, noite: Moon };
 
@@ -42,9 +43,9 @@ export function ArenaTodaySchedule() {
           <p className="text-sm text-muted-foreground capitalize">{getDayName(today)}, {formatDate(today)}</p>
         </div>
         <Button variant="outline" size="sm" asChild className="hidden sm:flex group bg-background">
-          <a href="/agenda">
+          <Link to="/agenda">
             Ver Agenda <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
-          </a>
+          </Link>
         </Button>
       </div>
 
@@ -59,10 +60,8 @@ export function ArenaTodaySchedule() {
 
             return (
               <div key={reservation.id} className="relative overflow-hidden rounded-xl bg-background border border-border/50 hover:border-primary/40 shadow-sm transition-all group p-4 md:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                {/* Decorative left accent */}
-                <div className="absolute left-0 top-0 bottom-0 w-1" style={{ backgroundColor: court?.color || '#cbd5e1' }} />
                 
-                <div className="flex flex-col space-y-2.5 pl-2">
+                <div className="flex flex-col space-y-2.5">
                   <div className="flex items-center gap-2.5">
                     <div className={cn("text-[11px] px-2 py-0.5 rounded-md flex items-center gap-1 font-bold uppercase tracking-wider", 
                       reservation.paymentStatus === 'paid' ? 'bg-emerald-100 text-emerald-800' : 'bg-orange-100 text-orange-800'
@@ -88,7 +87,7 @@ export function ArenaTodaySchedule() {
                   </div>
                 </div>
                 
-                <div className="flex items-center justify-between sm:justify-end gap-4 bg-muted/40 sm:bg-transparent px-3 py-2 sm:p-0 rounded-lg border sm:border-0 border-border/30 pl-2">
+                <div className="flex items-center justify-between sm:justify-end gap-4 bg-muted/40 sm:bg-transparent px-3 py-2 sm:p-0 rounded-lg border sm:border-0 border-border/30">
                   <div className="flex items-center gap-1.5 text-sm">
                      <User className="h-4 w-4 text-muted-foreground" /> 
                      <span className="font-semibold text-foreground truncate max-w-[120px]">
@@ -116,7 +115,7 @@ export function ArenaTodaySchedule() {
       </div>
       
       <Button variant="outline" className="w-full mt-6 sm:hidden bg-background" asChild>
-        <a href="/agenda">Ver agenda completa</a>
+        <Link to="/agenda">Ver agenda completa</Link>
       </Button>
     </div>
   );

@@ -47,6 +47,7 @@ import { useMemo } from 'react';
 import { useRolePermissions } from '@/hooks/useRolePermissions';
 import { useComandas } from '@/hooks/queries/useComandas';
 import { getDashboardAccess } from '@/lib/dashboardAccess';
+import { useNavigate } from 'react-router-dom';
 
 type ArenaCourtMetadata = {
   isActive?: boolean;
@@ -64,6 +65,7 @@ function parseArenaCourtMetadata(metadata: unknown): ArenaCourtMetadata {
 }
 
 export default function Index() {
+  const navigate = useNavigate();
   const rolePermissions = useRolePermissions();
   const { organizationRole } = rolePermissions;
   const { businessType, labels, isSportSchool, isArena } = useBusinessContext();
@@ -85,31 +87,24 @@ export default function Index() {
   const { attendance, loadingAttendance } = useAttendance({ enabled: dashboardAccess.loadAttendance });
   const { payments, loadingPayments } = usePayments();
   const { expenses, loadingExpenses } = useExpenses();
-  const { sales } = useSales({ enabled: dashboardAccess.loadSales });
-  const { activeProducts } = useProducts({ enabled: dashboardAccess.loadProducts });
+  const { sales, loadingSales } = useSales({ enabled: dashboardAccess.loadSales });
+  const { activeProducts, loadingProducts } = useProducts({ enabled: dashboardAccess.loadProducts });
   const { reservations, loadingReservations } = useReservations({ enabled: dashboardAccess.loadReservations });
   const { courts, loadingCourts } = useCourts({ enabled: dashboardAccess.loadCourts });
-  const { comandas } = useComandas({ enabled: dashboardAccess.loadComandas });
+  const { comandas, loadingComandas } = useComandas({ enabled: dashboardAccess.loadComandas });
 
   const lowStockProducts = useMemo(() => {
     if (!isArena) return [];
     return activeProducts.filter((p) => p.trackStock && p.stockQuantity <= p.minStock);
   }, [isArena, activeProducts]);
   const { groups, loadingGroups } = useGroups({ enabled: dashboardAccess.loadGroups });
-  const loading =
-    loadingStudents ||
-    loadingPlans ||
-    loadingTrainings ||
-    loadingAttendance ||
-    loadingPayments ||
-    loadingExpenses ||
-    loadingGroups ||
-    (isArena && loadingReservations) ||
-    (isArena && loadingCourts);
+
+  const loadingFinancials = loadingPayments || loadingExpenses || (isArena && (loadingSales || loadingReservations));
+  const todayLoading = isArena ? loadingReservations : loadingTrainings;
 
   const [privacyMode, togglePrivacyMode] = usePrivacyMode();
   const { profile } = useProfile();
-  const { modalities } = useModalities({ enabled: dashboardAccess.loadModalities });
+  const { modalities, loadingModalities } = useModalities({ enabled: dashboardAccess.loadModalities });
 
   const activeGroups = useMemo(() => {
     return groups.filter((g) => g.active);
@@ -327,7 +322,7 @@ export default function Index() {
                   {dashboardAccess.showOperationalContext && (
                     <span className="bg-white/15 border border-white/20 px-3 py-1 rounded-full text-xs font-semibold inline-flex items-center gap-1.5">
                       <Calendar className="h-3.5 w-3.5" />
-                      {loading
+                      {todayLoading
                         ? '...'
                         : isArena
                           ? todayReservationsCount > 0
@@ -342,7 +337,7 @@ export default function Index() {
               </div>
 
               {/* Lado direito — resumo financeiro (só para quem pode ver) */}
-              {canViewFinancials && !loading && (
+              {canViewFinancials && !loadingFinancials && (
                 <div className="bg-white/10 border border-white/15 rounded-xl px-4 py-3 text-right shrink-0 min-w-[160px]">
                   <p className="text-white/60 text-[10px] font-bold uppercase tracking-wider mb-1">
                     Recebido no Mês
@@ -388,7 +383,7 @@ export default function Index() {
                 </div>
               </div>
               <Button
-                onClick={() => window.location.href = '/produtos'}
+                onClick={() => navigate('/produtos')}
                 className="w-full md:w-auto bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs px-4 h-9 shadow-sm shrink-0 rounded-xl"
               >
                 Gerenciar Estoque
@@ -433,6 +428,8 @@ export default function Index() {
               className="rounded-full h-8 w-8"
               onClick={togglePrivacyMode}
               title={privacyMode ? 'Mostrar dados' : 'Ocultar dados'}
+              aria-label={privacyMode ? 'Mostrar dados sensíveis' : 'Ocultar dados sensíveis'}
+              aria-pressed={privacyMode}
             >
               {privacyMode ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
             </Button>
@@ -444,25 +441,25 @@ export default function Index() {
               {canViewStudents && (
                 <StatCard
                   title={`${labels.studentLabel} Ativos`}
-                  value={loading ? '...' : pv(activeStudents)}
+                  value={loadingStudents ? '...' : pv(activeStudents)}
                   icon={Users}
                   description={privacyMode ? '' : `de ${totalStudents} total`}
                 />
               )}
               <StatCard
                 title={`${labels.trainingLabel} de Hoje`}
-                value={loading ? '...' : pv(todayTrainings)}
+                value={loadingTrainings ? '...' : pv(todayTrainings)}
                 icon={Calendar}
                 variant="primary"
               />
               <StatCard
                 title={`Taxa de ${labels.attendanceLabel}`}
-                value={loading ? '...' : pv(`${attendanceRate}%`)}
+                value={loadingAttendance ? '...' : pv(`${attendanceRate}%`)}
                 icon={CheckCircle}
               />
               <StatCard
                 title="Aniversários (Mês)"
-                value={loading ? '...' : pv(birthdaysMonth.length)}
+                value={loadingStudents ? '...' : pv(birthdaysMonth.length)}
                 icon={Cake}
                 description={privacyMode ? '' : `${labels.studentLabel} este mês`}
               />
@@ -473,32 +470,32 @@ export default function Index() {
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
               <StatCard
                 title="Quadras Ativas"
-                value={loading ? '...' : pv(activeCourtsCount)}
+                value={loadingCourts ? '...' : pv(activeCourtsCount)}
                 icon={Landmark}
               />
               <StatCard
                 title="Reservas de Hoje"
-                value={loading ? '...' : pv(todayReservationsCount)}
+                value={loadingReservations ? '...' : pv(todayReservationsCount)}
                 icon={Calendar}
                 variant="primary"
               />
               <StatCard
                 title="Taxa de Ocupação"
-                value={loading ? '...' : pv(`${occupancyRate}%`)}
+                value={loadingReservations || loadingCourts ? '...' : pv(`${occupancyRate}%`)}
                 icon={TrendingUp}
                 description={privacyMode ? '' : 'Média do mês'}
               />
               {canViewFinancials ? (
                 <StatCard
                   title="Vendas de Hoje"
-                  value={loading ? '...' : pv(formatCurrency(todaySalesTotal))}
+                  value={loadingSales ? '...' : pv(formatCurrency(todaySalesTotal))}
                   icon={DollarSign}
                   description={privacyMode ? '' : 'Consumo / Cantina'}
                 />
               ) : (
                 <StatCard
                   title="Produtos Ativos"
-                  value={loading ? '...' : pv(activeProducts.length)}
+                  value={loadingProducts ? '...' : pv(activeProducts.length)}
                   icon={ShoppingCart}
                   description="Itens cadastrados"
                 />
@@ -514,14 +511,14 @@ export default function Index() {
             )}>
               <StatCard
                 title="Faturamento Total"
-                value={loading ? '...' : pv(formatCurrency(expectedRevenue))}
+                value={loadingFinancials ? '...' : pv(formatCurrency(expectedRevenue))}
                 icon={DollarSign}
                 description={privacyMode ? '' : isSportSchool ? 'Mensalidades do mês' : 'Mensalidades + Vendas do mês'}
               />
               {isSportSchool ? (
                 <StatCard
                   title="Recebido no Mês"
-                  value={loading ? '...' : pv(formatCurrency(receivedRevenue))}
+                  value={loadingFinancials ? '...' : pv(formatCurrency(receivedRevenue))}
                   icon={CheckCircle}
                   variant="success"
                   progress={privacyMode ? undefined : { value: revenueProgress, label: 'Meta Mensal' }}
@@ -530,14 +527,14 @@ export default function Index() {
                 <>
                   <StatCard
                     title="Recebido no Mês"
-                    value={loading ? '...' : pv(formatCurrency(receivedRevenue))}
+                    value={loadingFinancials ? '...' : pv(formatCurrency(receivedRevenue))}
                     icon={CheckCircle}
                     variant="primary"
                     progress={privacyMode ? undefined : { value: revenueProgress, label: 'Meta Mensal' }}
                   />
                   <StatCard
                     title="Lucro Líquido"
-                    value={loading ? '...' : pv(formatCurrency(netProfit))}
+                    value={loadingFinancials ? '...' : pv(formatCurrency(netProfit))}
                     icon={netProfit >= 0 ? TrendingUp : TrendingDown}
                     variant="success"
                     description={privacyMode ? '' : `Despesas pagas: ${formatCurrency(totalExpensesPaid)}`}
@@ -565,8 +562,16 @@ export default function Index() {
               {modalityStats.map((mod) => (
                 <div
                   key={mod.id}
-                  className="card-interactive p-3 flex items-center gap-3 border-primary/5 hover:border-primary/20 transition-all cursor-pointer"
-                  onClick={() => (window.location.href = '/modalidades')}
+                  role="button"
+                  tabIndex={0}
+                  className="card-interactive p-3 flex items-center gap-3 border-primary/5 hover:border-primary/20 transition-all cursor-pointer focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none"
+                  onClick={() => navigate('/modalidades')}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      navigate('/modalidades');
+                    }
+                  }}
                 >
                   <div
                     className="w-2.5 h-2.5 rounded-full shadow-sm shrink-0"
@@ -596,14 +601,14 @@ export default function Index() {
                 <>
                   <StatCard
                     title="Minhas Vendas Hoje"
-                    value={loading ? '...' : pv(formatCurrency(myTodaySalesTotal))}
+                    value={loadingSales ? '...' : pv(formatCurrency(myTodaySalesTotal))}
                     icon={DollarSign}
                     description={privacyMode ? '' : `${myTodaySales.length} venda(s) registrada(s)`}
                     variant="primary"
                   />
                   <StatCard
                     title="Comandas Abertas Hoje"
-                    value={loading ? '...' : pv(myTodayOpenComandas.length)}
+                    value={loadingComandas ? '...' : pv(myTodayOpenComandas.length)}
                     icon={Receipt}
                     description={privacyMode ? '' : 'Comandas em aberto'}
                   />
@@ -613,14 +618,14 @@ export default function Index() {
                 <>
                   <StatCard
                     title="Pagamentos Recebidos"
-                    value={loading ? '...' : pv(payments.filter(p => p.paid && p.paidAt?.startsWith(todayDateStr)).length)}
+                    value={loadingPayments ? '...' : pv(payments.filter(p => p.paid && p.paidAt?.startsWith(todayDateStr)).length)}
                     icon={CheckCircle}
                     description="Pagamentos confirmados hoje"
                     variant="success"
                   />
                   <StatCard
                     title="Presenças Registradas"
-                    value={loading ? '...' : pv(attendance.filter(a => a.date === todayDateStr).length)}
+                    value={loadingAttendance ? '...' : pv(attendance.filter(a => a.date === todayDateStr).length)}
                     icon={UserCheck}
                     description={`${labels.attendanceLabel} de hoje`}
                   />
@@ -630,14 +635,14 @@ export default function Index() {
                 <>
                   <StatCard
                     title={`${labels.trainingLabel} Hoje`}
-                    value={loading ? '...' : pv(myTodayTrainings.length)}
+                    value={loadingTrainings ? '...' : pv(myTodayTrainings.length)}
                     icon={Calendar}
                     description={`${labels.trainingLabel} sob sua responsabilidade`}
                     variant="primary"
                   />
                   <StatCard
                     title="Presenças Hoje"
-                    value={loading ? '...' : pv(myTodayAttendance.filter(a => a.present).length)}
+                    value={loadingAttendance ? '...' : pv(myTodayAttendance.filter(a => a.present).length)}
                     icon={UserCheck}
                     description={`de ${myTodayAttendance.length} esperado(s)`}
                     variant="success"
@@ -648,7 +653,7 @@ export default function Index() {
               {isSportSchool && canViewStudents && (
                 <StatCard
                   title={`${labels.studentLabel} Ativos`}
-                  value={loading ? '...' : pv(activeStudents)}
+                  value={loadingStudents ? '...' : pv(activeStudents)}
                   icon={Users}
                   description={privacyMode ? '' : `de ${totalStudents} total`}
                 />
@@ -656,7 +661,7 @@ export default function Index() {
               {isArena && (
                 <StatCard
                   title="Reservas de Hoje"
-                  value={loading ? '...' : pv(todayReservationsCount)}
+                  value={loadingReservations ? '...' : pv(todayReservationsCount)}
                   icon={Calendar}
                   description="Clientes agendados"
                 />

@@ -5,6 +5,7 @@ import { useTrainings } from '@/hooks/queries/useTrainings';
 import { useStudents } from '@/hooks/queries/useStudents';
 import { getDayName, formatDate, getEndTime, getTimePeriod } from '@/data/mockData';
 import { useBusinessContext } from '@/hooks/useBusinessContext';
+import { Link } from 'react-router-dom';
 
 const periodIcons = { manhã: Sun, tarde: Sunset, noite: Moon };
 
@@ -27,9 +28,9 @@ export function TodaySchedule() {
           <p className="text-sm text-muted-foreground capitalize">{getDayName(today)}, {formatDate(today)}</p>
         </div>
         <Button variant="outline" size="sm" asChild className="hidden sm:flex group bg-background">
-          <a href="/calendario">
+          <Link to="/calendario">
             Semana Completa <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
-          </a>
+          </Link>
         </Button>
       </div>
 
@@ -42,13 +43,7 @@ export function TodaySchedule() {
 
             return (
               <div key={training.id} className="relative overflow-hidden rounded-xl bg-background border border-border/50 hover:border-primary/40 shadow-sm transition-all group p-4 md:p-5">
-                {/* Decorative left accent */}
-                <div className={cn(
-                  "absolute left-0 top-0 bottom-0 w-1", 
-                  timePeriod === 'manhã' ? 'bg-amber-400' : timePeriod === 'tarde' ? 'bg-orange-500' : 'bg-indigo-500'
-                )} />
-                
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pl-2">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                   <div className="space-y-2.5">
                     <div className="flex items-center gap-2.5">
                       <div className={cn("text-[11px] px-2 py-0.5 rounded-md flex items-center gap-1 font-bold uppercase tracking-wider", 
@@ -104,7 +99,7 @@ export function TodaySchedule() {
       </div>
       
       <Button variant="outline" className="w-full mt-6 sm:hidden bg-background" asChild>
-        <a href="/calendario">Ver agenda completa</a>
+        <Link to="/calendario">Ver agenda completa</Link>
       </Button>
     </div>
   );

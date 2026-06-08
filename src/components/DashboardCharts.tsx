@@ -109,13 +109,14 @@ export function DashboardCharts({
         return [formatCurrency(value), ''];
     };
 
+
     const attendanceTooltipFormatter = (value: number) => {
         if (privacyMode) return ['••••', ''];
         return [value, ''];
     };
 
-    const chartColorPrimary = theme === 'dark' ? '#10b981' : '#059669'; // Tailwind Emerald
-    const chartColorSecondary = theme === 'dark' ? '#334155' : '#cbd5e1'; // Tailwind Slate
+    const chartColorPrimary = 'hsl(var(--primary))';
+    const chartColorSecondary = 'hsl(var(--muted-foreground))';
 
     const maxRevenue = Math.max(0, ...revenueData.map(d => d['Faturamento Total']));
     const maxSecondValue = Math.max(0, ...secondChartData.map(d => isArena ? (d.Total || 0) : ((d.Presenças || 0) + (d.Ausências || 0))));

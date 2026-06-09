@@ -24,7 +24,7 @@ export default function LandingPage() {
       window.location.replace(getAuthenticatedHomePath(profile));
     } else {
       // Usamos o caminho físico para forçar a saída do controle do PWA antigo
-      window.location.replace('/landing-v2.html');
+      window.location.replace('/landing-v3.html');
     }
   }, [user, loading, loadingProfile, profile]);
 

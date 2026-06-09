@@ -318,7 +318,7 @@ export default function ProductsPage() {
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 {displayProducts.map(product => (
-                  <Card key={product.id} className={cn('transition-all hover:shadow-md', !product.active && 'opacity-50')}>
+                  <Card key={product.id} className={cn('border border-border/50', !product.active && 'opacity-50')}>
                     <CardContent className="pt-6">
                       <div className="flex items-start justify-between">
                         <div className="min-w-0">

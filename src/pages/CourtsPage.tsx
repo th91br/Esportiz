@@ -406,7 +406,7 @@ export default function CourtsPage() {
             {courts.map(court => {
               const nextRes = getNextReservation(court.id);
               return (
-                <div key={court.id} className="card-interactive p-0 overflow-hidden flex flex-col">
+                <div key={court.id} className="card-elevated border border-border/50 p-0 overflow-hidden flex flex-col">
                   {/* Top color bar */}
                   <div className="h-1.5" style={{ backgroundColor: court.color }} />
 

@@ -76,7 +76,7 @@ export default function AttendancePage() {
         </div>
 
         {/* Improved Date Selector */}
-        <div className="card-elevated p-4 md:p-6 bg-card/50 backdrop-blur-sm">
+        <div className="card-elevated p-4 md:p-6 bg-card">
           <div className="flex items-center justify-between gap-4 max-w-lg mx-auto">
             <Button 
               variant="outline" 
@@ -92,7 +92,7 @@ export default function AttendancePage() {
                 <PopoverTrigger asChild>
                   <Button 
                     variant="ghost" 
-                    className="flex flex-col h-auto py-2 px-6 rounded-2xl hover:bg-primary/5 group"
+                    className="flex flex-col h-auto py-2 px-6 rounded-lg hover:bg-primary/5 group"
                   >
                     <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider group-hover:text-primary transition-colors">
                       Data Selecionada

@@ -394,7 +394,7 @@ export default function ExpensesPage() {
                   <div
                     key={expense.id}
                     className={cn(
-                      'flex items-center gap-3 p-3 rounded-xl border transition-all hover:shadow-sm',
+                      'flex items-center gap-3 p-3 rounded-xl border',
                       expense.paid
                         ? 'bg-green-50/50 border-green-200/50 dark:bg-green-950/20 dark:border-green-900/30'
                         : 'bg-background border-border/50'

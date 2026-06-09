@@ -227,7 +227,7 @@ export default function ComandasPage() {
           {canCreateComandas && (
             <Button 
               onClick={() => setOpenModalOpen(true)} 
-              className="btn-primary-gradient w-full sm:w-auto shrink-0 shadow-lg shadow-primary/20"
+              className="btn-primary-gradient w-full sm:w-auto shrink-0"
             >
               <Plus className="h-5 w-5 mr-1" />
               Abrir Nova Comanda

@@ -688,7 +688,7 @@ export default function ArenaAgendaPage() {
                             'w-full h-full min-h-[56px] p-2 text-left transition-all hover:opacity-90 flex flex-col justify-center',
                             isStart ? 'rounded-t-lg' : '',
                             reservation.reservationType === 'blocked'
-                              ? 'bg-zinc-100 dark:bg-zinc-900/40 border-l-2 border-zinc-400/60 text-zinc-500 dark:text-zinc-400 [background-image:repeating-linear-gradient(45deg,transparent,transparent_8px,rgba(0,0,0,0.03)_8px,rgba(0,0,0,0.03)_16px)] dark:[background-image:repeating-linear-gradient(45deg,transparent,transparent_8px,rgba(255,255,255,0.015)_8px,rgba(255,255,255,0.015)_16px)]'
+                              ? 'bg-muted/60 dark:bg-zinc-900/50 border-l-2 border-zinc-400 text-zinc-500 dark:text-zinc-400'
                               : financialSummary?.isPaid
                                 ? 'bg-emerald-500/20 border-l-2 border-emerald-500'
                                 : 'bg-primary/20 border-l-2 border-primary'
@@ -808,7 +808,7 @@ export default function ArenaAgendaPage() {
                 const financialSummary = getReservationFinancialSummary(r);
 
                 return (
-                  <div key={r.id} className="p-4 rounded-xl border border-border/50 bg-muted/20 hover:bg-muted/30 transition-all space-y-3 shadow-sm text-left">
+                  <div key={r.id} className="p-4 rounded-xl border border-border/50 bg-muted/20 space-y-3 text-left">
                     {/* Header Row: Client Name */}
                     <div className="flex items-start justify-between gap-2">
                       <div className="min-w-0">

@@ -315,7 +315,7 @@ export default function CommunicationPage() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Painel de Configuração */}
           <div className="lg:col-span-1 space-y-6">
-            <div className="card-interactive p-6 space-y-4 border-primary/20">
+            <div className="card-elevated p-6 space-y-4 border-primary/20">
               <div className="space-y-2">
                 <Label className="text-base font-bold">1. Público-Alvo</Label>
                 <p className="text-sm text-muted-foreground mb-3">Selecione o grupo de {labels.studentLabel.toLowerCase()} que receberá a mensagem.</p>

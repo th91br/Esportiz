@@ -28,7 +28,7 @@ export function QuickActions() {
   const allowedActions = actions.filter((action) => canAccessPath(action.href));
 
   return (
-    <Card className="shadow-lg border-primary/10 h-full flex flex-col">
+    <Card className="card-elevated border border-border/50 h-full flex flex-col">
       <CardHeader className="pb-4">
         <CardTitle className="text-lg font-display flex items-center gap-2">
           Ações Rápidas

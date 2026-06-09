@@ -21,7 +21,7 @@ export function TodaySchedule() {
   if (loadingTrainings) return <div className="card-elevated p-6 animate-pulse bg-muted/20 h-[300px] rounded-2xl"></div>;
 
   return (
-    <div className="card-elevated p-5 md:p-6 flex flex-col h-full bg-card/50 backdrop-blur-sm border-primary/10">
+    <div className="card-elevated p-5 md:p-6 flex flex-col h-full bg-card border border-border/50">
       <div className="flex items-center justify-between mb-6">
         <div>
           <h2 className="section-title text-xl mb-1">Agenda de Hoje</h2>

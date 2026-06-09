@@ -26,7 +26,7 @@ import {
 } from 'recharts';
 
 const COLORS = {
-  primary: 'hsl(24, 95%, 53%)',
+  primary: 'hsl(151, 83%, 28%)',
   secondary: 'hsl(222, 47%, 20%)',
   success: 'hsl(142, 76%, 36%)',
   warning: 'hsl(38, 92%, 50%)',
@@ -791,7 +791,7 @@ export default function ReportsPage() {
         <div className="grid lg:grid-cols-2 gap-5 md:gap-6">
           
           {/* Gráfico Financeiro Real */}
-          <div className="card-interactive p-4 md:p-6 border-primary/10">
+          <div className="card-elevated p-4 md:p-6 border-primary/10">
             <div className="flex items-start justify-between mb-6">
               <div>
                 <h3 className="font-display font-bold text-lg md:text-xl text-foreground flex items-center gap-2">
@@ -831,7 +831,7 @@ export default function ReportsPage() {
           </div>
 
           {/* Receita por Origem */}
-          <div className="card-interactive p-4 md:p-6 border-emerald/10">
+          <div className="card-elevated p-4 md:p-6 border-emerald/10">
             <div className="flex items-start justify-between mb-5">
               <div>
                 <h3 className="font-display font-bold text-lg md:text-xl text-foreground flex items-center gap-2">
@@ -896,7 +896,7 @@ export default function ReportsPage() {
 
           {/* Recebido por Forma de Pagamento */}
           {isArena && (
-          <div className="card-interactive p-4 md:p-6 border-primary/10">
+          <div className="card-elevated p-4 md:p-6 border-primary/10">
             <div className="flex items-start justify-between mb-5">
               <div>
                 <h3 className="font-display font-bold text-lg md:text-xl text-foreground flex items-center gap-2">
@@ -942,7 +942,7 @@ export default function ReportsPage() {
           )}
 
           {/* Gráfico de Presença X Faltas */}
-          <div className="card-interactive p-4 md:p-6">
+          <div className="card-elevated p-4 md:p-6">
             <h3 className="font-display font-bold text-lg md:text-xl text-foreground mb-1">{labels.attendanceLabel} Geral</h3>
             <p className="text-sm text-muted-foreground mb-6">Controle de engajamento nos registros realizados</p>
             <div className="h-[280px] w-full">
@@ -962,7 +962,7 @@ export default function ReportsPage() {
 
           {/* Demografia: Alunos por Nível */}
           {!isArena && (
-            <div className="card-interactive p-4 md:p-6 lg:col-span-1 border-border/60">
+            <div className="card-elevated p-4 md:p-6 lg:col-span-1 border-border/60">
               <h3 className="font-display font-bold text-lg md:text-xl text-foreground mb-1">Perfil Técnico (Base Ativa)</h3>
               <p className="text-sm text-muted-foreground mb-6">Distribuição da base por nível</p>
               <div className="h-[250px] w-full mt-2">
@@ -982,7 +982,7 @@ export default function ReportsPage() {
 
           {/* Demografia: Planos */}
           {!isArena && (
-            <div className="card-interactive p-4 md:p-6 lg:col-span-1 border-border/60">
+            <div className="card-elevated p-4 md:p-6 lg:col-span-1 border-border/60">
               <h3 className="font-display font-bold text-lg md:text-xl text-foreground mb-1">Aderência de {labels.planLabel}</h3>
               <p className="text-sm text-muted-foreground mb-6">Preferência da base de {labels.studentLabel.toLowerCase()}</p>
               <div className="h-[250px] w-full">
@@ -1016,7 +1016,7 @@ export default function ReportsPage() {
           {isArena && (
             <>
               {/* Ocupação por Quadra (Horas) */}
-              <div className="card-interactive p-4 md:p-6 lg:col-span-1 border-border/60">
+              <div className="card-elevated p-4 md:p-6 lg:col-span-1 border-border/60">
                 <h3 className="font-display font-bold text-lg md:text-xl text-foreground mb-1">Ocupação por Quadra</h3>
                 <p className="text-sm text-muted-foreground mb-6">Horas reservadas no período</p>
                 <div className="h-[250px] w-full mt-2">
@@ -1033,7 +1033,7 @@ export default function ReportsPage() {
               </div>
 
               {/* Recebido por Quadra (Pie) */}
-              <div className="card-interactive p-4 md:p-6 lg:col-span-1 border-border/60">
+              <div className="card-elevated p-4 md:p-6 lg:col-span-1 border-border/60">
                 <h3 className="font-display font-bold text-lg md:text-xl text-foreground mb-1">Recebido por Quadra</h3>
                 <p className="text-sm text-muted-foreground mb-6">Receita recebida em reservas, separada por quadra</p>
                 {courtRevenueData.length > 0 ? (
@@ -1098,7 +1098,7 @@ export default function ReportsPage() {
           )}
 
           {/* Histórico Financeiro Mensal */}
-          <div className="card-interactive p-4 md:p-6 lg:col-span-2 mt-4 border-primary/20 bg-gradient-to-br from-background to-muted/20">
+          <div className="card-elevated p-4 md:p-6 lg:col-span-2 mt-4 border-primary/20 bg-gradient-to-br from-background to-muted/20">
             <div className="flex items-start justify-between mb-6">
               <div>
                 <h3 className="font-display font-bold text-lg md:text-xl text-foreground flex items-center gap-2">
@@ -1131,7 +1131,7 @@ export default function ReportsPage() {
 
           {/* Métricas de Retenção e Churn */}
           {!isArena && (
-            <div className="card-interactive p-4 md:p-6 lg:col-span-2 border-destructive/10 mt-4">
+            <div className="card-elevated p-4 md:p-6 lg:col-span-2 border-destructive/10 mt-4">
               <div className="flex items-start justify-between mb-6">
                 <div>
                   <h3 className="font-display font-bold text-lg md:text-xl text-foreground flex items-center gap-2">
@@ -1167,7 +1167,7 @@ export default function ReportsPage() {
           {isArena && (
             <>
               {/* Top Reservantes */}
-              <div className="card-interactive p-4 md:p-6 lg:col-span-2 border-primary/10 mt-4">
+              <div className="card-elevated p-4 md:p-6 lg:col-span-2 border-primary/10 mt-4">
                 <h3 className="font-display font-bold text-lg md:text-xl text-foreground mb-1">Top Reservantes</h3>
                 <p className="text-sm text-muted-foreground mb-6">Clientes que geraram mais caixa recebido no período</p>
                 <div className="h-[280px] w-full">

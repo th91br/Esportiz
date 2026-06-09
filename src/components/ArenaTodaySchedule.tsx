@@ -36,7 +36,7 @@ export function ArenaTodaySchedule() {
   }
 
   return (
-    <div className="card-elevated p-5 md:p-6 flex flex-col h-full bg-card/50 backdrop-blur-sm border-primary/10">
+    <div className="card-elevated p-5 md:p-6 flex flex-col h-full bg-card border border-border/50">
       <div className="flex items-center justify-between mb-6">
         <div>
           <h2 className="section-title text-xl mb-1">Agenda de Hoje</h2>
@@ -59,7 +59,7 @@ export function ArenaTodaySchedule() {
             const hasPartialPayment = reservation.totalPaid > 0 && reservation.remainingBalance > 0;
 
             return (
-              <div key={reservation.id} className="relative overflow-hidden rounded-xl bg-background border border-border/50 hover:border-primary/40 shadow-sm transition-all group p-4 md:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div key={reservation.id} className="relative overflow-hidden rounded-xl bg-background border border-border/50 p-4 md:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 
                 <div className="flex flex-col space-y-2.5">
                   <div className="flex items-center gap-2.5">

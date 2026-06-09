@@ -30,9 +30,9 @@ interface StudentCardProps {
 }
 
 const levelStyles = {
-  iniciante: 'bg-emerald-100 text-emerald-700 border-emerald-200',
-  intermediário: 'bg-amber-100 text-amber-700 border-amber-200',
-  avançado: 'bg-violet-100 text-violet-700 border-violet-200',
+  iniciante: 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/20 dark:text-emerald-400 border-emerald-200/50',
+  intermediário: 'bg-amber-50 text-amber-700 dark:bg-amber-950/20 dark:text-amber-400 border-amber-200/50',
+  avançado: 'bg-violet-50 text-violet-700 dark:bg-violet-950/20 dark:text-violet-400 border-violet-200/50',
 };
 
 const levelLabels = {
@@ -172,12 +172,6 @@ export function StudentCard({ student, onClick }: StudentCardProps) {
     });
   };
 
-  const levelBorderColor = isArena ? 'bg-primary' : ({
-    iniciante: 'bg-emerald-500',
-    intermediário: 'bg-amber-500',
-    avançado: 'bg-violet-500',
-  }[student.level] || 'bg-primary');
-
   const handleCardClick = () => {
     navigate(`/alunos/${student.id}`);
     if (onClick) onClick();
@@ -188,10 +182,7 @@ export function StudentCard({ student, onClick }: StudentCardProps) {
       className={cn('card-interactive relative overflow-hidden flex flex-col group h-full cursor-pointer', !student.active && 'opacity-60')}
       onClick={handleCardClick}
     >
-      {/* Side color bar indicator for level */}
-      <div className={cn('absolute left-0 top-0 bottom-0 w-1.5 transition-opacity', levelBorderColor, student.active ? 'opacity-100' : 'opacity-40')} />
-      
-      <div className="flex-1 p-4 pl-5">
+      <div className="flex-1 p-4">
         <div className="flex items-start gap-3.5">
           <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-hero text-white font-display font-bold text-lg shrink-0 shadow-sm mt-0.5 overflow-hidden">
             {student.photo ? (

@@ -46,7 +46,7 @@ export function StatCard({
   return (
     <div
       className={cn(
-        'card-interactive p-4 sm:p-5',
+        'card-elevated p-4 sm:p-5',
         variants[variant],
         variant === 'default' && 'border border-border/50'
       )}

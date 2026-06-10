@@ -211,7 +211,38 @@ export function useProfile() {
 
       if (!data) return buildInvitedMemberProfile(user.id);
 
-      return normalizeProfile(data);
+      const profile = normalizeProfile(data);
+
+      // Se o usuário faz parte de uma organização e não é o proprietário dela,
+      // devemos carregar as configurações do negócio (branding, niche_settings, etc.)
+      // diretamente do perfil do proprietário (owner) para garantir que estejam sempre atualizadas.
+      const ownerUserId = profile.owner_user_id;
+      if (profile.organization_id && ownerUserId && ownerUserId !== user.id) {
+        const { data: ownerData, error: ownerError } = await supabase
+          .from('profiles')
+          .select(PROFILE_SELECT)
+          .eq('user_id', ownerUserId)
+          .maybeSingle();
+
+        if (ownerError) {
+          console.error('Error fetching owner profile in query:', ownerError);
+        } else if (ownerData) {
+          const ownerProfile = normalizeProfile(ownerData);
+          return {
+            ...profile,
+            ct_name: ownerProfile.ct_name,
+            logo_url: ownerProfile.logo_url,
+            primary_color: ownerProfile.primary_color,
+            secondary_color: ownerProfile.secondary_color,
+            business_type: ownerProfile.business_type,
+            pix_key: ownerProfile.pix_key,
+            pix_receiver: ownerProfile.pix_receiver,
+            niche_settings: ownerProfile.niche_settings,
+          };
+        }
+      }
+
+      return profile;
     },
     enabled: !!user?.id,
   });

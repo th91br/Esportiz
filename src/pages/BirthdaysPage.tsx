@@ -12,6 +12,7 @@ import { ptBR } from 'date-fns/locale';
 
 import { Header } from '@/components/Header';
 import { useStudents } from '@/hooks/queries/useStudents';
+import { useProfile } from '@/hooks/queries/useProfile';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent } from '@/components/ui/card';
@@ -24,6 +25,9 @@ import { toast } from 'sonner';
 
 export default function BirthdaysPage() {
   const { students, loadingStudents } = useStudents();
+  const { profile } = useProfile();
+
+  const businessName = profile?.ct_name || 'Sportiz Sport';
 
   const buildBirthdayMessage = (student: Student) => buildCommunicationMessage({
     businessType: 'sport_school',
@@ -31,7 +35,7 @@ export default function BirthdaysPage() {
     variables: {
       nome: student.name.split(' ')[0],
       nome_completo: student.name,
-      escola: 'Sportiz Sport',
+      escola: businessName,
     },
   });
 
@@ -53,7 +57,7 @@ export default function BirthdaysPage() {
       variables: {
         nome: student.name.split(' ')[0],
         nome_completo: student.name,
-        escola: 'Sportiz Sport',
+        escola: businessName,
       },
     });
 

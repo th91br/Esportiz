@@ -23,6 +23,21 @@ import {
 import { formatCpfInputValue } from '@/lib/cpfInput';
 import { getEndTime } from '@/data/mockData';
 
+function parseDateFromBrFormat(brDate: string): string | null {
+  const clean = brDate.replace(/\D/g, '');
+  if (clean.length !== 8) return null;
+  const day = clean.slice(0, 2);
+  const month = clean.slice(2, 4);
+  const year = clean.slice(4, 8);
+  return `${year}-${month}-${day}`;
+}
+
+function formatIsoDateToBr(isoDate: string): string {
+  if (!isoDate || !/^\d{4}-\d{2}-\d{2}$/.test(isoDate)) return '';
+  const [year, month, day] = isoDate.split('-');
+  return `${day}/${month}/${year}`;
+}
+
 interface AttendanceLog {
   date: string;
   status: 'present' | 'absent';
@@ -336,7 +351,7 @@ CONCORDÂNCIA E ASSINATURA: O contratante declara ter lido, compreendido e aceit
   }, [scopedOwnerId]);
 
   // Authenticate student via credentials
-  const authenticate = useCallback(async (loginCpf: string, loginBirthDate: string) => {
+  const authenticate = useCallback(async (loginCpf: string, loginBirthDateBr: string) => {
     if (hasInvalidOwnerId) {
       toast.error('Link do portal inválido.');
       return;
@@ -351,8 +366,9 @@ CONCORDÂNCIA E ASSINATURA: O contratante declara ter lido, compreendido e aceit
       return;
     }
 
-    if (!isTodayOrPastDate(loginBirthDate)) {
-      toast.error('Data de nascimento inválida.');
+    const isoBirthDate = parseDateFromBrFormat(loginBirthDateBr);
+    if (!isoBirthDate || !isTodayOrPastDate(isoBirthDate)) {
+      toast.error('Data de nascimento inválida. Use o formato DD/MM/AAAA.');
       return;
     }
 
@@ -360,7 +376,7 @@ CONCORDÂNCIA E ASSINATURA: O contratante declara ter lido, compreendido e aceit
     try {
       const { data, error } = await supabase.rpc('get_student_portal_data', {
         p_cpf: formatCpfInputValue(loginCpf),
-        p_birth_date: loginBirthDate,
+        p_birth_date: isoBirthDate,
         p_user_id: scopedOwnerId,
       });
 
@@ -373,12 +389,12 @@ CONCORDÂNCIA E ASSINATURA: O contratante declara ter lido, compreendido e aceit
         setAttendanceLogs(data.attendance_logs || []);
         setPayments(data.payments || []);
         setPaymentConfig(data.payment_config || null);
-        await loadTrainingRequests(loginCpf, loginBirthDate);
+        await loadTrainingRequests(loginCpf, loginBirthDateBr);
         const sessionKey = getPortalSessionKey(scopedOwnerId);
         if (sessionKey) {
           sessionStorage.setItem(sessionKey, JSON.stringify({
             cpf: formatCpfInputValue(loginCpf),
-            birthDate: loginBirthDate,
+            birthDate: loginBirthDateBr,
           }));
         }
         if (scopedOwnerId) {
@@ -426,11 +442,23 @@ CONCORDÂNCIA E ASSINATURA: O contratante declara ter lido, compreendido e aceit
       const parsed = JSON.parse(savedSession) as { cpf?: string; birthDate?: string };
 
       const sessionCpfDigits = (parsed.cpf || '').replace(/\D/g, '');
-      if (parsed.cpf && parsed.birthDate && sessionCpfDigits.length === 11 && isTodayOrPastDate(parsed.birthDate)) {
-        setCpf(formatCpfInputValue(parsed.cpf));
-        setBirthDate(parsed.birthDate);
-        authenticate(parsed.cpf, parsed.birthDate);
-        return;
+      if (parsed.cpf && parsed.birthDate) {
+        let isoBirthDate = '';
+        let brBirthDate = '';
+        if (/^\d{4}-\d{2}-\d{2}$/.test(parsed.birthDate)) {
+          isoBirthDate = parsed.birthDate;
+          brBirthDate = formatIsoDateToBr(parsed.birthDate);
+        } else if (/^\d{2}\/\d{2}\/\d{4}$/.test(parsed.birthDate)) {
+          brBirthDate = parsed.birthDate;
+          isoBirthDate = parseDateFromBrFormat(parsed.birthDate) || '';
+        }
+
+        if (sessionCpfDigits.length === 11 && isoBirthDate && isTodayOrPastDate(isoBirthDate)) {
+          setCpf(formatCpfInputValue(parsed.cpf));
+          setBirthDate(brBirthDate);
+          authenticate(parsed.cpf, brBirthDate);
+          return;
+        }
       }
     } catch (error) {
       console.error('Erro ao restaurar sessão do portal:', error);
@@ -475,6 +503,17 @@ CONCORDÂNCIA E ASSINATURA: O contratante declara ter lido, compreendido e aceit
 
   const handleCpfChange = (val: string) => {
     setCpf(formatCpfInputValue(val));
+  };
+
+  const handleBirthDateChange = (val: string) => {
+    const digits = val.replace(/\D/g, '').slice(0, 8);
+    if (digits.length <= 2) {
+      setBirthDate(digits);
+    } else if (digits.length <= 4) {
+      setBirthDate(`${digits.slice(0, 2)}/${digits.slice(2)}`);
+    } else {
+      setBirthDate(`${digits.slice(0, 2)}/${digits.slice(2, 4)}/${digits.slice(4)}`);
+    }
   };
 
   const handleManualLogin = (e: React.FormEvent) => {
@@ -663,9 +702,10 @@ CONCORDÂNCIA E ASSINATURA: O contratante declara ter lido, compreendido e aceit
                 <label className="text-xs font-bold uppercase text-muted-foreground">Data de Nascimento</label>
                 <Input 
                   required 
-                  type="date" 
+                  placeholder="DD/MM/AAAA" 
+                  maxLength={10}
                   value={birthDate}
-                  onChange={(e) => setBirthDate(e.target.value)}
+                  onChange={(e) => handleBirthDateChange(e.target.value)}
                 />
               </div>
 

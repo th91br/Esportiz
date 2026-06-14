@@ -36,6 +36,7 @@ import { getDefaultCommunicationTemplate } from '@/lib/communicationContracts';
 import { useRolePermissions } from '@/hooks/useRolePermissions';
 import { useOrganizationTeamMembers, type OrganizationTeamMember } from '@/hooks/queries/useOrganizationTeamMembers';
 import type { OrganizationRole } from '@/lib/rolePermissions';
+import { buildStudentPortalUrl } from '@/lib/publicAccessContracts';
 
 const BUSINESS_OPTIONS: { type: BusinessType; title: string; description: string; emoji: string }[] = [
   { type: 'sport_school', title: 'Escola Esportiva', description: 'Esportiz Sport — Futevôlei, Vôlei, Futebol, Artes Marciais...', emoji: '🏐' },
@@ -318,9 +319,10 @@ export default function SettingsPage() {
   const SelectedTeamInviteRoleIcon = selectedTeamInviteOption ? getRoleIcon(selectedTeamInviteOption.role) : null;
   const isGoogleConnected = Boolean(profile?.google_access_token);
   const hasGoogleSpreadsheetId = Boolean(profile?.sheets_spreadsheet_id?.trim());
-  const studentPortalUrl = profile?.owner_user_id || user?.id 
-    ? `${window.location.origin}/portal-aluno?ct=${profile?.owner_user_id || user?.id}` 
-    : '';
+  const studentPortalUrl = buildStudentPortalUrl(
+    window.location.origin,
+    profile?.owner_user_id || user?.id,
+  );
 
   // Keep the settings card aligned with the persisted profile value.
   useEffect(() => {

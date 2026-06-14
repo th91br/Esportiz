@@ -28,10 +28,11 @@ import { cn } from '@/lib/utils';
 import { useRolePermissions } from '@/hooks/useRolePermissions';
 
 export default function ComandasPage() {
-  const { comandas, loadingComandas, openComanda, addComandaItem, updateItemQuantity, deleteComandaItem, closeComanda, reopenComanda, deleteComanda } = useComandas();
-  const { activeProducts, loadingProducts } = useProducts();
-  const [privacyMode] = usePrivacyMode();
   const rolePermissions = useRolePermissions();
+  const canViewProducts = rolePermissions.can('products', 'view');
+  const { comandas, loadingComandas, openComanda, addComandaItem, updateItemQuantity, deleteComandaItem, closeComanda, reopenComanda, deleteComanda } = useComandas();
+  const { activeProducts, loadingProducts } = useProducts({ enabled: canViewProducts });
+  const [privacyMode] = usePrivacyMode();
   const canCreateComandas = rolePermissions.can('comandas', 'create');
   const canUpdateComandas = rolePermissions.can('comandas', 'update');
   const canDeleteComandas = rolePermissions.can('comandas', 'delete');

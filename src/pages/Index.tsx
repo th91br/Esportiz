@@ -85,8 +85,8 @@ export default function Index() {
   const { plans, loadingPlans } = usePlans({ enabled: dashboardAccess.loadPlans });
   const { trainings, loadingTrainings } = useTrainings({ enabled: dashboardAccess.loadTrainings });
   const { attendance, loadingAttendance } = useAttendance({ enabled: dashboardAccess.loadAttendance });
-  const { payments, loadingPayments } = usePayments();
-  const { expenses, loadingExpenses } = useExpenses();
+  const { payments, loadingPayments } = usePayments({ enabled: dashboardAccess.loadPayments });
+  const { expenses, loadingExpenses } = useExpenses({ enabled: dashboardAccess.loadExpenses });
   const { sales, loadingSales } = useSales({ enabled: dashboardAccess.loadSales });
   const { activeProducts, loadingProducts } = useProducts({ enabled: dashboardAccess.loadProducts });
   const { reservations, loadingReservations } = useReservations({ enabled: dashboardAccess.loadReservations });
@@ -94,9 +94,8 @@ export default function Index() {
   const { comandas, loadingComandas } = useComandas({ enabled: dashboardAccess.loadComandas });
 
   const lowStockProducts = useMemo(() => {
-    if (!isArena) return [];
     return activeProducts.filter((p) => p.trackStock && p.stockQuantity <= p.minStock);
-  }, [isArena, activeProducts]);
+  }, [activeProducts]);
   const { groups, loadingGroups } = useGroups({ enabled: dashboardAccess.loadGroups });
 
   const loadingFinancials = loadingPayments || loadingExpenses || (isArena && (loadingSales || loadingReservations));
@@ -144,36 +143,28 @@ export default function Index() {
   let expectedRevenue = 0;
   let receivedRevenue = 0;
 
+  // 1. Mensalidades / Pacotes (Compartilhado)
+  payments.forEach((p) => {
+    if (p.monthRef === currentMonthStr) {
+      expectedRevenue += p.amount;
+      receivedRevenue += p.paidAmount || 0;
+    }
+  });
+
+  // 2. Vendas de Produtos / Comandas (Compartilhado)
+  sales.forEach((s) => {
+    if (s.soldAt.startsWith(currentMonthStr)) {
+      expectedRevenue += s.total;
+      receivedRevenue += s.total; // Vendas são sempre recebidas no ato
+    }
+  });
+
+  // 3. Reservas de Quadras (Apenas Arena)
   if (isArena) {
-    // 1. Reservas de Quadras (Locações Avulsas)
     reservations.forEach((r) => {
       if (r.date.startsWith(currentMonthStr) && r.status !== 'cancelled') {
         expectedRevenue += r.finalPrice;
         receivedRevenue += getReservationPaidAmount(r);
-      }
-    });
-
-    // 2. Pacotes Mensais de Mensalistas (Sincronia com Pagamentos!)
-    payments.forEach((p) => {
-      if (p.monthRef === currentMonthStr) {
-        expectedRevenue += p.amount;
-        receivedRevenue += p.paidAmount || 0;
-      }
-    });
-
-    // 3. Vendas de Produtos / Comandas (Sincronia com Vendas!)
-    sales.forEach((s) => {
-      if (s.soldAt.startsWith(currentMonthStr)) {
-        expectedRevenue += s.total;
-        receivedRevenue += s.total; // Vendas são sempre recebidas no ato
-      }
-    });
-  } else {
-    // Escola Esportiva: Apenas Mensalidades dos Alunos (Sem Cantina/Vendas)
-    payments.forEach((p) => {
-      if (p.monthRef === currentMonthStr) {
-        expectedRevenue += p.amount;
-        receivedRevenue += p.paidAmount || 0;
       }
     });
   }
@@ -362,7 +353,7 @@ export default function Index() {
         )}
 
         {/* ── Low Stock Alert (Only if Arena & has low/out stock items) ── */}
-        {isArena && lowStockProducts.length > 0 && (
+        {lowStockProducts.length > 0 && (
           <section className="animate-fade-up">
             <div className="bg-amber-500/10 border border-amber-500/20 rounded-2xl p-4 md:p-5 flex flex-col md:flex-row items-center justify-between gap-4 shadow-sm">
               <div className="flex items-center gap-4 text-left">
@@ -377,7 +368,7 @@ export default function Index() {
                     {lowStockProducts.length === 1 ? (
                       <span>O produto <strong>{lowStockProducts[0].name}</strong> está com estoque baixo ou zerado ({lowStockProducts[0].stockQuantity} un restante(s)).</span>
                     ) : (
-                      <span>Você tem <strong>{lowStockProducts.length} produtos</strong> com estoque baixo ou zerado na cantina/bar.</span>
+                      <span>Você tem <strong>{lowStockProducts.length} produtos</strong> com estoque baixo ou zerado {isArena ? 'na cantina/bar' : 'no almoxarifado/estoque'}.</span>
                     )}
                   </p>
                 </div>
@@ -505,42 +496,27 @@ export default function Index() {
 
           {/* ── Linha 2: Financeiro ── */}
           {canViewFinancials && (
-            <div className={cn(
-              "grid gap-3 md:gap-4",
-              isSportSchool ? "grid-cols-1 md:grid-cols-2" : "grid-cols-1 md:grid-cols-3"
-            )}>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-4">
               <StatCard
                 title="Faturamento Total"
                 value={loadingFinancials ? '...' : pv(formatCurrency(expectedRevenue))}
                 icon={DollarSign}
-                description={privacyMode ? '' : isSportSchool ? 'Mensalidades do mês' : 'Mensalidades + Vendas do mês'}
+                description={privacyMode ? '' : isSportSchool ? 'Mensalidades + Vendas no mês' : 'Mensalidades + Reservas + Vendas no mês'}
               />
-              {isSportSchool ? (
-                <StatCard
-                  title="Recebido no Mês"
-                  value={loadingFinancials ? '...' : pv(formatCurrency(receivedRevenue))}
-                  icon={CheckCircle}
-                  variant="success"
-                  progress={privacyMode ? undefined : { value: revenueProgress, label: 'Meta Mensal' }}
-                />
-              ) : (
-                <>
-                  <StatCard
-                    title="Recebido no Mês"
-                    value={loadingFinancials ? '...' : pv(formatCurrency(receivedRevenue))}
-                    icon={CheckCircle}
-                    variant="primary"
-                    progress={privacyMode ? undefined : { value: revenueProgress, label: 'Meta Mensal' }}
-                  />
-                  <StatCard
-                    title="Lucro Líquido"
-                    value={loadingFinancials ? '...' : pv(formatCurrency(netProfit))}
-                    icon={netProfit >= 0 ? TrendingUp : TrendingDown}
-                    variant="success"
-                    description={privacyMode ? '' : `Despesas pagas: ${formatCurrency(totalExpensesPaid)}`}
-                  />
-                </>
-              )}
+              <StatCard
+                title="Recebido no Mês"
+                value={loadingFinancials ? '...' : pv(formatCurrency(receivedRevenue))}
+                icon={CheckCircle}
+                variant="primary"
+                progress={privacyMode ? undefined : { value: revenueProgress, label: 'Meta Mensal' }}
+              />
+              <StatCard
+                title="Lucro Líquido"
+                value={loadingFinancials ? '...' : pv(formatCurrency(netProfit))}
+                icon={netProfit >= 0 ? TrendingUp : TrendingDown}
+                variant="success"
+                description={privacyMode ? '' : `Despesas pagas: ${formatCurrency(totalExpensesPaid)}`}
+              />
             </div>
           )}
         </section>

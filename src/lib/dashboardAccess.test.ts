@@ -14,10 +14,12 @@ describe('getDashboardAccess', () => {
       loadAttendance: false,
       loadGroups: false,
       loadModalities: false,
+      loadPayments: true,
+      loadExpenses: true,
       loadProducts: false,
       loadReservations: false,
       loadCourts: false,
-      loadSales: false,
+      loadSales: true,
       loadComandas: false,
     });
   });
@@ -30,13 +32,15 @@ describe('getDashboardAccess', () => {
     expect(access.showOperationalSections).toBe(false);
     expect(access.loadReservations).toBe(true);
     expect(access.loadSales).toBe(true);
+    expect(access.loadPayments).toBe(true);
+    expect(access.loadExpenses).toBe(true);
     expect(access.loadStudents).toBe(false);
     expect(access.loadCourts).toBe(false);
     expect(access.loadProducts).toBe(false);
     expect(access.loadComandas).toBe(false);
   });
 
-  it('preserves the existing dashboard for non-finance roles', () => {
+  it('preserves the owner dashboard data sources', () => {
     expect(getDashboardAccess('owner', 'sport_school')).toMatchObject({
       isFinancialOnly: false,
       showOperationalContext: true,
@@ -47,6 +51,26 @@ describe('getDashboardAccess', () => {
       loadAttendance: true,
       loadGroups: true,
       loadModalities: true,
+      loadPayments: true,
+      loadExpenses: true,
+      loadProducts: true,
+      loadSales: true,
+    });
+  });
+
+  it('loads only authorized sensitive datasets for operational roles', () => {
+    expect(getDashboardAccess('receptionist', 'sport_school')).toMatchObject({
+      loadPayments: true,
+      loadExpenses: false,
+      loadProducts: true,
+      loadSales: true,
+    });
+
+    expect(getDashboardAccess('instructor', 'sport_school')).toMatchObject({
+      loadPayments: false,
+      loadExpenses: false,
+      loadProducts: false,
+      loadSales: false,
     });
   });
 });

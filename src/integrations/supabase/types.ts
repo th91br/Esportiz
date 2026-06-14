@@ -1334,6 +1334,21 @@ export type Database = {
           }[]
         }
       }
+      sign_student_contract: {
+        Args: {
+          p_birth_date: string
+          p_contract_text: string
+          p_cpf: string
+          p_ip_address: string
+          p_student_id: string
+          p_user_agent: string
+        }
+        Returns: {
+          error?: string
+          message?: string
+          success: boolean
+        }
+      }
       submit_student_training_request: {
         Args: {
           p_birth_date: string

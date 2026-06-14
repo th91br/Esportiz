@@ -3,7 +3,7 @@ import { canAccessBusinessRoute, getRouteAccessScope } from './businessRouteAcce
 
 describe('businessRouteAccess', () => {
   it('keeps shared routes available for both business types', () => {
-    for (const route of ['/dashboard', '/pagamentos', '/relatorios', '/configuracoes']) {
+    for (const route of ['/dashboard', '/pagamentos', '/produtos', '/vendas', '/despesas', '/relatorios', '/configuracoes']) {
       expect(getRouteAccessScope(route)).toBe('shared');
       expect(canAccessBusinessRoute('sport_school', route)).toBe(true);
       expect(canAccessBusinessRoute('arena', route)).toBe(true);
@@ -19,7 +19,7 @@ describe('businessRouteAccess', () => {
   });
 
   it('allows arena routes only for arena profiles', () => {
-    for (const route of ['/quadras', '/agenda', '/reservantes', '/reservantes/123', '/comandas', '/produtos', '/vendas', '/despesas']) {
+    for (const route of ['/quadras', '/agenda', '/reservantes', '/reservantes/123', '/comandas']) {
       expect(getRouteAccessScope(route)).toBe('arena');
       expect(canAccessBusinessRoute('arena', route)).toBe(true);
       expect(canAccessBusinessRoute('sport_school', route)).toBe(false);
@@ -28,6 +28,6 @@ describe('businessRouteAccess', () => {
 
   it('defaults unknown or missing business type to sport school', () => {
     expect(canAccessBusinessRoute(null, '/alunos')).toBe(true);
-    expect(canAccessBusinessRoute(undefined, '/vendas')).toBe(false);
+    expect(canAccessBusinessRoute(undefined, '/vendas')).toBe(true);
   });
 });

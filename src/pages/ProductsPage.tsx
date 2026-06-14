@@ -31,11 +31,17 @@ import { Plus, Package, Pencil, Power, PowerOff, TrendingUp, AlertTriangle, Coin
 import { cn } from '@/lib/utils';
 import { useRolePermissions } from '@/hooks/useRolePermissions';
 
-const PRODUCT_CATEGORIES = ['Bebidas', 'Alimentação', 'Material Esportivo', 'Acessórios', 'Geral'];
-
 export default function ProductsPage() {
   const { products, loadingProducts, addProduct, updateProduct, deleteProduct, isAddingProduct } = useProducts();
   const { isArena } = useBusinessContext();
+
+  const categories = useMemo(() => {
+    if (isArena) {
+      return ['Bebidas', 'Alimentação', 'Material Esportivo', 'Acessórios', 'Geral'];
+    }
+    // sport_school
+    return ['Uniformes', 'Equipamentos', 'Acessórios', 'Geral'];
+  }, [isArena]);
   const rolePermissions = useRolePermissions();
   const canCreateProducts = rolePermissions.can('products', 'create');
   const canUpdateProducts = rolePermissions.can('products', 'update');
@@ -157,7 +163,11 @@ export default function ProductsPage() {
               <Package className="h-7 w-7 text-primary" />
               Produtos
             </h1>
-            <p className="text-muted-foreground mt-1">Cadastre os itens disponíveis para venda no seu negócio.</p>
+            <p className="text-muted-foreground mt-1">
+              {isArena
+                ? 'Cadastre os itens disponíveis para venda na arena (bebidas, alimentos, etc).'
+                : 'Cadastre os uniformes, materiais e artigos esportivos disponíveis para os alunos.'}
+            </p>
           </div>
 
           {(canCreateProducts || canUpdateProducts) && (
@@ -174,13 +184,22 @@ export default function ProductsPage() {
               <DialogHeader>
                 <DialogTitle>{editingId ? 'Editar Produto' : 'Novo Produto'}</DialogTitle>
                 <DialogDescription>
-                  {editingId ? 'Atualize as informações do produto.' : 'Cadastre um novo item para venda.'}
+                  {editingId
+                    ? 'Atualize as informações do produto.'
+                    : isArena
+                      ? 'Cadastre um novo item para venda (cantina/bar/comanda).'
+                      : 'Cadastre um novo item ou uniforme da escola.'}
                 </DialogDescription>
               </DialogHeader>
               <div className="space-y-4 py-4">
                 <div className="space-y-2">
                   <Label>Nome *</Label>
-                  <Input placeholder="Ex: Água Mineral 500ml" value={formName} onChange={e => setFormName(e.target.value)} autoFocus />
+                  <Input
+                    placeholder={isArena ? "Ex: Água Mineral 500ml" : "Ex: Uniforme Oficial, Squeeze, Caneleira..."}
+                    value={formName}
+                    onChange={e => setFormName(e.target.value)}
+                    autoFocus
+                  />
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-2">
@@ -192,7 +211,7 @@ export default function ProductsPage() {
                     <Select value={formCategory} onValueChange={setFormCategory}>
                       <SelectTrigger><SelectValue /></SelectTrigger>
                       <SelectContent>
-                        {PRODUCT_CATEGORIES.map(cat => <SelectItem key={cat} value={cat}>{cat}</SelectItem>)}
+                        {categories.map(cat => <SelectItem key={cat} value={cat}>{cat}</SelectItem>)}
                       </SelectContent>
                     </Select>
                   </div>

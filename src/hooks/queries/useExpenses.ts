@@ -39,28 +39,29 @@ function mapExpense(row: Tables<'expenses'>): Expense {
   };
 }
 
-export function useExpenses() {
+export function useExpenses(options: { enabled?: boolean } = {}) {
   const { user } = useAuth();
   const { profile } = useProfile();
   const queryClient = useQueryClient();
+  const expensesEnabled = options.enabled ?? true;
 
   const tenantId = profile?.owner_user_id || user?.id;
-  const isArena = profile?.business_type === 'arena';
+  const businessType = profile?.business_type || 'sport_school';
 
   const expensesQuery = useQuery({
-    queryKey: ['expenses', tenantId, profile?.business_type],
+    queryKey: ['expenses', tenantId, businessType],
     queryFn: async () => {
-      if (!tenantId || !isArena) return [];
+      if (!tenantId) return [];
       const { data, error } = await supabase
         .from('expenses')
         .select('*')
         .eq('user_id', tenantId)
-        .eq('business_type', 'arena')
+        .eq('business_type', businessType)
         .order('date', { ascending: false });
       if (error) throw error;
       return (data || []).map(mapExpense);
     },
-    enabled: !!tenantId && isArena,
+    enabled: expensesEnabled && !!tenantId,
   });
 
   const addExpenseMutation = useMutation({
@@ -73,10 +74,9 @@ export function useExpenses() {
       notes?: string;
     }) => {
       if (!user?.id) throw new Error('Not authenticated');
-      if (!isArena) throw new Error('Despesas estao disponiveis somente para Arena / CT de Quadras.');
       const { error } = await supabase.from('expenses').insert({
         user_id: user.id,
-        business_type: 'arena',
+        business_type: businessType,
         description: expense.description,
         amount: expense.amount,
         category: expense.category || 'geral',
@@ -97,7 +97,6 @@ export function useExpenses() {
   const updateExpenseMutation = useMutation({
     mutationFn: async ({ id, ...updates }: Partial<Expense> & { id: string }) => {
       if (!user?.id) throw new Error('Not authenticated');
-      if (!isArena) throw new Error('Despesas estao disponiveis somente para Arena / CT de Quadras.');
       const dbUpdates: TablesUpdate<'expenses'> = {
         updated_at: new Date().toISOString(),
         organization_id: profile?.organization_id || null,
@@ -128,7 +127,6 @@ export function useExpenses() {
   const deleteExpenseMutation = useMutation({
     mutationFn: async (id: string) => {
       if (!user?.id) throw new Error('Not authenticated');
-      if (!isArena) throw new Error('Despesas estao disponiveis somente para Arena / CT de Quadras.');
       const { error } = await supabase
         .from('expenses')
         .delete()
@@ -154,8 +152,8 @@ export function useExpenses() {
   };
 
   return {
-    expenses: isArena ? (expensesQuery.data || []) : [],
-    loadingExpenses: isArena && expensesQuery.isLoading,
+    expenses: expensesQuery.data || [],
+    loadingExpenses: expensesQuery.isLoading,
     addExpense: addExpenseMutation.mutateAsync,
     updateExpense: updateExpenseMutation.mutateAsync,
     deleteExpense: deleteExpenseMutation.mutateAsync,

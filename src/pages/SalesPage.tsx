@@ -40,6 +40,7 @@ import {
 import { cn } from '@/lib/utils';
 import { Link } from 'react-router-dom';
 import { useRolePermissions } from '@/hooks/useRolePermissions';
+import { useBusinessContext } from '@/hooks/useBusinessContext';
 
 interface CartItem {
   productId: string;
@@ -103,6 +104,7 @@ function getSaleTransactionKey(sale: Sale) {
 export default function SalesPage() {
   const { activeProducts, loadingProducts } = useProducts();
   const { sales, loadingSales, checkoutCartSale, deleteSale, isCheckingOutCart } = useSales();
+  const { isArena } = useBusinessContext();
   const rolePermissions = useRolePermissions();
   const canCreateSales = rolePermissions.can('sales', 'create');
   const canDeleteSales = rolePermissions.can('sales', 'delete');
@@ -194,7 +196,9 @@ export default function SalesPage() {
               <ShoppingCart className="h-7 w-7 text-primary" />
               Vendas
             </h1>
-            <p className="text-muted-foreground mt-1">Registre vendas rápidas de produtos.</p>
+            <p className="text-muted-foreground mt-1">
+              {isArena ? 'Registre vendas rápidas de produtos da cantina ou arena.' : 'Registre a venda de uniformes, materiais e acessórios esportivos.'}
+            </p>
           </div>
           {canViewProducts && (
             <Link to="/produtos">
@@ -227,7 +231,9 @@ export default function SalesPage() {
           <div className="lg:col-span-2">
             <Card>
               <CardHeader>
-                <CardTitle className="text-lg">Selecione os Produtos</CardTitle>
+                <CardTitle className="text-lg">
+                  {isArena ? 'Selecione os Produtos' : 'Uniformes e Materiais Esportivos'}
+                </CardTitle>
               </CardHeader>
               <CardContent>
                 {loadingProducts ? (
@@ -290,7 +296,7 @@ export default function SalesPage() {
               <CardContent className="space-y-4">
                 {cart.length === 0 ? (
                   <p className="text-sm text-muted-foreground text-center py-6">
-                    Toque em um produto para adicionar
+                    {isArena ? 'Toque em um produto para adicionar' : 'Toque em um item para adicionar ao carrinho'}
                   </p>
                 ) : (
                   <>
@@ -387,13 +393,16 @@ export default function SalesPage() {
               </div>
             </div>
 
-            <div className="grid gap-2 md:grid-cols-[1.5fr_1fr_1fr_1fr]">
+            <div className={cn(
+              "grid gap-2",
+              isArena ? "md:grid-cols-[1.5fr_1fr_1fr_1fr]" : "md:grid-cols-[2fr_1fr_1fr]"
+            )}>
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                 <Input
                   value={historySearch}
                   onChange={(event) => setHistorySearch(event.target.value)}
-                  placeholder="Buscar produto, origem ou pagamento..."
+                  placeholder={isArena ? "Buscar produto, origem ou pagamento..." : "Buscar produto ou pagamento..."}
                   className="pl-9"
                 />
               </div>
@@ -421,16 +430,18 @@ export default function SalesPage() {
                 </SelectContent>
               </Select>
 
-              <Select value={historyOrigin} onValueChange={(value) => setHistoryOrigin(value as SalesOriginFilter)}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Origem" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Todas origens</SelectItem>
-                  <SelectItem value="direct">Venda direta</SelectItem>
-                  <SelectItem value="comanda">Comandas</SelectItem>
-                </SelectContent>
-              </Select>
+              {isArena && (
+                <Select value={historyOrigin} onValueChange={(value) => setHistoryOrigin(value as SalesOriginFilter)}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Origem" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todas origens</SelectItem>
+                    <SelectItem value="direct">Venda direta</SelectItem>
+                    <SelectItem value="comanda">Comandas</SelectItem>
+                  </SelectContent>
+                </Select>
+              )}
             </div>
           </CardHeader>
 
@@ -454,12 +465,14 @@ export default function SalesPage() {
                       <div className="flex-1 min-w-0">
                         <div className="flex flex-wrap items-center gap-2">
                           <p className="text-sm font-medium">{sale.productName} {sale.quantity > 1 ? `(x${sale.quantity})` : ''}</p>
-                          <span className={cn(
-                            'rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide',
-                            isComandaSale ? 'bg-amber-100 text-amber-700' : 'bg-primary/10 text-primary'
-                          )}>
-                            {originLabel}
-                          </span>
+                          {isArena && (
+                            <span className={cn(
+                              'rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide',
+                              isComandaSale ? 'bg-amber-100 text-amber-700' : 'bg-primary/10 text-primary'
+                            )}>
+                              {originLabel}
+                            </span>
+                          )}
                         </div>
                         <p className="text-xs text-muted-foreground">
                           {getPaymentMethodLabel(sale.paymentMethod)} • {new Date(sale.soldAt).toLocaleDateString('pt-BR')} às {new Date(sale.soldAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}

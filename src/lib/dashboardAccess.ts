@@ -2,6 +2,7 @@ import {
   normalizeOrganizationRole,
   type PermissionBusinessType,
 } from '@/lib/rolePermissions';
+import { getSensitiveDataAccess } from '@/lib/sensitiveDataAccess';
 
 export interface DashboardAccess {
   isFinancialOnly: boolean;
@@ -13,6 +14,8 @@ export interface DashboardAccess {
   loadAttendance: boolean;
   loadGroups: boolean;
   loadModalities: boolean;
+  loadPayments: boolean;
+  loadExpenses: boolean;
   loadProducts: boolean;
   loadReservations: boolean;
   loadCourts: boolean;
@@ -25,6 +28,7 @@ export function getDashboardAccess(
   businessType: PermissionBusinessType = 'sport_school',
 ): DashboardAccess {
   const isFinancialOnly = normalizeOrganizationRole(role) === 'finance';
+  const sensitiveDataAccess = getSensitiveDataAccess(role, businessType);
 
   if (!isFinancialOnly) {
     return {
@@ -37,10 +41,12 @@ export function getDashboardAccess(
       loadAttendance: true,
       loadGroups: true,
       loadModalities: true,
-      loadProducts: true,
+      loadPayments: sensitiveDataAccess.payments,
+      loadExpenses: sensitiveDataAccess.expenses,
+      loadProducts: sensitiveDataAccess.products,
       loadReservations: true,
       loadCourts: true,
-      loadSales: true,
+      loadSales: sensitiveDataAccess.sales,
       loadComandas: true,
     };
   }
@@ -57,10 +63,12 @@ export function getDashboardAccess(
     loadAttendance: false,
     loadGroups: false,
     loadModalities: false,
-    loadProducts: false,
+    loadPayments: sensitiveDataAccess.payments,
+    loadExpenses: sensitiveDataAccess.expenses,
+    loadProducts: sensitiveDataAccess.products,
     loadReservations: isArena,
     loadCourts: false,
-    loadSales: isArena,
+    loadSales: sensitiveDataAccess.sales,
     loadComandas: false,
   };
 }

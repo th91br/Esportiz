@@ -213,7 +213,9 @@ export default function ExpensesPage() {
               <Receipt className="h-7 w-7 text-primary" />
               Despesas
             </h1>
-            <p className="text-muted-foreground mt-1">Controle de custos e despesas do seu negócio.</p>
+            <p className="text-muted-foreground mt-1">
+              {isArena ? 'Controle de custos, manutenção de quadras e despesas gerais da arena.' : 'Controle de custos, salários de professores e despesas da escola.'}
+            </p>
           </div>
 
           <Dialog open={isFormOpen} onOpenChange={(open) => { setIsFormOpen(open); if (!open) resetForm(); }}>
@@ -229,7 +231,11 @@ export default function ExpensesPage() {
               <DialogHeader>
                 <DialogTitle>{editingExpense ? 'Editar Despesa' : 'Nova Despesa'}</DialogTitle>
                 <DialogDescription>
-                  {editingExpense ? 'Atualize as informações da despesa.' : 'Registre uma nova despesa do seu negócio.'}
+                  {editingExpense
+                    ? 'Atualize as informações da despesa.'
+                    : isArena
+                      ? 'Registre uma nova despesa da sua arena.'
+                      : 'Registre uma nova despesa da sua escola esportiva.'}
                 </DialogDescription>
               </DialogHeader>
               <div className="space-y-4 py-4">
@@ -237,7 +243,7 @@ export default function ExpensesPage() {
                   <Label htmlFor="exp-description">Descrição *</Label>
                   <Input
                     id="exp-description"
-                    placeholder="Ex: Aluguel da quadra, Energia..."
+                    placeholder={isArena ? "Ex: Aluguel da quadra, Energia..." : "Ex: Salários de Professores, Material de Treino..."}
                     value={formDescription}
                     onChange={(e) => setFormDescription(e.target.value)}
                     autoFocus

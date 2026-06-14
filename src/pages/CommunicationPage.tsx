@@ -40,6 +40,7 @@ const AUDIENCE_EVENT_MAP: Record<Audience, SportSchoolCommunicationEvent> = {
 };
 
 const ARENA_AUDIENCES = new Set<Audience>(['all_active', 'inactive', 'payment_reminder']);
+const PAYMENT_AUDIENCES = new Set<Audience>(['overdue', 'due_7_days', 'payment_reminder']);
 
 function getArenaAudienceTemplate(audience: Audience): string {
   if (audience === 'inactive') {
@@ -53,16 +54,18 @@ function getArenaAudienceTemplate(audience: Audience): string {
 }
 
 export default function CommunicationPage() {
+  const rolePermissions = useRolePermissions();
+  const canSendCommunicationMessages = rolePermissions.can('communication', 'send_message');
+  const canViewPayments = rolePermissions.can('payments', 'view');
+  const canUsePaymentAudiences = canViewPayments && canSendCommunicationMessages;
   const { students, loadingStudents } = useStudents();
-  const { payments, loadingPayments } = usePayments();
+  const { payments, loadingPayments } = usePayments({ enabled: canUsePaymentAudiences });
   const { plans, loadingPlans } = usePlans();
   const { reservations, loadingReservations } = useReservations();
   const { labels } = useBusinessContext();
-  const rolePermissions = useRolePermissions();
   const { profile, updateProfile, isUpdatingProfile } = useProfile();
   const isArena = profile?.business_type === 'arena';
   const canSaveCommunicationTemplate = rolePermissions.can('settings', 'update');
-  const canSendCommunicationMessages = rolePermissions.can('communication', 'send_message');
   
   // Nome dinâmico do negócio com fallbacks personalizados por modalidade
   const businessName = profile?.ct_name || (
@@ -75,10 +78,13 @@ export default function CommunicationPage() {
   const [sendingStudent, setSendingStudent] = useState<{ id: string; name: string; phone: string | null } | null>(null);
 
   useEffect(() => {
-    if (isArena && !ARENA_AUDIENCES.has(audience)) {
+    if (
+      (isArena && !ARENA_AUDIENCES.has(audience))
+      || (!canUsePaymentAudiences && PAYMENT_AUDIENCES.has(audience))
+    ) {
       setAudience('all_active');
     }
-  }, [audience, isArena]);
+  }, [audience, canUsePaymentAudiences, isArena]);
 
   // Load audience-specific custom template on profile or audience change
   useEffect(() => {
@@ -132,7 +138,10 @@ export default function CommunicationPage() {
     }
   };
 
-  const loading = loadingStudents || loadingPayments || loadingPlans || (isArena ? loadingReservations : false);
+  const loading = loadingStudents
+    || (canUsePaymentAudiences ? loadingPayments : false)
+    || loadingPlans
+    || (isArena ? loadingReservations : false);
 
   // Filtro de Audiência
   const targetStudents = useMemo(() => {
@@ -154,18 +163,21 @@ export default function CommunicationPage() {
       case 'without_plan':
         return getStudentsWithoutPlan(students);
       case 'overdue': {
+        if (!canUsePaymentAudiences) return [];
         // Encontrar alunos com pagamentos atrasados (vencidos e não pagos)
         const overduePayments = payments.filter(p => !p.paid && p.dueDate < todayStr);
         const overdueStudentIds = new Set(overduePayments.map(p => p.studentId));
         return students.filter(s => overdueStudentIds.has(s.id));
       }
       case 'due_7_days': {
+        if (!canUsePaymentAudiences) return [];
         // Encontrar alunos com pagamentos vencendo nos próximos 7 dias
         const duePayments = payments.filter(p => !p.paid && p.dueDate >= todayStr && p.dueDate <= sevenDaysStr);
         const dueStudentIds = new Set(duePayments.map(p => p.studentId));
         return students.filter(s => dueStudentIds.has(s.id));
       }
       case 'payment_reminder': {
+        if (!canUsePaymentAudiences) return [];
         // Find reservantes with pending reservations (paymentStatus === 'pending' and remainingBalance > 0)
         const pendingReservations = reservations.filter(r => r.paymentStatus === 'pending' && r.remainingBalance > 0);
         const pendingStudentIds = new Set(pendingReservations.flatMap(r => r.reservanteIds));
@@ -174,7 +186,7 @@ export default function CommunicationPage() {
       default:
         return [];
     }
-  }, [students, plans, payments, reservations, audience]);
+  }, [students, plans, payments, reservations, audience, canUsePaymentAudiences]);
 
   // Calcula o saldo devedor real do aluno (arena = reservas pendentes, escola = mensalidades atrasadas/vencendo)
   const getOverdueBalanceForStudent = (studentId: string) => {
@@ -327,13 +339,17 @@ export default function CommunicationPage() {
                     <SelectItem value="all_active">Todos(as) os(as) {labels.studentLabel} (Ativos)</SelectItem>
                     {!isArena && (
                       <>
-                    <SelectItem value="overdue">Inadimplentes (Mensalidade Atrasada)</SelectItem>
-                    <SelectItem value="due_7_days">Vencendo nos próximos 7 dias</SelectItem>
-                    <SelectItem value="trial">{labels.trainingLabel} Experimentais (Leads)</SelectItem>
-                    <SelectItem value="without_plan">{labels.studentLabel} sem {labels.planLabel}</SelectItem>
+                        {canUsePaymentAudiences && (
+                          <>
+                            <SelectItem value="overdue">Inadimplentes (Mensalidade Atrasada)</SelectItem>
+                            <SelectItem value="due_7_days">Vencendo nos próximos 7 dias</SelectItem>
+                          </>
+                        )}
+                        <SelectItem value="trial">{labels.trainingLabel} Experimentais (Leads)</SelectItem>
+                        <SelectItem value="without_plan">{labels.studentLabel} sem {labels.planLabel}</SelectItem>
                       </>
                     )}
-                    {isArena && (
+                    {isArena && canUsePaymentAudiences && (
                       <SelectItem value="payment_reminder">Lembrete de Pagamento (Pendentes)</SelectItem>
                     )}
                     <SelectItem value="inactive">{labels.studentLabel} Inativos(as) (Recuperação)</SelectItem>

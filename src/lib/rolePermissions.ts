@@ -73,7 +73,7 @@ interface RoutePermissionCheck {
 const MODULE_SCOPES: Record<PermissionModule, ModuleScope> = {
   dashboard: 'shared',
   payments: 'shared',
-  expenses: 'arena',
+  expenses: 'shared',
   reports: 'shared',
   communication: 'shared',
   settings: 'shared',
@@ -90,8 +90,8 @@ const MODULE_SCOPES: Record<PermissionModule, ModuleScope> = {
   student_training_requests: 'sport_school',
   agenda: 'arena',
   reservants: 'arena',
-  products: 'arena',
-  sales: 'arena',
+  products: 'shared',
+  sales: 'shared',
   comandas: 'arena',
   courts: 'arena',
 };
@@ -233,11 +233,11 @@ const FINANCE_PERMISSIONS: Partial<Record<PermissionModule, readonly PermissionA
   dashboard: ['view'],
   payments: ['view', 'create', 'update', 'receive_payment', 'reopen_payment', 'export'],
   expenses: ['view', 'create', 'update', 'export', 'view_sensitive_financials'],
+  sales: ['view', 'export'],
   reports: ['view', 'export', 'view_sensitive_financials'],
   settings: ['view'], // Permite visualizar configurações básicas
   team: ['view'],
   // Arena apenas — filtrados automaticamente pelo scope em sport_school
-  sales: ['view', 'export'],
   comandas: ['view'],
   reservants: ['view'], // Permite consultar reservantes de referência
 };

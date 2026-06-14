@@ -58,11 +58,11 @@ export function Header() {
         </Link>
 
         {/* Desktop Navigation — flex-1 ocupa espaco central */}
-        <div className="hidden md:block flex-1 min-w-0 mx-1 relative">
+        <div className="hidden md:block flex-1 min-w-0 mx-4 relative">
           {/* Fade indicators */}
           <div className="pointer-events-none absolute left-0 top-0 bottom-0 w-4 bg-gradient-to-r from-background/95 to-transparent z-10" />
           <div className="pointer-events-none absolute right-0 top-0 bottom-0 w-4 bg-gradient-to-l from-background/95 to-transparent z-10" />
-          <nav aria-label="Navegação principal" className="flex items-center justify-center gap-0.5 overflow-x-auto no-scrollbar px-3">
+          <nav aria-label="Navegação principal" className="flex items-center justify-start gap-1 overflow-x-auto no-scrollbar px-3">
             {navModules.map((item) => (
               <Link
                 key={item.path}

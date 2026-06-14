@@ -220,22 +220,32 @@ export function StudentForm({ student, trigger }: StudentFormProps) {
         const updatedStudentId = student.id;
         toast({ title: `${labels.studentLabelSingular} atualizado(a)!`, description: `${formData.name} foi atualizado(a) com sucesso.` });
 
-        // Sync payments if it's or was a monthly plan
+        // Sync payments if it's or was a monthly plan AND billing-relevant fields changed
         const oldPlan = plans.find(p => p.id === student.planId);
         const newPlan = plans.find(p => p.id === data.planId);
         const wasMonthly = oldPlan?.billingType === 'monthly';
         const isMonthlyNow = newPlan?.billingType === 'monthly';
 
-        if (wasMonthly || isMonthlyNow) {
-          // 1. If it's monthly now, ensure the record for the start month exists
-          if (isMonthlyNow) {
+        const planChanged = (student.planId || null) !== (data.planId || null);
+        const dueDayChanged = (student.paymentDueDay || null) !== (data.paymentDueDay || null);
+        const discountChanged =
+          (student.discountType || null) !== (data.discountType || null) ||
+          Number(student.discountValue || 0) !== Number(data.discountValue || 0) ||
+          (student.discountDurationMonths || null) !== (data.discountDurationMonths || null) ||
+          (student.discountStartMonth || null) !== (data.discountStartMonth || null);
+
+        const needsSync = planChanged || dueDayChanged || discountChanged;
+
+        if ((wasMonthly || isMonthlyNow) && needsSync) {
+          // 1. If it's monthly now AND plan changed (or transitioned to monthly), ensure the record for the start month exists
+          if (isMonthlyNow && (planChanged || !wasMonthly)) {
             await generateMonthlyPayments(billingStartMonth);
           }
           
           // 2. Sync (update or delete unpaid)
           await syncStudentPayments({
             studentId: updatedStudentId,
-            planChanged: student.planId !== data.planId,
+            planChanged: planChanged,
             newPlanId: data.planId,
             newDueDay: data.paymentDueDay
           });

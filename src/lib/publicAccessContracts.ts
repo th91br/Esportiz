@@ -43,6 +43,12 @@ export interface PublicOwnerScope {
   scopedOwnerId: string | null;
 }
 
+export function buildStudentPortalUrl(origin: string, ownerId: string | null | undefined): string {
+  if (!isValidUuid(ownerId)) return '';
+
+  return `${origin.replace(/\/+$/, '')}/portal-aluno?ct=${ownerId}`;
+}
+
 function normalizePathname(pathname: string): string {
   const pathWithoutQuery = pathname.split('?')[0].split('#')[0] || '/';
   if (pathWithoutQuery === '/') return '/';

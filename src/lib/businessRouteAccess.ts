@@ -17,9 +17,6 @@ const ARENA_ROUTE_PREFIXES = [
   '/agenda',
   '/reservantes',
   '/comandas',
-  '/produtos',
-  '/vendas',
-  '/despesas',
 ];
 
 function normalizeBusinessType(value?: string | null): BusinessRouteType {

@@ -19,6 +19,7 @@ import { cn } from '@/lib/utils';
 import { getActiveMonthlyStudents } from '@/lib/studentHelpers';
 import { useBusinessContext } from '@/hooks/useBusinessContext';
 import { useRolePermissions } from '@/hooks/useRolePermissions';
+import { getSensitiveDataAccess } from '@/lib/sensitiveDataAccess';
 import { getLocalTodayDate, toLocalDateString } from '@/lib/dateUtils';
 import {
   BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
@@ -166,20 +167,21 @@ function getMonthRefsForPeriod(period: FilterPeriod): string[] | null {
 }
 
 export default function ReportsPage() {
+  const { labels, isArena, isSportSchool, businessType } = useBusinessContext();
+  const rolePermissions = useRolePermissions();
+  const { organizationRole } = rolePermissions;
+  const sensitiveDataAccess = getSensitiveDataAccess(organizationRole, businessType);
   const { students } = useStudents();
   const { plans } = usePlans();
   const { trainings } = useTrainings();
   const { attendance } = useAttendance();
-  const { payments } = usePayments();
+  const { payments } = usePayments({ enabled: sensitiveDataAccess.payments });
   const { courts } = useCourts();
   const { reservations } = useReservations();
-  const { sales } = useSales();
-  const { expenses } = useExpenses();
+  const { sales } = useSales({ enabled: sensitiveDataAccess.sales });
+  const { expenses } = useExpenses({ enabled: sensitiveDataAccess.expenses });
   const [period, setPeriod] = useState<FilterPeriod>('month');
   const [privacyMode, togglePrivacyMode] = usePrivacyMode();
-  const { labels, isArena, isSportSchool } = useBusinessContext();
-  const rolePermissions = useRolePermissions();
-  const { organizationRole } = rolePermissions;
   // Somente dono, gerente e financeiro veem dados financeiros completos
   const canViewFinancials = rolePermissions.can('reports', 'view_sensitive_financials');
   // Instructor e Receptionist veem apenas dados operacionais
@@ -216,13 +218,12 @@ export default function ReportsPage() {
   }, [payments, monthRefs, range, period]);
 
   const filteredSales = useMemo(() => {
-    if (!isArena) return [];
     if (!range) return sales;
     return sales.filter((s) => {
       const soldDate = s.soldAt.slice(0, 10);
       return soldDate >= range.start && soldDate <= range.end;
     });
-  }, [sales, range, isArena]);
+  }, [sales, range]);
 
   const filteredExpenses = useMemo(() => {
     if (!range) return expenses;
@@ -383,8 +384,8 @@ export default function ReportsPage() {
     if (directSalesTotal > 0) {
       origins.push(createOrigin({
         key: 'direct_sales',
-        name: 'Vendas Diretas',
-        description: 'Produtos vendidos no balcão',
+        name: isArena ? 'Vendas Diretas' : 'Venda de Produtos',
+        description: isArena ? 'Produtos vendidos no balcão' : 'Uniformes, equipamentos e acessórios',
         expected: directSalesTotal,
         received: directSalesTotal,
         overdue: 0,
@@ -560,12 +561,10 @@ export default function ReportsPage() {
         let received = monthPayments.reduce((acc, curr) => acc + (curr.paidAmount || 0), 0);
         
         // 2. Vendas de Produtos
-        if (isArena) {
-          const monthSales = sales.filter(s => s.soldAt.startsWith(monthRef));
-          const salesTotal = monthSales.reduce((acc, curr) => acc + curr.total, 0);
-          expected += salesTotal;
-          received += salesTotal;
-        }
+        const monthSales = sales.filter(s => s.soldAt.startsWith(monthRef));
+        const salesTotal = monthSales.reduce((acc, curr) => acc + curr.total, 0);
+        expected += salesTotal;
+        received += salesTotal;
 
         // 3. Reservas (Arena)
         if (isArena) {
@@ -611,12 +610,10 @@ export default function ReportsPage() {
           .reduce((acc, curr) => acc + (curr.paidAmount || 0), 0);
 
         // 2. Vendas de Produtos
-        if (isArena) {
-          const daySales = sales.filter(s => s.soldAt.startsWith(dateStr));
-          const salesTotal = daySales.reduce((acc, curr) => acc + curr.total, 0);
-          expected += salesTotal;
-          received += salesTotal;
-        }
+        const daySales = sales.filter(s => s.soldAt.startsWith(dateStr));
+        const salesTotal = daySales.reduce((acc, curr) => acc + curr.total, 0);
+        expected += salesTotal;
+        received += salesTotal;
 
         // 3. Reservas (Arena)
         if (isArena) {
@@ -725,10 +722,7 @@ export default function ReportsPage() {
         )}
 
         {/* KPIs Premium */}
-        <section className={cn(
-          "grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-4 xl:gap-3 animate-fade-in",
-          isSportSchool ? "xl:grid-cols-5" : "xl:grid-cols-7"
-        )}>
+        <section className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-4 xl:gap-3 animate-fade-in xl:grid-cols-7">
           <StatCard 
             title={`${labels.studentLabel} Base`} 
             value={privacyMode ? '••••' : totalActive} 
@@ -766,7 +760,7 @@ export default function ReportsPage() {
               progress={privacyMode ? undefined : { value: revenueProgress, label: "Meta vs Esperado" }}
             />
           )}
-          {canViewFinancials && !isSportSchool && (
+          {canViewFinancials && (
             <StatCard 
               title="Despesas (Pagas)" 
               value={privacyMode ? '••••' : formatCurrency(totalExpensesPaid)} 
@@ -775,7 +769,7 @@ export default function ReportsPage() {
               description={privacyMode ? '' : 'Total de despesas pagas'}
             />
           )}
-          {canViewFinancials && !isSportSchool && (
+          {canViewFinancials && (
             <StatCard 
               title="Resultado Líquido" 
               value={privacyMode ? '••••' : formatCurrency(netProfit)} 

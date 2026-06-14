@@ -59,7 +59,7 @@ describe('rolePermissions', () => {
     expect(isModuleAvailableForBusiness('payments', 'sport_school')).toBe(true);
     expect(isModuleAvailableForBusiness('payments', 'arena')).toBe(true);
 
-    expect(isModuleAvailableForBusiness('expenses', 'sport_school')).toBe(false);
+    expect(isModuleAvailableForBusiness('expenses', 'sport_school')).toBe(true);
     expect(isModuleAvailableForBusiness('expenses', 'arena')).toBe(true);
   });
 
@@ -104,10 +104,10 @@ describe('rolePermissions', () => {
 
   it('prepares finance role for financial modules without operational takeover', () => {
     expect(canPerformAction({ role: 'finance', businessType: 'arena', module: 'payments', action: 'receive_payment' })).toBe(true);
-    expect(canPerformAction({ role: 'financeiro', businessType: 'sport_school', module: 'expenses', action: 'view_sensitive_financials' })).toBe(false);
+    expect(canPerformAction({ role: 'financeiro', businessType: 'sport_school', module: 'expenses', action: 'view_sensitive_financials' })).toBe(true);
     expect(canPerformAction({ role: 'financeiro', businessType: 'arena', module: 'expenses', action: 'create' })).toBe(true);
     expect(canPerformAction({ role: 'finance', businessType: 'arena', module: 'reports', action: 'export' })).toBe(true);
-    expect(canAccessModule({ role: 'finance', businessType: 'sport_school', module: 'expenses' })).toBe(false);
+    expect(canAccessModule({ role: 'finance', businessType: 'sport_school', module: 'expenses' })).toBe(true);
     expect(canAccessModule({ role: 'finance', businessType: 'arena', module: 'expenses' })).toBe(true);
     expect(canAccessModule({ role: 'finance', businessType: 'sport_school', module: 'communication' })).toBe(false);
     expect(canAccessModule({ role: 'finance', businessType: 'arena', module: 'communication' })).toBe(false);
@@ -156,17 +156,44 @@ describe('rolePermissions', () => {
         '/aniversariantes',
         '/contratos',
         '/pagamentos',
+        '/produtos',
+        '/vendas',
+        '/despesas',
         '/relatorios',
         '/comunicacao',
         '/configuracoes',
       ],
-      denied: ['/agenda', '/reservantes', '/quadras', '/comandas', '/produtos', '/vendas', '/despesas'],
+      denied: ['/agenda', '/reservantes', '/quadras', '/comandas'],
+    });
+
+    expectRouteMatrix({
+      role: 'manager',
+      businessType: 'sport_school',
+      allowed: [
+        '/dashboard',
+        '/calendario',
+        '/alunos',
+        '/presenca',
+        '/planos',
+        '/modalidades',
+        '/turmas',
+        '/aniversariantes',
+        '/contratos',
+        '/pagamentos',
+        '/produtos',
+        '/vendas',
+        '/despesas',
+        '/relatorios',
+        '/comunicacao',
+        '/configuracoes',
+      ],
+      denied: ['/agenda', '/reservantes', '/quadras', '/comandas'],
     });
 
     expectRouteMatrix({
       role: 'receptionist',
       businessType: 'sport_school',
-      allowed: ['/dashboard', '/calendario', '/alunos', '/presenca', '/aniversariantes', '/pagamentos', '/comunicacao', '/configuracoes', '/relatorios'],
+      allowed: ['/dashboard', '/calendario', '/alunos', '/presenca', '/aniversariantes', '/pagamentos', '/produtos', '/vendas', '/comunicacao', '/configuracoes', '/relatorios'],
       denied: ['/planos', '/modalidades', '/turmas', '/contratos', '/despesas', '/agenda'],
     });
 
@@ -174,14 +201,14 @@ describe('rolePermissions', () => {
       role: 'instructor',
       businessType: 'sport_school',
       allowed: ['/dashboard', '/calendario', '/alunos', '/presenca', '/turmas', '/configuracoes'],
-      denied: ['/pagamentos', '/despesas', '/relatorios', '/planos', '/modalidades', '/contratos'],
+      denied: ['/pagamentos', '/produtos', '/vendas', '/despesas', '/relatorios', '/planos', '/modalidades', '/contratos'],
     });
 
     expectRouteMatrix({
       role: 'finance',
       businessType: 'sport_school',
-      allowed: ['/dashboard', '/pagamentos', '/relatorios', '/configuracoes'],
-      denied: ['/calendario', '/alunos', '/presenca', '/turmas', '/vendas', '/comunicacao', '/despesas'],
+      allowed: ['/dashboard', '/pagamentos', '/vendas', '/despesas', '/relatorios', '/configuracoes'],
+      denied: ['/calendario', '/alunos', '/presenca', '/turmas', '/produtos', '/comunicacao'],
     });
   });
 

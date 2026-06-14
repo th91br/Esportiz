@@ -18,7 +18,7 @@ import { getLocalTodayDate } from '@/lib/dateUtils';
 import { resolvePublicOwnerScope } from '@/lib/publicAccessContracts';
 import {
   isTodayOrPastDate,
-  isValidCpf,
+  isValidUuid,
 } from '@/lib/publicPortalSecurity';
 import { formatCpfInputValue } from '@/lib/cpfInput';
 import { getEndTime } from '@/data/mockData';
@@ -45,6 +45,19 @@ interface StudentPortalData {
   school_name: string;
   logo_url?: string | null;
   plan_name: string;
+  cpf?: string | null;
+  rg?: string | null;
+  address?: string | null;
+  city?: string | null;
+  state?: string | null;
+  zip_code?: string | null;
+  level?: string | null;
+  plan_price?: number;
+  modality_name?: string;
+  payment_due_day?: number | null;
+  signed?: boolean;
+  signed_at?: string | null;
+  signature_ip?: string | null;
 }
 
 interface StudentPortalBranding {
@@ -154,6 +167,62 @@ const getRequestStatus = (status: TrainingRequestLog['status']) => {
   }
 };
 
+// --- PIX EMV GENERATOR ---
+function getCRC16(payload: string): string {
+  let crc = 0xFFFF;
+  const polynomial = 0x1021;
+
+  for (let i = 0; i < payload.length; i++) {
+    const code = payload.charCodeAt(i);
+    for (let bit = 0; bit < 8; bit++) {
+      const bitOnCrc = ((crc >> 15) & 1) === 1;
+      const bitOnByte = ((code >> (7 - bit)) & 1) === 1;
+      crc = (crc << 1) & 0xFFFF;
+      if (bitOnCrc !== bitOnByte) {
+        crc ^= polynomial;
+      }
+    }
+  }
+
+  return crc.toString(16).toUpperCase().padStart(4, '0');
+}
+
+function formatEMVTag(tag: string, value: string): string {
+  const len = value.length.toString().padStart(2, '0');
+  return `${tag}${len}${value}`;
+}
+
+function cleanString(str: string): string {
+  return str
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^A-Z0-9 ]/gi, '')
+    .toUpperCase();
+}
+
+function generatePixCopiaCola(key: string, amount: number, receiver: string): string {
+  const gui = formatEMVTag('00', 'br.gov.bcb.pix');
+  const pixKey = formatEMVTag('01', key);
+  const merchantAccountInfo = formatEMVTag('26', `${gui}${pixKey}`);
+
+  const payloadFormat = formatEMVTag('00', '01');
+  const merchantCategory = formatEMVTag('52', '0000');
+  const currency = formatEMVTag('53', '986');
+  const amountStr = formatEMVTag('54', amount.toFixed(2));
+  const country = formatEMVTag('58', 'BR');
+
+  const cleanReceiver = cleanString(receiver || 'ESPORTIZ SPORT').substring(0, 25) || 'ESPORTIZ SPORT';
+  const merchantName = formatEMVTag('59', cleanReceiver);
+  const merchantCity = formatEMVTag('60', 'BRASILIA');
+
+  const txid = formatEMVTag('05', '***');
+  const additionalData = formatEMVTag('62', txid);
+
+  const payload = `${payloadFormat}${merchantAccountInfo}${merchantCategory}${currency}${amountStr}${country}${merchantName}${merchantCity}${additionalData}6304`;
+  const crc = getCRC16(payload);
+  return `${payload}${crc}`;
+}
+
 export default function StudentPortalPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const ownerId = searchParams.get('ct');
@@ -162,6 +231,11 @@ export default function StudentPortalPage() {
   const [loading, setLoading] = useState(true);
   const [authenticating, setAuthenticating] = useState(false);
   const [authenticated, setAuthenticated] = useState(false);
+
+  // Contract state
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'contract'>('dashboard');
+  const [agreed, setAgreed] = useState(false);
+  const [signing, setSigning] = useState(false);
 
   // Login Input State
   const [cpf, setCpf] = useState('');
@@ -184,6 +258,61 @@ export default function StudentPortalPage() {
   const [requestTime, setRequestTime] = useState('');
   const [requestMessage, setRequestMessage] = useState('');
   const [submittingRequest, setSubmittingRequest] = useState(false);
+
+  const getContractText = () => {
+    if (!student) return '';
+    return `CONTRATO DE PRESTAÇÃO DE SERVIÇOS DE ENSINO ESPORTIVO
+
+CONTRATANTE: ${student.name.toUpperCase()}
+CPF: ${student.cpf || 'Não informado'}
+RG: ${student.rg || 'Não informado'}
+Endereço: ${student.address || 'Não informado'}, ${student.city || 'Não informado'}-${student.state || 'UF'}
+
+CONTRATADA: ${(student.school_name || branding.school_name || 'Esportiz Sport').toUpperCase()}
+
+OBJETO: Prestação de serviços de aulas esportivas na modalidade ${student.modality_name || 'Esportiva'}.
+
+PLANO E VALORES: Plano "${student.plan_name}" no valor mensal de ${formatCurrency(student.plan_price || 0)}, com vencimento no dia ${student.payment_due_day || '10'} de cada mês.
+
+CONCORDÂNCIA E ASSINATURA: O contratante declara ter lido, compreendido e aceito todos os termos deste contrato de adesão eletrônico.`;
+  };
+
+  const handleSignContract = async () => {
+    if (!student || !scopedOwnerId) return;
+    if (!agreed) {
+      toast.error('Você precisa marcar a caixa de consentimento para assinar.');
+      return;
+    }
+
+    setSigning(true);
+    try {
+      const userAgent = navigator.userAgent;
+
+      const { data, error } = await supabase.rpc('sign_student_contract', {
+        p_student_id: student.id,
+        p_cpf: formatCpfInputValue(cpf),
+        p_birth_date: birthDate,
+        p_ip_address: '',
+        p_user_agent: userAgent,
+        p_contract_text: getContractText(),
+      });
+
+      if (error) throw error;
+
+      if (data && data.success) {
+        toast.success(data.message || 'Contrato assinado com sucesso!');
+        // Re-authenticate to reload student data and show signature status
+        await authenticate(cpf, birthDate);
+      } else {
+        toast.error(data?.error || 'Erro ao assinar o contrato.');
+      }
+    } catch (err) {
+      console.error('Erro ao assinar contrato:', err);
+      toast.error('Erro ao processar assinatura eletrônica.');
+    } finally {
+      setSigning(false);
+    }
+  };
 
   const schoolName = student?.school_name || branding.school_name || 'Esportiz Sport';
   const schoolLogoUrl = student?.logo_url || branding.logo_url || null;
@@ -213,7 +342,11 @@ export default function StudentPortalPage() {
       return;
     }
 
-    if (!isValidCpf(loginCpf)) {
+    // Format-only CPF validation for authentication (11 numeric digits, non-repeated)
+    // Check digit validation is NOT used here because students may have been registered
+    // with CPFs containing incorrect check digits. The server matches CPF against the stored record.
+    const cpfDigits = loginCpf.replace(/\D/g, '');
+    if (cpfDigits.length !== 11 || /^(\d)\1{10}$/.test(cpfDigits)) {
       toast.error('CPF inválido. Confira os números digitados.');
       return;
     }
@@ -248,6 +381,9 @@ export default function StudentPortalPage() {
             birthDate: loginBirthDate,
           }));
         }
+        if (scopedOwnerId) {
+          localStorage.setItem('esportiz:student-portal:last-owner-id', scopedOwnerId);
+        }
         setAuthenticated(true);
       } else {
         setTrainingRequests([]);
@@ -263,6 +399,16 @@ export default function StudentPortalPage() {
   }, [hasInvalidOwnerId, loadTrainingRequests, scopedOwnerId]);
 
   useEffect(() => {
+    if (!ownerId) {
+      const lastOwnerId = localStorage.getItem('esportiz:student-portal:last-owner-id');
+      if (lastOwnerId && isValidUuid(lastOwnerId)) {
+        setSearchParams({ ct: lastOwnerId });
+        return;
+      }
+      setLoading(false);
+      return;
+    }
+
     if (hasInvalidOwnerId || !scopedOwnerId) {
       setLoading(false);
       return;
@@ -279,7 +425,8 @@ export default function StudentPortalPage() {
     try {
       const parsed = JSON.parse(savedSession) as { cpf?: string; birthDate?: string };
 
-      if (parsed.cpf && parsed.birthDate && isValidCpf(parsed.cpf) && isTodayOrPastDate(parsed.birthDate)) {
+      const sessionCpfDigits = (parsed.cpf || '').replace(/\D/g, '');
+      if (parsed.cpf && parsed.birthDate && sessionCpfDigits.length === 11 && isTodayOrPastDate(parsed.birthDate)) {
         setCpf(formatCpfInputValue(parsed.cpf));
         setBirthDate(parsed.birthDate);
         authenticate(parsed.cpf, parsed.birthDate);
@@ -293,7 +440,7 @@ export default function StudentPortalPage() {
       sessionStorage.removeItem(sessionKey);
     }
     setLoading(false);
-  }, [authenticate, hasInvalidOwnerId, scopedOwnerId]);
+  }, [authenticate, hasInvalidOwnerId, ownerId, scopedOwnerId, setSearchParams]);
 
   useEffect(() => {
     if (hasInvalidOwnerId || !scopedOwnerId) return;
@@ -357,14 +504,24 @@ export default function StudentPortalPage() {
     setBirthDate('');
   };
 
-  const copyPixKey = (amountStr: string) => {
+  const copyPixKey = (amount: number, amountStr: string) => {
     if (!paymentConfig?.pix_key) {
       toast.info('Pix ainda não configurado pela escola.');
       return;
     }
 
-    navigator.clipboard.writeText(paymentConfig.pix_key);
-    toast.success(`Chave Pix copiada com sucesso! Insira o valor de ${amountStr}`);
+    try {
+      const brCode = generatePixCopiaCola(
+        paymentConfig.pix_key,
+        amount,
+        paymentConfig.pix_receiver || schoolName
+      );
+      navigator.clipboard.writeText(brCode);
+      toast.success(`Pix Copia e Cola gerado e copiado! Valor: ${amountStr}`);
+    } catch (err) {
+      console.error(err);
+      toast.error('Erro ao gerar código Pix Copia e Cola.');
+    }
   };
 
   const handleSubmitTrainingRequest = async (e: React.FormEvent) => {
@@ -435,6 +592,34 @@ export default function StudentPortalPage() {
               Acessar Portal Manualmente
             </Button>
           </CardFooter>
+        </Card>
+      </div>
+    );
+  }
+
+  if (!ownerId) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-primary/5 via-background to-background p-4 sm:p-6">
+        <Card className="max-w-md w-full border-border/80 card-elevated shadow-xl overflow-hidden">
+          <div className="h-1.5 bg-gradient-to-r from-primary via-emerald-500 to-primary" />
+          <CardHeader className="text-center space-y-3 pt-8">
+            <div className="mx-auto w-16 h-16 bg-primary/10 text-primary rounded-2xl flex items-center justify-center mb-1 border border-primary/15 shadow-sm animate-bounce">
+              <GraduationCap className="h-8 w-8 text-primary" />
+            </div>
+            <div>
+              <CardTitle className="text-xl sm:text-2xl font-black font-display text-foreground tracking-tight">Portal do Aluno</CardTitle>
+              <span className="text-[10px] text-muted-foreground font-bold tracking-wider uppercase font-display">Esportiz Sport</span>
+            </div>
+            <CardDescription className="text-sm">
+              Para acessar o portal do aluno, é necessário utilizar o link completo fornecido pela sua escola.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4 pb-8">
+            <div className="bg-muted/40 border border-border/60 rounded-xl p-4 text-xs text-muted-foreground leading-relaxed">
+              O link de acesso contém um identificador seguro da escola (ex: <code className="font-semibold text-foreground">?ct=...</code>) para garantir que você consulte suas informações com total segurança e privacidade.
+            </div>
+
+          </CardContent>
         </Card>
       </div>
     );
@@ -556,7 +741,44 @@ export default function StudentPortalPage() {
           </div>
         </div>
 
-        <Card className="border-primary/10 shadow-sm card-elevated overflow-hidden">
+        {/* TABS NAVEGAÇÃO */}
+        <div className="flex border-b border-border/50 gap-4 mb-2">
+          <button
+            onClick={() => setActiveTab('dashboard')}
+            className={cn(
+              "pb-3 text-sm font-bold border-b-2 px-1 transition-all",
+              activeTab === 'dashboard'
+                ? "border-primary text-primary"
+                : "border-transparent text-muted-foreground hover:text-foreground"
+            )}
+          >
+            Painel do Aluno
+          </button>
+          <button
+            onClick={() => setActiveTab('contract')}
+            className={cn(
+              "pb-3 text-sm font-bold border-b-2 px-1 transition-all flex items-center gap-1.5",
+              activeTab === 'contract'
+                ? "border-primary text-primary"
+                : "border-transparent text-muted-foreground hover:text-foreground"
+            )}
+          >
+            <ClipboardList className="h-4 w-4" /> Contrato de Adesão
+            {student.signed ? (
+              <Badge className="bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800 text-[10px] font-semibold">
+                Assinado
+              </Badge>
+            ) : (
+              <Badge className="bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 border-amber-200 dark:border-amber-800 text-[10px] font-semibold animate-pulse">
+                Pendente
+              </Badge>
+            )}
+          </button>
+        </div>
+
+        {activeTab === 'dashboard' && (
+          <div className="space-y-8">
+            <Card className="border-primary/10 shadow-sm card-elevated overflow-hidden">
           <div className="h-1 bg-gradient-to-r from-primary via-emerald-500 to-primary" />
           <CardHeader className="pb-4">
             <CardTitle className="text-base font-bold flex items-center gap-2">
@@ -895,7 +1117,10 @@ export default function StudentPortalPage() {
                                 size="sm" 
                                 variant="outline" 
                                 className="h-8 text-xs border-border/50 text-foreground"
-                                onClick={() => copyPixKey(formatCurrency(p.paid ? p.amount : isPartial ? remainingToPay : p.amount))}
+                                onClick={() => {
+                                  const amt = p.paid ? p.amount : isPartial ? remainingToPay : p.amount;
+                                  copyPixKey(amt, formatCurrency(amt));
+                                }}
                               >
                                 <Copy className="h-3 w-3 mr-1" /> Copiar Pix
                               </Button>
@@ -971,6 +1196,87 @@ export default function StudentPortalPage() {
             </CardFooter>
           </Card>
         </div>
+        </div>
+        )}
+
+        {activeTab === 'contract' && (
+          <div className="space-y-6 animate-in fade-in duration-300">
+            <Card className="border-border/50 shadow-md card-elevated overflow-hidden">
+              <div className="h-1 bg-gradient-to-r from-primary to-indigo-600" />
+              <CardHeader className="pb-4">
+                <CardTitle className="text-lg font-black font-display flex items-center gap-2">
+                  <ClipboardList className="h-5 w-5 text-primary" /> Contrato de Prestação de Serviços Esportivos
+                </CardTitle>
+                <CardDescription>
+                  Leia os termos do contrato e registre o seu aceite eletrônico.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                {/* O CONTRATO FORMATADO EM BOX SCROLLÁVEL */}
+                <div className="bg-muted/40 border border-border/60 rounded-xl p-5 sm:p-6 max-h-[380px] overflow-y-auto font-mono text-xs sm:text-sm text-foreground/80 leading-relaxed space-y-4 whitespace-pre-line shadow-inner">
+                  {getContractText()}
+                </div>
+
+                {/* STATUS DE ASSINATURA */}
+                {student.signed ? (
+                  <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-xl p-4 sm:p-5 flex flex-col sm:flex-row items-start sm:items-center gap-4 text-emerald-800 dark:text-emerald-400">
+                    <div className="h-10 w-10 bg-emerald-500/20 rounded-full flex items-center justify-center shrink-0">
+                      <CheckCircle2 className="h-6 w-6 text-emerald-600 dark:text-emerald-400" />
+                    </div>
+                    <div className="space-y-1">
+                      <h4 className="font-extrabold text-sm uppercase tracking-wider">Assinatura Digital Confirmada</h4>
+                      <p className="text-xs">
+                        Contrato assinado em <strong className="font-semibold">{student.signed_at ? new Date(student.signed_at).toLocaleString('pt-BR') : ''}</strong>
+                      </p>
+                      <p className="text-[10px] opacity-80 font-mono">
+                        Registro eletrônico armazenado em {student.signed_at
+                          ? new Date(student.signed_at).toLocaleString('pt-BR')
+                          : 'data não informada'}.
+                      </p>
+                      <p className="text-[10px] font-semibold text-emerald-700 dark:text-emerald-300 pt-1.5 border-t border-emerald-500/10 mt-1">
+                        Aceite eletrônico registrado pelo sistema.
+                      </p>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    <div className="flex items-start gap-3 bg-muted/20 border border-border/40 p-4 rounded-xl">
+                      <input
+                        type="checkbox"
+                        id="agree-contract"
+                        checked={agreed}
+                        onChange={(e) => setAgreed(e.target.checked)}
+                        className="h-5 w-5 rounded border-border text-primary focus:ring-primary cursor-pointer disabled:opacity-50 mt-0.5 shrink-0"
+                      />
+                      <label htmlFor="agree-contract" className="text-xs sm:text-sm text-muted-foreground select-none cursor-pointer leading-snug">
+                        Declaro que li, compreendi e concordo integralmente com todos os termos e cláusulas descritas neste instrumento de adesão esportiva.
+                      </label>
+                    </div>
+
+                    <div className="flex flex-col sm:flex-row items-center justify-between gap-4 bg-muted/10 p-4 border border-border/30 rounded-xl">
+                      <div className="text-left">
+                        <span className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider block">Registro de auditoria</span>
+                        <span className="text-xs font-semibold text-foreground">Data, navegador e conteúdo aceito serão armazenados.</span>
+                      </div>
+                      <Button
+                        onClick={handleSignContract}
+                        disabled={signing || !agreed}
+                        className="w-full sm:w-auto btn-primary-gradient font-bold px-6 py-5"
+                      >
+                        {signing ? 'Processando Assinatura...' : 'Confirmar e Assinar Eletronicamente'}
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+              <CardFooter className="bg-muted/10 border-t border-border/30 p-4 justify-center">
+                <span className="text-[10px] text-muted-foreground text-center max-w-lg">
+                  A assinatura eletrônica é pessoal e intransferível. A falsidade ideológica é crime previsto no Art. 299 do Código Penal Brasileiro.
+                </span>
+              </CardFooter>
+            </Card>
+          </div>
+        )}
       </main>
     </div>
   );

@@ -21,8 +21,9 @@ import { formatCurrency } from '@/lib/formatCurrency';
 import { supabase } from '@/integrations/supabase/client';
 import { useModalities } from '@/hooks/queries/useModalities';
 import { getLocalTodayDate } from '@/lib/dateUtils';
-import { useAuth } from '@/contexts/auth';
 import { syncAfterStudentMutation } from '@/lib/querySync';
+import { useProfile } from '@/hooks/queries/useProfile';
+import { buildStudentPortalUrl } from '@/lib/publicAccessContracts';
 
 interface StudentCardProps {
   student: Student;
@@ -52,7 +53,7 @@ export function StudentCard({ student, onClick }: StudentCardProps) {
   const studentModule = isArena ? 'reservants' : 'students';
   const canUpdateStudent = rolePermissions.can(studentModule, 'update');
   const canDeleteStudent = rolePermissions.can(studentModule, 'delete');
-  const { user } = useAuth();
+  const { profile } = useProfile();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const modality = student.modalityId ? modalities.find(m => m.id === student.modalityId) : undefined;
@@ -162,9 +163,17 @@ export function StudentCard({ student, onClick }: StudentCardProps) {
 
   const copyPortalLink = (e: React.MouseEvent) => {
     e.stopPropagation();
-    const url = user?.id
-      ? `${window.location.origin}/portal-aluno?ct=${user.id}`
-      : `${window.location.origin}/portal-aluno`;
+    const url = buildStudentPortalUrl(window.location.origin, profile?.owner_user_id);
+
+    if (!url) {
+      toast({
+        title: 'Portal do Aluno indisponível',
+        description: 'Não foi possível identificar a escola responsável. Atualize a página e tente novamente.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
     navigator.clipboard.writeText(url);
     toast({
       title: 'Portal do Aluno',

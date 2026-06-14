@@ -12,6 +12,7 @@ import { useCourts } from '@/hooks/queries/useCourts';
 import { useStudentTrainingRequests } from '@/hooks/queries/useStudentTrainingRequests';
 import { getEndTime } from '@/data/mockData';
 import { useBusinessContext } from '@/hooks/useBusinessContext';
+import { useRolePermissions } from '@/hooks/useRolePermissions';
 import { Link } from 'react-router-dom';
 import { toast } from '@/hooks/use-toast';
 import { getLocalTodayDate, toLocalDateString } from '@/lib/dateUtils';
@@ -54,8 +55,10 @@ export function NotificationBell() {
   const queryClient = useQueryClient();
   const { students } = useStudents();
   const { isArena } = useBusinessContext();
+  const rolePermissions = useRolePermissions();
+  const canViewPayments = rolePermissions.can('payments', 'view');
   const { trainings, deleteTraining, markTrainingComplete, unmarkTrainingComplete } = useTrainings();
-  const { payments } = usePayments();
+  const { payments } = usePayments({ enabled: canViewPayments });
   const { attendance } = useAttendance();
   const { reservations } = useReservations();
   const { courts } = useCourts();
@@ -139,8 +142,8 @@ export function NotificationBell() {
     return students.filter(s => s.active && s.birthDate && s.birthDate.slice(5) === monthDay);
   }, [students, today]);
 
-  const showOverdue = overduePayments.length > 0 && !dismissed.overduePayments;
-  const showUpcoming = upcomingPayments.length > 0;
+  const showOverdue = canViewPayments && overduePayments.length > 0 && !dismissed.overduePayments;
+  const showUpcoming = canViewPayments && upcomingPayments.length > 0;
 
   // Count only truly actionable items for the badge
   const totalActive = pendingTrainings.length
@@ -159,6 +162,11 @@ export function NotificationBell() {
     }
   }, [todayTrainings, dismissed.dismissDate]);
 
+  useEffect(() => {
+    if (!canViewPayments && tab === 'payments') {
+      setTab('all');
+    }
+  }, [canViewPayments, tab]);
 
 
   const dismissTraining = useCallback((id: string) => {
@@ -231,7 +239,7 @@ export function NotificationBell() {
 
   // Filter by tab
   const showTrainings = tab === 'all' || tab === 'trainings';
-  const showPayments = tab === 'all' || tab === 'payments';
+  const showPayments = canViewPayments && (tab === 'all' || tab === 'payments');
   const showBirthdays = tab === 'all' || tab === 'birthdays';
   const showStudentRequests = !isArena && showTrainings;
 
@@ -239,9 +247,12 @@ export function NotificationBell() {
   const tabCounts = {
     all: totalActive,
     trainings: pendingTrainings.length + (isArena ? 0 : studentTrainingRequests.length),
-    payments: (showOverdue ? 1 : 0) + (showUpcoming ? 1 : 0),
+    payments: canViewPayments ? (showOverdue ? 1 : 0) + (showUpcoming ? 1 : 0) : 0,
     birthdays: todayBirthdays.length,
   };
+  const notificationTabs: Array<'all' | 'trainings' | 'payments' | 'birthdays'> = isArena
+    ? (canViewPayments ? ['all', 'trainings', 'payments'] : ['all', 'trainings'])
+    : (canViewPayments ? ['all', 'trainings', 'payments', 'birthdays'] : ['all', 'trainings', 'birthdays']);
   const notificationTriggerLabel = totalActive > 0
     ? `Notificações (${totalActive} ativas)`
     : 'Notificações';
@@ -311,10 +322,7 @@ export function NotificationBell() {
 
         {/* Premium Tab System (Sticky) */}
         <div className="flex p-1.5 gap-1.5 bg-muted/30 border-b border-border/50 shrink-0">
-          {(isArena 
-            ? (['all', 'trainings', 'payments'] as const) 
-            : (['all', 'trainings', 'payments', 'birthdays'] as const)
-          ).map((t) => {
+          {notificationTabs.map((t) => {
             const labels = { all: 'Todas', trainings: isArena ? 'Horários' : 'Treinos', payments: 'Pagamentos', birthdays: 'Anivers.' };
             const ariaLabels = { all: 'Todas as notificações', trainings: isArena ? 'Notificações de horários' : 'Notificações de treinos', payments: 'Notificações de pagamentos', birthdays: 'Notificações de aniversariantes' };
             const isActive = tab === t;

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  buildStudentPortalUrl,
   getRouteAccessLevel,
   isKnownProtectedRoute,
   isKnownPublicRoute,
@@ -44,5 +45,14 @@ describe('publicAccessContracts', () => {
       hasInvalidOwnerId: false,
       scopedOwnerId: validOwnerId,
     });
+  });
+
+  it('builds the student portal link only with the organization owner scope', () => {
+    expect(buildStudentPortalUrl('https://www.esportiz.com.br', validOwnerId))
+      .toBe(`https://www.esportiz.com.br/portal-aluno?ct=${validOwnerId}`);
+    expect(buildStudentPortalUrl('https://www.esportiz.com.br/', validOwnerId))
+      .toBe(`https://www.esportiz.com.br/portal-aluno?ct=${validOwnerId}`);
+    expect(buildStudentPortalUrl('https://www.esportiz.com.br', 'member-user-id')).toBe('');
+    expect(buildStudentPortalUrl('https://www.esportiz.com.br', null)).toBe('');
   });
 });

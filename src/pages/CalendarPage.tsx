@@ -608,10 +608,19 @@ export default function CalendarPage() {
                                 iniciante: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400',
                                 intermediário: 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-400',
                                 avançado: 'bg-violet-100 text-violet-700 dark:bg-violet-900/40 dark:text-violet-400',
+                                avançado_pro: 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-400',
+                                profissional: 'bg-rose-100 text-rose-700 dark:bg-rose-900/40 dark:text-rose-400',
+                              };
+                              const levelLabels: Record<string, string> = {
+                                iniciante: 'Cat. D (Iniciante)',
+                                intermediário: 'Cat. C (Intermediário)',
+                                avançado: 'Cat. B (Avançado)',
+                                avançado_pro: 'Cat. A (Avançado PRO)',
+                                profissional: 'Profissional',
                               };
                               return (
                                 <span key={student.id} className={cn('px-2.5 py-1 rounded-full text-xs font-medium', levelColors[student.level] || 'bg-background')}>
-                                  {student.name.split(' ')[0]} · <span className="capitalize">{student.level}</span>
+                                  {student.name.split(' ')[0]} · <span>{levelLabels[student.level] || student.level}</span>
                                 </span>
                               );
                             })}

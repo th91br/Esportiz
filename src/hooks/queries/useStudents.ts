@@ -18,7 +18,7 @@ function asDiscountType(value: string | null): Student['discountType'] {
 }
 
 function asStudentLevel(value: string | null): Student['level'] {
-  return value === 'intermediário' || value === 'avançado' ? value : 'iniciante';
+  return value === 'intermediário' || value === 'avançado' || value === 'avançado_pro' || value === 'profissional' ? value : 'iniciante';
 }
 
 function getErrorMessage(error: unknown) {

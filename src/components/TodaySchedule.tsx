@@ -71,7 +71,13 @@ export function TodaySchedule() {
                     </div>
                     <div className="flex items-center -space-x-1.5 pl-3 border-l border-border/50">
                       {trainingStudents.slice(0, 4).map(s => {
-                        const lc: Record<string, string> = { iniciante: 'bg-emerald-500', intermediário: 'bg-amber-500', avançado: 'bg-violet-500' };
+                        const lc: Record<string, string> = {
+                          iniciante: 'bg-emerald-500',
+                          intermediário: 'bg-amber-500',
+                          avançado: 'bg-violet-500',
+                          avançado_pro: 'bg-indigo-500',
+                          profissional: 'bg-rose-500'
+                        };
                         return <div key={s.id} className={cn('h-7 w-7 rounded-full border-2 border-background flex items-center justify-center text-[10px] font-bold text-white shadow-sm', lc[s.level] || 'bg-slate-500')} title={`${s.name} - ${s.level}`}>
                           {s.name.charAt(0).toUpperCase()}
                         </div>

@@ -190,10 +190,7 @@ export function StudentForm({ student, trigger }: StudentFormProps) {
         name: formData.name,
         phone: formData.phone,
         email: formData.email || null,
-        level: (isArena ? 'iniciante' : (
-          formData.level === 'fluente' || formData.level === 'avançado' ? 'avançado' :
-          formData.level === 'pré-intermediário' || formData.level === 'intermediário' || formData.level === 'intermediário avançado' ? 'intermediário' : 'iniciante'
-        )) as Student['level'],
+        level: (isArena ? 'iniciante' : formData.level) as Student['level'],
         planId: formData.planId && formData.planId !== 'none' && formData.planId !== 'no_plan' ? formData.planId : null,
         paymentDueDay: derivedDueDay || null,
         birthDate: formData.birthDate || null,
@@ -541,9 +538,11 @@ export function StudentForm({ student, trigger }: StudentFormProps) {
                           <SelectTrigger><SelectValue placeholder="Selecione o nível" /></SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          <SelectItem value="iniciante">Iniciante</SelectItem>
-                          <SelectItem value="intermediário">Intermediário</SelectItem>
-                          <SelectItem value="avançado">Avançado</SelectItem>
+                          <SelectItem value="iniciante">Categoria D (Iniciante)</SelectItem>
+                          <SelectItem value="intermediário">Categoria C (Intermediário)</SelectItem>
+                          <SelectItem value="avançado">Categoria B (Avançado)</SelectItem>
+                          <SelectItem value="avançado_pro">Categoria A (Avançado PRO)</SelectItem>
+                          <SelectItem value="profissional">Categoria Profissional</SelectItem>
                         </SelectContent>
                       </Select>
                       <FormMessage />

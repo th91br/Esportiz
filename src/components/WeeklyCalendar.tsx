@@ -116,7 +116,13 @@ export function WeeklyCalendar() {
                           </div>
                           <div className="hidden sm:flex items-center gap-1">
                             {trainingStudents.slice(0, 4).map((s) => {
-                              const lc: Record<string, string> = { iniciante: 'bg-emerald-500', intermediário: 'bg-amber-500', avançado: 'bg-violet-500' };
+                              const lc: Record<string, string> = {
+                                iniciante: 'bg-emerald-500',
+                                intermediário: 'bg-amber-500',
+                                avançado: 'bg-violet-500',
+                                avançado_pro: 'bg-indigo-500',
+                                profissional: 'bg-rose-500'
+                              };
                               return <span key={s.id} className={cn('h-2 w-2 rounded-full', lc[s.level] || 'bg-muted')} title={`${s.name} - ${s.level}`} />;
                             })}
                           </div>

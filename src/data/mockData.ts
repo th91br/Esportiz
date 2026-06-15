@@ -9,7 +9,7 @@ export interface Plan {
   billingType: 'monthly' | 'per_session';
 }
 
-export type StudentLevel = 'iniciante' | 'intermediário' | 'avançado';
+export type StudentLevel = 'iniciante' | 'intermediário' | 'avançado' | 'avançado_pro' | 'profissional';
 export type StudentDiscountType = 'percentage' | 'fixed';
 
 export interface Student {

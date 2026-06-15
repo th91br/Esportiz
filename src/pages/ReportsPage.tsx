@@ -36,6 +36,8 @@ const COLORS = {
   amber: 'hsl(38, 92%, 50%)',
   violet: 'hsl(263, 70%, 55%)',
   slate: 'hsl(215, 16%, 47%)',
+  indigo: 'hsl(239, 84%, 60%)',
+  rose: 'hsl(346, 84%, 60%)',
 };
 
 type FilterPeriod = 'day' | 'week' | 'month' | 'year' | 'all';
@@ -535,10 +537,12 @@ export default function ReportsPage() {
   }];
 
   const levelData = [
-    { name: 'Iniciante', value: activeMonthly.filter((s) => s.level === 'iniciante').length, color: COLORS.emerald },
-    { name: 'Intermediário', value: activeMonthly.filter((s) => s.level === 'intermediário').length, color: COLORS.amber },
-    { name: 'Avançado', value: activeMonthly.filter((s) => s.level === 'avançado').length, color: COLORS.violet },
-  ];
+    { name: 'Categoria D (Iniciante)', value: activeMonthly.filter((s) => s.level === 'iniciante').length, color: COLORS.emerald },
+    { name: 'Categoria C (Intermediário)', value: activeMonthly.filter((s) => s.level === 'intermediário').length, color: COLORS.amber },
+    { name: 'Categoria B (Avançado)', value: activeMonthly.filter((s) => s.level === 'avançado').length, color: COLORS.violet },
+    { name: 'Categoria A (Avançado PRO)', value: activeMonthly.filter((s) => s.level === 'avançado_pro').length, color: COLORS.indigo },
+    { name: 'Categoria Profissional', value: activeMonthly.filter((s) => s.level === 'profissional').length, color: COLORS.rose },
+  ].filter(d => d.value > 0);
 
   const studentKey = labels.studentLabel.toLowerCase();
   type PlanDistributionDatum = { name: string } & Record<string, string | number>;

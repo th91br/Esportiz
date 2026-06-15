@@ -23,6 +23,14 @@ import { formatDateOnlyBr, getLocalTodayDate } from '@/lib/dateUtils';
 import { useBusinessContext } from '@/hooks/useBusinessContext';
 import { useRolePermissions } from '@/hooks/useRolePermissions';
 
+const levelLabels: Record<string, string> = {
+  iniciante: 'Categoria D (Iniciante)',
+  intermediário: 'Categoria C (Intermediário)',
+  avançado: 'Categoria B (Avançado)',
+  avançado_pro: 'Categoria A (Avançado PRO)',
+  profissional: 'Categoria Profissional',
+};
+
 const DEFAULT_CONTRACT_CITY = 'Balneario Camboriu';
 const WEEKDAY_NAMES = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sab'];
 
@@ -174,7 +182,7 @@ export default function StudentProfilePage() {
             {!isArena && (
               <div className="flex flex-wrap gap-2 pt-1">
                 <span className="px-3 py-1 rounded-md text-xs font-semibold bg-muted border">
-                  Nível: <span className="capitalize text-foreground">{student.level}</span>
+                  Nível: <span className="text-foreground">{levelLabels[student.level] || student.level}</span>
                 </span>
                 {modality && (
                   <span className="px-3 py-1 rounded-md text-xs font-semibold border flex items-center gap-1.5 bg-background">
@@ -507,7 +515,7 @@ export default function StudentProfilePage() {
 
                     <h3 className="font-bold text-base mt-6 mb-2">CLÁUSULA 1ª - DO OBJETO E MODALIDADE</h3>
                     <p className="mb-6 text-justify">
-                      A prestação de serviços abrange a modalidade de <strong>{modality?.name || '__________'}</strong> no nível <em>{student.level}</em>. {clauseObject}
+                      A prestação de serviços abrange a modalidade de <strong>{modality?.name || '__________'}</strong> no nível <em>{levelLabels[student.level] || student.level}</em>. {clauseObject}
                     </p>
 
                     <h3 className="font-bold text-base mt-6 mb-2">CLÁUSULA 2ª - DOS VALORES E {labels.planLabelSingular.toUpperCase()}</h3>
@@ -573,7 +581,7 @@ export default function StudentProfilePage() {
 
         <h3 className="font-bold text-lg mt-8 mb-3">CLÁUSULA 1ª - DO OBJETO E MODALIDADE</h3>
         <p className="mb-6 text-justify text-base leading-relaxed">
-          A prestação de serviços abrange a modalidade de <strong>{modality?.name || '__________'}</strong> no nível <em>{student.level}</em>. {clauseObject}
+          A prestação de serviços abrange a modalidade de <strong>{modality?.name || '__________'}</strong> no nível <em>{levelLabels[student.level] || student.level}</em>. {clauseObject}
         </p>
 
         <h3 className="font-bold text-lg mt-8 mb-3">CLÁUSULA 2ª - DOS VALORES E {labels.planLabelSingular.toUpperCase()}</h3>

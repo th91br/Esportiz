@@ -24,6 +24,14 @@ import { useBusinessContext } from '@/hooks/useBusinessContext';
 import { useRolePermissions } from '@/hooks/useRolePermissions';
 import { cn } from '@/lib/utils';
 
+const levelLabels: Record<string, string> = {
+  iniciante: 'Categoria D (Iniciante)',
+  intermediário: 'Categoria C (Intermediário)',
+  avançado: 'Categoria B (Avançado)',
+  avançado_pro: 'Categoria A (Avançado PRO)',
+  profissional: 'Categoria Profissional',
+};
+
 export default function StudentsPage() {
   const { students, loadingStudents } = useStudents();
   const { plans, loadingPlans } = usePlans();
@@ -92,7 +100,7 @@ export default function StudentsPage() {
                   'Email': s.email || '',
                   [labels.planLabelSingular]: plan?.name || `Sem ${labels.planLabelSingular.toLowerCase()}`,
                   [labels.modalityLabelSingular]: modality?.name || '',
-                  ...(!isArena ? { 'Nível': s.level || '' } : {}),
+                  ...(!isArena ? { 'Nível': levelLabels[s.level] || s.level || '' } : {}),
                   [labels.groupLabel]: studentGroups,
                   'Dia Vencimento': s.paymentDueDay || '',
                   'Data de Entrada': s.joinDate ? new Date(s.joinDate).toLocaleDateString('pt-BR') : '',
@@ -148,9 +156,11 @@ export default function StudentsPage() {
                   <SelectTrigger className="w-full lg:w-[140px]"><SelectValue placeholder="Nível" /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">Todos os níveis</SelectItem>
-                    <SelectItem value="iniciante">Iniciante</SelectItem>
-                    <SelectItem value="intermediário">Intermediário</SelectItem>
-                    <SelectItem value="avançado">Avançado</SelectItem>
+                    <SelectItem value="iniciante">Categoria D (Iniciante)</SelectItem>
+                    <SelectItem value="intermediário">Categoria C (Intermediário)</SelectItem>
+                    <SelectItem value="avançado">Categoria B (Avançado)</SelectItem>
+                    <SelectItem value="avançado_pro">Categoria A (Avançado PRO)</SelectItem>
+                    <SelectItem value="profissional">Categoria Profissional</SelectItem>
                   </SelectContent>
                 </Select>
               )}

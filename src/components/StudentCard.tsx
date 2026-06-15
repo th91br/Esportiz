@@ -34,12 +34,16 @@ const levelStyles = {
   iniciante: 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/20 dark:text-emerald-400 border-emerald-200/50',
   intermediário: 'bg-amber-50 text-amber-700 dark:bg-amber-950/20 dark:text-amber-400 border-amber-200/50',
   avançado: 'bg-violet-50 text-violet-700 dark:bg-violet-950/20 dark:text-violet-400 border-violet-200/50',
+  avançado_pro: 'bg-indigo-50 text-indigo-700 dark:bg-indigo-950/20 dark:text-indigo-400 border-indigo-200/50',
+  profissional: 'bg-rose-50 text-rose-700 dark:bg-rose-950/20 dark:text-rose-400 border-rose-200/50',
 };
 
 const levelLabels = {
-  iniciante: 'Iniciante',
-  intermediário: 'Intermediário',
-  avançado: 'Avançado',
+  iniciante: 'Categoria D (Iniciante)',
+  intermediário: 'Categoria C (Intermediário)',
+  avançado: 'Categoria B (Avançado)',
+  avançado_pro: 'Categoria A (Avançado PRO)',
+  profissional: 'Categoria Profissional',
 };
 
 export function StudentCard({ student, onClick }: StudentCardProps) {

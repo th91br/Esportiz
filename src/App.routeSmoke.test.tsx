@@ -74,6 +74,18 @@ vi.mock("./pages/PaymentsPage", () => ({
   default: () => <main data-testid="route-payments">Pagamentos Esportiz</main>,
 }));
 
+vi.mock("./pages/ProductsPage", () => ({
+  default: () => <main data-testid="route-products">Produtos Esportiz</main>,
+}));
+
+vi.mock("./pages/ExpensesPage", () => ({
+  default: () => <main data-testid="route-expenses">Despesas Esportiz</main>,
+}));
+
+vi.mock("./pages/SalesPage", () => ({
+  default: () => <main data-testid="route-sales">Vendas Esportiz</main>,
+}));
+
 function renderRoute(pathname: string) {
   return render(
     <AppErrorBoundary>
@@ -110,6 +122,9 @@ describe("critical route smoke tests", () => {
     ["/comandas", "route-comandas"],
     ["/configuracoes", "route-settings"],
     ["/pagamentos", "route-payments"],
+    ["/produtos", "route-products"],
+    ["/despesas", "route-expenses"],
+    ["/vendas", "route-sales"],
   ])("renders protected critical route %s without the app error boundary", async (pathname, testId) => {
     renderRoute(pathname);
 

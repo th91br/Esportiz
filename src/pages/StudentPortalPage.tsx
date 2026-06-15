@@ -14,7 +14,11 @@ import {
 } from 'lucide-react';
 import { formatCurrency } from '@/lib/formatCurrency';
 import { cn } from '@/lib/utils';
-import { getLocalTodayDate } from '@/lib/dateUtils';
+import {
+  formatDateOnlyBr,
+  getLocalTodayDate,
+  parseBrazilianDateToIso,
+} from '@/lib/dateUtils';
 import { resolvePublicOwnerScope } from '@/lib/publicAccessContracts';
 import {
   isTodayOrPastDate,
@@ -22,21 +26,6 @@ import {
 } from '@/lib/publicPortalSecurity';
 import { formatCpfInputValue } from '@/lib/cpfInput';
 import { getEndTime } from '@/data/mockData';
-
-function parseDateFromBrFormat(brDate: string): string | null {
-  const clean = brDate.replace(/\D/g, '');
-  if (clean.length !== 8) return null;
-  const day = clean.slice(0, 2);
-  const month = clean.slice(2, 4);
-  const year = clean.slice(4, 8);
-  return `${year}-${month}-${day}`;
-}
-
-function formatIsoDateToBr(isoDate: string): string {
-  if (!isoDate || !/^\d{4}-\d{2}-\d{2}$/.test(isoDate)) return '';
-  const [year, month, day] = isoDate.split('-');
-  return `${day}/${month}/${year}`;
-}
 
 interface AttendanceLog {
   date: string;
@@ -301,12 +290,18 @@ CONCORDÂNCIA E ASSINATURA: O contratante declara ter lido, compreendido e aceit
 
     setSigning(true);
     try {
+      const isoBirthDate = parseBrazilianDateToIso(birthDate);
+      if (!isoBirthDate) {
+        toast.error('Data de nascimento inválida. Entre novamente no portal.');
+        return;
+      }
+
       const userAgent = navigator.userAgent;
 
       const { data, error } = await supabase.rpc('sign_student_contract', {
         p_student_id: student.id,
         p_cpf: formatCpfInputValue(cpf),
-        p_birth_date: birthDate,
+        p_birth_date: isoBirthDate,
         p_ip_address: '',
         p_user_agent: userAgent,
         p_contract_text: getContractText(),
@@ -335,9 +330,14 @@ CONCORDÂNCIA E ASSINATURA: O contratante declara ter lido, compreendido e aceit
   const loadTrainingRequests = useCallback(async (loginCpf: string, loginBirthDate: string) => {
     if (!scopedOwnerId) return;
 
+    const isoBirthDate = parseBrazilianDateToIso(loginBirthDate);
+    if (!isoBirthDate) {
+      throw new Error('Data de nascimento inválida.');
+    }
+
     const { data, error } = await supabase.rpc('get_student_portal_requests', {
       p_cpf: formatCpfInputValue(loginCpf),
-      p_birth_date: loginBirthDate,
+      p_birth_date: isoBirthDate,
       p_user_id: scopedOwnerId,
     });
 
@@ -366,7 +366,7 @@ CONCORDÂNCIA E ASSINATURA: O contratante declara ter lido, compreendido e aceit
       return;
     }
 
-    const isoBirthDate = parseDateFromBrFormat(loginBirthDateBr);
+    const isoBirthDate = parseBrazilianDateToIso(loginBirthDateBr);
     if (!isoBirthDate || !isTodayOrPastDate(isoBirthDate)) {
       toast.error('Data de nascimento inválida. Use o formato DD/MM/AAAA.');
       return;
@@ -447,10 +447,10 @@ CONCORDÂNCIA E ASSINATURA: O contratante declara ter lido, compreendido e aceit
         let brBirthDate = '';
         if (/^\d{4}-\d{2}-\d{2}$/.test(parsed.birthDate)) {
           isoBirthDate = parsed.birthDate;
-          brBirthDate = formatIsoDateToBr(parsed.birthDate);
+          brBirthDate = formatDateOnlyBr(parsed.birthDate);
         } else if (/^\d{2}\/\d{2}\/\d{4}$/.test(parsed.birthDate)) {
           brBirthDate = parsed.birthDate;
-          isoBirthDate = parseDateFromBrFormat(parsed.birthDate) || '';
+          isoBirthDate = parseBrazilianDateToIso(parsed.birthDate) || '';
         }
 
         if (sessionCpfDigits.length === 11 && isoBirthDate && isTodayOrPastDate(isoBirthDate)) {
@@ -573,9 +573,15 @@ CONCORDÂNCIA E ASSINATURA: O contratante declara ter lido, compreendido e aceit
 
     setSubmittingRequest(true);
     try {
+      const isoBirthDate = parseBrazilianDateToIso(birthDate);
+      if (!isoBirthDate) {
+        toast.error('Data de nascimento inválida. Entre novamente no portal.');
+        return;
+      }
+
       const { data, error } = await supabase.rpc('submit_student_training_request', {
         p_cpf: cpf,
-        p_birth_date: birthDate,
+        p_birth_date: isoBirthDate,
         p_user_id: scopedOwnerId,
         p_request_type: requestType,
         p_preferred_date: requestDate || null,

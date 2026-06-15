@@ -19,9 +19,9 @@ import {
 } from 'lucide-react';
 import { formatCurrency } from '@/lib/formatCurrency';
 import { cn } from '@/lib/utils';
+import { formatDateOnlyBr, getLocalTodayDate } from '@/lib/dateUtils';
 import { useBusinessContext } from '@/hooks/useBusinessContext';
 import { useRolePermissions } from '@/hooks/useRolePermissions';
-import { getLocalTodayDate } from '@/lib/dateUtils';
 
 const DEFAULT_CONTRACT_CITY = 'Balneario Camboriu';
 const WEEKDAY_NAMES = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sab'];
@@ -220,11 +220,11 @@ export default function StudentProfilePage() {
                     </div>
                     <div>
                       <p className="text-sm font-medium text-muted-foreground mb-1">Data de Nascimento</p>
-                      <p className="text-sm font-semibold">{student.birthDate ? new Date(student.birthDate).toLocaleDateString('pt-BR') : 'Não informado'}</p>
+                      <p className="text-sm font-semibold">{student.birthDate ? formatDateOnlyBr(student.birthDate) || 'Não informado' : 'Não informado'}</p>
                     </div>
                     <div>
                       <p className="text-sm font-medium text-muted-foreground mb-1">Entrada no {labels.ctLabel}</p>
-                      <p className="text-sm font-semibold">{new Date(student.joinDate).toLocaleDateString('pt-BR')}</p>
+                      <p className="text-sm font-semibold">{formatDateOnlyBr(student.joinDate)}</p>
                     </div>
                   </div>
                   <div className="pt-2 border-t">
@@ -381,7 +381,7 @@ export default function StudentProfilePage() {
                                 <div className="flex flex-col">
                                   <span className="font-semibold text-sm">{trainingTitle}</span>
                                   <span className="text-xs text-muted-foreground">
-                                    {new Date(training.date).toLocaleDateString('pt-BR')} às {training.time}
+                                    {formatDateOnlyBr(training.date)} às {training.time}
                                   </span>
                                 </div>
                                 <div className="shrink-0">

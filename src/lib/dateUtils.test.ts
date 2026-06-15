@@ -1,5 +1,10 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { getLocalTodayDate, toLocalDateString } from './dateUtils';
+import {
+  formatDateOnlyBr,
+  getLocalTodayDate,
+  parseBrazilianDateToIso,
+  toLocalDateString,
+} from './dateUtils';
 
 describe('dateUtils', () => {
   afterEach(() => {
@@ -16,5 +21,14 @@ describe('dateUtils', () => {
     vi.setSystemTime(new Date(2026, 4, 18, 22, 30));
 
     expect(getLocalTodayDate()).toBe('2026-05-18');
+  });
+
+  it('formats database date-only values without shifting the calendar day', () => {
+    expect(formatDateOnlyBr('2010-05-21')).toBe('21/05/2010');
+  });
+
+  it('converts a valid Brazilian date to the database ISO format', () => {
+    expect(parseBrazilianDateToIso('21/05/2010')).toBe('2010-05-21');
+    expect(parseBrazilianDateToIso('31/02/2010')).toBeNull();
   });
 });

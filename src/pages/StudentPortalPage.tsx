@@ -18,7 +18,8 @@ import {
 import QRCode from 'qrcode';
 import { 
   CheckCircle2, XCircle, LogOut, Clock, Calendar, GraduationCap, 
-  DollarSign, MapPin, Copy, QrCode, ClipboardList, BookOpen, UserCheck, ShieldAlert 
+  DollarSign, MapPin, Copy, QrCode, ClipboardList, BookOpen, UserCheck, ShieldAlert,
+  Phone, MessageSquare
 } from 'lucide-react';
 import { formatCurrency } from '@/lib/formatCurrency';
 import { cn } from '@/lib/utils';
@@ -34,6 +35,7 @@ import {
 } from '@/lib/publicPortalSecurity';
 import { formatCpfInputValue } from '@/lib/cpfInput';
 import { getEndTime } from '@/data/mockData';
+import { buildWhatsAppUrl, normalizeWhatsAppPhone } from '@/lib/communicationContracts';
 
 interface AttendanceLog {
   date: string;
@@ -56,6 +58,7 @@ interface StudentPortalData {
   name: string;
   school_name: string;
   logo_url?: string | null;
+  school_whatsapp?: string | null;
   plan_name: string;
   cpf?: string | null;
   rg?: string | null;
@@ -75,6 +78,7 @@ interface StudentPortalData {
 interface StudentPortalBranding {
   school_name: string;
   logo_url: string | null;
+  school_whatsapp?: string | null;
 }
 
 interface PaymentConfig {
@@ -263,6 +267,8 @@ export default function StudentPortalPage() {
   const [pixCode, setPixCode] = useState('');
   const [generatingQrCode, setGeneratingQrCode] = useState(false);
   const [adhocInputAmount, setAdhocInputAmount] = useState<string>('');
+  const [paymentValueMode, setPaymentValueMode] = useState<'remaining' | 'custom'>('remaining');
+  const [customAmountInput, setCustomAmountInput] = useState<string>('');
 
   // Login Input State
   const [cpf, setCpf] = useState('');
@@ -510,6 +516,7 @@ CONCORDÂNCIA E ASSINATURA: O contratante declara ter lido, compreendido e aceit
           setBranding({
             school_name: data.school_name || 'Esportiz Sport',
             logo_url: data.logo_url || null,
+            school_whatsapp: data.school_whatsapp || null,
           });
         }
       } catch (error) {
@@ -686,9 +693,99 @@ CONCORDÂNCIA E ASSINATURA: O contratante declara ter lido, compreendido e aceit
       setPixQrCodeUrl(qrDataUrl);
     } catch (err) {
       console.error('Erro ao gerar QRCode adhoc:', err);
+    setGeneratingQrCode(false);
+    }
+  };
+
+  const handleCustomAmountChange = async (val: string, maxAmount: number) => {
+    const cleanVal = val.replace(/\D/g, '');
+    if (!cleanVal) {
+      setCustomAmountInput('');
+      setPixCode('');
+      setPixQrCodeUrl('');
+      return;
+    }
+
+    let numericVal = Number(cleanVal) / 100;
+    
+    if (numericVal > maxAmount) {
+      numericVal = maxAmount;
+      toast.info(`O valor máximo permitido para esta fatura é ${formatCurrency(maxAmount)}`);
+    }
+
+    const formatted = formatCurrency(numericVal);
+    setCustomAmountInput(formatted);
+
+    if (numericVal <= 0) {
+      setPixCode('');
+      setPixQrCodeUrl('');
+      return;
+    }
+
+    setGeneratingQrCode(true);
+    try {
+      const brCode = generatePixCopiaCola(
+        paymentConfig!.pix_key!,
+        numericVal,
+        paymentConfig!.pix_receiver || schoolName
+      );
+      setPixCode(brCode);
+      const qrDataUrl = await QRCode.toDataURL(brCode, { width: 260, margin: 1 });
+      setPixQrCodeUrl(qrDataUrl);
+    } catch (err) {
+      console.error('Erro ao gerar QRCode customizado:', err);
     } finally {
       setGeneratingQrCode(false);
     }
+  };
+
+  const handleTogglePaymentValueMode = async (mode: 'remaining' | 'custom') => {
+    setPaymentValueMode(mode);
+    if (!selectedPixPayment) return;
+
+    if (mode === 'remaining') {
+      setGeneratingQrCode(true);
+      try {
+        const brCode = generatePixCopiaCola(
+          paymentConfig!.pix_key!,
+          selectedPixPayment.amount,
+          paymentConfig!.pix_receiver || schoolName
+        );
+        setPixCode(brCode);
+        const qrDataUrl = await QRCode.toDataURL(brCode, { width: 260, margin: 1 });
+        setPixQrCodeUrl(qrDataUrl);
+      } catch (err) {
+        console.error('Erro ao gerar QRCode:', err);
+      } finally {
+        setGeneratingQrCode(false);
+      }
+    } else {
+      setCustomAmountInput('');
+      setPixCode('');
+      setPixQrCodeUrl('');
+    }
+  };
+
+  const handleConfirmPaymentWhatsApp = () => {
+    const schoolPhoneNum = student?.school_whatsapp || branding?.school_whatsapp || (paymentConfig?.pix_key && paymentConfig.pix_key.replace(/\D/g, '').length === 11 ? paymentConfig.pix_key : null);
+
+    if (!schoolPhoneNum) {
+      toast.error('Telefone de WhatsApp da escola não cadastrado na secretaria.');
+      return;
+    }
+
+    const valorPago = selectedPixPayment?.isAdhoc 
+      ? adhocInputAmount 
+      : paymentValueMode === 'custom' 
+        ? customAmountInput 
+        : selectedPixPayment?.amountStr;
+
+    const referencia = selectedPixPayment?.isAdhoc ? 'Pagamento Avulso' : `Mensalidade - ${selectedPixPayment?.monthRef}`;
+    const studentName = student?.name || 'Não identificado';
+    const messageText = `Olá! Realizei o pagamento via Pix no valor de ${valorPago} referente a: *${referencia}* (Aluno: ${studentName}). Segue o comprovante em anexo.`;
+    
+    const url = buildWhatsAppUrl(schoolPhoneNum.replace(/\D/g, ''), messageText);
+    window.open(url, '_blank');
   };
 
   const handleSubmitTrainingRequest = async (e: React.FormEvent) => {
@@ -852,7 +949,20 @@ CONCORDÂNCIA E ASSINATURA: O contratante declara ter lido, compreendido e aceit
               </Button>
             </form>
           </CardContent>
-          <CardFooter className="bg-muted/10 border-t border-border/40 p-4 justify-center">
+          <CardFooter className="bg-muted/10 border-t border-border/40 p-4 flex flex-col gap-2.5 justify-center">
+            {branding.school_whatsapp && (
+              <button
+                type="button"
+                onClick={() => {
+                  const digits = branding.school_whatsapp!.replace(/\D/g, '');
+                  const text = encodeURIComponent('Olá! Gostaria de ajuda para acessar o Portal do Aluno.');
+                  window.open(`https://wa.me/55${digits}?text=${text}`, '_blank');
+                }}
+                className="text-[11px] text-primary hover:underline font-bold flex items-center justify-center gap-1.5 transition-colors"
+              >
+                <MessageSquare className="h-3.5 w-3.5" /> Dificuldades para acessar? Chamar no WhatsApp
+              </button>
+            )}
             <span className="text-[10px] text-muted-foreground/80 leading-normal text-center max-w-xs">
               Esportiz Security: Suas informações cadastrais e financeiras estão encriptadas com criptografia de ponta.
             </span>
@@ -909,6 +1019,20 @@ CONCORDÂNCIA E ASSINATURA: O contratante declara ter lido, compreendido e aceit
           </div>
 
           <div className="flex items-center gap-3">
+            {student.school_whatsapp && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  const digits = student.school_whatsapp!.replace(/\D/g, '');
+                  const text = encodeURIComponent(`Olá! Sou o(a) aluno(a) ${student.name} e gostaria de tirar uma dúvida.`);
+                  window.open(`https://wa.me/55${digits}?text=${text}`, '_blank');
+                }}
+                className="border-green-500/20 text-green-600 dark:text-green-400 hover:bg-green-500/10 font-bold flex items-center gap-1.5 h-7 px-2.5 text-xs transition-colors"
+              >
+                <Phone className="h-3.5 w-3.5" /> Falar com a Escola
+              </Button>
+            )}
             <Badge className="bg-primary/10 text-primary hover:bg-primary/15 px-3 py-1 text-xs border border-primary/20 flex items-center gap-1 font-semibold">
               <CheckCircle2 className="h-3.5 w-3.5" /> Matrícula Ativa
             </Badge>
@@ -1527,16 +1651,59 @@ CONCORDÂNCIA E ASSINATURA: O contratante declara ter lido, compreendido e aceit
                     </div>
                   </div>
                 ) : (
-                  /* CARD DE DETALHES DO PAGAMENTO MENSALIDADE (GLASSMORPHISM) */
-                  <div className="bg-muted/30 border border-border/40 rounded-2xl p-4 flex justify-between items-center shadow-inner text-left">
-                    <div className="space-y-1">
-                      <span className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider block">Referência</span>
-                      <span className="text-sm font-bold text-foreground">Mensalidade - {selectedPixPayment.monthRef}</span>
+                  /* CARD DE DETALHES DO PAGAMENTO MENSALIDADE (TAB-CHOICE & GLASSMORPHISM) */
+                  <div className="space-y-3.5 text-left">
+                    <label className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider block">Opção de Pagamento</label>
+                    <div className="grid grid-cols-2 gap-2 bg-muted/40 p-1 rounded-xl border border-border/40">
+                      <button
+                        type="button"
+                        onClick={() => handleTogglePaymentValueMode('remaining')}
+                        className={cn(
+                          "py-2 text-xs font-bold rounded-lg transition-all",
+                          paymentValueMode === 'remaining'
+                            ? "bg-background text-primary shadow-sm"
+                            : "text-muted-foreground hover:text-foreground"
+                        )}
+                      >
+                        Restante ({selectedPixPayment.amountStr})
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleTogglePaymentValueMode('custom')}
+                        className={cn(
+                          "py-2 text-xs font-bold rounded-lg transition-all",
+                          paymentValueMode === 'custom'
+                            ? "bg-background text-primary shadow-sm"
+                            : "text-muted-foreground hover:text-foreground"
+                        )}
+                      >
+                        Outro Valor (Parcial)
+                      </button>
                     </div>
-                    <div className="text-right space-y-1">
-                      <span className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider block">Valor a pagar</span>
-                      <span className="text-lg font-black text-primary font-display">{selectedPixPayment.amountStr}</span>
-                    </div>
+
+                    {paymentValueMode === 'custom' ? (
+                      <div className="space-y-1.5 pt-1">
+                        <label className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider">Digite o valor a pagar (R$)</label>
+                        <Input
+                          type="text"
+                          placeholder="R$ 0,00"
+                          className="bg-background font-extrabold text-foreground text-sm h-10 rounded-xl"
+                          value={customAmountInput}
+                          onChange={(e) => handleCustomAmountChange(e.target.value, selectedPixPayment.amount)}
+                        />
+                      </div>
+                    ) : (
+                      <div className="bg-muted/30 border border-border/40 rounded-2xl p-4 flex justify-between items-center shadow-inner text-left">
+                        <div className="space-y-1">
+                          <span className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider block">Referência</span>
+                          <span className="text-sm font-bold text-foreground">Mensalidade - {selectedPixPayment.monthRef}</span>
+                        </div>
+                        <div className="text-right space-y-1">
+                          <span className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider block">Valor a pagar</span>
+                          <span className="text-lg font-black text-primary font-display">{selectedPixPayment.amountStr}</span>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
 
@@ -1549,7 +1716,7 @@ CONCORDÂNCIA E ASSINATURA: O contratante declara ter lido, compreendido e aceit
                     <div className="absolute bottom-0 left-0 w-6 h-6 border-b-4 border-l-4 border-primary rounded-bl-2xl" />
                     <div className="absolute bottom-0 right-0 w-6 h-6 border-b-4 border-r-4 border-primary rounded-br-2xl" />
                     
-                    {selectedPixPayment.isAdhoc && !pixQrCodeUrl ? (
+                    {(selectedPixPayment.isAdhoc && !pixQrCodeUrl) || (paymentValueMode === 'custom' && !pixQrCodeUrl) ? (
                       <div className="w-[200px] h-[200px] sm:w-[220px] sm:h-[220px] flex flex-col items-center justify-center bg-muted/20 text-muted-foreground text-center p-4">
                         <QrCode className="h-8 w-8 opacity-45 mb-2 text-primary" />
                         <span className="text-[10px] font-bold uppercase tracking-wider">Digite o valor acima</span>
@@ -1607,6 +1774,19 @@ CONCORDÂNCIA E ASSINATURA: O contratante declara ter lido, compreendido e aceit
                     </Button>
                   </div>
                 </div>
+
+                {/* CONFIRMAÇÃO VIA WHATSAPP */}
+                {pixCode && (
+                  <div className="pt-2">
+                    <Button
+                      onClick={() => handleConfirmPaymentWhatsApp()}
+                      className="w-full bg-[#25D366] hover:bg-[#20ba5a] text-white font-bold py-5 rounded-xl flex items-center justify-center gap-2 shadow-sm transition-all duration-300"
+                    >
+                      <MessageSquare className="h-5 w-5" />
+                      Já paguei, enviar comprovante!
+                    </Button>
+                  </div>
+                )}
 
                 {/* INSTRUÇÕES */}
                 <div className="bg-muted/10 border border-border/30 rounded-2xl p-4 space-y-2 text-xs text-muted-foreground text-left">

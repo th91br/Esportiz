@@ -9,7 +9,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { EsportizIcon } from '@/components/Logo';
 import { 
   Check, User, Mail, FileText, Phone, Calendar as CalendarIcon, 
-  ArrowRight, ShieldCheck, Landmark, Clock, RefreshCw, Sparkles
+  ArrowRight, ShieldCheck, Landmark, Clock, RefreshCw, Sparkles, MessageSquare
 } from 'lucide-react';
 import { formatCurrency } from '@/lib/formatCurrency';
 import { resolvePublicOwnerScope } from '@/lib/publicAccessContracts';
@@ -51,6 +51,7 @@ export default function OnlineBookingPage() {
   const [submitting, setSubmitting] = useState(false);
   const [arenaName, setArenaName] = useState('Esportiz Arena');
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
+  const [whatsapp, setWhatsapp] = useState<string | null>(null);
   const [courts, setCourts] = useState<PublicCourt[]>([]);
   const [reservations, setReservations] = useState<PublicReservation[]>([]);
   const [successData, setSuccessData] = useState<BookingSuccessData | null>(null);
@@ -93,9 +94,10 @@ export default function OnlineBookingPage() {
         if (error) throw error;
 
         if (data) {
-          const result = data as { arena_name?: string; logo_url?: string | null; courts?: unknown[]; reservations?: unknown[] };
+          const result = data as { arena_name?: string; logo_url?: string | null; whatsapp?: string | null; courts?: unknown[]; reservations?: unknown[] };
           setArenaName(result.arena_name || 'Esportiz Arena');
           setLogoUrl(result.logo_url || null);
+          setWhatsapp(result.whatsapp || null);
           
           // Map DB Modalities into Court objects
           const mappedCourts = ((result.courts as PublicCourtRecord[]) || []).map((court: PublicCourtRecord) => mapPublicCourtRecord(court));
@@ -361,6 +363,20 @@ export default function OnlineBookingPage() {
               <p className="text-xs text-indigo-600 dark:text-indigo-400 font-medium leading-relaxed">
                 Pagamentos de taxa ou Pix de reserva devem ser tratados diretamente com a administração da Arena no local ou via WhatsApp de atendimento.
               </p>
+              {whatsapp && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    const digits = whatsapp.replace(/\D/g, '');
+                    const messageText = `Olá! Acabei de reservar um horário no CT ${arenaName} (${successData.courtName || 'Quadra'} em ${successData.date} às ${successData.time}) e gostaria de enviar o comprovante de pagamento Pix.`;
+                    window.open(`https://wa.me/55${digits}?text=${encodeURIComponent(messageText)}`, '_blank');
+                  }}
+                  className="w-full mt-2 border-green-500/30 text-green-600 dark:text-green-400 hover:bg-green-500/10 font-bold flex items-center justify-center gap-1.5 py-4 text-xs transition-colors"
+                >
+                  <MessageSquare className="h-4 w-4 text-green-500" /> Enviar Comprovante via WhatsApp
+                </Button>
+              )}
             </div>
           </CardContent>
 

@@ -37,6 +37,7 @@ import { useRolePermissions } from '@/hooks/useRolePermissions';
 import { useOrganizationTeamMembers, type OrganizationTeamMember } from '@/hooks/queries/useOrganizationTeamMembers';
 import type { OrganizationRole } from '@/lib/rolePermissions';
 import { buildStudentPortalUrl } from '@/lib/publicAccessContracts';
+import { formatBrazilPhone, isValidBrazilPhone } from '@/lib/publicPortalSecurity';
 
 const BUSINESS_OPTIONS: { type: BusinessType; title: string; description: string; emoji: string }[] = [
   { type: 'sport_school', title: 'Escola Esportiva', description: 'Esportiz Sport — Futevôlei, Vôlei, Futebol, Artes Marciais...', emoji: '🏐' },
@@ -305,6 +306,7 @@ export default function SettingsPage() {
   const [pixReceiver, setPixReceiver] = useState('');
   const [bookingConfirmationTemplate, setBookingConfirmationTemplate] = useState('');
   const [paymentReminderTemplate, setPaymentReminderTemplate] = useState('');
+  const [whatsapp, setWhatsapp] = useState('');
   const processedGoogleCodeRef = useRef<string | null>(null);
 
   const dynamicCtLabel = selectedBusinessType === 'sport_school' ? 'Escola Esportiva' : 'Arena';
@@ -340,6 +342,7 @@ export default function SettingsPage() {
       setLogoPreview(activeNiche.logo_url !== undefined && activeNiche.logo_url !== null ? activeNiche.logo_url : (rawProfile.logo_url || null));
       setPixKey(activeNiche.pix_key !== undefined && activeNiche.pix_key !== null ? activeNiche.pix_key : (rawProfile.pix_key || ''));
       setPixReceiver(activeNiche.pix_receiver !== undefined && activeNiche.pix_receiver !== null ? activeNiche.pix_receiver : (rawProfile.pix_receiver || ''));
+      setWhatsapp(activeNiche.whatsapp !== undefined && activeNiche.whatsapp !== null ? formatBrazilPhone(activeNiche.whatsapp) : '');
       
       const templates = activeNiche.templates || {};
       setBookingConfirmationTemplate(templates.booking_confirmation || '');
@@ -643,6 +646,11 @@ export default function SettingsPage() {
       return;
     }
 
+    if (whatsapp && !isValidBrazilPhone(whatsapp)) {
+      toast.error('Informe um WhatsApp válido com DDD (Ex: (11) 99999-9999)');
+      return;
+    }
+
     try {
       const targetBusinessType = selectedBusinessType;
       let logoUrl = logoPreview; // Use current preview
@@ -656,6 +664,7 @@ export default function SettingsPage() {
         }
       }
 
+      const cleanWhatsapp = whatsapp ? whatsapp.replace(/\D/g, '') : null;
       const currentNicheSettings = rawProfile?.niche_settings || {};
       const updatedNicheSettings = {
         ...currentNicheSettings,
@@ -664,6 +673,7 @@ export default function SettingsPage() {
           logo_url: logoUrl,
           pix_key: pixKey,
           pix_receiver: pixReceiver,
+          whatsapp: cleanWhatsapp,
           templates: {
             ...(currentNicheSettings[targetBusinessType]?.templates || {}),
             booking_confirmation: bookingConfirmationTemplate,
@@ -724,6 +734,7 @@ export default function SettingsPage() {
           logo_url: targetNicheSettings.logo_url || logoUrl || rawProfile?.logo_url || null,
           pix_key: targetNicheSettings.pix_key || pixKey || rawProfile?.pix_key || '',
           pix_receiver: targetNicheSettings.pix_receiver || pixReceiver || rawProfile?.pix_receiver || '',
+          whatsapp: targetNicheSettings.whatsapp || (whatsapp ? whatsapp.replace(/\D/g, '') : null) || null,
           templates: targetNicheSettings.templates || {
             booking_confirmation: bookingConfirmationTemplate,
             payment_reminder: paymentReminderTemplate
@@ -1326,6 +1337,36 @@ export default function SettingsPage() {
                   onChange={(e) => setCtName(e.target.value)}
                   disabled={!canUpdateSettings}
                 />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="whatsapp">WhatsApp de Contato {ctPreposition} {dynamicCtLabelShort} (Opcional)</Label>
+                <div className="flex gap-2">
+                  <Input
+                    id="whatsapp"
+                    placeholder="Ex: (11) 99999-9999"
+                    value={whatsapp}
+                    onChange={(e) => setWhatsapp(formatBrazilPhone(e.target.value))}
+                    disabled={!canUpdateSettings}
+                    className="flex-1"
+                  />
+                  {whatsapp && isValidBrazilPhone(whatsapp) && (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => {
+                        const digits = whatsapp.replace(/\D/g, '');
+                        window.open(`https://wa.me/55${digits}?text=Ol%C3%A1%21%20Este%20%C3%A9%20um%20teste%20de%20conex%C3%A3o%20do%20WhatsApp%20da%20minha%20escola%20no%20Esportiz.`, '_blank');
+                      }}
+                      className="border-green-500/30 text-green-600 dark:text-green-400 hover:bg-green-500/10 font-medium shrink-0"
+                    >
+                      Testar Número
+                    </Button>
+                  )}
+                </div>
+                <p className="text-[10px] text-muted-foreground">
+                  Se configurado, seus clientes poderão entrar em contato direto com você via WhatsApp a partir do Portal do Aluno ou da página de agendamentos.
+                </p>
               </div>
 
               {canManageSensitiveSettings && (

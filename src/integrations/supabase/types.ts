@@ -1227,6 +1227,8 @@ export type Database = {
         }
         Returns: {
           arena_name: string
+          logo_url: string | null
+          whatsapp: string | null
           courts: {
             color: string | null
             id: string
@@ -1261,6 +1263,7 @@ export type Database = {
           success: boolean
           school_name: string
           logo_url: string | null
+          school_whatsapp: string | null
         }
       }
       get_student_portal_data: {
@@ -1311,6 +1314,7 @@ export type Database = {
             name: string
             plan_name: string
             school_name: string
+            school_whatsapp?: string | null
           }
         }
       }

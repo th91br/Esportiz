@@ -16,6 +16,7 @@ export interface NicheProfile {
   logo_url?: string | null;
   pix_key?: string | null;
   pix_receiver?: string | null;
+  whatsapp?: string | null;
   onboarding_goal?: OnboardingGoal | null;
   templates?: {
     mass_all_active?: string;

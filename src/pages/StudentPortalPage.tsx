@@ -8,6 +8,14 @@ import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { EsportizIcon } from '@/components/Logo';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from '@/components/ui/dialog';
+import QRCode from 'qrcode';
 import { 
   CheckCircle2, XCircle, LogOut, Clock, Calendar, GraduationCap, 
   DollarSign, MapPin, Copy, QrCode, ClipboardList, BookOpen, UserCheck, ShieldAlert 
@@ -240,6 +248,19 @@ export default function StudentPortalPage() {
   const [activeTab, setActiveTab] = useState<'dashboard' | 'contract'>('dashboard');
   const [agreed, setAgreed] = useState(false);
   const [signing, setSigning] = useState(false);
+
+  // Pix modal state
+  const [selectedPixPayment, setSelectedPixPayment] = useState<{
+    id: string;
+    amount: number;
+    amountStr: string;
+    monthRef: string;
+  } | null>(null);
+  const [pixModalOpen, setPixModalOpen] = useState(false);
+  const [copiedCode, setCopiedCode] = useState(false);
+  const [pixQrCodeUrl, setPixQrCodeUrl] = useState('');
+  const [pixCode, setPixCode] = useState('');
+  const [generatingQrCode, setGeneratingQrCode] = useState(false);
 
   // Login Input State
   const [cpf, setCpf] = useState('');
@@ -560,6 +581,57 @@ CONCORDÂNCIA E ASSINATURA: O contratante declara ter lido, compreendido e aceit
     } catch (err) {
       console.error(err);
       toast.error('Erro ao gerar código Pix Copia e Cola.');
+    }
+  };
+
+  const handleOpenPixModal = async (payment: PaymentLog) => {
+    if (!paymentConfig?.pix_key) {
+      toast.info('Pix ainda não configurado pela escola. Entre em contato com a secretaria.');
+      return;
+    }
+
+    const isPartial = !payment.paid && payment.paid_amount > 0;
+    const remainingToPay = payment.amount - (payment.paid_amount || 0);
+    const amt = isPartial ? remainingToPay : payment.amount;
+
+    const amtStr = formatCurrency(amt);
+    
+    setSelectedPixPayment({
+      id: payment.id,
+      amount: amt,
+      amountStr: amtStr,
+      monthRef: payment.month_ref
+    });
+    setPixModalOpen(true);
+    setCopiedCode(false);
+    setGeneratingQrCode(true);
+
+    try {
+      const brCode = generatePixCopiaCola(
+        paymentConfig.pix_key,
+        amt,
+        paymentConfig.pix_receiver || schoolName
+      );
+      setPixCode(brCode);
+      const qrDataUrl = await QRCode.toDataURL(brCode, { width: 260, margin: 1 });
+      setPixQrCodeUrl(qrDataUrl);
+    } catch (err) {
+      console.error('Erro ao gerar QRCode:', err);
+      toast.error('Não foi possível gerar o QR Code Pix localmente.');
+    } finally {
+      setGeneratingQrCode(false);
+    }
+  };
+
+  const handleCopyPixCode = (code: string) => {
+    try {
+      navigator.clipboard.writeText(code);
+      setCopiedCode(true);
+      toast.success('Código Pix Copia e Cola copiado com sucesso!');
+      setTimeout(() => setCopiedCode(false), 2000);
+    } catch (err) {
+      console.error(err);
+      toast.error('Erro ao copiar código Pix.');
     }
   };
 
@@ -1173,7 +1245,7 @@ CONCORDÂNCIA E ASSINATURA: O contratante declara ter lido, compreendido e aceit
                               <Button 
                                 size="sm" 
                                 className="h-8 text-xs btn-primary-gradient px-3"
-                                onClick={() => toast.info('Aponte a câmera do seu banco para o QRCode Pix no verso da secretaria.')}
+                                onClick={() => handleOpenPixModal(p)}
                               >
                                 <QrCode className="h-3.5 w-3.5" />
                               </Button>
@@ -1323,6 +1395,110 @@ CONCORDÂNCIA E ASSINATURA: O contratante declara ter lido, compreendido e aceit
             </Card>
           </div>
         )}
+
+        {/* DIALOG DE PAGAMENTO PIX */}
+        <Dialog open={pixModalOpen} onOpenChange={setPixModalOpen}>
+          <DialogContent className="max-w-md w-full border-border/80 shadow-2xl overflow-hidden card-elevated p-6 sm:p-7">
+            <DialogHeader className="text-center space-y-2 pb-2 border-b border-border/40">
+              <div className="mx-auto w-12 h-12 bg-primary/10 text-primary rounded-2xl flex items-center justify-center mb-1 border border-primary/15">
+                <QrCode className="h-6 w-6 text-primary" />
+              </div>
+              <DialogTitle className="text-xl font-black font-display text-foreground tracking-tight leading-none">
+                Pagamento via Pix
+              </DialogTitle>
+              <DialogDescription className="text-xs text-muted-foreground">
+                Escola: <strong className="text-foreground font-semibold">{schoolName}</strong>
+              </DialogDescription>
+            </DialogHeader>
+
+            {selectedPixPayment && (
+              <div className="space-y-6 pt-4">
+                {/* CARD DE DETALHES DO PAGAMENTO (GLASSMORPHISM) */}
+                <div className="bg-muted/30 border border-border/40 rounded-2xl p-4 flex justify-between items-center shadow-inner">
+                  <div className="space-y-1">
+                    <span className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider block">Referência</span>
+                    <span className="text-sm font-bold text-foreground">Mensalidade - {selectedPixPayment.monthRef}</span>
+                  </div>
+                  <div className="text-right space-y-1">
+                    <span className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider block">Valor a pagar</span>
+                    <span className="text-lg font-black text-primary font-display">{selectedPixPayment.amountStr}</span>
+                  </div>
+                </div>
+
+                {/* QR CODE COM DETECTOR DE ESCANEAMENTO ANIMADO */}
+                <div className="flex flex-col items-center justify-center space-y-3">
+                  <div className="relative p-3 bg-white dark:bg-white rounded-3xl shadow-md border border-border/30 overflow-hidden group">
+                    {/* Bordas decorativas animadas */}
+                    <div className="absolute top-0 left-0 w-6 h-6 border-t-4 border-l-4 border-primary rounded-tl-2xl" />
+                    <div className="absolute top-0 right-0 w-6 h-6 border-t-4 border-r-4 border-primary rounded-tr-2xl" />
+                    <div className="absolute bottom-0 left-0 w-6 h-6 border-b-4 border-l-4 border-primary rounded-bl-2xl" />
+                    <div className="absolute bottom-0 right-0 w-6 h-6 border-b-4 border-r-4 border-primary rounded-br-2xl" />
+                    
+                    {generatingQrCode ? (
+                      <div className="w-[200px] h-[200px] sm:w-[220px] sm:h-[220px] flex items-center justify-center bg-muted/20">
+                        <div className="h-8 w-8 border-4 border-primary/30 border-t-primary rounded-full animate-spin" />
+                      </div>
+                    ) : (
+                      pixQrCodeUrl && (
+                        <img 
+                          src={pixQrCodeUrl} 
+                          alt="QR Code Pix" 
+                          className="w-[200px] h-[200px] sm:w-[220px] sm:h-[220px] object-contain transition-transform duration-300 group-hover:scale-105" 
+                        />
+                      )
+                    )}
+                  </div>
+                  <span className="text-[10px] text-muted-foreground font-bold tracking-wide uppercase">
+                    Aponte a câmera do seu banco para pagar
+                  </span>
+                </div>
+
+                {/* COPIA E COLA BOX */}
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider">Pix Copia e Cola</span>
+                    {paymentConfig?.pix_receiver && (
+                      <span className="text-[10px] text-muted-foreground">
+                        Recebedor: <strong className="text-foreground font-semibold">{paymentConfig.pix_receiver}</strong>
+                      </span>
+                    )}
+                  </div>
+                  
+                  <div className="flex gap-2">
+                    <div className="flex-1 bg-muted/40 border border-border/50 rounded-xl px-3 py-2.5 font-mono text-[10px] text-muted-foreground break-all select-all line-clamp-2 min-h-[52px] leading-relaxed shadow-inner">
+                      {pixCode}
+                    </div>
+                    <Button
+                      onClick={() => handleCopyPixCode(pixCode)}
+                      className={cn(
+                        "shrink-0 h-auto px-4 rounded-xl font-bold transition-all duration-300",
+                        copiedCode 
+                          ? "bg-emerald-500 hover:bg-emerald-600 text-white" 
+                          : "btn-primary-gradient"
+                      )}
+                    >
+                      {copiedCode ? (
+                        <CheckCircle2 className="h-4 w-4 animate-bounce" />
+                      ) : (
+                        <Copy className="h-4 w-4" />
+                      )}
+                    </Button>
+                  </div>
+                </div>
+
+                {/* INSTRUÇÕES */}
+                <div className="bg-muted/10 border border-border/30 rounded-2xl p-4 space-y-2 text-xs text-muted-foreground">
+                  <span className="font-bold text-foreground block">Como pagar:</span>
+                  <ol className="list-decimal pl-4 space-y-1">
+                    <li>Abra o aplicativo de pagamentos do seu banco.</li>
+                    <li>Escolha a opção de pagar via Pix (com leitura de QR Code ou Pix Copia e Cola).</li>
+                    <li>Escaneie o QR Code acima ou cole o código copiado e confirme o pagamento.</li>
+                  </ol>
+                </div>
+              </div>
+            )}
+          </DialogContent>
+        </Dialog>
       </main>
     </div>
   );

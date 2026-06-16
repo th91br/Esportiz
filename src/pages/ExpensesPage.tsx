@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react';
-import { Header } from '@/components/Header';
+import { AppPage } from '@/components/layout/AppPage';
+import { PageHeader } from '@/components/layout/PageHeader';
 import { useExpenses } from '@/hooks/queries/useExpenses';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -190,22 +191,12 @@ export default function ExpensesPage() {
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      <Header />
-
-      <main className="container py-6 md:py-8 space-y-6 max-w-5xl">
-        {/* Page Title */}
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-          <div>
-            <h1 className="text-3xl font-display font-bold flex items-center gap-2">
-              <Receipt className="h-7 w-7 text-primary" />
-              Despesas
-            </h1>
-            <p className="text-muted-foreground mt-1">
-              {isArena ? 'Controle de custos, manutenção de quadras e despesas gerais da arena.' : 'Controle de custos, salários de professores e despesas da escola.'}
-            </p>
-          </div>
-
+    <AppPage contentClassName="max-w-5xl">
+      <PageHeader
+        title="Despesas"
+        icon={Receipt}
+        description={isArena ? 'Controle de custos, manutenção de quadras e despesas gerais da arena.' : 'Controle de custos, salários de professores e despesas da escola.'}
+        actions={(canCreateExpenses || isFormOpen) && (
           <Dialog open={isFormOpen} onOpenChange={(open) => { setIsFormOpen(open); if (!open) resetForm(); }}>
             {canCreateExpenses && (
               <DialogTrigger asChild>
@@ -308,7 +299,8 @@ export default function ExpensesPage() {
               </DialogFooter>
             </DialogContent>
           </Dialog>
-        </div>
+        )}
+      />
 
         {/* Month Navigator */}
         <div className="flex items-center justify-center gap-4">
@@ -475,7 +467,6 @@ export default function ExpensesPage() {
             )}
           </CardContent>
         </Card>
-      </main>
-    </div>
+    </AppPage>
   );
 }

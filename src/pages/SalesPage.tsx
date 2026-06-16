@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react';
-import { Header } from '@/components/Header';
+import { AppPage } from '@/components/layout/AppPage';
+import { PageHeader } from '@/components/layout/PageHeader';
 import { useProducts } from '@/hooks/queries/useProducts';
 import { useSales, getPaymentMethodLabel, type PaymentMethod, type Sale } from '@/hooks/queries/useSales';
 import { Button } from '@/components/ui/button';
@@ -186,29 +187,20 @@ export default function SalesPage() {
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      <Header />
-      <main className="container py-6 md:py-8 space-y-6 max-w-6xl">
-        {/* Page Title */}
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-          <div>
-            <h1 className="text-3xl font-display font-bold flex items-center gap-2">
-              <ShoppingCart className="h-7 w-7 text-primary" />
-              Vendas
-            </h1>
-            <p className="text-muted-foreground mt-1">
-              {isArena ? 'Registre vendas rápidas de produtos da cantina ou arena.' : 'Registre a venda de uniformes, materiais e acessórios esportivos.'}
-            </p>
-          </div>
-          {canViewProducts && (
+    <AppPage contentClassName="max-w-6xl">
+      <PageHeader
+        title="Vendas"
+        icon={ShoppingCart}
+        description={isArena ? 'Registre vendas rápidas de produtos da cantina ou arena.' : 'Registre a venda de uniformes, materiais e acessórios esportivos.'}
+        actions={canViewProducts && (
             <Link to="/produtos">
               <Button variant="outline" size="sm">
                 <Package className="mr-2 h-4 w-4" />
                 Gerenciar Produtos
               </Button>
             </Link>
-          )}
-        </div>
+        )}
+      />
 
         {/* Today Summary */}
         <Card className="border-primary/10 bg-gradient-to-r from-primary/5 to-transparent">
@@ -518,8 +510,6 @@ export default function SalesPage() {
             )}
           </CardContent>
         </Card>
-
-      </main>
-    </div>
+    </AppPage>
   );
 }

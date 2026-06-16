@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react';
-import { Header } from '@/components/Header';
+import { AppPage } from '@/components/layout/AppPage';
+import { PageHeader } from '@/components/layout/PageHeader';
 import { StatCard } from '@/components/StatCard';
 import { Switch } from '@/components/ui/switch';
 import { useProducts } from '@/hooks/queries/useProducts';
@@ -154,23 +155,16 @@ export default function ProductsPage() {
   const displayProducts = showInactive ? products : products.filter(p => p.active);
 
   return (
-    <div className="min-h-screen bg-background">
-      <Header />
-      <main className="container py-6 md:py-8 space-y-6 max-w-4xl">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-          <div>
-            <h1 className="text-3xl font-display font-bold flex items-center gap-2">
-              <Package className="h-7 w-7 text-primary" />
-              Produtos
-            </h1>
-            <p className="text-muted-foreground mt-1">
-              {isArena
-                ? 'Cadastre os itens disponíveis para venda na arena (bebidas, alimentos, etc).'
-                : 'Cadastre os uniformes, materiais e artigos esportivos disponíveis para os alunos.'}
-            </p>
-          </div>
-
-          {(canCreateProducts || canUpdateProducts) && (
+    <AppPage contentClassName="max-w-4xl">
+      <PageHeader
+        title="Produtos"
+        icon={Package}
+        description={
+          isArena
+            ? 'Cadastre os itens disponíveis para venda na arena (bebidas, alimentos, etc).'
+            : 'Cadastre os uniformes, materiais e artigos esportivos disponíveis para os alunos.'
+        }
+        actions={(canCreateProducts || isFormOpen) && (
           <Dialog open={isFormOpen} onOpenChange={(open) => { setIsFormOpen(open); if (!open) resetForm(); }}>
             {canCreateProducts && (
               <DialogTrigger asChild>
@@ -272,8 +266,8 @@ export default function ProductsPage() {
               </DialogFooter>
             </DialogContent>
           </Dialog>
-          )}
-        </div>
+        )}
+      />
 
         {/* Tab Switcher - Exclusivo Arena */}
         {isArena && (
@@ -565,7 +559,6 @@ export default function ProductsPage() {
             )}
           </div>
         )}
-      </main>
-    </div>
+    </AppPage>
   );
 }

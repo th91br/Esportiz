@@ -52,14 +52,9 @@ import {
   Repeat,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { getLocalTodayDate } from '@/lib/dateUtils';
+import { getLocalTodayDate, getMonthNamePtBr } from '@/lib/dateUtils';
 import { useBusinessContext } from '@/hooks/useBusinessContext';
 import { useRolePermissions } from '@/hooks/useRolePermissions';
-
-const getMonthName = (month: number): string => {
-  const months = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
-  return months[month];
-};
 
 export default function ExpensesPage() {
   const { isArena } = useBusinessContext();
@@ -310,7 +305,7 @@ export default function ExpensesPage() {
             <ChevronLeft className="h-5 w-5" />
           </Button>
           <h2 className="text-lg font-display font-bold min-w-[180px] text-center">
-            {getMonthName(currentDate.getMonth())} {currentDate.getFullYear()}
+            {getMonthNamePtBr(currentDate.getMonth())} {currentDate.getFullYear()}
           </h2>
           <Button variant="ghost" size="icon" onClick={() => setMonthOffset(monthOffset + 1)}>
             <ChevronRight className="h-5 w-5" />

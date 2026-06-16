@@ -1,5 +1,5 @@
 // Types only - no more mock data
-import { toLocalDateString } from '@/lib/dateUtils';
+import { getMonthNamePtBr, toLocalDateString } from '@/lib/dateUtils';
 
 export interface Plan {
   id: string;
@@ -136,8 +136,7 @@ export const getWeekDatesArray = (weekOffset = 0) => {
 };
 
 export const getMonthName = (month: number): string => {
-  const months = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
-  return months[month];
+  return getMonthNamePtBr(month);
 };
 
 export const getWeekNumber = (dateString: string): number => {

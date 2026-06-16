@@ -17,6 +17,25 @@ export function toLocalDateString(d: Date): string {
   return `${year}-${month}-${day}`;
 }
 
+const MONTH_NAMES_PT_BR = [
+  'Janeiro',
+  'Fevereiro',
+  'Março',
+  'Abril',
+  'Maio',
+  'Junho',
+  'Julho',
+  'Agosto',
+  'Setembro',
+  'Outubro',
+  'Novembro',
+  'Dezembro',
+] as const;
+
+export function getMonthNamePtBr(monthIndex: number): string {
+  return MONTH_NAMES_PT_BR[monthIndex] ?? '';
+}
+
 function isValidCalendarDate(year: number, month: number, day: number): boolean {
   const date = new Date(Date.UTC(year, month - 1, day));
   return (

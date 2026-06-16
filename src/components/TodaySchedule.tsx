@@ -6,6 +6,7 @@ import { useStudents } from '@/hooks/queries/useStudents';
 import { getDayName, formatDate, getEndTime, getTimePeriod } from '@/data/mockData';
 import { useBusinessContext } from '@/hooks/useBusinessContext';
 import { Link } from 'react-router-dom';
+import { getLocalTodayDate } from '@/lib/dateUtils';
 
 const periodIcons = { manhã: Sun, tarde: Sunset, noite: Moon };
 
@@ -14,8 +15,7 @@ export function TodaySchedule() {
   const { students } = useStudents();
   const { labels } = useBusinessContext();
   
-  const now = new Date();
-  const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+  const today = getLocalTodayDate();
   const todayTrainings = trainings.filter(t => t.date === today).sort((a, b) => a.time.localeCompare(b.time));
 
   if (loadingTrainings) return <div className="card-elevated p-6 animate-pulse bg-muted/20 h-[300px] rounded-2xl"></div>;

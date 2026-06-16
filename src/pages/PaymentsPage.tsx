@@ -26,14 +26,14 @@ import {
 } from '@/components/ui/dialog';
 import { useBusinessContext } from '@/hooks/useBusinessContext';
 import { useRolePermissions } from '@/hooks/useRolePermissions';
-import { getLocalTodayDate } from '@/lib/dateUtils';
+import { getLocalTodayDate, getMonthNamePtBr } from '@/lib/dateUtils';
 import {
   getPaymentFinancialStatus,
   summarizePayments,
   summarizeReservationReceivables,
 } from '@/lib/financialContracts';
 
-const monthNames = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
+const monthOptions = Array.from({ length: 12 }, (_, index) => getMonthNamePtBr(index));
 
 export default function PaymentsPage() {
   const { students } = useStudents();
@@ -238,7 +238,7 @@ export default function PaymentsPage() {
             <Select value={String(selectedMonth)} onValueChange={v => setSelectedMonth(Number(v))}>
               <SelectTrigger className="w-[120px] sm:w-[140px] shrink-0"><SelectValue /></SelectTrigger>
               <SelectContent>
-                {monthNames.map((name, i) => (
+                {monthOptions.map((name, i) => (
                   <SelectItem key={i} value={String(i + 1)}>{name}</SelectItem>
                 ))}
               </SelectContent>
@@ -347,7 +347,7 @@ export default function PaymentsPage() {
           monthReservations.length === 0 ? (
             <div className="card-elevated p-12 text-center">
               <CalendarDays className="h-12 w-12 mx-auto text-muted-foreground/30 mb-4" />
-              <h3 className="font-display font-semibold text-lg text-foreground">Nenhuma locação avulsa para {monthNames[selectedMonth - 1]}/{selectedYear}</h3>
+              <h3 className="font-display font-semibold text-lg text-foreground">Nenhuma locação avulsa para {monthOptions[selectedMonth - 1]}/{selectedYear}</h3>
               <p className="text-sm text-muted-foreground mt-1">As reservas agendadas e confirmadas na agenda de quadras aparecerão aqui automaticamente.</p>
             </div>
           ) : filteredReservations.length === 0 ? (
@@ -449,7 +449,7 @@ export default function PaymentsPage() {
           !hasMonthlyPaymentRecords ? (
             <div className="card-elevated p-12 text-center">
               <DollarSign className="h-12 w-12 mx-auto text-muted-foreground/30 mb-4" />
-              <h3 className="font-display font-semibold text-lg text-foreground">Nenhum pagamento para {monthNames[selectedMonth - 1]}/{selectedYear}</h3>
+              <h3 className="font-display font-semibold text-lg text-foreground">Nenhum pagamento para {monthOptions[selectedMonth - 1]}/{selectedYear}</h3>
               <p className="text-sm text-muted-foreground mt-1">{labels.studentLabel} com {labels.planLabel.toLowerCase()} mensal e dia de vencimento definido aparecerão aqui automaticamente.</p>
             </div>
           ) : !hasFilteredPaymentRecords ? (
@@ -616,7 +616,7 @@ export default function PaymentsPage() {
                           <AlertDialogHeader>
                             <AlertDialogTitle>Cancelar cobran&ccedil;a?</AlertDialogTitle>
                             <AlertDialogDescription>
-                              Esta cobran&ccedil;a de {student.name} ({monthNames[selectedMonth - 1]}/{selectedYear}) ser&aacute; ocultada da lista ativa. Se foi um engano, voc&ecirc; poder&aacute; restaur&aacute;-la depois.
+                              Esta cobran&ccedil;a de {student.name} ({monthOptions[selectedMonth - 1]}/{selectedYear}) ser&aacute; ocultada da lista ativa. Se foi um engano, voc&ecirc; poder&aacute; restaur&aacute;-la depois.
                             </AlertDialogDescription>
                           </AlertDialogHeader>
                           <AlertDialogFooter>
@@ -668,7 +668,7 @@ export default function PaymentsPage() {
                               </Badge>
                             </div>
                             <p className="mt-1 text-sm text-muted-foreground">
-                              {plan?.name || `${labels.planLabelSingular} atual`} | {monthNames[selectedMonth - 1]}/{selectedYear}
+                              {plan?.name || `${labels.planLabelSingular} atual`} | {monthOptions[selectedMonth - 1]}/{selectedYear}
                             </p>
                           </div>
                           <Button

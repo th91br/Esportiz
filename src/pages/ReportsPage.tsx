@@ -100,13 +100,6 @@ function getReportPaymentMethodLabel(method: ReportPaymentMethod) {
   return RESERVATION_PAYMENT_METHOD_LABELS[method];
 }
 
-function formatLocalDate(date: Date): string {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
-}
-
 function getDateRange(period: FilterPeriod): { start: string; end: string } | null {
   if (period === 'all') return null;
   const now = new Date();
@@ -137,9 +130,9 @@ function getDateRange(period: FilterPeriod): { start: string; end: string } | nu
       break;
   }
 
-  return { 
-    start: formatLocalDate(start!), 
-    end: formatLocalDate(endD) 
+  return {
+    start: toLocalDateString(start!),
+    end: toLocalDateString(endD)
   };
 }
 

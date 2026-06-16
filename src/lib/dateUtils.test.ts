@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   formatDateOnlyBr,
   getLocalTodayDate,
+  getMonthNamePtBr,
   parseBrazilianDateToIso,
   toLocalDateString,
 } from './dateUtils';
@@ -30,5 +31,16 @@ describe('dateUtils', () => {
   it('converts a valid Brazilian date to the database ISO format', () => {
     expect(parseBrazilianDateToIso('21/05/2010')).toBe('2010-05-21');
     expect(parseBrazilianDateToIso('31/02/2010')).toBeNull();
+  });
+
+  it('returns Portuguese month names for valid month indexes', () => {
+    expect(getMonthNamePtBr(0)).toBe('Janeiro');
+    expect(getMonthNamePtBr(2)).toBe('Março');
+    expect(getMonthNamePtBr(11)).toBe('Dezembro');
+  });
+
+  it('returns an empty month name for indexes outside the calendar range', () => {
+    expect(getMonthNamePtBr(-1)).toBe('');
+    expect(getMonthNamePtBr(12)).toBe('');
   });
 });

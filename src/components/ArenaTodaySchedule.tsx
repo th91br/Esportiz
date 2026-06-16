@@ -6,6 +6,7 @@ import { useCourts, SPORT_LABELS } from '@/hooks/queries/useCourts';
 import { useStudents } from '@/hooks/queries/useStudents';
 import { getDayName, formatDate, getEndTime } from '@/data/mockData';
 import { formatCurrency } from '@/lib/formatCurrency';
+import { getLocalTodayDate } from '@/lib/dateUtils';
 import { Link } from 'react-router-dom';
 
 function getReservationAmountLabel(reservation: ReturnType<typeof useReservations>['reservations'][number]) {
@@ -23,8 +24,7 @@ export function ArenaTodaySchedule() {
   const { courts, loadingCourts } = useCourts();
   const { students } = useStudents();
   
-  const now = new Date();
-  const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+  const today = getLocalTodayDate();
   const todayReservations = reservations
     .filter(r => r.date === today && r.status !== 'cancelled')
     .sort((a, b) => a.time.localeCompare(b.time));

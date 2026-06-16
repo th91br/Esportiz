@@ -9,7 +9,6 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { useAuth } from "@/contexts/auth";
-import { AppProvider } from "@/contexts/AppContext";
 import { useProfile } from "./hooks/queries/useProfile";
 import { getAuthenticatedHomePath } from "./lib/authRouting";
 import { canAccessBusinessRoute } from "./lib/businessRouteAccess";
@@ -198,17 +197,15 @@ const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
       <AuthProvider>
-        <AppProvider>
-          <Toaster />
-          <Sonner />
-          <PWABadge />
-          <AppErrorBoundary>
-            <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
-              <AppRoutes />
-            </BrowserRouter>
-          </AppErrorBoundary>
-          <Analytics />
-        </AppProvider>
+        <Toaster />
+        <Sonner />
+        <PWABadge />
+        <AppErrorBoundary>
+          <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+            <AppRoutes />
+          </BrowserRouter>
+        </AppErrorBoundary>
+        <Analytics />
       </AuthProvider>
     </TooltipProvider>
   </QueryClientProvider>

@@ -53,18 +53,6 @@ import { getLocalTodayDate } from '@/lib/dateUtils';
 import { useBusinessContext } from '@/hooks/useBusinessContext';
 import { useRolePermissions } from '@/hooks/useRolePermissions';
 
-const DEFAULT_EXPENSE_CATEGORIES = [
-  'Aluguel',
-  'Energia/Água',
-  'Salários',
-  'Material Esportivo',
-  'Marketing',
-  'Manutenção',
-  'Alimentação',
-  'Transporte',
-  'Geral',
-];
-
 const getMonthName = (month: number): string => {
   const months = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
   return months[month];

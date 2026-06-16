@@ -1,14 +1,12 @@
-import { MapPin, Users, User, Clock, Sun, Sunset, Moon, ArrowRight, DollarSign, Calendar } from 'lucide-react';
+import { MapPin, User, Clock, ArrowRight, Calendar } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { useReservations } from '@/hooks/queries/useReservations';
 import { useCourts, SPORT_LABELS } from '@/hooks/queries/useCourts';
 import { useStudents } from '@/hooks/queries/useStudents';
-import { getDayName, formatDate, getEndTime, getTimePeriod } from '@/data/mockData';
+import { getDayName, formatDate, getEndTime } from '@/data/mockData';
 import { formatCurrency } from '@/lib/formatCurrency';
 import { Link } from 'react-router-dom';
-
-const periodIcons = { manhã: Sun, tarde: Sunset, noite: Moon };
 
 function getReservationAmountLabel(reservation: ReturnType<typeof useReservations>['reservations'][number]) {
   const isPaid = reservation.paymentStatus === 'paid' || reservation.remainingBalance <= 0;
@@ -52,8 +50,6 @@ export function ArenaTodaySchedule() {
       <div className="space-y-4 flex-1">
         {todayReservations.length > 0 ? (
           todayReservations.map(reservation => {
-            const timePeriod = getTimePeriod(reservation.time);
-            const PeriodIcon = periodIcons[timePeriod];
             const reservantes = students.filter(s => reservation.reservanteIds.includes(s.id));
             const court = courts.find(c => c.id === reservation.courtId);
             const hasPartialPayment = reservation.totalPaid > 0 && reservation.remainingBalance > 0;

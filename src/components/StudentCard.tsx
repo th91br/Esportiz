@@ -39,11 +39,11 @@ const levelStyles = {
 };
 
 const levelLabels = {
-  iniciante: 'Categoria D (Iniciante)',
-  intermediário: 'Categoria C (Intermediário)',
-  avançado: 'Categoria B (Avançado)',
-  avançado_pro: 'Categoria A (Avançado PRO)',
-  profissional: 'Categoria Profissional',
+  iniciante: 'Iniciante',
+  intermediário: 'Intermediário',
+  avançado: 'Avançado',
+  avançado_pro: 'Avançado PRO',
+  profissional: 'Profissional',
 };
 
 export function StudentCard({ student, onClick }: StudentCardProps) {
@@ -205,26 +205,24 @@ export function StudentCard({ student, onClick }: StudentCardProps) {
             )}
           </div>
           <div className="flex-1 min-w-0">
-            <div className="flex items-start justify-between gap-2 mb-1.5">
-              <div className="flex-1 min-w-0 pr-2">
-                <h3 className="font-display font-semibold text-foreground truncate block w-full">{student.name}</h3>
+            <div className="flex flex-col gap-1.5 mb-2.5">
+              <div className="min-w-0">
+                <h3 className="font-display font-semibold text-foreground text-base sm:text-lg truncate block w-full">{student.name}</h3>
               </div>
-              <div className="flex flex-col items-end shrink-0 gap-1.5">
-                <div className="flex gap-1.5">
-                  {!isArena && (
-                    <span className={cn('px-2 py-0.5 rounded-full text-[10px] uppercase font-bold tracking-wider border shrink-0', levelStyles[student.level])}>
-                      {levelLabels[student.level]}
-                    </span>
-                  )}
-                  {modality && (
-                    <span 
-                      className="px-2 py-0.5 rounded-full text-[10px] uppercase font-bold tracking-wider border border-primary/20 bg-primary/5 text-primary flex items-center gap-1.5 shrink-0"
-                    >
-                      <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: modality.color }} />
-                      {modality.name}
-                    </span>
-                  )}
-                </div>
+              <div className="flex flex-wrap items-center gap-1.5">
+                {!isArena && (
+                  <span className={cn('px-2 py-0.5 rounded-full text-[10px] uppercase font-bold tracking-wider border shrink-0', levelStyles[student.level])}>
+                    {levelLabels[student.level]}
+                  </span>
+                )}
+                {modality && (
+                  <span 
+                    className="px-2 py-0.5 rounded-full text-[10px] uppercase font-bold tracking-wider border border-primary/20 bg-primary/5 text-primary flex items-center gap-1.5 shrink-0"
+                  >
+                    <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: modality.color }} />
+                    {modality.name}
+                  </span>
+                )}
                 {!student.active && <span className="px-2 py-0.5 rounded-full text-[10px] uppercase font-bold tracking-wider bg-destructive/10 text-destructive border border-destructive/20">Inativo</span>}
                 {!isArena && student.isTrial && (
                   <span className="px-2 py-0.5 rounded-full text-[10px] uppercase font-bold tracking-wider bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 flex items-center gap-1">

@@ -612,10 +612,10 @@ export default function CalendarPage() {
                                 profissional: 'bg-rose-100 text-rose-700 dark:bg-rose-900/40 dark:text-rose-400',
                               };
                               const levelLabels: Record<string, string> = {
-                                iniciante: 'Cat. D (Iniciante)',
-                                intermediário: 'Cat. C (Intermediário)',
-                                avançado: 'Cat. B (Avançado)',
-                                avançado_pro: 'Cat. A (Avançado PRO)',
+                                iniciante: 'Iniciante',
+                                intermediário: 'Intermediário',
+                                avançado: 'Avançado',
+                                avançado_pro: 'Avançado PRO',
                                 profissional: 'Profissional',
                               };
                               return (

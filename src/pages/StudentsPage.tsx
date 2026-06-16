@@ -25,11 +25,11 @@ import { useRolePermissions } from '@/hooks/useRolePermissions';
 import { cn } from '@/lib/utils';
 
 const levelLabels: Record<string, string> = {
-  iniciante: 'Categoria D (Iniciante)',
-  intermediário: 'Categoria C (Intermediário)',
-  avançado: 'Categoria B (Avançado)',
-  avançado_pro: 'Categoria A (Avançado PRO)',
-  profissional: 'Categoria Profissional',
+  iniciante: 'Iniciante',
+  intermediário: 'Intermediário',
+  avançado: 'Avançado',
+  avançado_pro: 'Avançado PRO',
+  profissional: 'Profissional',
 };
 
 export default function StudentsPage() {
@@ -156,11 +156,9 @@ export default function StudentsPage() {
                   <SelectTrigger className="w-full lg:w-[140px]"><SelectValue placeholder="Nível" /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">Todos os níveis</SelectItem>
-                    <SelectItem value="iniciante">Categoria D (Iniciante)</SelectItem>
-                    <SelectItem value="intermediário">Categoria C (Intermediário)</SelectItem>
-                    <SelectItem value="avançado">Categoria B (Avançado)</SelectItem>
-                    <SelectItem value="avançado_pro">Categoria A (Avançado PRO)</SelectItem>
-                    <SelectItem value="profissional">Categoria Profissional</SelectItem>
+                    {Object.entries(levelLabels).map(([value, label]) => (
+                      <SelectItem key={value} value={value}>{label}</SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               )}

@@ -538,11 +538,11 @@ export function StudentForm({ student, trigger }: StudentFormProps) {
                           <SelectTrigger><SelectValue placeholder="Selecione o nível" /></SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          <SelectItem value="iniciante">Categoria D (Iniciante)</SelectItem>
-                          <SelectItem value="intermediário">Categoria C (Intermediário)</SelectItem>
-                          <SelectItem value="avançado">Categoria B (Avançado)</SelectItem>
-                          <SelectItem value="avançado_pro">Categoria A (Avançado PRO)</SelectItem>
-                          <SelectItem value="profissional">Categoria Profissional</SelectItem>
+                          <SelectItem value="iniciante">Iniciante</SelectItem>
+                          <SelectItem value="intermediário">Intermediário</SelectItem>
+                          <SelectItem value="avançado">Avançado</SelectItem>
+                          <SelectItem value="avançado_pro">Avançado PRO</SelectItem>
+                          <SelectItem value="profissional">Profissional</SelectItem>
                         </SelectContent>
                       </Select>
                       <FormMessage />

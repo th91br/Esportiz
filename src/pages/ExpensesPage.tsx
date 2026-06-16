@@ -3,8 +3,10 @@ import { AppPage } from '@/components/layout/AppPage';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { useExpenses } from '@/hooks/queries/useExpenses';
 import { Button } from '@/components/ui/button';
+import { EmptyState } from '@/components/ui/empty-state';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { LoadingState } from '@/components/ui/loading-state';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Dialog,
@@ -365,15 +367,14 @@ export default function ExpensesPage() {
           </CardHeader>
           <CardContent>
             {loadingExpenses ? (
-              <div className="flex justify-center py-12">
-                <div className="h-8 w-8 border-4 border-primary/30 border-t-primary rounded-full animate-spin" />
-              </div>
+              <LoadingState label="Carregando despesas" className="py-12" />
             ) : filteredExpenses.length === 0 ? (
-              <div className="text-center py-12 text-muted-foreground">
-                <Receipt className="h-12 w-12 mx-auto mb-3 opacity-30" />
-                <p className="font-medium">Nenhuma despesa neste mês</p>
-                <p className="text-sm mt-1">Clique em "Nova Despesa" para começar.</p>
-              </div>
+              <EmptyState
+                icon={Receipt}
+                title="Nenhuma despesa neste mês"
+                description='Clique em "Nova Despesa" para começar.'
+                className="py-12"
+              />
             ) : (
               <div className="space-y-2">
                 {filteredExpenses.map((expense) => (

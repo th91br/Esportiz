@@ -6,8 +6,10 @@ import { Switch } from '@/components/ui/switch';
 import { useProducts } from '@/hooks/queries/useProducts';
 import { useBusinessContext } from '@/hooks/useBusinessContext';
 import { Button } from '@/components/ui/button';
+import { EmptyState } from '@/components/ui/empty-state';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { LoadingState } from '@/components/ui/loading-state';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Dialog,
@@ -315,17 +317,16 @@ export default function ProductsPage() {
 
             {/* Products Grid */}
             {loadingProducts ? (
-              <div className="flex justify-center py-12">
-                <div className="h-8 w-8 border-4 border-primary/30 border-t-primary rounded-full animate-spin" />
-              </div>
+              <LoadingState label="Carregando produtos" className="py-12" />
             ) : displayProducts.length === 0 ? (
               <Card>
-                <CardContent className="text-center py-12 text-muted-foreground">
-                  <Package className="h-12 w-12 mx-auto mb-3 opacity-30" />
-                  <p className="font-medium">Nenhum produto cadastrado</p>
-                  {canCreateProducts && (
-                    <p className="text-sm mt-1">Clique em "Novo Produto" para começar.</p>
-                  )}
+                <CardContent>
+                  <EmptyState
+                    icon={Package}
+                    title="Nenhum produto cadastrado"
+                    description={canCreateProducts ? 'Clique em "Novo Produto" para começar.' : undefined}
+                    className="py-12"
+                  />
                 </CardContent>
               </Card>
             ) : (
@@ -458,15 +459,16 @@ export default function ProductsPage() {
 
             {/* 3. High Density Stock Table */}
             {loadingProducts ? (
-              <div className="flex justify-center py-12">
-                <div className="h-8 w-8 border-4 border-primary/30 border-t-primary rounded-full animate-spin" />
-              </div>
+              <LoadingState label="Carregando estoque" className="py-12" />
             ) : filteredStockProducts.length === 0 ? (
               <Card className="border-border/50">
-                <CardContent className="text-center py-12 text-muted-foreground">
-                  <Package className="h-12 w-12 mx-auto mb-3 opacity-30" />
-                  <p className="font-bold text-sm">Nenhum produto em estoque encontrado</p>
-                  <p className="text-xs mt-1">Certifique-se de cadastrar produtos com "Controlar Estoque" ativo.</p>
+                <CardContent>
+                  <EmptyState
+                    icon={Package}
+                    title="Nenhum produto em estoque encontrado"
+                    description='Certifique-se de cadastrar produtos com "Controlar Estoque" ativo.'
+                    className="py-12"
+                  />
                 </CardContent>
               </Card>
             ) : (

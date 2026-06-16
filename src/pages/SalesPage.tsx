@@ -4,7 +4,9 @@ import { PageHeader } from '@/components/layout/PageHeader';
 import { useProducts } from '@/hooks/queries/useProducts';
 import { useSales, getPaymentMethodLabel, type PaymentMethod, type Sale } from '@/hooks/queries/useSales';
 import { Button } from '@/components/ui/button';
+import { EmptyState } from '@/components/ui/empty-state';
 import { Input } from '@/components/ui/input';
+import { LoadingState } from '@/components/ui/loading-state';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Select,
@@ -229,17 +231,18 @@ export default function SalesPage() {
               </CardHeader>
               <CardContent>
                 {loadingProducts ? (
-                  <div className="flex justify-center py-12">
-                    <div className="h-8 w-8 border-4 border-primary/30 border-t-primary rounded-full animate-spin" />
-                  </div>
+                  <LoadingState label="Carregando produtos para venda" className="py-12" />
                 ) : activeProducts.length === 0 ? (
-                  <div className="text-center py-12 text-muted-foreground">
-                    <Package className="h-12 w-12 mx-auto mb-3 opacity-30" />
-                    <p className="font-medium">Nenhum produto cadastrado</p>
-                    <p className="text-sm mt-1">
-                      <Link to="/produtos" className="text-primary underline">Cadastre seus produtos</Link> para começar a vender.
-                    </p>
-                  </div>
+                  <EmptyState
+                    icon={Package}
+                    title="Nenhum produto cadastrado"
+                    description={(
+                      <>
+                        <Link to="/produtos" className="text-primary underline">Cadastre seus produtos</Link> para começar a vender.
+                      </>
+                    )}
+                    className="py-12"
+                  />
                 ) : (
                   <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                     {activeProducts.map(product => {
@@ -439,13 +442,13 @@ export default function SalesPage() {
 
           <CardContent>
             {loadingSales ? (
-              <div className="flex justify-center py-10">
-                <div className="h-8 w-8 border-4 border-primary/30 border-t-primary rounded-full animate-spin" />
-              </div>
+              <LoadingState label="Carregando histórico de vendas" className="py-10" />
             ) : filteredHistorySales.length === 0 ? (
-              <div className="rounded-xl border border-dashed border-border/60 bg-muted/10 p-8 text-center text-muted-foreground">
-                Nenhuma venda encontrada para os filtros selecionados.
-              </div>
+              <EmptyState
+                title="Nenhuma venda encontrada para os filtros selecionados."
+                variant="outlined"
+                className="p-8"
+              />
             ) : (
               <div className="space-y-2">
                 {filteredHistorySales.map(sale => {

@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
+import { LoadingState } from '@/components/ui/loading-state';
 import { toast } from 'sonner';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { EsportizIcon } from '@/components/Logo';
@@ -1723,9 +1724,10 @@ CONCORDÂNCIA E ASSINATURA: O contratante declara ter lido, compreendido e aceit
                         <span className="text-[9px] opacity-75 mt-1">para gerar o QR Code Pix</span>
                       </div>
                     ) : generatingQrCode ? (
-                      <div className="w-[200px] h-[200px] sm:w-[220px] sm:h-[220px] flex items-center justify-center bg-muted/20">
-                        <div className="h-8 w-8 border-4 border-primary/30 border-t-primary rounded-full animate-spin" />
-                      </div>
+                      <LoadingState
+                        label="Gerando QR Code Pix"
+                        className="w-[200px] h-[200px] sm:w-[220px] sm:h-[220px] items-center bg-muted/20"
+                      />
                     ) : (
                       pixQrCodeUrl && (
                         <img 

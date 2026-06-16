@@ -4,6 +4,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Analytics } from "@vercel/analytics/react";
 import { PWABadge } from "@/components/PWABadge";
 import { AppErrorBoundary } from "@/components/AppErrorBoundary";
+import { LoadingState } from "@/components/ui/loading-state";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
@@ -47,11 +48,7 @@ const OnlineBookingPage = lazy(() => import("./pages/OnlineBookingPage"));
 
 const queryClient = new QueryClient();
 function FullScreenLoader() {
-  return (
-    <div className="min-h-screen flex items-center justify-center bg-background">
-      <div className="h-8 w-8 border-4 border-primary/30 border-t-primary rounded-full animate-spin" />
-    </div>
-  );
+  return <LoadingState label="Carregando aplicativo" className="min-h-screen items-center bg-background" />;
 }
 
 function getErrorMessage(error: unknown) {

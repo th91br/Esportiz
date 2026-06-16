@@ -17,7 +17,7 @@ export function Header() {
   const location = useLocation();
   const { signOut } = useAuth();
   const { profile } = useProfile();
-  const { navModules, canViewSettings } = useBusinessContext();
+  const { navModules, canViewSettings, isArena } = useBusinessContext();
   const mobileMenuLabel = isMenuOpen ? 'Fechar menu principal' : 'Abrir menu principal';
   const themeToggleLabel = isDark ? 'Alternar para modo claro' : 'Alternar para modo escuro';
 
@@ -63,20 +63,22 @@ export function Header() {
           <div className="pointer-events-none absolute left-0 top-0 bottom-0 w-4 bg-gradient-to-r from-background/95 to-transparent z-10" />
           <div className="pointer-events-none absolute right-0 top-0 bottom-0 w-4 bg-gradient-to-l from-background/95 to-transparent z-10" />
           <nav aria-label="Navegação principal" className="flex items-center justify-start gap-1 overflow-x-auto no-scrollbar px-3">
-            {navModules.map((item) => (
-              <Link
-                key={item.path}
-                to={item.path}
-                className={cn(
-                  'px-2 py-1 lg:px-2.5 lg:py-1.5 rounded-lg text-[11px] lg:text-xs font-medium transition-colors whitespace-nowrap shrink-0',
-                  location.pathname === item.path
-                    ? 'text-primary bg-primary/10 font-semibold'
-                    : 'text-muted-foreground hover:text-foreground hover:bg-muted'
-                )}
-              >
-                {item.label}
-              </Link>
-            ))}
+            <div className={cn("flex items-center gap-1 min-w-max", isArena && "mx-auto")}>
+              {navModules.map((item) => (
+                <Link
+                  key={item.path}
+                  to={item.path}
+                  className={cn(
+                    'px-2 py-1 lg:px-2.5 lg:py-1.5 rounded-lg text-[11px] lg:text-xs font-medium transition-colors whitespace-nowrap shrink-0',
+                    location.pathname === item.path
+                      ? 'text-primary bg-primary/10 font-semibold'
+                      : 'text-muted-foreground hover:text-foreground hover:bg-muted'
+                  )}
+                >
+                  {item.label}
+                </Link>
+              ))}
+            </div>
           </nav>
         </div>
 

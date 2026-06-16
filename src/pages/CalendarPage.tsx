@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState, useMemo } from 'react';
 import { ChevronLeft, ChevronRight, Plus, Sun, Sunset, Moon, MapPin, Users, Clock, Pencil, Trash2, CalendarDays, CalendarRange, Repeat } from 'lucide-react';
 import { Header } from '@/components/Header';
@@ -55,6 +56,9 @@ function TrainingFormDialog({
   const { modalities } = useModalities();
   const [studentSearch, setStudentSearch] = useState('');
   const { labels } = useBusinessContext();
+  const [cancelled, setCancelled] = useState(training?.cancelled || false);
+  const [cancellationReason, setCancellationReason] = useState<'holiday' | 'weather' | 'coach_absence' | 'other'>(training?.cancellationReason || 'holiday');
+  const [cancellationNotes, setCancellationNotes] = useState(training?.cancellationNotes || '');
 
   const filteredStudents = activeStudents.filter((s) =>
     s.name.toLowerCase().includes(studentSearch.toLowerCase())
@@ -98,6 +102,9 @@ function TrainingFormDialog({
         location: formLocation,
         modalityId: formModalityId && formModalityId !== 'none' ? formModalityId : undefined,
         durationMinutes: parseInt(formDuration) || 60,
+        cancelled,
+        cancellationReason: cancelled ? cancellationReason : null,
+        cancellationNotes: cancelled ? cancellationNotes : null,
       };
       
       let datesToSchedule: string[] = [formDate];
@@ -212,6 +219,64 @@ function TrainingFormDialog({
               </SelectContent>
             </Select>
           </div>
+
+          {isEditing && (
+            <div className="space-y-4 p-4 rounded-xl border border-border bg-muted/20">
+              <div className="flex items-center justify-between">
+                <Label className="font-semibold text-sm">Status da Aula</Label>
+                <div className="flex gap-2">
+                  <Button 
+                    type="button" 
+                    variant={!cancelled ? "default" : "outline"} 
+                    size="sm"
+                    onClick={() => setCancelled(false)}
+                    className={cn(!cancelled && "btn-primary-gradient")}
+                  >
+                    Confirmada
+                  </Button>
+                  <Button 
+                    type="button" 
+                    variant={cancelled ? "destructive" : "outline"} 
+                    size="sm"
+                    onClick={() => setCancelled(true)}
+                  >
+                    Cancelada
+                  </Button>
+                </div>
+              </div>
+
+              {cancelled && (
+                <div className="space-y-3 pt-2 border-t border-border/50 animate-fade-down">
+                  <div className="space-y-2">
+                    <Label className="text-xs">Motivo do Cancelamento</Label>
+                    <Select 
+                      value={cancellationReason} 
+                      onValueChange={(value) => setCancellationReason(value as any)}
+                    >
+                      <SelectTrigger className="h-9">
+                        <SelectValue placeholder="Selecione o motivo" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="holiday">Feriado</SelectItem>
+                        <SelectItem value="weather">Chuva / Condições Climáticas</SelectItem>
+                        <SelectItem value="coach_absence">Falta do Professor</SelectItem>
+                        <SelectItem value="other">Outro Motivo</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-xs">Observações do Cancelamento (Alunos visualizam)</Label>
+                    <Input 
+                      placeholder="Ex: Aula compensada no dia 20/06" 
+                      value={cancellationNotes} 
+                      onChange={(e) => setCancellationNotes(e.target.value)}
+                      className="h-9"
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
 
           <div className="space-y-2">
             <Label>Modalidade</Label>
@@ -547,7 +612,13 @@ export default function CalendarPage() {
                     const PeriodIcon = periodIcons[timePeriod];
                     const trainingStudents = students.filter((s) => training.studentIds.includes(s.id));
                     return (
-                      <div key={training.id} className="p-4 rounded-xl bg-muted/50 border border-border/50">
+                      <div 
+                        key={training.id} 
+                        className={cn(
+                          "p-4 rounded-xl bg-muted/50 border border-border/50 transition-all",
+                          training.cancelled && "opacity-60 bg-slate-50 dark:bg-slate-900 border-dashed border-slate-300 dark:border-slate-800"
+                        )}
+                      >
                         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                           <div className="flex items-center gap-3">
                             <div className={cn('p-2 rounded-lg', periodStyles[timePeriod], 'text-white')}>
@@ -561,7 +632,16 @@ export default function CalendarPage() {
                               <p className="text-sm text-muted-foreground capitalize">{timePeriod}</p>
                             </div>
                           </div>
-                          <div className="flex-1 flex flex-col items-center sm:items-start px-4">
+                          <div className="flex-1 flex flex-wrap items-center justify-center sm:justify-start gap-1.5 px-4">
+                            {training.cancelled && (
+                              <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-destructive/10 border border-destructive/20 text-destructive text-[10px] font-bold uppercase tracking-wider">
+                                <span>Cancelado ({
+                                  training.cancellationReason === 'holiday' ? 'Feriado' :
+                                  training.cancellationReason === 'weather' ? 'Clima' :
+                                  training.cancellationReason === 'coach_absence' ? 'Falta Professor' : 'Outro'
+                                })</span>
+                              </div>
+                            )}
                             {training.modalityId && (
                               <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-primary/5 border border-primary/10 w-fit">
                                 <div className="h-2 w-2 rounded-full" style={{ backgroundColor: modalities.find(m => m.id === training.modalityId)?.color }} />

@@ -87,6 +87,9 @@ export interface Training {
   googleEventId?: string;
   modalityId?: string;
   durationMinutes: number;
+  cancelled?: boolean;
+  cancellationReason?: 'holiday' | 'weather' | 'coach_absence' | 'other';
+  cancellationNotes?: string;
 }
 
 export interface Attendance {
@@ -95,6 +98,8 @@ export interface Attendance {
   studentId: string;
   present: boolean;
   date: string;
+  justified?: boolean;
+  justificationNotes?: string;
 }
 
 export const getDayName = (dateString: string): string => {

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
@@ -33,11 +34,11 @@ export function useTrainings(options: { enabled?: boolean } = {}) {
                 .order('time');
 
             if (error) throw error;
-            return ((data || []) as TrainingRowWithStudents[]).map((t) => ({
+            return ((data || []) as any[]).map((t) => ({
                 id: t.id,
                 date: t.date,
                 time: t.time as TimeSlot,
-                studentIds: (t.training_students || []).map((ts) => ts.student_id),
+                studentIds: (t.training_students || []).map((ts: any) => ts.student_id),
                 location: t.location,
                 notes: t.notes,
                 completed: t.completed ?? false,
@@ -45,6 +46,9 @@ export function useTrainings(options: { enabled?: boolean } = {}) {
                 googleEventId: t.google_event_id,
                 modalityId: t.modality_id,
                 durationMinutes: t.duration_minutes ?? 60,
+                cancelled: t.cancelled ?? false,
+                cancellationReason: t.cancellation_reason ?? undefined,
+                cancellationNotes: t.cancellation_notes ?? undefined,
             })) as Training[];
         },
         enabled: trainingsEnabled && !!tenantId,
@@ -104,6 +108,9 @@ export function useTrainings(options: { enabled?: boolean } = {}) {
             if (data.notes !== undefined) updates.notes = data.notes;
             if (data.modalityId !== undefined) updates.modality_id = data.modalityId;
             if (data.durationMinutes !== undefined) updates.duration_minutes = data.durationMinutes;
+            if (data.cancelled !== undefined) (updates as any).cancelled = data.cancelled;
+            if (data.cancellationReason !== undefined) (updates as any).cancellation_reason = data.cancellationReason;
+            if (data.cancellationNotes !== undefined) (updates as any).cancellation_notes = data.cancellationNotes;
 
             if (Object.keys(updates).length > 0) {
                 const { error } = await supabase.from('trainings').update(updates).eq('id', id).eq('user_id', tenantId);

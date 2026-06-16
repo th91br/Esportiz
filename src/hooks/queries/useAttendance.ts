@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
@@ -28,26 +29,48 @@ export function useAttendance(options: { enabled?: boolean } = {}) {
                 .eq('business_type', businessType)
                 .order('date', { ascending: false });
             if (error) throw error;
-            return (data || []).map((a: Tables<'attendance'>) => ({
+            return (data || []).map((a: any) => ({
                 id: a.id,
                 trainingId: a.training_id,
                 studentId: a.student_id,
                 present: a.present,
                 date: a.date,
+                justified: a.justified,
+                justificationNotes: a.justification_notes,
             })) as Attendance[];
         },
         enabled: attendanceEnabled && !!tenantId,
     });
 
     const toggleAttendanceMutation = useMutation({
-        mutationFn: async ({ trainingId, studentId, date, forcedStatus }: { trainingId: string, studentId: string, date: string, forcedStatus?: boolean }) => {
+        mutationFn: async ({ 
+            trainingId, 
+            studentId, 
+            date, 
+            status, 
+            justificationNotes 
+        }: { 
+            trainingId: string, 
+            studentId: string, 
+            date: string, 
+            status: 'presente' | 'falta' | 'justificada', 
+            justificationNotes?: string 
+        }) => {
             if (!user) throw new Error('Usuário não autenticado');
 
             const existing = attendance.find((a) => a.trainingId === trainingId && a.studentId === studentId);
-            const newStatus = forcedStatus !== undefined ? forcedStatus : (existing ? !existing.present : true);
+            const isPresent = status === 'presente';
+            const isJustified = status === 'justificada';
+            const notes = isJustified ? (justificationNotes || '') : null;
+
+            const payload = {
+                present: isPresent,
+                justified: isJustified,
+                justification_notes: notes,
+            };
 
             if (existing) {
-                const { error } = await supabase.from('attendance').update({ present: newStatus }).eq('id', existing.id);
+                const { error } = await supabase.from('attendance').update(payload).eq('id', existing.id);
                 if (error) throw error;
             } else {
                 const businessType = profile?.business_type || 'sport_school';
@@ -56,7 +79,9 @@ export function useAttendance(options: { enabled?: boolean } = {}) {
                     business_type: businessType,
                     training_id: trainingId,
                     student_id: studentId,
-                    present: newStatus,
+                    present: isPresent,
+                    justified: isJustified,
+                    justification_notes: notes,
                     date,
                     organization_id: profile?.organization_id || null,
                 });
@@ -94,11 +119,23 @@ export function useAttendance(options: { enabled?: boolean } = {}) {
         [attendance]
     );
 
+    const getAttendanceDetail = useCallback(
+        (trainingId: string, studentId: string): Attendance | undefined => {
+            return attendance.find((a) => a.trainingId === trainingId && a.studentId === studentId);
+        },
+        [attendance]
+    );
+
     return {
         attendance,
         loadingAttendance,
         getAttendanceStatus,
-        toggleAttendance: async (trainingId: string, studentId: string, date: string, forcedStatus?: boolean) =>
-            toggleAttendanceMutation.mutateAsync({ trainingId, studentId, date, forcedStatus }),
+        getAttendanceDetail,
+        setAttendanceStatus: async (params: { trainingId: string, studentId: string, date: string, status: 'presente' | 'falta' | 'justificada', justificationNotes?: string }) =>
+            toggleAttendanceMutation.mutateAsync(params),
+        toggleAttendance: async (trainingId: string, studentId: string, date: string, forcedStatus?: boolean) => {
+            const status = forcedStatus === true ? 'presente' : 'falta';
+            return toggleAttendanceMutation.mutateAsync({ trainingId, studentId, date, status });
+        }
     };
 }

@@ -41,11 +41,17 @@ export function TodaySchedule() {
             const PeriodIcon = periodIcons[timePeriod];
             const trainingStudents = students.filter(s => training.studentIds.includes(s.id));
 
-            return (
-              <div key={training.id} className="relative overflow-hidden rounded-xl bg-background border border-border/50 hover:border-primary/40 shadow-sm transition-all group p-4 md:p-5">
+             return (
+              <div 
+                key={training.id} 
+                className={cn(
+                  "relative overflow-hidden rounded-xl bg-background border border-border/50 hover:border-primary/40 shadow-sm transition-all group p-4 md:p-5",
+                  training.cancelled && "opacity-60 bg-slate-50 dark:bg-slate-900 border-dashed border-slate-300 dark:border-slate-800"
+                )}
+              >
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                   <div className="space-y-2.5">
-                    <div className="flex items-center gap-2.5">
+                    <div className="flex flex-wrap items-center gap-2.5">
                       <div className={cn("text-[11px] px-2 py-0.5 rounded-md flex items-center gap-1 font-bold uppercase tracking-wider", 
                         timePeriod === 'manhã' ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300' : 
                         timePeriod === 'tarde' ? 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300' : 
@@ -57,6 +63,15 @@ export function TodaySchedule() {
                         <Clock className="h-4 w-4 text-primary" />
                         {training.time} - {getEndTime(training.time, training.durationMinutes)}
                       </div>
+                      {training.cancelled && (
+                        <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-destructive/10 text-destructive border border-destructive/20 uppercase tracking-wider">
+                          Cancelado ({
+                            training.cancellationReason === 'holiday' ? 'Feriado' :
+                            training.cancellationReason === 'weather' ? 'Clima' :
+                            training.cancellationReason === 'coach_absence' ? 'Falta Professor' : 'Outro'
+                          })
+                        </span>
+                      )}
                     </div>
                     <div className="flex items-center gap-3 text-sm text-muted-foreground">
                       <div className="flex items-center gap-1.5">

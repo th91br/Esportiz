@@ -20,7 +20,7 @@ import QRCode from 'qrcode';
 import { 
   CheckCircle2, XCircle, LogOut, Clock, Calendar, GraduationCap, 
   DollarSign, MapPin, Copy, QrCode, ClipboardList, BookOpen, UserCheck, ShieldAlert,
-  Phone, MessageSquare
+  Phone, MessageSquare, AlertCircle
 } from 'lucide-react';
 import { formatCurrency } from '@/lib/formatCurrency';
 import { cn } from '@/lib/utils';
@@ -40,7 +40,7 @@ import { buildWhatsAppUrl, normalizeWhatsAppPhone } from '@/lib/communicationCon
 
 interface AttendanceLog {
   date: string;
-  status: 'present' | 'absent';
+  status: 'present' | 'absent' | 'justified';
   notes?: string;
 }
 
@@ -1512,6 +1512,10 @@ CONCORDÂNCIA E ASSINATURA: O contratante declara ter lido, compreendido e aceit
                       {log.status === 'present' ? (
                         <Badge className="bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800 text-[10px] flex items-center gap-1 font-semibold">
                           <CheckCircle2 className="h-3.5 w-3.5" /> Presente
+                        </Badge>
+                      ) : log.status === 'justified' ? (
+                        <Badge className="bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 border-amber-200 dark:border-amber-800 text-[10px] flex items-center gap-1 font-semibold">
+                          <AlertCircle className="h-3.5 w-3.5" /> Justificada
                         </Badge>
                       ) : (
                         <Badge className="bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400 border-red-200 dark:border-red-800 text-[10px] flex items-center gap-1 font-semibold">

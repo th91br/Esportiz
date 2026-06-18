@@ -42,6 +42,14 @@ vi.mock('@/hooks/useBusinessContext', () => ({
   }),
 }));
 
+vi.mock('@/contexts/sidebar', () => ({
+  useSidebar: () => ({
+    isActive: false,
+    isCollapsed: false,
+    toggleCollapse: vi.fn(),
+  }),
+}));
+
 function renderHeader() {
   return render(
     <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>

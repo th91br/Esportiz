@@ -16,6 +16,8 @@ import { canAccessBusinessRoute } from "./lib/businessRouteAccess";
 import { useBusinessContext } from "@/hooks/useBusinessContext";
 import { canAccessPath as canAccessRolePath } from "./lib/rolePermissions";
 import { shouldRevokeOrganizationSession } from "./lib/organizationAccess";
+import { SidebarProvider } from "@/contexts/SidebarContext";
+import { Sidebar } from "@/components/Sidebar";
 
 const LoginPage = lazy(() => import("./pages/LoginPage"));
 const LandingPage = lazy(() => import("./pages/LandingPage"));
@@ -150,42 +152,45 @@ function ProtectedRoute({ children }: { children: ReactNode }) {
 export function AppRoutes() {
   return (
     <Suspense fallback={<FullScreenLoader />}>
-      <Routes>
-      {/* Rota pública — landing page */}
-      <Route path="/" element={<LandingPage />} />
-      <Route path="/matricula" element={<EnrollmentUnavailablePage />} />
-      <Route path="/agendar" element={<OnlineBookingPage />} />
-      <Route path="/agendamento" element={<OnlineBookingPage />} />
-      <Route path="/portal-aluno" element={<StudentPortalPage />} />
-      {/* Auth */}
-      <Route path="/login" element={<LoginRoute />} />
-      <Route path="/reset-password" element={<ResetPasswordPage />} />
-      {/* App protegido */}
-      <Route path="/dashboard" element={<ProtectedRoute><Index /></ProtectedRoute>} />
-      <Route path="/onboarding" element={<ProtectedRoute><OnboardingPage /></ProtectedRoute>} />
-      <Route path="/calendario" element={<ProtectedRoute><CalendarPage /></ProtectedRoute>} />
-      <Route path="/alunos" element={<ProtectedRoute><StudentsPage /></ProtectedRoute>} />
-      <Route path="/alunos/:id" element={<ProtectedRoute><StudentProfilePage /></ProtectedRoute>} />
-      <Route path="/presenca" element={<ProtectedRoute><AttendancePage /></ProtectedRoute>} />
-      <Route path="/planos" element={<ProtectedRoute><PlansPage /></ProtectedRoute>} />
-      <Route path="/pagamentos" element={<ProtectedRoute><PaymentsPage /></ProtectedRoute>} />
-      <Route path="/despesas" element={<ProtectedRoute><ExpensesPage /></ProtectedRoute>} />
-      <Route path="/produtos" element={<ProtectedRoute><ProductsPage /></ProtectedRoute>} />
-      <Route path="/vendas" element={<ProtectedRoute><SalesPage /></ProtectedRoute>} />
-      <Route path="/aniversariantes" element={<ProtectedRoute><BirthdaysPage /></ProtectedRoute>} />
-      <Route path="/relatorios" element={<ProtectedRoute><ReportsPage /></ProtectedRoute>} />
-      <Route path="/comunicacao" element={<ProtectedRoute><CommunicationPage /></ProtectedRoute>} />
-      <Route path="/contratos" element={<ProtectedRoute><ContractsPage /></ProtectedRoute>} />
-      <Route path="/modalidades" element={<ProtectedRoute><ModalitiesPage /></ProtectedRoute>} />
-      <Route path="/turmas" element={<ProtectedRoute><GroupsPage /></ProtectedRoute>} />
-      <Route path="/configuracoes" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
-      {/* Arena-specific routes */}
-      <Route path="/quadras" element={<ProtectedRoute><CourtsPage /></ProtectedRoute>} />
-      <Route path="/agenda" element={<ProtectedRoute><ArenaAgendaPage /></ProtectedRoute>} />
-      <Route path="/reservantes" element={<ProtectedRoute><StudentsPage /></ProtectedRoute>} />
-      <Route path="/comandas" element={<ProtectedRoute><ComandasPage /></ProtectedRoute>} />
-      <Route path="*" element={<NotFound />} />
-      </Routes>
+      <SidebarProvider>
+        <Sidebar />
+        <Routes>
+        {/* Rota pública — landing page */}
+        <Route path="/" element={<LandingPage />} />
+        <Route path="/matricula" element={<EnrollmentUnavailablePage />} />
+        <Route path="/agendar" element={<OnlineBookingPage />} />
+        <Route path="/agendamento" element={<OnlineBookingPage />} />
+        <Route path="/portal-aluno" element={<StudentPortalPage />} />
+        {/* Auth */}
+        <Route path="/login" element={<LoginRoute />} />
+        <Route path="/reset-password" element={<ResetPasswordPage />} />
+        {/* App protegido */}
+        <Route path="/dashboard" element={<ProtectedRoute><Index /></ProtectedRoute>} />
+        <Route path="/onboarding" element={<ProtectedRoute><OnboardingPage /></ProtectedRoute>} />
+        <Route path="/calendario" element={<ProtectedRoute><CalendarPage /></ProtectedRoute>} />
+        <Route path="/alunos" element={<ProtectedRoute><StudentsPage /></ProtectedRoute>} />
+        <Route path="/alunos/:id" element={<ProtectedRoute><StudentProfilePage /></ProtectedRoute>} />
+        <Route path="/presenca" element={<ProtectedRoute><AttendancePage /></ProtectedRoute>} />
+        <Route path="/planos" element={<ProtectedRoute><PlansPage /></ProtectedRoute>} />
+        <Route path="/pagamentos" element={<ProtectedRoute><PaymentsPage /></ProtectedRoute>} />
+        <Route path="/despesas" element={<ProtectedRoute><ExpensesPage /></ProtectedRoute>} />
+        <Route path="/produtos" element={<ProtectedRoute><ProductsPage /></ProtectedRoute>} />
+        <Route path="/vendas" element={<ProtectedRoute><SalesPage /></ProtectedRoute>} />
+        <Route path="/aniversariantes" element={<ProtectedRoute><BirthdaysPage /></ProtectedRoute>} />
+        <Route path="/relatorios" element={<ProtectedRoute><ReportsPage /></ProtectedRoute>} />
+        <Route path="/comunicacao" element={<ProtectedRoute><CommunicationPage /></ProtectedRoute>} />
+        <Route path="/contratos" element={<ProtectedRoute><ContractsPage /></ProtectedRoute>} />
+        <Route path="/modalidades" element={<ProtectedRoute><ModalitiesPage /></ProtectedRoute>} />
+        <Route path="/turmas" element={<ProtectedRoute><GroupsPage /></ProtectedRoute>} />
+        <Route path="/configuracoes" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
+        {/* Arena-specific routes */}
+        <Route path="/quadras" element={<ProtectedRoute><CourtsPage /></ProtectedRoute>} />
+        <Route path="/agenda" element={<ProtectedRoute><ArenaAgendaPage /></ProtectedRoute>} />
+        <Route path="/reservantes" element={<ProtectedRoute><StudentsPage /></ProtectedRoute>} />
+        <Route path="/comandas" element={<ProtectedRoute><ComandasPage /></ProtectedRoute>} />
+        <Route path="*" element={<NotFound />} />
+        </Routes>
+      </SidebarProvider>
     </Suspense>
   );
 }

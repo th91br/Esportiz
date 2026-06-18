@@ -10,6 +10,7 @@ import { useProfile } from '@/hooks/queries/useProfile';
 import { useBusinessContext } from '@/hooks/useBusinessContext';
 import { Logo } from '@/components/Logo';
 import { Settings } from 'lucide-react';
+import { useSidebar } from '@/contexts/sidebar';
 
 export function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -18,6 +19,7 @@ export function Header() {
   const { signOut } = useAuth();
   const { profile } = useProfile();
   const { navModules, canViewSettings, isArena } = useBusinessContext();
+  const { isActive } = useSidebar();
   const mobileMenuLabel = isMenuOpen ? 'Fechar menu principal' : 'Abrir menu principal';
   const themeToggleLabel = isDark ? 'Alternar para modo claro' : 'Alternar para modo escuro';
 
@@ -36,11 +38,24 @@ export function Header() {
     setIsMenuOpen(false);
   }, [location.pathname]);
 
+  // Derive dynamic page title from active route
+  const currentModule = navModules.find((item) => (
+    location.pathname === item.path || (item.path !== '/' && location.pathname.startsWith(item.path + '/'))
+  ));
+  const pageTitle = currentModule ? currentModule.label : 'Dashboard';
+
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+    <header className="sticky top-0 z-40 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container flex h-14 items-center">
-        {/* Logo — sempre à esquerda */}
-        <Link to="/dashboard" className="flex items-center gap-1.5 shrink-0 transition-transform hover:scale-105 active:scale-95 mr-2" title={profile?.ct_name || 'Dashboard'}>
+        {/* Logo — sempre à esquerda (escondido no desktop se a sidebar estiver ativa) */}
+        <Link
+          to="/dashboard"
+          className={cn(
+            "flex items-center gap-1.5 shrink-0 transition-transform hover:scale-105 active:scale-95 mr-2",
+            isActive && "md:hidden"
+          )}
+          title={profile?.ct_name || 'Dashboard'}
+        >
           {profile?.logo_url ? (
             <img
               src={profile.logo_url}
@@ -57,30 +72,39 @@ export function Header() {
           )}
         </Link>
 
-        {/* Desktop Navigation — flex-1 ocupa espaco central */}
-        <div className="hidden md:block flex-1 min-w-0 mx-4 relative">
-          {/* Fade indicators */}
-          <div className="pointer-events-none absolute left-0 top-0 bottom-0 w-4 bg-gradient-to-r from-background/95 to-transparent z-10" />
-          <div className="pointer-events-none absolute right-0 top-0 bottom-0 w-4 bg-gradient-to-l from-background/95 to-transparent z-10" />
-          <nav aria-label="Navegação principal" className="flex items-center justify-start gap-1 overflow-x-auto no-scrollbar px-3">
-            <div className={cn("flex items-center gap-1 min-w-max", isArena && "mx-auto")}>
-              {navModules.map((item) => (
-                <Link
-                  key={item.path}
-                  to={item.path}
-                  className={cn(
-                    'px-2 py-1 lg:px-2.5 lg:py-1.5 rounded-lg text-[11px] lg:text-xs font-medium transition-colors whitespace-nowrap shrink-0',
-                    location.pathname === item.path
-                      ? 'text-primary bg-primary/10 font-semibold'
-                      : 'text-muted-foreground hover:text-foreground hover:bg-muted'
-                  )}
-                >
-                  {item.label}
-                </Link>
-              ))}
-            </div>
-          </nav>
-        </div>
+        {/* Dynamic Page Title (mostrado apenas no desktop se a sidebar estiver ativa) */}
+        {isActive && (
+          <h2 className="hidden md:block font-display font-bold text-xs lg:text-sm text-foreground tracking-tight ml-2 border-l border-border/80 pl-4 animate-fade-in">
+            {pageTitle}
+          </h2>
+        )}
+
+        {/* Desktop Navigation — flex-1 ocupa espaco central (escondido se a sidebar estiver ativa) */}
+        {!isActive && (
+          <div className="hidden md:block flex-1 min-w-0 mx-4 relative">
+            {/* Fade indicators */}
+            <div className="pointer-events-none absolute left-0 top-0 bottom-0 w-4 bg-gradient-to-r from-background/95 to-transparent z-10" />
+            <div className="pointer-events-none absolute right-0 top-0 bottom-0 w-4 bg-gradient-to-l from-background/95 to-transparent z-10" />
+            <nav aria-label="Navegação principal" className="flex items-center justify-start gap-1 overflow-x-auto no-scrollbar px-3">
+              <div className={cn("flex items-center gap-1 min-w-max", isArena && "mx-auto")}>
+                {navModules.map((item) => (
+                  <Link
+                    key={item.path}
+                    to={item.path}
+                    className={cn(
+                      'px-2 py-1 lg:px-2.5 lg:py-1.5 rounded-lg text-[11px] lg:text-xs font-medium transition-colors whitespace-nowrap shrink-0',
+                      location.pathname === item.path
+                        ? 'text-primary bg-primary/10 font-semibold'
+                        : 'text-muted-foreground hover:text-foreground hover:bg-muted'
+                    )}
+                  >
+                    {item.label}
+                  </Link>
+                ))}
+              </div>
+            </nav>
+          </div>
+        )}
 
         {/* Actions — sempre à direita (ml-auto no mobile) */}
         <div className="flex items-center gap-0.5 shrink-0 ml-auto">

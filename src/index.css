@@ -70,6 +70,9 @@
     --sidebar-accent-foreground: 240 5.9% 10%;
     --sidebar-border: 220 13% 91%;
     --sidebar-ring: 217.2 91.2% 59.8%;
+
+    /* Layout variable for Sidebar transition */
+    --sidebar-width: 0px;
   }
 
   .dark {
@@ -122,6 +125,16 @@
   body {
     @apply bg-background text-foreground antialiased;
     font-family: 'Inter', sans-serif;
+  }
+
+  body.has-sidebar {
+    transition: padding-left 200ms cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  @media (min-width: 768px) {
+    body.has-sidebar {
+      padding-left: var(--sidebar-width);
+    }
   }
 
   h1, h2, h3, h4, h5, h6 {

@@ -136,7 +136,7 @@ export function Sidebar() {
       {/* Header / Logo */}
       <div className="flex h-14 items-center px-4 border-b border-border/40 shrink-0">
         {isCollapsed ? (
-          <Link to="/dashboard" className="mx-auto transition-transform hover:scale-105 active:scale-95">
+          <Link to="/dashboard" className="mx-auto transition-transform hover:scale-105 active:scale-95" aria-label="Ir para o dashboard">
             {profile?.logo_url ? (
               <img
                 src={profile.logo_url}
@@ -186,6 +186,7 @@ export function Sidebar() {
                   const linkContent = (
                     <Link
                       to={module.path}
+                      aria-label={isCollapsed ? module.label : undefined}
                       className={cn(
                         "flex items-center rounded-lg text-xs font-medium transition-colors w-full",
                         isCollapsed ? "justify-center p-2.5" : "gap-3 px-3 py-2",

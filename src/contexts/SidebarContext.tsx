@@ -50,6 +50,11 @@ export function SidebarProvider({ children }: { children: React.ReactNode }) {
       root.style.setProperty('--sidebar-width', '0px');
       document.body.classList.remove('has-sidebar');
     }
+
+    return () => {
+      root.style.setProperty('--sidebar-width', '0px');
+      document.body.classList.remove('has-sidebar');
+    };
   }, [isActive, isCollapsed]);
 
   return (

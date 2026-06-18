@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, within } from '@testing-library/react';
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { MemoryRouter } from 'react-router-dom';
 import { Sidebar } from './Sidebar';
@@ -23,6 +23,11 @@ vi.mock('@/hooks/queries/useProfile', () => ({
 
 // Mock BusinessContext
 const businessContextMock = vi.hoisted(() => ({
+  defaultNavModules: [
+    { path: '/dashboard', label: 'Dashboard' },
+    { path: '/alunos', label: 'Alunos' },
+    { path: '/relatorios', label: 'Relatórios' },
+  ],
   businessType: 'sport_school',
   navModules: [
     { path: '/dashboard', label: 'Dashboard' },
@@ -46,10 +51,23 @@ function renderSidebar() {
   );
 }
 
+function renderSidebarProviderOnly(initialPath = '/dashboard') {
+  return render(
+    <MemoryRouter initialEntries={[initialPath]} future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+      <SidebarProvider>
+        <div>Protected content</div>
+      </SidebarProvider>
+    </MemoryRouter>
+  );
+}
+
 describe('Sidebar', () => {
   beforeEach(() => {
     localStorage.clear();
+    document.body.classList.remove('has-sidebar');
+    document.documentElement.style.removeProperty('--sidebar-width');
     businessContextMock.businessType = 'sport_school';
+    businessContextMock.navModules = [...businessContextMock.defaultNavModules];
     profileMock.profile.business_type = 'sport_school';
   });
 
@@ -114,5 +132,29 @@ describe('Sidebar', () => {
     expect(screen.getByText('Comandas')).toBeInTheDocument();
     expect(screen.getByText('Produtos')).toBeInTheDocument();
     expect(screen.getByText('Relatórios')).toBeInTheDocument();
+  });
+
+  it('keeps collapsed navigation links accessible by their module names', () => {
+    renderSidebar();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Recolher menu lateral' }));
+
+    const sidebarNav = within(screen.getByRole('navigation', { name: 'Navegação lateral' }));
+
+    expect(sidebarNav.getByRole('link', { name: 'Dashboard' })).toHaveAttribute('href', '/dashboard');
+    expect(sidebarNav.getByRole('link', { name: 'Alunos' })).toHaveAttribute('href', '/alunos');
+    expect(sidebarNav.getByRole('link', { name: 'Relatórios' })).toHaveAttribute('href', '/relatorios');
+  });
+
+  it('cleans sidebar body state when the provider unmounts', () => {
+    const { unmount } = renderSidebarProviderOnly();
+
+    expect(document.body).toHaveClass('has-sidebar');
+    expect(document.documentElement.style.getPropertyValue('--sidebar-width')).toBe('240px');
+
+    unmount();
+
+    expect(document.body).not.toHaveClass('has-sidebar');
+    expect(document.documentElement.style.getPropertyValue('--sidebar-width')).toBe('0px');
   });
 });

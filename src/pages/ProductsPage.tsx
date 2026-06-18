@@ -7,6 +7,7 @@ import { useProducts } from '@/hooks/queries/useProducts';
 import { useBusinessContext } from '@/hooks/useBusinessContext';
 import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/empty-state';
+import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { LoadingState } from '@/components/ui/loading-state';
@@ -341,15 +342,15 @@ export default function ProductsPage() {
                           {product.trackStock && (
                             <div className="mt-2">
                               {product.stockQuantity === 0 ? (
-                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-destructive/10 text-destructive border border-destructive/20 uppercase tracking-wide">
+                                <Badge variant="destructive" className="gap-1 px-2 text-[10px] font-extrabold uppercase tracking-wide">
                                   <span className="h-1.5 w-1.5 rounded-full bg-destructive" />
                                   Sem Estoque
-                                </span>
+                                </Badge>
                               ) : product.stockQuantity <= product.minStock ? (
-                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-amber-500/10 text-amber-600 border border-amber-500/20 uppercase tracking-wide">
-                                  <span className="h-1.5 w-1.5 rounded-full bg-amber-500 animate-pulse" />
+                                <Badge variant="warning" className="gap-1 px-2 text-[10px] font-extrabold uppercase tracking-wide">
+                                  <span className="h-1.5 w-1.5 rounded-full bg-warning animate-pulse" />
                                   Estoque Baixo ({product.stockQuantity})
-                                </span>
+                                </Badge>
                               ) : (
                                 <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-success/15 text-success border border-success/20 uppercase tracking-wide">
                                   <span className="h-1.5 w-1.5 rounded-full bg-success" />
@@ -503,13 +504,13 @@ export default function ProductsPage() {
                             <td className="p-4 text-right font-bold text-foreground">{formatCurrency(stockValue)}</td>
                             <td className="p-4 text-center">
                               {isZero ? (
-                                <span className="inline-flex px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-destructive/10 text-destructive border border-destructive/20 uppercase">
+                                <Badge variant="destructive" className="text-[10px] font-extrabold uppercase">
                                   Zerarado
-                                </span>
+                                </Badge>
                               ) : isLow ? (
-                                <span className="inline-flex px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-amber-500/10 text-amber-600 border border-amber-500/20 uppercase animate-pulse">
+                                <Badge variant="warning" className="text-[10px] font-extrabold uppercase animate-pulse">
                                   Baixo
-                                </span>
+                                </Badge>
                               ) : (
                                 <span className="inline-flex px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-success/15 text-success border border-success/20 uppercase">
                                   Ok

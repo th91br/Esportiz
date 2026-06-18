@@ -376,12 +376,8 @@ export default function PaymentsPage() {
                       <div className="flex items-center gap-2 flex-wrap">
                         <span className="font-semibold text-foreground truncate">{reservanteName}</span>
                         <Badge
-                          className={cn(
-                            'text-xs font-bold',
-                            status === 'paid' && 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800',
-                            status === 'pending' && !isOverdue && 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 border-amber-200 dark:border-amber-800',
-                            isOverdue && 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400 border-red-200 dark:border-red-800',
-                          )}
+                          variant={status === 'paid' ? 'success' : isOverdue ? 'destructive' : 'warning'}
+                          className="text-xs font-bold"
                         >
                           {status === 'paid' ? '✓ Pago' : isOverdue ? '⚠ Atrasado (Data Passada)' : '⏳ Pendente'}
                         </Badge>
@@ -533,17 +529,13 @@ export default function PaymentsPage() {
                         <div className="flex items-center gap-2 flex-wrap">
                         <span className="font-semibold text-foreground truncate">{student.name}</span>
                         {isPartial ? (
-                          <Badge className="text-xs bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 flex items-center gap-1">
+                          <Badge variant="warning" className="flex items-center gap-1 text-xs">
                             ⏳ Parcial (Falta {formatCurrency(payment.amount - (payment.paidAmount || 0))})
                           </Badge>
                         ) : (
                           <Badge
-                            className={cn(
-                              'text-xs font-bold',
-                              status === 'paid' && 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800',
-                              status === 'pending' && 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 border-amber-200 dark:border-amber-800',
-                              status === 'overdue' && 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400 border-red-200 dark:border-red-800',
-                            )}
+                            variant={status === 'paid' ? 'success' : status === 'overdue' ? 'destructive' : 'warning'}
+                            className="text-xs font-bold"
                           >
                             {status === 'paid' ? '✓ Pago' : status === 'pending' ? '⏳ Pendente' : '⚠ Atrasado'}
                           </Badge>

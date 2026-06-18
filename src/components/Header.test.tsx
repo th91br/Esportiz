@@ -1,5 +1,5 @@
-import { fireEvent, render, screen } from '@testing-library/react';
-import { BrowserRouter } from 'react-router-dom';
+import { fireEvent, render, screen, within } from '@testing-library/react';
+import { MemoryRouter } from 'react-router-dom';
 import { describe, expect, it, vi } from 'vitest';
 import { Header } from './Header';
 
@@ -50,11 +50,11 @@ vi.mock('@/contexts/sidebar', () => ({
   }),
 }));
 
-function renderHeader() {
+function renderHeader(initialPath = '/dashboard') {
   return render(
-    <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+    <MemoryRouter initialEntries={[initialPath]} future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
       <Header />
-    </BrowserRouter>,
+    </MemoryRouter>,
   );
 }
 
@@ -76,5 +76,15 @@ describe('Header', () => {
     fireEvent.click(menuButton);
 
     expect(screen.getByRole('button', { name: 'Fechar menu principal' })).toHaveAttribute('aria-expanded', 'true');
+  });
+
+  it('presents mobile navigation with unit context and current page state', () => {
+    renderHeader('/alunos');
+
+    fireEvent.click(screen.getByRole('button', { name: 'Abrir menu principal' }));
+
+    const mobileNav = screen.getByRole('navigation', { name: 'Menu principal mobile' });
+    expect(mobileNav).toHaveTextContent('Arena Esportiz');
+    expect(within(mobileNav).getByRole('link', { name: 'Alunos' })).toHaveAttribute('aria-current', 'page');
   });
 });

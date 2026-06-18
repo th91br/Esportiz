@@ -22,6 +22,7 @@ export function Header() {
   const { isActive } = useSidebar();
   const mobileMenuLabel = isMenuOpen ? 'Fechar menu principal' : 'Abrir menu principal';
   const themeToggleLabel = isDark ? 'Alternar para modo claro' : 'Alternar para modo escuro';
+  const isCurrentPath = (path: string) => location.pathname === path || (path !== '/' && location.pathname.startsWith(path + '/'));
 
   useEffect(() => {
     if (isDark) {
@@ -93,10 +94,11 @@ export function Header() {
                     to={item.path}
                     className={cn(
                       'px-2 py-1 lg:px-2.5 lg:py-1.5 rounded-lg text-[11px] lg:text-xs font-medium transition-colors whitespace-nowrap shrink-0',
-                      location.pathname === item.path
+                      isCurrentPath(item.path)
                         ? 'text-primary bg-primary/10 font-semibold'
                         : 'text-muted-foreground hover:text-foreground hover:bg-muted'
                     )}
+                    aria-current={isCurrentPath(item.path) ? 'page' : undefined}
                   >
                     {item.label}
                   </Link>
@@ -162,17 +164,25 @@ export function Header() {
       {/* Mobile Navigation — same navModules list */}
       {isMenuOpen && (
         <nav id="mobile-navigation" aria-label="Menu principal mobile" className="md:hidden border-t border-border bg-background animate-fade-in">
-          <div className="container py-4 space-y-1">
+          <div className="container py-4 space-y-2">
+            <div className="mb-3 rounded-xl border border-border/60 bg-card px-4 py-3 shadow-sm">
+              <p className="text-xs font-medium text-muted-foreground">Menu da unidade</p>
+              <p className="mt-0.5 truncate text-sm font-semibold text-foreground">
+                {profile?.ct_name || 'Esportiz'}
+              </p>
+            </div>
+
             {navModules.map((item) => (
               <Link
                 key={item.path}
                 to={item.path}
                 className={cn(
                   'flex items-center px-4 py-3 rounded-lg text-sm font-medium transition-colors',
-                  location.pathname === item.path
-                    ? 'text-primary bg-primary/10 font-semibold'
-                    : 'text-muted-foreground hover:text-foreground hover:bg-muted'
+                  isCurrentPath(item.path)
+                    ? 'text-primary bg-primary/10 font-semibold ring-1 ring-primary/15'
+                    : 'text-muted-foreground hover:text-foreground hover:bg-muted/80'
                 )}
+                aria-current={isCurrentPath(item.path) ? 'page' : undefined}
               >
                 {item.label}
               </Link>
@@ -183,10 +193,11 @@ export function Header() {
                 to="/configuracoes"
                 className={cn(
                   'flex items-center px-4 py-3 rounded-lg text-sm font-medium transition-colors',
-                  location.pathname === '/configuracoes'
-                    ? 'text-primary bg-primary/10 font-semibold'
-                    : 'text-muted-foreground hover:text-foreground hover:bg-muted'
+                  isCurrentPath('/configuracoes')
+                    ? 'text-primary bg-primary/10 font-semibold ring-1 ring-primary/15'
+                    : 'text-muted-foreground hover:text-foreground hover:bg-muted/80'
                 )}
+                aria-current={isCurrentPath('/configuracoes') ? 'page' : undefined}
               >
                 Configurações
               </Link>

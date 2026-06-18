@@ -105,6 +105,9 @@ export function Sidebar() {
       if (path === '/produtos' || path === '/comandas') {
         return 'Consumo e Estoque';
       }
+      if (path === '/reservantes') {
+        return 'Operação';
+      }
     } else {
       if (path === '/produtos') {
         return 'Gestão';
@@ -113,8 +116,8 @@ export function Sidebar() {
     return PATH_TO_GROUP[path] || 'Outros';
   };
 
-  // Group current navModules
-  const modulesByGroup = navModules.reduce((acc, module) => {
+  // Group current navModules safely
+  const modulesByGroup = (navModules || []).reduce((acc, module) => {
     const group = getGroupForPath(module.path);
     if (!acc[group]) {
       acc[group] = [];

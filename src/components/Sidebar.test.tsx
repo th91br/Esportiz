@@ -90,11 +90,29 @@ describe('Sidebar', () => {
     expect(localStorage.getItem('sidebar-collapsed')).toBe('false');
   });
 
-  it('does not render sidebar if businessType is arena', () => {
+  it('renders sidebar groups and navigation modules for Arena', () => {
     businessContextMock.businessType = 'arena';
     profileMock.profile.business_type = 'arena';
-    
-    const { container } = renderSidebar();
-    expect(container.firstChild).toBeNull();
+    businessContextMock.navModules = [
+      { path: '/dashboard', label: 'Dashboard' },
+      { path: '/reservantes', label: 'Reservantes' },
+      { path: '/comandas', label: 'Comandas' },
+      { path: '/produtos', label: 'Produtos' },
+      { path: '/relatorios', label: 'Relatórios' },
+    ];
+
+    renderSidebar();
+
+    // Verify groups rendered in expanded state
+    expect(screen.getByText('Visão Geral')).toBeInTheDocument();
+    expect(screen.getByText('Operação')).toBeInTheDocument();
+    expect(screen.getByText('Consumo e Estoque')).toBeInTheDocument();
+
+    // Verify links rendered
+    expect(screen.getByText('Dashboard')).toBeInTheDocument();
+    expect(screen.getByText('Reservantes')).toBeInTheDocument();
+    expect(screen.getByText('Comandas')).toBeInTheDocument();
+    expect(screen.getByText('Produtos')).toBeInTheDocument();
+    expect(screen.getByText('Relatórios')).toBeInTheDocument();
   });
 });

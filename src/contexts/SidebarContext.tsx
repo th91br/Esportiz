@@ -23,8 +23,8 @@ export function SidebarProvider({ children }: { children: React.ReactNode }) {
   const isPublicRoute = ['/', '/login', '/reset-password', '/matricula', '/agendar', '/agendamento', '/portal-aluno'].includes(location.pathname);
   const isOnboarding = location.pathname === '/onboarding';
   
-  // Sidebar is currently ONLY active for sport_school as per "um por vez" safety
-  const isActive = Boolean(user) && !isPublicRoute && !isOnboarding && businessType === 'sport_school';
+  // Sidebar is active for both sport_school and arena
+  const isActive = Boolean(user) && !isPublicRoute && !isOnboarding && (businessType === 'sport_school' || businessType === 'arena');
 
   const setIsCollapsed = (collapsed: boolean) => {
     setIsCollapsedState(collapsed);

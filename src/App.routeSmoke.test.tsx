@@ -39,6 +39,7 @@ vi.mock("@/hooks/useBusinessContext", () => ({
     isLoadingOrganizationRole: false,
     isRolePermissionFilterActive: false,
     isRoleKnown: true,
+    navModules: [],
   }),
 }));
 

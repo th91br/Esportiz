@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom';
 import { usePayments } from '@/hooks/queries/usePayments';
 import { useStudents } from '@/hooks/queries/useStudents';
 import { formatCurrency } from '@/lib/formatCurrency';
-import { getLocalTodayDate } from '@/lib/dateUtils';
+import { getLocalTodayDate, getShortMonthNamePtBr } from '@/lib/dateUtils';
 import { getRemainingPaymentAmount } from '@/lib/financialContracts';
 
 interface OverdueAlertProps {
@@ -15,7 +15,6 @@ export function OverdueAlert({ privacyMode = false }: OverdueAlertProps) {
   const { payments } = usePayments();
   const { students } = useStudents();
   const today = getLocalTodayDate();
-  const monthNames = ['', 'Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
 
   const overduePayments = useMemo(
     () => payments.filter((p) => !p.paid && p.dueDate < today),
@@ -67,7 +66,7 @@ export function OverdueAlert({ privacyMode = false }: OverdueAlertProps) {
                   const isPartial = (p.paidAmount || 0) > 0;
                   return student ? (
                     <span key={p.id} className={`px-2 py-0.5 rounded-full text-[10px] font-medium border shadow-sm ${isPartial ? 'bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/20' : 'bg-destructive/10 text-destructive border-destructive/20'}`}>
-                      {student.name.split(' ')[0]} • {monthNames[parseInt(month)]}/{year.slice(2)} • Falta {formatCurrency(remaining)}
+                      {student.name.split(' ')[0]} • {getShortMonthNamePtBr(Number(month) - 1)}/{year.slice(2)} • Falta {formatCurrency(remaining)}
                     </span>
                   ) : null;
                 })}

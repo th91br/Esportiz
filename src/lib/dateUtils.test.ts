@@ -3,6 +3,7 @@ import {
   formatDateOnlyBr,
   getLocalTodayDate,
   getMonthNamePtBr,
+  getShortMonthNamePtBr,
   parseBrazilianDateToIso,
   toLocalDateString,
 } from './dateUtils';
@@ -42,5 +43,16 @@ describe('dateUtils', () => {
   it('returns an empty month name for indexes outside the calendar range', () => {
     expect(getMonthNamePtBr(-1)).toBe('');
     expect(getMonthNamePtBr(12)).toBe('');
+  });
+
+  it('returns short Portuguese month names for compact payment labels', () => {
+    expect(getShortMonthNamePtBr(0)).toBe('Jan');
+    expect(getShortMonthNamePtBr(4)).toBe('Mai');
+    expect(getShortMonthNamePtBr(11)).toBe('Dez');
+  });
+
+  it('returns an empty short month name for indexes outside the calendar range', () => {
+    expect(getShortMonthNamePtBr(-1)).toBe('');
+    expect(getShortMonthNamePtBr(12)).toBe('');
   });
 });

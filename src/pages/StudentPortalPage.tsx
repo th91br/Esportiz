@@ -27,6 +27,7 @@ import { cn } from '@/lib/utils';
 import {
   formatDateOnlyBr,
   getLocalTodayDate,
+  getMonthNamePtBr,
   parseBrazilianDateToIso,
 } from '@/lib/dateUtils';
 import { resolvePublicOwnerScope } from '@/lib/publicAccessContracts';
@@ -118,8 +119,6 @@ interface AttendanceStats {
   presences: number;
   absences: number;
 }
-
-const monthNames = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
 
 const WEEKDAY_NAMES = [
   'Domingo',
@@ -1408,7 +1407,7 @@ CONCORDÂNCIA E ASSINATURA: O contratante declara ter lido, compreendido e aceit
                         <div className="space-y-1">
                           <div className="flex items-center gap-2">
                             <span className="font-bold text-foreground text-sm">
-                              Mensalidade de {monthNames[Number(p.month_ref.split('-')[1]) - 1]} / {p.month_ref.split('-')[1]}
+                              Mensalidade de {getMonthNamePtBr(Number(p.month_ref.split('-')[1]) - 1)} / {p.month_ref.split('-')[1]}
                             </span>
                             {p.paid ? (
                               <Badge className="bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800 text-[10px]">

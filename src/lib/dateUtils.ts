@@ -32,8 +32,27 @@ const MONTH_NAMES_PT_BR = [
   'Dezembro',
 ] as const;
 
+const SHORT_MONTH_NAMES_PT_BR = [
+  'Jan',
+  'Fev',
+  'Mar',
+  'Abr',
+  'Mai',
+  'Jun',
+  'Jul',
+  'Ago',
+  'Set',
+  'Out',
+  'Nov',
+  'Dez',
+] as const;
+
 export function getMonthNamePtBr(monthIndex: number): string {
   return MONTH_NAMES_PT_BR[monthIndex] ?? '';
+}
+
+export function getShortMonthNamePtBr(monthIndex: number): string {
+  return SHORT_MONTH_NAMES_PT_BR[monthIndex] ?? '';
 }
 
 function isValidCalendarDate(year: number, month: number, day: number): boolean {

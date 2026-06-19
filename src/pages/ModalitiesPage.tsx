@@ -1,4 +1,5 @@
-import { Header } from '@/components/Header';
+import { AppPage } from '@/components/layout/AppPage';
+import { PageHeader } from '@/components/layout/PageHeader';
 import { StatCard } from '@/components/StatCard';
 import { ModalityManager } from '@/components/ModalityManager';
 import { useModalities } from '@/hooks/queries/useModalities';
@@ -31,19 +32,14 @@ export default function ModalitiesPage() {
   const topModality = [...modalityStats].sort((a, b) => b.studentCount - a.studentCount)[0];
 
   return (
-    <div className="min-h-screen bg-background">
-      <Header />
-      <main className="container py-6 md:py-8 space-y-6">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div>
-            <h1 className="section-title text-2xl md:text-3xl">{labels.modalityLabel}</h1>
-            <p className="text-muted-foreground mt-1">
-              Gerencie o cadastro de {labels.modalityLabel.toLowerCase()} do seu {labels.ctLabel}
-            </p>
-          </div>
-        </div>
+    <AppPage>
+      <PageHeader
+        title={labels.modalityLabel}
+        description={`Gerencie o cadastro de ${labels.modalityLabel.toLowerCase()} do seu ${labels.ctLabel}`}
+        icon={Tag}
+      />
 
-        {/* Summary Stats */}
+      {/* Summary Stats */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 animate-fade-up">
           <StatCard 
             title={`Total de ${labels.modalityLabel}`} 
@@ -132,7 +128,6 @@ export default function ModalitiesPage() {
             </Card>
           </div>
         </div>
-      </main>
-    </div>
+    </AppPage>
   );
 }

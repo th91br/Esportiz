@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { DollarSign, Plus, Pencil, Trash2, Eye, EyeOff } from 'lucide-react';
-import { Header } from '@/components/Header';
+import { AppPage } from '@/components/layout/AppPage';
+import { PageHeader } from '@/components/layout/PageHeader';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -68,23 +69,22 @@ export default function PlansPage() {
   }, 0);
 
   return (
-    <div className="min-h-screen bg-background">
-      <Header />
-      <main className="container py-6 md:py-8 space-y-6">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div>
-            <h1 className="section-title text-2xl md:text-3xl">{labels.planLabel} e Preços</h1>
-            <p className="text-muted-foreground mt-1">Gerencie os(as) {labels.planLabel.toLowerCase()} de {labels.trainingLabelSingular.toLowerCase()} e valores</p>
-          </div>
-          <div className="flex items-center gap-2">
+    <AppPage>
+      <PageHeader
+        title={`${labels.planLabel} e Preços`}
+        description={`Gerencie os(as) ${labels.planLabel.toLowerCase()} de ${labels.trainingLabelSingular.toLowerCase()} e valores`}
+        icon={DollarSign}
+        actions={(
+          <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
             <Button variant="ghost" size="icon" className="rounded-full h-8 w-8" onClick={togglePrivacyMode} title={privacyMode ? 'Mostrar dados' : 'Ocultar dados'}>
               {privacyMode ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
             </Button>
             <Button className="btn-primary-gradient" onClick={openNew}><Plus className="h-4 w-4 mr-2" />Novo(a) {labels.planLabelSingular}</Button>
           </div>
-        </div>
+        )}
+      />
 
-        <div className="card-elevated p-6 bg-gradient-hero text-white">
+      <div className="card-elevated p-6 bg-gradient-hero text-white">
           <div className="flex items-center gap-3 mb-2"><DollarSign className="h-6 w-6" /><h2 className="font-display font-bold text-xl">Receita Mensal Estimada</h2></div>
           <p className="font-display text-4xl font-extrabold">{privacyMode ? '••••' : formatCurrency(totalRevenue)}</p>
           <p className="text-white/70 text-sm mt-1">Projeção baseada em {activeMonthly.length} {activeMonthly.length !== 1 ? labels.studentLabel.toLowerCase() : labels.studentLabelSingular.toLowerCase()} mensalista(s) ativo(s)</p>
@@ -176,8 +176,7 @@ export default function PlansPage() {
               </div>
             </form>
           </DialogContent>
-        </Dialog>
-      </main>
-    </div>
+      </Dialog>
+    </AppPage>
   );
 }

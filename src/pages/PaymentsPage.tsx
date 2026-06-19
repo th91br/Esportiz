@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Header } from '@/components/Header';
+import { AppPage } from '@/components/layout/AppPage';
+import { PageHeader } from '@/components/layout/PageHeader';
 import { useStudents } from '@/hooks/queries/useStudents';
 import { usePlans } from '@/hooks/queries/usePlans';
 import { usePayments } from '@/hooks/queries/usePayments';
@@ -193,14 +194,11 @@ export default function PaymentsPage() {
   const years = Array.from({ length: 5 }, (_, i) => now.getFullYear() - 2 + i);
 
   return (
-    <div className="min-h-screen bg-background">
-      <Header />
-      <main className="container py-6 space-y-6">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-          <div>
-            <h1 className="font-display text-2xl font-bold text-foreground">Pagamentos</h1>
-            <p className="text-sm text-muted-foreground">Controle de pagamentos mensais dos(as) {labels.studentLabel.toLowerCase()}</p>
-          </div>
+    <AppPage>
+      <PageHeader
+        title="Pagamentos"
+        description={`Controle de pagamentos mensais dos(as) ${labels.studentLabel.toLowerCase()}`}
+        actions={(
           <div className="flex items-center gap-2 w-full sm:w-auto overflow-x-auto pb-1 sm:pb-0">
             {canExportPayments && (
             <Button
@@ -252,9 +250,10 @@ export default function PaymentsPage() {
               </SelectContent>
             </Select>
           </div>
-        </div>
+        )}
+      />
 
-        {/* Search Bar */}
+      {/* Search Bar */}
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
@@ -748,7 +747,6 @@ export default function PaymentsPage() {
             </DialogContent>
           </Dialog>
         )}
-      </main>
 
       <ArenaPartialPaymentDialog
         reservation={arenaPaymentDialogRes}
@@ -757,7 +755,7 @@ export default function PaymentsPage() {
           if (!open) setArenaPaymentDialogRes(null);
         }}
       />
-    </div>
+    </AppPage>
   );
 }
 // Final de arquivo - PaymentsPage

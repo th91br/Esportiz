@@ -10,7 +10,8 @@ import {
 import { format, isToday, isThisMonth, isThisWeek } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
-import { Header } from '@/components/Header';
+import { AppPage } from '@/components/layout/AppPage';
+import { PageHeader } from '@/components/layout/PageHeader';
 import { useStudents } from '@/hooks/queries/useStudents';
 import { useProfile } from '@/hooks/queries/useProfile';
 import { Button } from '@/components/ui/button';
@@ -73,7 +74,7 @@ export default function BirthdaysPage() {
     if (!students) return { birthdaysToday: [], birthdaysThisWeek: [], birthdaysThisMonth: [] };
 
     const activeStudents = students.filter(s => s.active && s.birthDate);
-    
+
     // In order to correctly check 'isToday', 'isThisWeek', 'isThisMonth',
     // We should treat the birthDate as occurring in the current year.
     const currentYear = new Date().getFullYear();
@@ -82,11 +83,11 @@ export default function BirthdaysPage() {
       // birthDate format is yyyy-MM-dd
       const dateParts = student.birthDate!.split('-');
       if (dateParts.length !== 3) return null;
-      
+
       const [_, month, day] = dateParts;
       // Reconstruct the date as if it happens this year
       const birthdayThisYear = new Date(currentYear, parseInt(month) - 1, parseInt(day));
-      
+
       return {
         ...student,
         birthdayThisYear
@@ -94,10 +95,10 @@ export default function BirthdaysPage() {
     }).filter(Boolean) as (Student & { birthdayThisYear: Date })[];
 
     const today = studentsWithCurrentYearBirthday.filter(s => isToday(s.birthdayThisYear));
-    
+
     // For this week, we want people whose birthday is this week but not necessarily today (though today is included too)
     const thisWeek = studentsWithCurrentYearBirthday.filter(s => isThisWeek(s.birthdayThisYear, { weekStartsOn: 1 }));
-    
+
     // For this month
     const thisMonth = studentsWithCurrentYearBirthday.filter(s => isThisMonth(s.birthdayThisYear));
 
@@ -160,19 +161,12 @@ export default function BirthdaysPage() {
   );
 
   return (
-    <div className="min-h-screen bg-background pb-20 md:pb-0">
-      <Header />
-
-      <main className="container py-6 md:py-8 space-y-6 md:space-y-8 animate-fade-up">
-        <div className="flex items-center gap-3 mb-6">
-          <div className="bg-primary/10 p-3 rounded-xl text-primary">
-            <Cake className="h-6 w-6" />
-          </div>
-          <div>
-            <h1 className="font-display text-2xl md:text-3xl font-bold">Aniversariantes</h1>
-            <p className="text-muted-foreground text-sm">Acompanhe os aniversariantes de hoje, da semana e do mês.</p>
-          </div>
-        </div>
+    <AppPage className="pb-20 md:pb-0" contentClassName="space-y-6 md:space-y-8 animate-fade-up">
+      <PageHeader
+        title="Aniversariantes"
+        description="Acompanhe os aniversariantes de hoje, da semana e do mês."
+        icon={Cake}
+      />
 
         {loadingStudents ? (
           <div className="text-center text-muted-foreground py-8">Carregando aniversariantes...</div>
@@ -245,7 +239,6 @@ export default function BirthdaysPage() {
             </TabsContent>
           </Tabs>
         )}
-      </main>
-    </div>
+    </AppPage>
   );
 }

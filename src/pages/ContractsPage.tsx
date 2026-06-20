@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react';
-import { Header } from '@/components/Header';
+import { AppPage } from '@/components/layout/AppPage';
+import { PageHeader } from '@/components/layout/PageHeader';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -60,20 +61,13 @@ export default function ContractsPage() {
   const loading = loadingStudents || loadingPlans;
 
   return (
-    <div className="min-h-screen bg-background pb-12 print:bg-white print:pb-0">
-      <div className="print:hidden">
-        <Header />
-      </div>
-
-      <main className="container py-6 md:py-8 space-y-6 print:hidden">
-        <div>
-          <h1 className="section-title text-2xl md:text-3xl flex items-center gap-2">
-            <FileSignature className="h-6 w-6 text-primary" /> Contratos Digitais
-          </h1>
-          <p className="text-muted-foreground mt-1">
-            Selecione um(a) {labels.studentLabelSingular.toLowerCase()} para visualizar, gerar ou imprimir o termo de adesão / contrato de prestação de serviços.
-          </p>
-        </div>
+    <>
+      <AppPage className="pb-12 print:hidden">
+        <PageHeader
+          title="Contratos Digitais"
+          description={`Selecione um(a) ${labels.studentLabelSingular.toLowerCase()} para visualizar, gerar ou imprimir o termo de adesão / contrato de prestação de serviços.`}
+          icon={FileSignature}
+        />
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Seletor de Aluno */}
@@ -153,7 +147,7 @@ export default function ContractsPage() {
                       )}
                       <h2 className="text-xl font-bold text-center uppercase">CONTRATO DE PRESTAÇÃO DE SERVIÇOS ESPORTIVOS</h2>
                     </div>
-                    
+
                     <p className="mb-4">
                       Pelo presente instrumento particular, de um lado, <strong>{profile?.ct_name || 'CENTRO DE TREINAMENTO ESPORTIZ'}</strong>, doravante denominado <strong>CONTRATADO</strong>, 
                       e de outro lado, <strong>{student.name.toUpperCase()}</strong>, portador(a) do CPF nº {student.cpf || '___________'}, 
@@ -191,7 +185,7 @@ export default function ContractsPage() {
                         <p className="text-xs text-muted-foreground">CONTRATADO</p>
                       </div>
                     </div>
-                    
+
                     <p className="text-right mt-8 text-xs text-muted-foreground">
                       {student.city || 'Cidade'}, {new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' })}
                     </p>
@@ -201,18 +195,18 @@ export default function ContractsPage() {
             )}
           </div>
         </div>
-      </main>
+      </AppPage>
 
       {/* Print-only layout for the contract */}
       {student && (
-        <div className="hidden print:block font-serif text-black p-8">
+        <div className="hidden print:block print:bg-white font-serif text-black p-8">
           <div className="flex flex-col items-center justify-center mb-10 border-b-2 border-black pb-8">
             {profile?.logo_url && (
               <img src={profile.logo_url} alt="Logo" className="h-20 w-auto object-contain mb-6 grayscale" />
             )}
             <h2 className="text-2xl font-bold text-center uppercase">CONTRATO DE PRESTAÇÃO DE SERVIÇOS ESPORTIVOS</h2>
           </div>
-          
+
           <p className="mb-6 text-justify">
             Pelo presente instrumento particular, de um lado, <strong>{profile?.ct_name || 'CENTRO DE TREINAMENTO ESPORTIZ'}</strong>, doravante denominado <strong>CONTRATADO</strong>, 
             e de outro lado, <strong>{student.name.toUpperCase()}</strong>, portador(a) do CPF nº {student.cpf || '___________'}, 
@@ -250,12 +244,12 @@ export default function ContractsPage() {
               <p className="text-xs">CONTRATADO</p>
             </div>
           </div>
-          
+
           <p className="text-right mt-16 text-sm">
             {student.city || 'Cidade'}, {new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' })}
           </p>
         </div>
       )}
-    </div>
+    </>
   );
 }

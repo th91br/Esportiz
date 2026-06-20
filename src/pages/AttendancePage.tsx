@@ -86,7 +86,7 @@ export default function AttendancePage() {
                     variant="ghost" 
                     className="flex flex-col h-auto py-2 px-6 rounded-lg hover:bg-primary/5 group"
                   >
-                    <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider group-hover:text-primary transition-colors">
+                    <span className="text-xs font-semibold text-muted-foreground/80 group-hover:text-primary transition-colors">
                       Data Selecionada
                     </span>
                     <span className="text-lg font-bold text-foreground flex items-center gap-2">

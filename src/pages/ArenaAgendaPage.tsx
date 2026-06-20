@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react';
-import { Header } from '@/components/Header';
+import { AppPage } from '@/components/layout/AppPage';
+import { PageHeader } from '@/components/layout/PageHeader';
 import { Button } from '@/components/ui/button';
 import { ReservationModal } from '@/components/ReservationModal';
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet';
@@ -520,17 +521,13 @@ export default function ArenaAgendaPage() {
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      <Header />
-      <main className="container py-6 md:py-8 space-y-5">
-
-        {/* Page Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div>
-            <h1 className="font-display font-extrabold text-3xl md:text-4xl tracking-tight">Agenda</h1>
-            <p className="text-muted-foreground mt-1">Visualize e gerencie as reservas por quadra</p>
-          </div>
-          <div className="flex flex-col sm:flex-row items-center gap-2 w-full sm:w-auto">
+    <AppPage contentClassName="space-y-5">
+      <PageHeader
+        title="Agenda"
+        icon={Calendar}
+        description="Visualize e gerencie as reservas por quadra"
+        actions={
+          <div className="flex flex-col sm:flex-row items-center gap-2">
             <Button
               variant="outline"
               className="gap-2 border-primary/20 text-primary bg-background hover:bg-muted w-full sm:w-auto shrink-0"
@@ -564,7 +561,8 @@ export default function ArenaAgendaPage() {
               <Plus className="h-4 w-4" /> Nova Reserva
             </Button>
           </div>
-        </div>
+        }
+      />
 
         {/* Controls */}
         <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
@@ -740,7 +738,6 @@ export default function ArenaAgendaPage() {
             ))}
           </div>
         )}
-      </main>
 
       {/* FAB Mobile */}
       <button
@@ -969,6 +966,6 @@ export default function ArenaAgendaPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
+    </AppPage>
   );
 }

@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import { Search, Users, UserCheck, UserMinus, UserX, Download } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Header } from '@/components/Header';
+import { AppPage } from '@/components/layout/AppPage';
+import { PageHeader } from '@/components/layout/PageHeader';
 import { StatCard } from '@/components/StatCard';
 import { StudentCard } from '@/components/StudentCard';
 import { StudentForm } from '@/components/StudentForm';
@@ -73,17 +74,12 @@ export default function StudentsPage() {
   }).sort((a, b) => a.name.localeCompare(b.name, 'pt-BR'));
 
   return (
-    <div className="min-h-screen bg-background">
-      <Header />
-
-      <main className="container py-6 md:py-8 space-y-6">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div>
-            <h1 className="section-title text-2xl md:text-3xl">Meus {labels.studentLabel}</h1>
-            <p className="text-muted-foreground mt-1">
-              Gerencie sua base de {labels.studentLabel.toLowerCase()} e acompanhe o status de cada um
-            </p>
-          </div>
+    <AppPage>
+      <PageHeader
+        title={`Meus ${labels.studentLabel}`}
+        description={`Gerencie sua base de ${labels.studentLabel.toLowerCase()} e acompanhe o status de cada um`}
+        icon={Users}
+        actions={
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
             {canExportStudents && (
               <Button variant="outline" className="gap-2 bg-background hover:bg-muted" onClick={() => {
@@ -113,10 +109,11 @@ export default function StudentsPage() {
             )}
             {canCreateStudents && <StudentForm />}
           </div>
-        </div>
+        }
+      />
 
         {/* Summary Stats */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4 animate-fade-up">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4 animate-fade-up mb-6">
           <StatCard 
             title={`Total de ${labels.studentLabel}`} 
             value={loading ? '...' : totalStudents} 
@@ -144,7 +141,7 @@ export default function StudentsPage() {
           />
         </div>
 
-        <div className="card-elevated p-4">
+        <div className="card-elevated p-4 mb-6">
           <div className="flex flex-col lg:flex-row gap-3">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -203,7 +200,6 @@ export default function StudentsPage() {
             </p>
           </div>
         )}
-      </main>
-    </div>
+    </AppPage>
   );
 }

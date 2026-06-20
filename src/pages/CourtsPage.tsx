@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { Header } from '@/components/Header';
+import { AppPage } from '@/components/layout/AppPage';
+import { PageHeader } from '@/components/layout/PageHeader';
 import { getLocalTodayDate, toLocalDateString } from '@/lib/dateUtils';
 import { StatCard } from '@/components/StatCard';
 import { Button } from '@/components/ui/button';
@@ -360,22 +361,17 @@ export default function CourtsPage() {
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      <Header />
-      <main className="container py-6 md:py-8 space-y-6">
-
-        {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div>
-            <h1 className="font-display font-extrabold text-3xl md:text-4xl tracking-tight">Quadras</h1>
-            <p className="text-muted-foreground mt-1">Gerencie as quadras físicas da sua arena</p>
-          </div>
-          {canCreateCourts && (
-            <Button className="btn-primary-gradient gap-2 w-full sm:w-auto" onClick={() => openForm()}>
-              <Plus className="h-4 w-4" /> Nova Quadra
-            </Button>
-          )}
-        </div>
+    <AppPage>
+      <PageHeader
+        title="Quadras"
+        icon={Layers}
+        description="Gerencie as quadras físicas da sua arena"
+        actions={canCreateCourts && (
+          <Button className="btn-primary-gradient gap-2" onClick={() => openForm()}>
+            <Plus className="h-4 w-4" /> Nova Quadra
+          </Button>
+        )}
+      />
 
         {/* Stats */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
@@ -407,8 +403,6 @@ export default function CourtsPage() {
               const nextRes = getNextReservation(court.id);
               return (
                 <div key={court.id} className="card-elevated border border-border/50 p-0 overflow-hidden flex flex-col">
-                  {/* Top color bar */}
-                  <div className="h-1.5" style={{ backgroundColor: court.color }} />
 
                   <div className="p-5 flex-1 flex flex-col gap-4">
                     {/* Header */}
@@ -515,7 +509,6 @@ export default function CourtsPage() {
             })}
           </div>
         )}
-      </main>
 
       {/* FAB Mobile */}
       {canCreateCourts && (
@@ -556,6 +549,6 @@ export default function CourtsPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </div>
+    </AppPage>
   );
 }

@@ -432,7 +432,7 @@ export default function StudentProfilePage() {
                   </CardHeader>
                   <CardContent className="p-5 space-y-5">
                     <div className="space-y-1.5">
-                      <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Título do Documento</label>
+                      <label className="text-xs font-semibold text-muted-foreground/80">Título do Documento</label>
                       <input 
                         type="text" 
                         value={contractTitle} 
@@ -442,7 +442,7 @@ export default function StudentProfilePage() {
                     </div>
 
                     <div className="space-y-1.5">
-                      <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Cláusula 1ª - Do Objeto</label>
+                      <label className="text-xs font-semibold text-muted-foreground/80">Cláusula 1ª - Do Objeto</label>
                       <textarea 
                         rows={3} 
                         value={clauseObject} 
@@ -452,7 +452,7 @@ export default function StudentProfilePage() {
                     </div>
 
                     <div className="space-y-1.5">
-                      <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Cláusula 3ª - Das Regras Gerais</label>
+                      <label className="text-xs font-semibold text-muted-foreground/80">Cláusula 3ª - Das Regras Gerais</label>
                       <textarea 
                         rows={3} 
                         value={clauseRules} 
@@ -462,7 +462,7 @@ export default function StudentProfilePage() {
                     </div>
 
                     <div className="space-y-1.5">
-                      <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Cláusula 4ª - Direito de Imagem e Termos</label>
+                      <label className="text-xs font-semibold text-muted-foreground/80">Cláusula 4ª - Direito de Imagem e Termos</label>
                       <textarea 
                         rows={3} 
                         value={clauseTerms} 
@@ -472,7 +472,7 @@ export default function StudentProfilePage() {
                     </div>
 
                     <div className="space-y-1.5">
-                      <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Local / Cidade de Emissão</label>
+                      <label className="text-xs font-semibold text-muted-foreground/80">Local / Cidade de Emissão</label>
                       <input 
                         type="text" 
                         value={contractCity} 

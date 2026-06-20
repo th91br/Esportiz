@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react';
 import { Eye, EyeOff, Users, Calendar, CheckCircle, DollarSign, TrendingUp, Activity, UserMinus, Lock } from 'lucide-react';
-import { Header } from '@/components/Header';
+import { AppPage } from '@/components/layout/AppPage';
+import { PageHeader } from '@/components/layout/PageHeader';
 import { Button } from '@/components/ui/button';
 import { StatCard } from '@/components/StatCard';
 import { useStudents } from '@/hooks/queries/useStudents';
@@ -667,18 +668,14 @@ export default function ReportsPage() {
   };
 
   return (
-    <div className="min-h-screen bg-background pb-12">
-      <Header />
-      <main className="container py-6 md:py-8 space-y-6 md:space-y-8">
-        <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
-          <div>
-            <h1 className="font-display font-extrabold text-3xl md:text-4xl tracking-tight text-foreground">Relatórios Analíticos</h1>
-            <p className="text-muted-foreground mt-1.5 text-sm md:text-base">Métricas, faturamento e engajamento da sua {labels.ctLabelShort.toLowerCase()}.</p>
-          </div>
-
+    <AppPage contentClassName="pb-12 md:space-y-8">
+      <PageHeader
+        title="Relatórios Analíticos"
+        description={`Métricas, faturamento e engajamento da sua ${labels.ctLabelShort.toLowerCase()}.`}
+        actions={
           <div className="flex w-full items-center gap-2 overflow-x-auto rounded-xl border border-border/50 bg-muted/30 p-1.5 sm:gap-3 md:w-auto">
             <Button variant="ghost" size="icon" className="rounded-lg h-9 w-9 bg-background shadow-sm border border-border/50 hover:bg-muted" onClick={togglePrivacyMode} title={privacyMode ? 'Mostrar dados' : 'Ocultar dados'}>
-              {privacyMode ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4 text-primary" />}
+              {privacyMode ? <EyeOff className="h-4 4" /> : <Eye className="h-4 w-4 text-primary" />}
             </Button>
             {/* Period Filter */}
             <div className="flex min-w-max rounded-lg overflow-hidden border border-border/50 bg-background shadow-sm">
@@ -698,7 +695,8 @@ export default function ReportsPage() {
               ))}
             </div>
           </div>
-        </div>
+        }
+      />
 
         {/* Mensagem para cargos sem acesso financeiro */}
         {isOperationalOnly && (
@@ -1178,7 +1176,6 @@ export default function ReportsPage() {
 
         </div>
         )}
-      </main>
-    </div>
+    </AppPage>
   );
 }

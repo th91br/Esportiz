@@ -1,5 +1,6 @@
 import { useState, useMemo, useEffect, type KeyboardEvent } from 'react';
-import { Header } from '@/components/Header';
+import { AppPage } from '@/components/layout/AppPage';
+import { PageHeader } from '@/components/layout/PageHeader';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -210,31 +211,21 @@ export default function ComandasPage() {
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      <Header />
-
-      <main className="container py-6 md:py-8 space-y-6">
-        {/* Page Title */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 animate-fade-up">
-          <div>
-            <h1 className="section-title text-2xl md:text-3xl flex items-center gap-2">
-              <ShoppingBag className="h-7 w-7 text-primary" />
-              Controle de Comandas
-            </h1>
-            <p className="text-muted-foreground mt-1">
-              Gerencie o consumo de mesas e clientes no bar ou cantina da Arena.
-            </p>
-          </div>
-          {canCreateComandas && (
-            <Button 
-              onClick={() => setOpenModalOpen(true)} 
-              className="btn-primary-gradient w-full sm:w-auto shrink-0"
-            >
-              <Plus className="h-5 w-5 mr-1" />
-              Abrir Nova Comanda
-            </Button>
-          )}
-        </div>
+    <AppPage>
+      <PageHeader
+        title="Controle de Comandas"
+        icon={ShoppingBag}
+        description="Gerencie o consumo de mesas e clientes no bar ou cantina da Arena."
+        actions={canCreateComandas && (
+          <Button 
+            onClick={() => setOpenModalOpen(true)} 
+            className="btn-primary-gradient"
+          >
+            <Plus className="h-5 w-5 mr-1" />
+            Abrir Nova Comanda
+          </Button>
+        )}
+      />
 
         {/* Filters and Search Bar */}
         <div className="flex flex-col md:flex-row items-center gap-4 bg-muted/25 p-3 rounded-2xl border border-border/40 animate-fade-up" style={{ animationDelay: '0.05s' }}>
@@ -401,7 +392,6 @@ export default function ComandasPage() {
             ))}
           </div>
         )}
-      </main>
 
       {/* dialog to open comanda */}
       <Dialog open={openModalOpen} onOpenChange={setOpenModalOpen}>
@@ -937,6 +927,6 @@ export default function ComandasPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </div>
+    </AppPage>
   );
 }

@@ -68,8 +68,7 @@ export default function ModalitiesPage() {
           </div>
           
           <div className="lg:col-span-2">
-            <Card className="h-full border-primary/10 shadow-sm overflow-hidden flex flex-col">
-              <div className="h-1 bg-gradient-to-r from-primary/50 to-primary" />
+            <Card className="h-full border border-border/50 shadow-sm overflow-hidden flex flex-col">
               <div className="p-6 pb-4">
                 <div className="space-y-1">
                   <h2 className="flex items-center gap-2 text-lg font-display font-semibold">
@@ -99,17 +98,17 @@ export default function ModalitiesPage() {
                         <div className="grid grid-cols-1 min-[420px]:grid-cols-2 gap-4 mb-6">
                           <div className="space-y-1">
                             <p className="text-2xl font-display font-bold">{mod.studentCount}</p>
-                            <p className="text-[10px] uppercase font-bold tracking-wider text-muted-foreground">{labels.studentLabel}</p>
+                            <p className="text-xs font-semibold text-muted-foreground">{labels.studentLabel}</p>
                           </div>
                           <div className="space-y-1">
                             <p className="text-2xl font-display font-bold">{mod.trainingCount}</p>
-                            <p className="text-[10px] uppercase font-bold tracking-wider text-muted-foreground">{labels.trainingLabel}</p>
+                            <p className="text-xs font-semibold text-muted-foreground">{labels.trainingLabel}</p>
                           </div>
                         </div>
                         
                         <Button 
                           variant="outline" 
-                          className="w-full text-xs font-bold uppercase tracking-wider group-hover:bg-primary group-hover:text-white transition-all"
+                          className="w-full text-xs font-semibold group-hover:bg-primary group-hover:text-white transition-colors duration-200"
                           onClick={() => navigate('/alunos')}
                         >
                           Gerenciar {labels.studentLabel}

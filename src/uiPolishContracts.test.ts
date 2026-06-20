@@ -15,6 +15,12 @@ describe('premium UI polish contracts', () => {
   const plansPage = readFileSync(resolve(process.cwd(), 'src/pages/PlansPage.tsx'), 'utf-8');
   const sidebar = readFileSync(resolve(process.cwd(), 'src/components/ui/sidebar.tsx'), 'utf-8');
   const globalCss = readFileSync(resolve(process.cwd(), 'src/index.css'), 'utf-8');
+  const indexPage = readFileSync(resolve(process.cwd(), 'src/pages/Index.tsx'), 'utf-8');
+  const courtsPage = readFileSync(resolve(process.cwd(), 'src/pages/CourtsPage.tsx'), 'utf-8');
+  const reportsPage = readFileSync(resolve(process.cwd(), 'src/pages/ReportsPage.tsx'), 'utf-8');
+  const studentsPage = readFileSync(resolve(process.cwd(), 'src/pages/StudentsPage.tsx'), 'utf-8');
+  const productsPage = readFileSync(resolve(process.cwd(), 'src/pages/ProductsPage.tsx'), 'utf-8');
+  const salesPage = readFileSync(resolve(process.cwd(), 'src/pages/SalesPage.tsx'), 'utf-8');
 
   it('does not use thick colored side stripes on polished operational cards', () => {
     expect(notificationBell).not.toContain('border-l-4');
@@ -113,5 +119,75 @@ describe('premium UI polish contracts', () => {
     expect(contractsPage).toContain('hidden print:block');
     expect(contractsPage).not.toContain("import { Header } from '@/components/Header';");
     expect(contractsPage).not.toContain('<main className="container py-6');
+  });
+
+  it('keeps the dashboard page on the shared app shell pattern', () => {
+    expect(indexPage).toContain("import { AppPage } from '@/components/layout/AppPage';");
+    expect(indexPage).toContain('<AppPage');
+    expect(indexPage).not.toContain("import { Header } from '@/components/Header';");
+    expect(indexPage).not.toContain('<main className="container py-6');
+  });
+
+  it('keeps the courts page on the shared app shell and page header pattern', () => {
+    expect(courtsPage).toContain("import { AppPage } from '@/components/layout/AppPage';");
+    expect(courtsPage).toContain("import { PageHeader } from '@/components/layout/PageHeader';");
+    expect(courtsPage).toContain('<AppPage>');
+    expect(courtsPage).toContain('<PageHeader');
+    expect(courtsPage).not.toContain("import { Header } from '@/components/Header';");
+    expect(courtsPage).not.toContain('<main className="container py-6');
+  });
+
+  it('keeps the arena agenda page on the shared app shell and page header pattern', () => {
+    expect(arenaAgendaPage).toContain("import { AppPage } from '@/components/layout/AppPage';");
+    expect(arenaAgendaPage).toContain("import { PageHeader } from '@/components/layout/PageHeader';");
+    expect(arenaAgendaPage).toContain('<AppPage');
+    expect(arenaAgendaPage).toContain('<PageHeader');
+    expect(arenaAgendaPage).not.toContain("import { Header } from '@/components/Header';");
+    expect(arenaAgendaPage).not.toContain('<main className="container py-6');
+  });
+
+  it('keeps the comandas page on the shared app shell and page header pattern', () => {
+    expect(comandasPage).toContain("import { AppPage } from '@/components/layout/AppPage';");
+    expect(comandasPage).toContain("import { PageHeader } from '@/components/layout/PageHeader';");
+    expect(comandasPage).toContain('<AppPage>');
+    expect(comandasPage).toContain('<PageHeader');
+    expect(comandasPage).not.toContain("import { Header } from '@/components/Header';");
+    expect(comandasPage).not.toContain('<main className="container py-6');
+  });
+
+  it('keeps the reports page on the shared app shell and page header pattern', () => {
+    expect(reportsPage).toContain("import { AppPage } from '@/components/layout/AppPage';");
+    expect(reportsPage).toContain("import { PageHeader } from '@/components/layout/PageHeader';");
+    expect(reportsPage).toContain('<AppPage');
+    expect(reportsPage).toContain('<PageHeader');
+    expect(reportsPage).not.toContain("import { Header } from '@/components/Header';");
+    expect(reportsPage).not.toContain('<main className="container py-6');
+  });
+
+  it('keeps the students/reservants page on the shared app shell and page header pattern', () => {
+    expect(studentsPage).toContain("import { AppPage } from '@/components/layout/AppPage';");
+    expect(studentsPage).toContain("import { PageHeader } from '@/components/layout/PageHeader';");
+    expect(studentsPage).toContain('<AppPage>');
+    expect(studentsPage).toContain('<PageHeader');
+    expect(studentsPage).not.toContain("import { Header } from '@/components/Header';");
+    expect(studentsPage).not.toContain('<main className="container py-6');
+  });
+
+  it('keeps the products page on the shared app shell and page header pattern', () => {
+    expect(productsPage).toContain("import { AppPage } from '@/components/layout/AppPage';");
+    expect(productsPage).toContain("import { PageHeader } from '@/components/layout/PageHeader';");
+    expect(productsPage).toContain('<AppPage');
+    expect(productsPage).toContain('<PageHeader');
+    expect(productsPage).not.toContain("import { Header } from '@/components/Header';");
+    expect(productsPage).not.toContain('<main className="container py-6');
+  });
+
+  it('keeps the sales page on the shared app shell and page header pattern', () => {
+    expect(salesPage).toContain("import { AppPage } from '@/components/layout/AppPage';");
+    expect(salesPage).toContain("import { PageHeader } from '@/components/layout/PageHeader';");
+    expect(salesPage).toContain('<AppPage');
+    expect(salesPage).toContain('<PageHeader');
+    expect(salesPage).not.toContain("import { Header } from '@/components/Header';");
+    expect(salesPage).not.toContain('<main className="container py-6');
   });
 });

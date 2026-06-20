@@ -16,7 +16,7 @@ import {
   UserCheck,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { Header } from '@/components/Header';
+import { AppPage } from '@/components/layout/AppPage';
 import { StatCard } from '@/components/StatCard';
 import { TodaySchedule } from '@/components/TodaySchedule';
 import { ArenaTodaySchedule } from '@/components/ArenaTodaySchedule';
@@ -253,10 +253,7 @@ export default function Index() {
   const pv = (val: number | string) => (privacyMode ? '••••' : val);
 
   return (
-    <div className="min-h-screen bg-background">
-      <Header />
-
-      <main className="container py-6 md:py-8 space-y-6 md:space-y-8">
+    <AppPage contentClassName="space-y-6 md:space-y-8">
         {/* ── Hero Banner ── */}
         <section className="animate-fade-up">
           <div className="bg-gradient-hero rounded-2xl p-5 md:p-8 text-white">
@@ -355,9 +352,9 @@ export default function Index() {
         {/* ── Low Stock Alert (Only if Arena & has low/out stock items) ── */}
         {lowStockProducts.length > 0 && (
           <section className="animate-fade-up">
-            <div className="bg-amber-500/10 border border-amber-500/20 rounded-2xl p-4 md:p-5 flex flex-col md:flex-row items-center justify-between gap-4 shadow-sm">
+            <div className="bg-amber-500/5 border border-amber-500/15 rounded-2xl p-4 md:p-5 flex flex-col md:flex-row items-center justify-between gap-4 shadow-sm">
               <div className="flex items-center gap-4 text-left">
-                <div className="bg-amber-500 text-white p-3 rounded-xl shadow-md shadow-amber-500/15 animate-pulse shrink-0">
+                <div className="bg-amber-500/10 text-amber-600 p-3 rounded-xl shadow-sm shrink-0">
                   <ShoppingCart className="h-6 w-6" />
                 </div>
                 <div>
@@ -386,16 +383,16 @@ export default function Index() {
         {/* ── Aniversários de hoje (só sport_school) ── */}
         {dashboardAccess.showOperationalSections && isSportSchool && birthdaysToday.length > 0 && (
           <section className="animate-fade-up">
-            <div className="bg-primary/10 border-2 border-primary/20 rounded-2xl p-4 md:p-6 flex flex-col md:flex-row items-center justify-between gap-4">
+            <div className="bg-primary/5 border border-primary/15 rounded-2xl p-4 md:p-6 flex flex-col md:flex-row items-center justify-between gap-4 shadow-sm">
               <div className="flex items-center gap-4 text-center md:text-left">
-                <div className="bg-primary text-primary-foreground p-3 rounded-xl shadow-lg shadow-primary/20">
+                <div className="bg-primary/10 text-primary p-3 rounded-xl shadow-sm">
                   <Cake className="h-6 w-6" />
                 </div>
                 <div>
-                  <h3 className="font-display font-bold text-lg">
+                  <h3 className="font-display font-bold text-lg text-primary">
                     Parabéns aos aniversariantes! 🎂
                   </h3>
-                  <p className="text-muted-foreground text-sm">
+                  <p className="text-muted-foreground text-sm font-medium mt-0.5">
                     {birthdaysToday.length === 1
                       ? `${birthdaysToday[0].name} faz aniversário hoje!`
                       : `${birthdaysToday.length} ${labels.studentLabel.toLowerCase()} fazem aniversário hoje!`}
@@ -555,7 +552,7 @@ export default function Index() {
                   />
                   <div className="min-w-0">
                     <p className="text-sm font-bold truncate">{mod.name}</p>
-                    <p className="text-[10px] text-muted-foreground uppercase font-bold tracking-tight">
+                    <p className="text-xs text-muted-foreground font-medium">
                       {isArena ? `${mod.reservationCount} reserva(s) no mês` : `${mod.studentCount} ${labels.studentLabel.toLowerCase()}`}
                     </p>
                   </div>
@@ -683,8 +680,7 @@ export default function Index() {
             <QuickActions />
           </div>
         )}
-      </main>
-    </div>
+    </AppPage>
   );
 }
 // HMR trigger: force clean cache reload

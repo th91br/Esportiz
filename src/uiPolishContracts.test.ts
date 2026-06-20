@@ -9,6 +9,7 @@ describe('premium UI polish contracts', () => {
   const arenaAgendaPage = readFileSync(resolve(process.cwd(), 'src/pages/ArenaAgendaPage.tsx'), 'utf-8');
   const attendancePage = readFileSync(resolve(process.cwd(), 'src/pages/AttendancePage.tsx'), 'utf-8');
   const birthdaysPage = readFileSync(resolve(process.cwd(), 'src/pages/BirthdaysPage.tsx'), 'utf-8');
+  const groupsPage = readFileSync(resolve(process.cwd(), 'src/pages/GroupsPage.tsx'), 'utf-8');
   const modalitiesPage = readFileSync(resolve(process.cwd(), 'src/pages/ModalitiesPage.tsx'), 'utf-8');
   const paymentsPage = readFileSync(resolve(process.cwd(), 'src/pages/PaymentsPage.tsx'), 'utf-8');
   const plansPage = readFileSync(resolve(process.cwd(), 'src/pages/PlansPage.tsx'), 'utf-8');
@@ -93,6 +94,16 @@ describe('premium UI polish contracts', () => {
     expect(birthdaysPage).not.toContain("import { Header } from '@/components/Header';");
     expect(birthdaysPage).not.toContain('<main className="container py-6');
   });
+
+  it('keeps the groups page on the shared app shell and page header pattern', () => {
+    expect(groupsPage).toContain("import { AppPage } from '@/components/layout/AppPage';");
+    expect(groupsPage).toContain("import { PageHeader } from '@/components/layout/PageHeader';");
+    expect(groupsPage).toContain('<AppPage');
+    expect(groupsPage).toContain('<PageHeader');
+    expect(groupsPage).not.toContain("import { Header } from '@/components/Header';");
+    expect(groupsPage).not.toContain('<main className="container py-6');
+  });
+
   it('keeps the contracts page on the shared app shell while preserving print-only output', () => {
     expect(contractsPage).toContain("import { AppPage } from '@/components/layout/AppPage';");
     expect(contractsPage).toContain("import { PageHeader } from '@/components/layout/PageHeader';");

@@ -5,6 +5,7 @@ import { describe, expect, it } from 'vitest';
 describe('premium UI polish contracts', () => {
   const notificationBell = readFileSync(resolve(process.cwd(), 'src/components/NotificationBell.tsx'), 'utf-8');
   const comandasPage = readFileSync(resolve(process.cwd(), 'src/pages/ComandasPage.tsx'), 'utf-8');
+  const communicationPage = readFileSync(resolve(process.cwd(), 'src/pages/CommunicationPage.tsx'), 'utf-8');
   const contractsPage = readFileSync(resolve(process.cwd(), 'src/pages/ContractsPage.tsx'), 'utf-8');
   const arenaAgendaPage = readFileSync(resolve(process.cwd(), 'src/pages/ArenaAgendaPage.tsx'), 'utf-8');
   const attendancePage = readFileSync(resolve(process.cwd(), 'src/pages/AttendancePage.tsx'), 'utf-8');
@@ -153,6 +154,15 @@ describe('premium UI polish contracts', () => {
     expect(comandasPage).toContain('<PageHeader');
     expect(comandasPage).not.toContain("import { Header } from '@/components/Header';");
     expect(comandasPage).not.toContain('<main className="container py-6');
+  });
+
+  it('keeps the communication page on the shared app shell and page header pattern', () => {
+    expect(communicationPage).toContain("import { AppPage } from '@/components/layout/AppPage';");
+    expect(communicationPage).toContain("import { PageHeader } from '@/components/layout/PageHeader';");
+    expect(communicationPage).toContain('<AppPage>');
+    expect(communicationPage).toContain('<PageHeader');
+    expect(communicationPage).not.toContain("import { Header } from '@/components/Header';");
+    expect(communicationPage).not.toContain('<main className="container py-6');
   });
 
   it('keeps the reports page on the shared app shell and page header pattern', () => {

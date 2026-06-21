@@ -1,5 +1,6 @@
 import { useState, useMemo, useEffect } from 'react';
-import { Header } from '@/components/Header';
+import { AppPage } from '@/components/layout/AppPage';
+import { PageHeader } from '@/components/layout/PageHeader';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
@@ -66,12 +67,12 @@ export default function CommunicationPage() {
   const { profile, updateProfile, isUpdatingProfile } = useProfile();
   const isArena = profile?.business_type === 'arena';
   const canSaveCommunicationTemplate = rolePermissions.can('settings', 'update');
-  
+
   // Nome dinâmico do negócio com fallbacks personalizados por modalidade
   const businessName = profile?.ct_name || (
     profile?.business_type === 'sport_school' ? 'Sportiz Sport' : 'Esportiz Arena'
   );
-  
+
   const [audience, setAudience] = useState<Audience>('all_active');
   const [messageTemplate, setMessageTemplate] = useState(getDefaultCommunicationTemplate('sport_school', 'general_announcement') || 'Ola {nome}, tudo bem? Aqui e da {escola}.');
   const [sentTo, setSentTo] = useState<Set<string>>(new Set());
@@ -93,7 +94,7 @@ export default function CommunicationPage() {
       const templates = profile.niche_settings?.[activeNicheType]?.templates || {};
       const templateKey = `mass_${audience}` as keyof typeof templates;
       const customTemplate = templates[templateKey];
-      
+
       if (customTemplate) {
         setMessageTemplate(customTemplate);
       } else {
@@ -114,7 +115,7 @@ export default function CommunicationPage() {
 
     const activeNicheType = profile.business_type || 'sport_school';
     const templateKey = `mass_${audience}`;
-    
+
     const currentNicheSettings = profile.niche_settings || {};
     const updatedNicheSettings = {
       ...currentNicheSettings,
@@ -311,65 +312,59 @@ export default function CommunicationPage() {
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      <Header />
-      
-      <main className="container py-6 md:py-8 space-y-6">
-        <div>
-          <h1 className="section-title text-2xl md:text-3xl flex items-center gap-2">
-            <MessageCircle className="h-6 w-6 text-primary" /> Comunicação em Massa
-          </h1>
-          <p className="text-muted-foreground mt-1">
-            Crie campanhas e dispare mensagens personalizadas via WhatsApp para seus(as) {labels.studentLabel.toLowerCase()}.
-          </p>
-        </div>
+    <AppPage>
+      <PageHeader
+        title="Comunicação em Massa"
+        description={`Crie campanhas e dispare mensagens personalizadas via WhatsApp para seus(as) ${labels.studentLabel.toLowerCase()}.`}
+        icon={MessageCircle}
+      />
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Painel de Configuração */}
-          <div className="lg:col-span-1 space-y-6">
-            <div className="card-elevated p-6 space-y-4 border-primary/20">
-              <div className="space-y-2">
-                <Label className="text-base font-bold">1. Público-Alvo</Label>
-                <p className="text-sm text-muted-foreground mb-3">Selecione o grupo de {labels.studentLabel.toLowerCase()} que receberá a mensagem.</p>
-                <Select value={audience} onValueChange={(val) => setAudience(val as Audience)} disabled={loading}>
-                  <SelectTrigger className="w-full bg-background border-border/50">
-                    <SelectValue placeholder="Selecione o público" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all_active">Todos(as) os(as) {labels.studentLabel} (Ativos)</SelectItem>
-                    {!isArena && (
-                      <>
-                        {canUsePaymentAudiences && (
-                          <>
-                            <SelectItem value="overdue">Inadimplentes (Mensalidade Atrasada)</SelectItem>
-                            <SelectItem value="due_7_days">Vencendo nos próximos 7 dias</SelectItem>
-                          </>
-                        )}
-                        <SelectItem value="trial">{labels.trainingLabel} Experimentais (Leads)</SelectItem>
-                        <SelectItem value="without_plan">{labels.studentLabel} sem {labels.planLabel}</SelectItem>
-                      </>
-                    )}
-                    {isArena && canUsePaymentAudiences && (
-                      <SelectItem value="payment_reminder">Lembrete de Pagamento (Pendentes)</SelectItem>
-                    )}
-                    <SelectItem value="inactive">{labels.studentLabel} Inativos(as) (Recuperação)</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Painel de Configuração */}
+        <div className="lg:col-span-1 space-y-6">
+          <div className="card-elevated p-6 space-y-4 border-primary/20">
+            <div className="space-y-2">
+              <Label className="text-base font-bold">1. Público-Alvo</Label>
+              <p className="text-sm text-muted-foreground mb-3">Selecione o grupo de {labels.studentLabel.toLowerCase()} que receberá a mensagem.</p>
+              <Select value={audience} onValueChange={(val) => setAudience(val as Audience)} disabled={loading}>
+                <SelectTrigger className="w-full bg-background border-border/50">
+                  <SelectValue placeholder="Selecione o público" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all_active">Todos(as) os(as) {labels.studentLabel} (Ativos)</SelectItem>
+                  {!isArena && (
+                    <>
+                      {canUsePaymentAudiences && (
+                        <>
+                          <SelectItem value="overdue">Inadimplentes (Mensalidade Atrasada)</SelectItem>
+                          <SelectItem value="due_7_days">Vencendo nos próximos 7 dias</SelectItem>
+                        </>
+                      )}
+                      <SelectItem value="trial">{labels.trainingLabel} Experimentais (Leads)</SelectItem>
+                      <SelectItem value="without_plan">{labels.studentLabel} sem {labels.planLabel}</SelectItem>
+                    </>
+                  )}
+                  {isArena && canUsePaymentAudiences && (
+                    <SelectItem value="payment_reminder">Lembrete de Pagamento (Pendentes)</SelectItem>
+                  )}
+                  <SelectItem value="inactive">{labels.studentLabel} Inativos(as) (Recuperação)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
 
-              <div className="space-y-2 pt-4">
-                <Label className="text-base font-bold">2. Mensagem</Label>
-                <p className="text-sm text-muted-foreground mb-3 leading-relaxed">
-                  Variáveis: <code className="bg-muted px-1 py-0.5 rounded text-primary">{`{nome}`}</code> para o nome do {labels.studentLabelSingular.toLowerCase()}, <code className="bg-muted px-1 py-0.5 rounded text-primary">{`{escola}`}</code> para o negócio, <code className="bg-muted px-1 py-0.5 rounded text-primary">{`{chave_pix}`}</code> para a chave Pix e <code className="bg-muted px-1 py-0.5 rounded text-primary">{`{beneficiario_pix}`}</code> para o recebedor do Pix.
-                </p>
-                <Textarea 
-                  className="min-h-[150px] resize-none bg-background border-border/50" 
-                  placeholder="Escreva sua mensagem aqui..."
-                  value={messageTemplate}
-                  onChange={(e) => setMessageTemplate(e.target.value)}
-                />
-                {canSaveCommunicationTemplate && (
-                  <Button
+            <div className="space-y-2 pt-4">
+              <Label className="text-base font-bold">2. Mensagem</Label>
+              <p className="text-sm text-muted-foreground mb-3 leading-relaxed">
+                Variáveis: <code className="bg-muted px-1 py-0.5 rounded text-primary">{`{nome}`}</code> para o nome do {labels.studentLabelSingular.toLowerCase()}, <code className="bg-muted px-1 py-0.5 rounded text-primary">{`{escola}`}</code> para o negócio, <code className="bg-muted px-1 py-0.5 rounded text-primary">{`{chave_pix}`}</code> para a chave Pix e <code className="bg-muted px-1 py-0.5 rounded text-primary">{`{beneficiario_pix}`}</code> para o recebedor do Pix.
+              </p>
+              <Textarea
+                className="min-h-[150px] resize-none bg-background border-border/50"
+                placeholder="Escreva sua mensagem aqui..."
+                value={messageTemplate}
+                onChange={(e) => setMessageTemplate(e.target.value)}
+              />
+              {canSaveCommunicationTemplate && (
+                <Button
                   onClick={handleSaveTemplate}
                   disabled={isUpdatingProfile}
                   variant="outline"
@@ -381,129 +376,128 @@ export default function CommunicationPage() {
                     <Save className="h-4 w-4 text-primary" />
                   )}
                   Salvar Modelo como Padrão
+                </Button>
+              )}
+            </div>
+
+            <div className="space-y-3 rounded-lg border border-border/50 bg-muted/20 p-4">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <Label className="text-sm font-bold">Preview</Label>
+                  <p className="text-xs text-muted-foreground">
+                    {previewStudent ? `Exemplo para ${previewStudent.name}` : 'Selecione um público com contatos.'}
+                  </p>
+                </div>
+                {canSendCommunicationMessages && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="h-8 gap-1.5 text-xs"
+                    onClick={handleCopyPreview}
+                    disabled={!previewMessage}
+                  >
+                    <Copy className="h-3.5 w-3.5" />
+                    Copiar
                   </Button>
                 )}
               </div>
-
-              <div className="space-y-3 rounded-lg border border-border/50 bg-muted/20 p-4">
-                <div className="flex items-center justify-between gap-3">
-                  <div>
-                    <Label className="text-sm font-bold">Preview</Label>
-                    <p className="text-xs text-muted-foreground">
-                      {previewStudent ? `Exemplo para ${previewStudent.name}` : 'Selecione um público com contatos.'}
-                    </p>
-                  </div>
-                  {canSendCommunicationMessages && (
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      className="h-8 gap-1.5 text-xs"
-                      onClick={handleCopyPreview}
-                      disabled={!previewMessage}
-                    >
-                      <Copy className="h-3.5 w-3.5" />
-                      Copiar
-                    </Button>
-                  )}
-                </div>
-                <pre className="max-h-44 overflow-y-auto whitespace-pre-wrap break-words rounded-md bg-background p-3 text-xs leading-relaxed text-foreground border border-border/40">
-                  {previewMessage || 'Nenhuma mensagem para visualizar.'}
-                </pre>
-              </div>
-
-              <div className="bg-primary/10 border border-primary/20 rounded-lg p-4 flex gap-3 mt-4">
-                <AlertCircle className="h-5 w-5 text-primary shrink-0" />
-                <p className="text-xs text-muted-foreground">
-                  {canSendCommunicationMessages
-                    ? <>Para evitar bloqueios pelo WhatsApp (Anti-Spam), você precisará clicar em "Enviar" {labels.studentLabelSingular.toLowerCase()} por {labels.studentLabelSingular.toLowerCase()}. A mensagem já será preenchida automaticamente.</>
-                    : <>Seu cargo possui acesso de leitura a comunicacoes. O envio e a copia de mensagens ficam restritos aos cargos autorizados.</>}
-                </p>
-              </div>
+              <pre className="max-h-44 overflow-y-auto whitespace-pre-wrap break-words rounded-md bg-background p-3 text-xs leading-relaxed text-foreground border border-border/40">
+                {previewMessage || 'Nenhuma mensagem para visualizar.'}
+              </pre>
             </div>
-          </div>
 
-          {/* Lista de Alunos */}
-          <div className="lg:col-span-2">
-            <div className="card-elevated p-6 min-h-[500px] flex flex-col">
-              <div className="flex items-center justify-between mb-6 pb-4 border-b border-border/40">
-                <div>
-                  <h2 className="text-lg font-bold font-display">Lista de Disparo</h2>
-                  <p className="text-sm text-muted-foreground">{targetStudents.length} {targetStudents.length !== 1 ? labels.studentLabel.toLowerCase() : labels.studentLabelSingular.toLowerCase()} encontrado(s)</p>
-                </div>
-                <div className="bg-muted px-3 py-1.5 rounded-full flex items-center gap-2">
-                  <Users className="h-4 w-4 text-muted-foreground" />
-                  <span className="text-sm font-medium">{sentTo.size} / {targetStudents.length} enviados</span>
-                </div>
-              </div>
-
-              {loading ? (
-                <div className="flex-1 flex items-center justify-center">
-                  <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full" />
-                </div>
-              ) : targetStudents.length === 0 ? (
-                <div className="flex-1 flex flex-col items-center justify-center text-center p-8 bg-muted/20 rounded-xl border border-dashed border-border/50">
-                  <MessageCircle className="h-12 w-12 text-muted-foreground/30 mb-4" />
-                  <h3 className="text-lg font-semibold text-foreground">Nenhum(a) {labels.studentLabelSingular.toLowerCase()} encontrado(a)</h3>
-                  <p className="text-sm text-muted-foreground max-w-sm mt-2">
-                    Não existem {labels.studentLabel.toLowerCase()} correspondentes a este filtro no momento. Tente selecionar outro público-alvo.
-                  </p>
-                </div>
-              ) : (
-                <div className="flex-1 overflow-y-auto pr-2 space-y-3 custom-scrollbar">
-                  {targetStudents.map(student => {
-                    const isSent = sentTo.has(student.id);
-                    const message = buildMessageForStudent(student.id, student.name);
-                    const whatsappAction = buildWhatsAppAction({ phone: student.phone, message });
-                    const canSend = whatsappAction.ok;
-                    return (
-                      <div key={student.id} className={`flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-xl border transition-colors ${isSent ? 'bg-success/5 border-success/20' : canSend ? 'bg-background hover:bg-muted/30 border-border/40' : 'bg-destructive/5 border-destructive/20'}`}>
-                        <div className="flex items-center gap-3 min-w-0">
-                          <div className={`h-10 w-10 rounded-full flex items-center justify-center shrink-0 ${isSent ? 'bg-success/20 text-success' : canSend ? 'bg-primary/10 text-primary' : 'bg-destructive/10 text-destructive'}`}>
-                            {isSent ? <Check className="h-5 w-5" /> : canSend ? <Users className="h-5 w-5" /> : <PhoneOff className="h-5 w-5" />}
-                          </div>
-                          <div className="min-w-0 flex-1">
-                            <p className="font-semibold text-sm md:text-base truncate" title={student.name}>{student.name}</p>
-                            <p className={`text-xs truncate ${canSend ? 'text-muted-foreground' : 'text-destructive'}`}>
-                              {student.phone ? (canSend ? student.phone : `${student.phone} - inválido`) : 'Sem telefone'}
-                            </p>
-                          </div>
-                        </div>
-                        {canSendCommunicationMessages ? (
-                          <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
-                            <Button
-                              type="button"
-                              onClick={() => handleCopyStudentMessage(student.id, student.name)}
-                              variant="outline"
-                              className="w-full sm:w-auto shrink-0"
-                            >
-                              <Copy className="h-4 w-4 mr-2" />
-                              Copiar
-                            </Button>
-                            <Button
-                              onClick={() => handleSendWhatsApp(student.id, student.name, student.phone)}
-                              variant={isSent ? 'outline' : 'default'}
-                              className={`w-full sm:w-auto shrink-0 ${isSent ? 'text-success border-success/30 hover:bg-success/10' : ''}`}
-                              disabled={!canSend}
-                            >
-                              <MessageCircle className="h-4 w-4 mr-2" />
-                              {isSent ? 'Reenviar' : 'Enviar'}
-                            </Button>
-                          </div>
-                        ) : (
-                          <span className="rounded-full border border-border/60 bg-muted px-3 py-1 text-xs font-semibold text-muted-foreground">
-                            Somente leitura
-                          </span>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
+            <div className="bg-primary/10 border border-primary/20 rounded-lg p-4 flex gap-3 mt-4">
+              <AlertCircle className="h-5 w-5 text-primary shrink-0" />
+              <p className="text-xs text-muted-foreground">
+                {canSendCommunicationMessages
+                  ? <>Para evitar bloqueios pelo WhatsApp (Anti-Spam), você precisará clicar em "Enviar" {labels.studentLabelSingular.toLowerCase()} por {labels.studentLabelSingular.toLowerCase()}. A mensagem já será preenchida automaticamente.</>
+                  : <>Seu cargo possui acesso de leitura a comunicacoes. O envio e a copia de mensagens ficam restritos aos cargos autorizados.</>}
+              </p>
             </div>
           </div>
         </div>
-      </main>
+
+        {/* Lista de Alunos */}
+        <div className="lg:col-span-2">
+          <div className="card-elevated p-6 min-h-[500px] flex flex-col">
+            <div className="flex items-center justify-between mb-6 pb-4 border-b border-border/40">
+              <div>
+                <h2 className="text-lg font-bold font-display">Lista de Disparo</h2>
+                <p className="text-sm text-muted-foreground">{targetStudents.length} {targetStudents.length !== 1 ? labels.studentLabel.toLowerCase() : labels.studentLabelSingular.toLowerCase()} encontrado(s)</p>
+              </div>
+              <div className="bg-muted px-3 py-1.5 rounded-full flex items-center gap-2">
+                <Users className="h-4 w-4 text-muted-foreground" />
+                <span className="text-sm font-medium">{sentTo.size} / {targetStudents.length} enviados</span>
+              </div>
+            </div>
+
+            {loading ? (
+              <div className="flex-1 flex items-center justify-center">
+                <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full" />
+              </div>
+            ) : targetStudents.length === 0 ? (
+              <div className="flex-1 flex flex-col items-center justify-center text-center p-8 bg-muted/20 rounded-xl border border-dashed border-border/50">
+                <MessageCircle className="h-12 w-12 text-muted-foreground/30 mb-4" />
+                <h3 className="text-lg font-semibold text-foreground">Nenhum(a) {labels.studentLabelSingular.toLowerCase()} encontrado(a)</h3>
+                <p className="text-sm text-muted-foreground max-w-sm mt-2">
+                  Não existem {labels.studentLabel.toLowerCase()} correspondentes a este filtro no momento. Tente selecionar outro público-alvo.
+                </p>
+              </div>
+            ) : (
+              <div className="flex-1 overflow-y-auto pr-2 space-y-3 custom-scrollbar">
+                {targetStudents.map(student => {
+                  const isSent = sentTo.has(student.id);
+                  const message = buildMessageForStudent(student.id, student.name);
+                  const whatsappAction = buildWhatsAppAction({ phone: student.phone, message });
+                  const canSend = whatsappAction.ok;
+                  return (
+                    <div key={student.id} className={`flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-xl border transition-colors ${isSent ? 'bg-success/5 border-success/20' : canSend ? 'bg-background hover:bg-muted/30 border-border/40' : 'bg-destructive/5 border-destructive/20'}`}>
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className={`h-10 w-10 rounded-full flex items-center justify-center shrink-0 ${isSent ? 'bg-success/20 text-success' : canSend ? 'bg-primary/10 text-primary' : 'bg-destructive/10 text-destructive'}`}>
+                          {isSent ? <Check className="h-5 w-5" /> : canSend ? <Users className="h-5 w-5" /> : <PhoneOff className="h-5 w-5" />}
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <p className="font-semibold text-sm md:text-base truncate" title={student.name}>{student.name}</p>
+                          <p className={`text-xs truncate ${canSend ? 'text-muted-foreground' : 'text-destructive'}`}>
+                            {student.phone ? (canSend ? student.phone : `${student.phone} - inválido`) : 'Sem telefone'}
+                          </p>
+                        </div>
+                      </div>
+                      {canSendCommunicationMessages ? (
+                        <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
+                          <Button
+                            type="button"
+                            onClick={() => handleCopyStudentMessage(student.id, student.name)}
+                            variant="outline"
+                            className="w-full sm:w-auto shrink-0"
+                          >
+                            <Copy className="h-4 w-4 mr-2" />
+                            Copiar
+                          </Button>
+                          <Button
+                            onClick={() => handleSendWhatsApp(student.id, student.name, student.phone)}
+                            variant={isSent ? 'outline' : 'default'}
+                            className={`w-full sm:w-auto shrink-0 ${isSent ? 'text-success border-success/30 hover:bg-success/10' : ''}`}
+                            disabled={!canSend}
+                          >
+                            <MessageCircle className="h-4 w-4 mr-2" />
+                            {isSent ? 'Reenviar' : 'Enviar'}
+                          </Button>
+                        </div>
+                      ) : (
+                        <span className="rounded-full border border-border/60 bg-muted px-3 py-1 text-xs font-semibold text-muted-foreground">
+                          Somente leitura
+                        </span>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
 
       {/* Dialog de Confirmação de Envio (Anti-Spam Preview) */}
       <Dialog open={!!sendingStudent} onOpenChange={(open) => { if (!open) setSendingStudent(null); }}>
@@ -543,6 +537,6 @@ export default function CommunicationPage() {
           )}
         </DialogContent>
       </Dialog>
-    </div>
+    </AppPage>
   );
 }

@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Header } from '@/components/Header';
+import { AppPage } from '@/components/layout/AppPage';
 import { useStudents } from '@/hooks/queries/useStudents';
 import { usePlans } from '@/hooks/queries/usePlans';
 import { useTrainings } from '@/hooks/queries/useTrainings';
@@ -110,22 +110,18 @@ export default function StudentProfilePage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-background">
-        <Header />
-        <div className="container py-8 text-center text-muted-foreground">Carregando perfil...</div>
-      </div>
+      <AppPage contentClassName="py-8 text-center text-muted-foreground">
+        Carregando perfil...
+      </AppPage>
     );
   }
 
   if (!student) {
     return (
-      <div className="min-h-screen bg-background">
-        <Header />
-        <div className="container py-8 text-center">
-          <h2 className="text-xl font-bold mb-4">{labels.studentLabelSingular} não encontrado(a)</h2>
-          <Button onClick={() => navigate('/alunos')} variant="outline">Voltar para {labels.studentLabel}</Button>
-        </div>
-      </div>
+      <AppPage contentClassName="py-8 text-center">
+        <h2 className="text-xl font-bold mb-4">{labels.studentLabelSingular} não encontrado(a)</h2>
+        <Button onClick={() => navigate('/alunos')} variant="outline">Voltar para {labels.studentLabel}</Button>
+      </AppPage>
     );
   }
 
@@ -136,12 +132,8 @@ export default function StudentProfilePage() {
   };
 
   return (
-    <div className="min-h-screen bg-background pb-12 print:bg-white print:pb-0">
-      <div className="print:hidden">
-        <Header />
-      </div>
-
-      <main className="container py-6 md:py-8 space-y-6">
+    <>
+      <AppPage className="pb-12 print:hidden">
         {/* Back navigation */}
         <div className="flex items-center justify-between print:hidden">
           <Button variant="ghost" onClick={() => navigate('/alunos')} className="gap-2 -ml-3 text-muted-foreground hover:text-foreground">
@@ -560,7 +552,7 @@ export default function StudentProfilePage() {
           )}
         </Tabs>
 
-      </main>
+      </AppPage>
 
       {/* Print-only layout for the contract */}
       {canViewContracts && (
@@ -620,6 +612,6 @@ export default function StudentProfilePage() {
       </div>
       )}
 
-    </div>
+    </>
   );
 }

@@ -20,6 +20,7 @@ describe('premium UI polish contracts', () => {
   const indexPage = readFileSync(resolve(process.cwd(), 'src/pages/Index.tsx'), 'utf-8');
   const courtsPage = readFileSync(resolve(process.cwd(), 'src/pages/CourtsPage.tsx'), 'utf-8');
   const reportsPage = readFileSync(resolve(process.cwd(), 'src/pages/ReportsPage.tsx'), 'utf-8');
+  const studentProfilePage = readFileSync(resolve(process.cwd(), 'src/pages/StudentProfilePage.tsx'), 'utf-8');
   const studentsPage = readFileSync(resolve(process.cwd(), 'src/pages/StudentsPage.tsx'), 'utf-8');
   const productsPage = readFileSync(resolve(process.cwd(), 'src/pages/ProductsPage.tsx'), 'utf-8');
   const salesPage = readFileSync(resolve(process.cwd(), 'src/pages/SalesPage.tsx'), 'utf-8');
@@ -191,6 +192,15 @@ describe('premium UI polish contracts', () => {
     expect(studentsPage).toContain('<PageHeader');
     expect(studentsPage).not.toContain("import { Header } from '@/components/Header';");
     expect(studentsPage).not.toContain('<main className="container py-6');
+  });
+
+  it('keeps the student profile page on the shared app shell while preserving print-only contract output', () => {
+    expect(studentProfilePage).toContain("import { AppPage } from '@/components/layout/AppPage';");
+    expect(studentProfilePage).toContain('<AppPage');
+    expect(studentProfilePage).toContain('print:hidden');
+    expect(studentProfilePage).toContain('hidden print:block');
+    expect(studentProfilePage).not.toContain("import { Header } from '@/components/Header';");
+    expect(studentProfilePage).not.toContain('<main className="container py-6');
   });
 
   it('keeps the products page on the shared app shell and page header pattern', () => {

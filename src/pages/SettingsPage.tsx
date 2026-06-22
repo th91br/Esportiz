@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { Header } from '@/components/Header';
+import { AppPage } from '@/components/layout/AppPage';
+import { PageHeader } from '@/components/layout/PageHeader';
 import { useProfile } from '@/hooks/queries/useProfile';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -773,12 +774,12 @@ export default function SettingsPage() {
 
   if (loadingProfile) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
+      <AppPage contentClassName="flex min-h-[calc(100vh-3.5rem)] items-center justify-center">
         <div className="flex flex-col items-center gap-2">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
           <p className="text-sm text-muted-foreground font-medium">Carregando configurações...</p>
         </div>
-      </div>
+      </AppPage>
     );
   }
 
@@ -787,14 +788,13 @@ export default function SettingsPage() {
   const isBusy = isUpdatingProfile || isUploadingLogo || isDeletingLogo;
 
   return (
-    <div className="min-h-screen bg-background">
-      <Header />
-
-      <main className="container py-6 md:py-8 space-y-6 max-w-4xl">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-display font-bold">Configurações {ctPreposition} {dynamicCtLabelShort}</h1>
-          <p className="text-muted-foreground mt-1">Gerencie as informações da sua conta e {ctPreposition === 'da' ? 'da sua' : 'do seu'} {dynamicCtLabel}.</p>
-        </div>
+    <>
+      <AppPage contentClassName="max-w-4xl">
+        <PageHeader
+          title={`Configurações ${ctPreposition} ${dynamicCtLabelShort}`}
+          description={`Gerencie as informações da sua conta e ${ctPreposition === 'da' ? 'da sua' : 'do seu'} ${dynamicCtLabel}.`}
+          icon={Building}
+        />
 
         {/* Business Type Card */}
         {rolePermissions.organizationRole === 'owner' && (
@@ -1790,7 +1790,7 @@ export default function SettingsPage() {
           </div>
         </div>
         )}
-      </main>
+      </AppPage>
 
       {/* Modal de Confirmação de Mudança de Segmento (Nicho) */}
       <AlertDialog open={showNicheConfirmation} onOpenChange={(open) => { if (!open) handleCancelNicheChange(); }}>
@@ -1843,6 +1843,6 @@ export default function SettingsPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </div>
+    </>
   );
 }

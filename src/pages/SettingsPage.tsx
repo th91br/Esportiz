@@ -3,6 +3,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { AppPage } from '@/components/layout/AppPage';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { SettingsSection } from '@/components/layout/SettingsSection';
+import { StatusPill } from '@/components/ui/status-pill';
 import { useProfile } from '@/hooks/queries/useProfile';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -1572,15 +1573,13 @@ export default function SettingsPage() {
                   <CardDescription>Sincronize agenda e analise contatos sem cadastro automático.</CardDescription>
                 </div>
                 {isGoogleConnected ? (
-                  <div className="flex w-fit items-center gap-1 text-xs font-medium text-green-600 bg-green-50 px-2 py-1 rounded-full">
-                    <CheckCircle2 className="h-3 w-3" />
+                  <StatusPill tone="success" icon={CheckCircle2}>
                     Conectado
-                  </div>
+                  </StatusPill>
                 ) : (
-                  <div className="flex w-fit items-center gap-1 text-xs font-medium text-amber-600 bg-amber-50 px-2 py-1 rounded-full">
-                    <AlertCircle className="h-3 w-3" />
+                  <StatusPill tone="warning" icon={AlertCircle}>
                     Não conectado
-                  </div>
+                  </StatusPill>
                 )}
               </CardHeader>
               <CardContent className="space-y-4">
@@ -1647,26 +1646,16 @@ export default function SettingsPage() {
                   <CardDescription>Sincronize pagamentos via Excel ou Google Sheets.</CardDescription>
                 </div>
                 {isGoogleConnected ? (
-                  <div
-                    className={cn(
-                      "flex w-fit items-center gap-1 text-xs font-medium px-2 py-1 rounded-full",
-                      hasGoogleSpreadsheetId
-                        ? "text-green-600 bg-green-50"
-                        : "text-amber-600 bg-amber-50"
-                    )}
+                  <StatusPill
+                    tone={hasGoogleSpreadsheetId ? 'success' : 'warning'}
+                    icon={hasGoogleSpreadsheetId ? CheckCircle2 : AlertCircle}
                   >
-                    {hasGoogleSpreadsheetId ? (
-                      <CheckCircle2 className="h-3 w-3" />
-                    ) : (
-                      <AlertCircle className="h-3 w-3" />
-                    )}
                     {hasGoogleSpreadsheetId ? 'Planilha configurada' : 'Planilha pendente'}
-                  </div>
+                  </StatusPill>
                 ) : (
-                  <div className="flex w-fit items-center gap-1 text-xs font-medium text-amber-600 bg-amber-50 px-2 py-1 rounded-full">
-                    <AlertCircle className="h-3 w-3" />
+                  <StatusPill tone="warning" icon={AlertCircle}>
                     Inativo
-                  </div>
+                  </StatusPill>
                 )}
               </CardHeader>
               <CardContent className="space-y-4">
@@ -1678,25 +1667,15 @@ export default function SettingsPage() {
                 {isGoogleConnected && (
                   <div className="space-y-2 pt-2 border-t">
                     <div className="flex flex-wrap items-center gap-2 text-xs">
-                      <span className="inline-flex items-center gap-1 font-medium text-green-600 bg-green-50 px-2 py-1 rounded-full">
-                        <CheckCircle2 className="h-3 w-3" />
+                      <StatusPill tone="success" icon={CheckCircle2}>
                         Google conectado
-                      </span>
-                      <span
-                        className={cn(
-                          "inline-flex items-center gap-1 font-medium px-2 py-1 rounded-full",
-                          hasGoogleSpreadsheetId
-                            ? "text-green-600 bg-green-50"
-                            : "text-amber-600 bg-amber-50"
-                        )}
+                      </StatusPill>
+                      <StatusPill
+                        tone={hasGoogleSpreadsheetId ? 'success' : 'warning'}
+                        icon={hasGoogleSpreadsheetId ? CheckCircle2 : AlertCircle}
                       >
-                        {hasGoogleSpreadsheetId ? (
-                          <CheckCircle2 className="h-3 w-3" />
-                        ) : (
-                          <AlertCircle className="h-3 w-3" />
-                        )}
                         {hasGoogleSpreadsheetId ? 'ID da planilha salvo' : 'Informe o ID da planilha'}
-                      </span>
+                      </StatusPill>
                     </div>
                     <Label htmlFor="spreadsheet-id">ID da Planilha Google</Label>
                     <div className="flex gap-2">

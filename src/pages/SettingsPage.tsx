@@ -4,6 +4,7 @@ import { AppPage } from '@/components/layout/AppPage';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { SettingsCardHeader } from '@/components/layout/SettingsCardHeader';
 import { SettingsField } from '@/components/layout/SettingsField';
+import { SettingsGroupTitle } from '@/components/layout/SettingsGroupTitle';
 import { SettingsSection } from '@/components/layout/SettingsSection';
 import { StatusPill } from '@/components/ui/status-pill';
 import { useProfile } from '@/hooks/queries/useProfile';
@@ -928,9 +929,9 @@ export default function SettingsPage() {
                   <div className="rounded-xl border-2 border-primary/10 bg-muted/10 p-4 animate-fade-in space-y-4">
                     {/* Cabecalho do formulario com indicador de modalidade */}
                     <div className="flex items-center justify-between">
-                      <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
+                      <SettingsGroupTitle>
                         Adicionar novo membro
-                      </p>
+                      </SettingsGroupTitle>
                       <span className={cn(
                         'flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider border',
                         selectedBusinessType === 'arena'
@@ -1344,7 +1345,7 @@ export default function SettingsPage() {
 
               {canManageSensitiveSettings && (
               <div className="border-t border-border/30 pt-4 space-y-4">
-                <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Configuração de Recebimentos (Pix)</p>
+                <SettingsGroupTitle>Configuração de Recebimentos (Pix)</SettingsGroupTitle>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <SettingsField
                     htmlFor="pix-key"
@@ -1480,7 +1481,7 @@ export default function SettingsPage() {
               {/* WhatsApp Message Templates Section (Only for Arena) */}
               {selectedBusinessType === 'arena' && (
                 <div className="border-t border-border/30 pt-4 space-y-4">
-                  <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Modelos de Mensagem do WhatsApp</p>
+                  <SettingsGroupTitle>Modelos de Mensagem do WhatsApp</SettingsGroupTitle>
 
                   <div className="space-y-4">
                     {/* Template Option A */}

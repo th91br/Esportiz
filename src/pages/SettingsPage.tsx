@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { AppPage } from '@/components/layout/AppPage';
 import { PageHeader } from '@/components/layout/PageHeader';
+import { SettingsSection } from '@/components/layout/SettingsSection';
 import { useProfile } from '@/hooks/queries/useProfile';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -798,14 +799,12 @@ export default function SettingsPage() {
 
         {/* Business Type Card */}
         {rolePermissions.organizationRole === 'owner' && (
-          <div className="grid gap-6 md:grid-cols-3 animate-fade-in">
-            <div className="md:col-span-1 space-y-1">
-              <h3 className="font-medium">Tipo de Negócio</h3>
-              <p className="text-sm text-muted-foreground">
-                O sistema adapta a interface e termos automaticamente ao seu tipo de negócio.
-              </p>
-            </div>
-            <Card className="md:col-span-2">
+          <SettingsSection
+            title="Tipo de Negócio"
+            description="O sistema adapta a interface e termos automaticamente ao seu tipo de negócio."
+            className="animate-fade-in"
+          >
+            <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-lg">
                   <Building className="h-5 w-5 text-primary" />
@@ -853,19 +852,15 @@ export default function SettingsPage() {
                 })}
               </CardContent>
             </Card>
-          </div>
+          </SettingsSection>
         )}
 
         {selectedBusinessType === 'sport_school' && (
-          <div className="grid gap-6 md:grid-cols-3">
-            <div className="md:col-span-1 space-y-1">
-              <h3 className="font-medium">Portal do Aluno</h3>
-              <p className="text-sm text-muted-foreground">
-                Link oficial da sua escola para acesso de alunos e responsáveis.
-              </p>
-            </div>
-
-            <Card className="md:col-span-2 border-primary/10">
+          <SettingsSection
+            title="Portal do Aluno"
+            description="Link oficial da sua escola para acesso de alunos e responsáveis."
+          >
+            <Card className="border-primary/10">
               <CardHeader className="pb-3">
                 <CardTitle className="flex items-center gap-2 text-lg">
                   <GraduationCap className="h-5 w-5 text-primary" />
@@ -911,21 +906,17 @@ export default function SettingsPage() {
                 </p>
               </CardContent>
             </Card>
-          </div>
+          </SettingsSection>
         )}
 
         {canViewTeam && (
-          <div className="grid gap-6 md:grid-cols-3">
-            <div className="md:col-span-1 space-y-1">
-              <h3 className="font-medium">Equipe e Permissoes</h3>
-              <p className="text-sm text-muted-foreground">
-                {rolePermissions.organizationRole === 'owner'
-                  ? 'Visao segura dos membros vinculados a sua organizacao.'
-                  : 'Visao segura do seu vinculo e das permissoes do seu cargo.'}
-              </p>
-            </div>
-
-            <Card className="md:col-span-2 border-primary/10">
+          <SettingsSection
+            title="Equipe e Permissoes"
+            description={rolePermissions.organizationRole === 'owner'
+              ? 'Visao segura dos membros vinculados a sua organizacao.'
+              : 'Visao segura do seu vinculo e das permissoes do seu cargo.'}
+          >
+            <Card className="border-primary/10">
               <CardHeader className="pb-3">
                 <CardTitle className="flex items-center gap-2 text-lg">
                   <UsersRound className="h-5 w-5 text-primary" />
@@ -1212,25 +1203,20 @@ export default function SettingsPage() {
                 )}
               </CardContent>
             </Card>
-          </div>
+          </SettingsSection>
         )}
 
         {/* Painel de Permissoes por Cargo */}
         {canViewTeam && (() => {
           const isOwnerRole = rolePermissions.organizationRole === 'owner';
           return (
-            <div className="grid gap-6 md:grid-cols-3">
-              <div className="md:col-span-1 space-y-1">
-                <h3 className="font-medium">
-                  {isOwnerRole ? 'Permissoes por Cargo' : 'Minhas Permissoes'}
-                </h3>
-                <p className="text-sm text-muted-foreground">
-                  {isOwnerRole
-                    ? 'O que cada cargo pode acessar e executar em cada modalidade do sistema.'
-                    : 'O que o seu cargo permite acessar e executar no sistema.'}
-                </p>
-              </div>
-              <Card className="md:col-span-2 border-primary/10">
+            <SettingsSection
+              title={isOwnerRole ? 'Permissoes por Cargo' : 'Minhas Permissoes'}
+              description={isOwnerRole
+                ? 'O que cada cargo pode acessar e executar em cada modalidade do sistema.'
+                : 'O que o seu cargo permite acessar e executar no sistema.'}
+            >
+              <Card className="border-primary/10">
                 <CardHeader className="pb-3">
                   <CardTitle className="flex items-center gap-2 text-lg">
                     <ShieldCheck className="h-5 w-5 text-primary" />
@@ -1249,7 +1235,7 @@ export default function SettingsPage() {
                   />
                 </CardContent>
               </Card>
-            </div>
+            </SettingsSection>
           );
         })()}
 
@@ -1306,15 +1292,11 @@ export default function SettingsPage() {
           </AlertDialogContent>
         </AlertDialog>
 
-        <div className="grid gap-6 md:grid-cols-3">
-          <div className="md:col-span-1 space-y-1">
-            <h3 className="font-medium">Perfil e Marca</h3>
-            <p className="text-sm text-muted-foreground">
-              Estas informações aparecem no cabeçalho do sistema e em relatórios.
-            </p>
-          </div>
-
-          <Card className="md:col-span-2">
+        <SettingsSection
+          title="Perfil e Marca"
+          description="Estas informações aparecem no cabeçalho do sistema e em relatórios."
+        >
+          <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-lg">
                 <Building className="h-5 w-5 text-primary" />
@@ -1560,18 +1542,15 @@ export default function SettingsPage() {
               </div>
             </CardContent>
           </Card>
-        </div>
+        </SettingsSection>
 
         {canManageSensitiveSettings && (
-        <div className="grid gap-6 md:grid-cols-3 pt-6 border-t">
-          <div className="md:col-span-1 space-y-1">
-            <h3 className="font-medium">Integrações Profissionais</h3>
-            <p className="text-sm text-muted-foreground">
-              Conecte o Esportiz com as ferramentas que você já usa no dia a dia.
-            </p>
-          </div>
-
-          <div className="md:col-span-2 space-y-6">
+        <SettingsSection
+          title="Integrações Profissionais"
+          description="Conecte o Esportiz com as ferramentas que você já usa no dia a dia."
+          className="pt-6 border-t"
+          contentClassName="space-y-6"
+        >
             <div className="flex items-center gap-3 mb-2">
               <div className="p-2 rounded-lg bg-primary/10">
                 <Tag className="h-5 w-5 text-primary" />
@@ -1787,8 +1766,7 @@ export default function SettingsPage() {
                 </div>
               </CardContent>
             </Card>
-          </div>
-        </div>
+        </SettingsSection>
         )}
       </AppPage>
 

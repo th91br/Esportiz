@@ -189,11 +189,16 @@ describe('premium UI polish contracts', () => {
   it('keeps the settings page on the shared app shell and page header pattern', () => {
     expect(settingsPage).toContain("import { AppPage } from '@/components/layout/AppPage';");
     expect(settingsPage).toContain("import { PageHeader } from '@/components/layout/PageHeader';");
+    expect(settingsPage).toContain("import { SettingsSection } from '@/components/layout/SettingsSection';");
     expect(settingsPage).toContain('<AppPage');
     expect(settingsPage).toContain('<PageHeader');
+    expect(settingsPage).toContain('<SettingsSection');
     expect(settingsPage).toContain('<AlertDialog open={showNicheConfirmation}');
     expect(settingsPage).not.toContain("import { Header } from '@/components/Header';");
     expect(settingsPage).not.toContain('<main className="container py-6');
+    expect(settingsPage).not.toContain('grid gap-6 md:grid-cols-3');
+    expect(settingsPage).not.toContain('md:col-span-1 space-y-1');
+    expect(settingsPage).not.toContain('md:col-span-2');
   });
 
   it('keeps the students/reservants page on the shared app shell and page header pattern', () => {

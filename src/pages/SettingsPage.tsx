@@ -2,13 +2,14 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { AppPage } from '@/components/layout/AppPage';
 import { PageHeader } from '@/components/layout/PageHeader';
+import { SettingsCardHeader } from '@/components/layout/SettingsCardHeader';
 import { SettingsSection } from '@/components/layout/SettingsSection';
 import { StatusPill } from '@/components/ui/status-pill';
 import { useProfile } from '@/hooks/queries/useProfile';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
@@ -806,13 +807,11 @@ export default function SettingsPage() {
             className="animate-fade-in"
           >
             <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-lg">
-                  <Building className="h-5 w-5 text-primary" />
-                  Segmento do Negócio
-                </CardTitle>
-                <CardDescription>Escolha o tipo que melhor representa sua atividade.</CardDescription>
-              </CardHeader>
+              <SettingsCardHeader
+                icon={Building}
+                title="Segmento do Negócio"
+                description="Escolha o tipo que melhor representa sua atividade."
+              />
               <CardContent className="space-y-3">
                 {BUSINESS_OPTIONS.map((option) => {
                   const isSelected = selectedBusinessType === option.type;
@@ -862,15 +861,12 @@ export default function SettingsPage() {
             description="Link oficial da sua escola para acesso de alunos e responsáveis."
           >
             <Card className="border-primary/10">
-              <CardHeader className="pb-3">
-                <CardTitle className="flex items-center gap-2 text-lg">
-                  <GraduationCap className="h-5 w-5 text-primary" />
-                  Portal do Aluno
-                </CardTitle>
-                <CardDescription>
-                  Envie este acesso para o aluno consultar pagamentos, turmas e presenças.
-                </CardDescription>
-              </CardHeader>
+              <SettingsCardHeader
+                className="pb-3"
+                icon={GraduationCap}
+                title="Portal do Aluno"
+                description="Envie este acesso para o aluno consultar pagamentos, turmas e presenças."
+              />
               <CardContent className="space-y-3">
                 <div className="flex flex-col gap-2 sm:flex-row">
                   <Input
@@ -918,17 +914,14 @@ export default function SettingsPage() {
               : 'Visao segura do seu vinculo e das permissoes do seu cargo.'}
           >
             <Card className="border-primary/10">
-              <CardHeader className="pb-3">
-                <CardTitle className="flex items-center gap-2 text-lg">
-                  <UsersRound className="h-5 w-5 text-primary" />
-                  Equipe
-                </CardTitle>
-                <CardDescription>
-                  {rolePermissions.can('team', 'manage_team')
-                    ? 'Adicione novos membros com e-mail e senha inicial, ou gerencie os acessos ativos da sua equipe.'
-                    : 'Consulte o seu cargo ativo nesta organizacao e as permissoes vinculadas a ele.'}
-                </CardDescription>
-              </CardHeader>
+              <SettingsCardHeader
+                className="pb-3"
+                icon={UsersRound}
+                title="Equipe"
+                description={rolePermissions.can('team', 'manage_team')
+                  ? 'Adicione novos membros com e-mail e senha inicial, ou gerencie os acessos ativos da sua equipe.'
+                  : 'Consulte o seu cargo ativo nesta organizacao e as permissoes vinculadas a ele.'}
+              />
               <CardContent className="space-y-3">
                 {organizationId && rolePermissions.can('team', 'manage_team') && (
                   <div className="rounded-xl border-2 border-primary/10 bg-muted/10 p-4 animate-fade-in space-y-4">
@@ -1218,17 +1211,14 @@ export default function SettingsPage() {
                 : 'O que o seu cargo permite acessar e executar no sistema.'}
             >
               <Card className="border-primary/10">
-                <CardHeader className="pb-3">
-                  <CardTitle className="flex items-center gap-2 text-lg">
-                    <ShieldCheck className="h-5 w-5 text-primary" />
-                    {isOwnerRole ? 'Matriz de Acesso' : 'Minhas Permissoes'}
-                  </CardTitle>
-                  <CardDescription>
-                    {isOwnerRole
-                      ? 'Cada cargo tem permissoes especificas para Escola Esportiva e Arena. Clique em um cargo para expandir.'
-                      : 'Estas sao as acoes e modulos disponiveis para o seu cargo na modalidade ativa.'}
-                  </CardDescription>
-                </CardHeader>
+                <SettingsCardHeader
+                  className="pb-3"
+                  icon={ShieldCheck}
+                  title={isOwnerRole ? 'Matriz de Acesso' : 'Minhas Permissoes'}
+                  description={isOwnerRole
+                    ? 'Cada cargo tem permissoes especificas para Escola Esportiva e Arena. Clique em um cargo para expandir.'
+                    : 'Estas sao as acoes e modulos disponiveis para o seu cargo na modalidade ativa.'}
+                />
                 <CardContent>
                   <RolePermissionsPanel
                     businessType={selectedBusinessType}
@@ -1298,13 +1288,11 @@ export default function SettingsPage() {
           description="Estas informações aparecem no cabeçalho do sistema e em relatórios."
         >
           <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-lg">
-                <Building className="h-5 w-5 text-primary" />
-                Dados {ctPreposition} {dynamicCtLabel}
-              </CardTitle>
-              <CardDescription>Personalize sua experiência no Esportiz.</CardDescription>
-            </CardHeader>
+            <SettingsCardHeader
+              icon={Building}
+              title={<>Dados {ctPreposition} {dynamicCtLabel}</>}
+              description="Personalize sua experiência no Esportiz."
+            />
             <CardContent className="space-y-6">
               <div className="space-y-2">
                 <Label htmlFor="email">E-mail da Conta (Acesso)</Label>
@@ -1564,15 +1552,13 @@ export default function SettingsPage() {
             {/* Google Calendar Card */}
             <Card className="overflow-hidden border-primary/10 shadow-sm hover:shadow-md transition-shadow">
               <div className="h-1 bg-gradient-to-r from-[#4285F4] via-[#EA4335] to-[#FBBC05]" />
-              <CardHeader className="flex flex-col gap-3 space-y-0 pb-2 sm:flex-row sm:items-start sm:justify-between">
-                <div className="space-y-1 min-w-0">
-                  <CardTitle className="flex items-center gap-2 text-lg">
-                    <Calendar className="h-5 w-5 text-[#4285F4]" />
-                    Google Agenda
-                  </CardTitle>
-                  <CardDescription>Sincronize agenda e analise contatos sem cadastro automático.</CardDescription>
-                </div>
-                {isGoogleConnected ? (
+              <SettingsCardHeader
+                className="pb-2"
+                icon={Calendar}
+                iconClassName="text-[#4285F4]"
+                title="Google Agenda"
+                description="Sincronize agenda e analise contatos sem cadastro automático."
+                action={isGoogleConnected ? (
                   <StatusPill tone="success" icon={CheckCircle2}>
                     Conectado
                   </StatusPill>
@@ -1581,7 +1567,7 @@ export default function SettingsPage() {
                     Não conectado
                   </StatusPill>
                 )}
-              </CardHeader>
+              />
               <CardContent className="space-y-4">
                 <p className="text-sm text-muted-foreground">
                   Ao conectar, seus(as) {labels.trainingLabel.toLowerCase()} do Esportiz aparecerão na sua agenda do Google e vice-versa.
@@ -1637,15 +1623,13 @@ export default function SettingsPage() {
             {/* Excel / Google Sheets Card */}
             <Card className="overflow-hidden border-primary/10 shadow-sm hover:shadow-md transition-shadow">
               <div className="h-1 bg-gradient-to-r from-[#1D723A] to-[#217346]" />
-              <CardHeader className="flex flex-col gap-3 space-y-0 pb-2 sm:flex-row sm:items-start sm:justify-between">
-                <div className="space-y-1 min-w-0">
-                  <CardTitle className="flex items-center gap-2 text-lg">
-                    <FileSpreadsheet className="h-5 w-5 text-[#1D723A]" />
-                    Controle Financeiro (Planilhas)
-                  </CardTitle>
-                  <CardDescription>Sincronize pagamentos via Excel ou Google Sheets.</CardDescription>
-                </div>
-                {isGoogleConnected ? (
+              <SettingsCardHeader
+                className="pb-2"
+                icon={FileSpreadsheet}
+                iconClassName="text-[#1D723A]"
+                title="Controle Financeiro (Planilhas)"
+                description="Sincronize pagamentos via Excel ou Google Sheets."
+                action={isGoogleConnected ? (
                   <StatusPill
                     tone={hasGoogleSpreadsheetId ? 'success' : 'warning'}
                     icon={hasGoogleSpreadsheetId ? CheckCircle2 : AlertCircle}
@@ -1657,7 +1641,7 @@ export default function SettingsPage() {
                     Inativo
                   </StatusPill>
                 )}
-              </CardHeader>
+              />
               <CardContent className="space-y-4">
                 <p className="text-sm text-muted-foreground">
                   Dê baixa em mensalidades diretamente da sua planilha na nuvem (Google Sheets). 

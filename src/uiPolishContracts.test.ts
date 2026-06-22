@@ -190,11 +190,13 @@ describe('premium UI polish contracts', () => {
     expect(settingsPage).toContain("import { AppPage } from '@/components/layout/AppPage';");
     expect(settingsPage).toContain("import { PageHeader } from '@/components/layout/PageHeader';");
     expect(settingsPage).toContain("import { SettingsCardHeader } from '@/components/layout/SettingsCardHeader';");
+    expect(settingsPage).toContain("import { SettingsField } from '@/components/layout/SettingsField';");
     expect(settingsPage).toContain("import { SettingsSection } from '@/components/layout/SettingsSection';");
     expect(settingsPage).toContain("import { StatusPill } from '@/components/ui/status-pill';");
     expect(settingsPage).toContain('<AppPage');
     expect(settingsPage).toContain('<PageHeader');
     expect(settingsPage).toContain('<SettingsCardHeader');
+    expect(settingsPage).toContain('<SettingsField');
     expect(settingsPage).toContain('<SettingsSection');
     expect(settingsPage).toContain('<StatusPill');
     expect(settingsPage).toContain('<AlertDialog open={showNicheConfirmation}');

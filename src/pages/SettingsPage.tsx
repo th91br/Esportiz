@@ -3,6 +3,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { AppPage } from '@/components/layout/AppPage';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { SettingsCardHeader } from '@/components/layout/SettingsCardHeader';
+import { SettingsField } from '@/components/layout/SettingsField';
 import { SettingsSection } from '@/components/layout/SettingsSection';
 import { StatusPill } from '@/components/ui/status-pill';
 import { useProfile } from '@/hooks/queries/useProfile';
@@ -341,13 +342,13 @@ export default function SettingsPage() {
   useEffect(() => {
     if (rawProfile) {
       const activeNiche = rawProfile.niche_settings?.[selectedBusinessType] || {};
-      
+
       setCtName(activeNiche.ct_name !== undefined && activeNiche.ct_name !== null ? activeNiche.ct_name : (rawProfile.ct_name || ''));
       setLogoPreview(activeNiche.logo_url !== undefined && activeNiche.logo_url !== null ? activeNiche.logo_url : (rawProfile.logo_url || null));
       setPixKey(activeNiche.pix_key !== undefined && activeNiche.pix_key !== null ? activeNiche.pix_key : (rawProfile.pix_key || ''));
       setPixReceiver(activeNiche.pix_receiver !== undefined && activeNiche.pix_receiver !== null ? activeNiche.pix_receiver : (rawProfile.pix_receiver || ''));
       setWhatsapp(activeNiche.whatsapp !== undefined && activeNiche.whatsapp !== null ? formatBrazilPhone(activeNiche.whatsapp) : '');
-      
+
       const templates = activeNiche.templates || {};
       setBookingConfirmationTemplate(templates.booking_confirmation || '');
       setPaymentReminderTemplate(templates.payment_reminder || '');
@@ -382,7 +383,7 @@ export default function SettingsPage() {
     processedGoogleCodeRef.current = code;
     setIsConnectingGoogle(true);
     const toastId = toast.loading('Finalizando conexão com Google...');
-    
+
     try {
       if (!user?.id) {
         throw new Error('Usuário não autenticado. Entre novamente e tente conectar o Google.');
@@ -463,7 +464,7 @@ export default function SettingsPage() {
       prompt: 'consent',
       state,
     });
-    
+
     window.location.href = `https://accounts.google.com/o/oauth2/v2/auth?${authParams.toString()}`;
   };
   const handleCopyStudentPortalLink = async () => {
@@ -1231,8 +1232,8 @@ export default function SettingsPage() {
         })()}
 
         {/* Delete Member Confirmation Modal */}
-        <AlertDialog 
-          open={memberToConfirmDelete !== null} 
+        <AlertDialog
+          open={memberToConfirmDelete !== null}
           onOpenChange={(open) => { if (!open) setMemberToConfirmDelete(null); }}
         >
           <AlertDialogContent className="max-w-md">
@@ -1294,13 +1295,14 @@ export default function SettingsPage() {
               description="Personalize sua experiência no Esportiz."
             />
             <CardContent className="space-y-6">
-              <div className="space-y-2">
-                <Label htmlFor="email">E-mail da Conta (Acesso)</Label>
+              <SettingsField htmlFor="email" label="E-mail da Conta (Acesso)">
                 <Input id="email" value={user?.email || ''} disabled className="bg-muted" />
-              </div>
+              </SettingsField>
 
-              <div className="space-y-2">
-                <Label htmlFor="ct-name">Nome {ctPreposition === 'da' ? 'da' : 'do'} {dynamicCtLabelShort}</Label>
+              <SettingsField
+                htmlFor="ct-name"
+                label={<>Nome {ctPreposition === 'da' ? 'da' : 'do'} {dynamicCtLabelShort}</>}
+              >
                 <Input
                   id="ct-name"
                   placeholder={`Ex: ${dynamicCtLabel} Exemplo`}
@@ -1308,10 +1310,13 @@ export default function SettingsPage() {
                   onChange={(e) => setCtName(e.target.value)}
                   disabled={!canUpdateSettings}
                 />
-              </div>
+              </SettingsField>
 
-              <div className="space-y-2">
-                <Label htmlFor="whatsapp">WhatsApp de Contato {ctPreposition} {dynamicCtLabelShort} (Opcional)</Label>
+              <SettingsField
+                htmlFor="whatsapp"
+                label={<>WhatsApp de Contato {ctPreposition} {dynamicCtLabelShort} (Opcional)</>}
+                description="Se configurado, seus clientes poderão entrar em contato direto com você via WhatsApp a partir do Portal do Aluno ou da página de agendamentos."
+              >
                 <div className="flex gap-2">
                   <Input
                     id="whatsapp"
@@ -1335,17 +1340,16 @@ export default function SettingsPage() {
                     </Button>
                   )}
                 </div>
-                <p className="text-[10px] text-muted-foreground">
-                  Se configurado, seus clientes poderão entrar em contato direto com você via WhatsApp a partir do Portal do Aluno ou da página de agendamentos.
-                </p>
-              </div>
+              </SettingsField>
 
               {canManageSensitiveSettings && (
               <div className="border-t border-border/30 pt-4 space-y-4">
                 <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Configuração de Recebimentos (Pix)</p>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="pix-key">Chave Pix {ctPreposition === 'da' ? 'da' : 'do'} {dynamicCtLabelShort} (Opcional)</Label>
+                  <SettingsField
+                    htmlFor="pix-key"
+                    label={<>Chave Pix {ctPreposition === 'da' ? 'da' : 'do'} {dynamicCtLabelShort} (Opcional)</>}
+                  >
                     <Input
                       id="pix-key"
                       placeholder="Ex: CNPJ, E-mail, Celular, etc."
@@ -1353,9 +1357,8 @@ export default function SettingsPage() {
                       onChange={(e) => setPixKey(e.target.value)}
                       disabled={!canManageSensitiveSettings}
                     />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="pix-receiver">Beneficiário do Pix (Nome Completo)</Label>
+                  </SettingsField>
+                  <SettingsField htmlFor="pix-receiver" label="Beneficiário do Pix (Nome Completo)">
                     <Input
                       id="pix-receiver"
                       placeholder="Ex: Nome do Dono ou Razão Social"
@@ -1363,7 +1366,7 @@ export default function SettingsPage() {
                       onChange={(e) => setPixReceiver(e.target.value)}
                       disabled={!canManageSensitiveSettings}
                     />
-                  </div>
+                  </SettingsField>
                 </div>
                 <p className="text-[10px] text-muted-foreground">
                   Se configurados, estes dados serão incluídos automaticamente nas mensagens de cobrança enviadas aos clientes.
@@ -1478,14 +1481,16 @@ export default function SettingsPage() {
               {selectedBusinessType === 'arena' && (
                 <div className="border-t border-border/30 pt-4 space-y-4">
                   <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Modelos de Mensagem do WhatsApp</p>
-                  
+
                   <div className="space-y-4">
                     {/* Template Option A */}
-                    <div className="space-y-2">
-                      <Label htmlFor="booking-confirmation-template" className="font-bold">1. Confirmação de Horário (Opção A)</Label>
-                      <p className="text-xs text-muted-foreground leading-relaxed">
-                        Enviado ao fechar uma reserva. Variáveis: <code className="bg-muted px-1 py-0.5 rounded text-primary">{`{nome}`}</code>, <code className="bg-muted px-1 py-0.5 rounded text-primary">{`{escola}`}</code>, <code className="bg-muted px-1 py-0.5 rounded text-primary">{`{quadra}`}</code>, <code className="bg-muted px-1 py-0.5 rounded text-primary">{`{data}`}</code>, <code className="bg-muted px-1 py-0.5 rounded text-primary">{`{hora}`}</code>, <code className="bg-muted px-1 py-0.5 rounded text-primary">{`{valor}`}</code>.
-                      </p>
+                    <SettingsField
+                      htmlFor="booking-confirmation-template"
+                      label="1. Confirmação de Horário (Opção A)"
+                      labelClassName="font-bold"
+                      descriptionClassName="text-xs leading-relaxed"
+                      description={<>Enviado ao fechar uma reserva. Variáveis: <code className="bg-muted px-1 py-0.5 rounded text-primary">{`{nome}`}</code>, <code className="bg-muted px-1 py-0.5 rounded text-primary">{`{escola}`}</code>, <code className="bg-muted px-1 py-0.5 rounded text-primary">{`{quadra}`}</code>, <code className="bg-muted px-1 py-0.5 rounded text-primary">{`{data}`}</code>, <code className="bg-muted px-1 py-0.5 rounded text-primary">{`{hora}`}</code>, <code className="bg-muted px-1 py-0.5 rounded text-primary">{`{valor}`}</code>.</>}
+                    >
                       <Textarea
                         id="booking-confirmation-template"
                         placeholder={DEFAULT_ARENA_BOOKING_CONFIRMATION_TEMPLATE}
@@ -1494,14 +1499,16 @@ export default function SettingsPage() {
                         onChange={(e) => setBookingConfirmationTemplate(e.target.value)}
                         disabled={!canUpdateSettings}
                       />
-                    </div>
+                    </SettingsField>
 
                     {/* Template Option B */}
-                    <div className="space-y-2">
-                      <Label htmlFor="payment-reminder-template" className="font-bold">2. Lembrete de Cobrança / Recebimentos (Opção B)</Label>
-                      <p className="text-xs text-muted-foreground leading-relaxed">
-                        Enviado para faturas pendentes. Variáveis: <code className="bg-muted px-1 py-0.5 rounded text-primary">{`{nome}`}</code>, <code className="bg-muted px-1 py-0.5 rounded text-primary">{`{escola}`}</code>, <code className="bg-muted px-1 py-0.5 rounded text-primary">{`{valor}`}</code>, <code className="bg-muted px-1 py-0.5 rounded text-primary">{`{chave_pix}`}</code>, <code className="bg-muted px-1 py-0.5 rounded text-primary">{`{beneficiario_pix}`}</code>.
-                      </p>
+                    <SettingsField
+                      htmlFor="payment-reminder-template"
+                      label="2. Lembrete de Cobrança / Recebimentos (Opção B)"
+                      labelClassName="font-bold"
+                      descriptionClassName="text-xs leading-relaxed"
+                      description={<>Enviado para faturas pendentes. Variáveis: <code className="bg-muted px-1 py-0.5 rounded text-primary">{`{nome}`}</code>, <code className="bg-muted px-1 py-0.5 rounded text-primary">{`{escola}`}</code>, <code className="bg-muted px-1 py-0.5 rounded text-primary">{`{valor}`}</code>, <code className="bg-muted px-1 py-0.5 rounded text-primary">{`{chave_pix}`}</code>, <code className="bg-muted px-1 py-0.5 rounded text-primary">{`{beneficiario_pix}`}</code>.</>}
+                    >
                       <Textarea
                         id="payment-reminder-template"
                         placeholder={DEFAULT_ARENA_PAYMENT_REMINDER_TEMPLATE}
@@ -1510,7 +1517,7 @@ export default function SettingsPage() {
                         onChange={(e) => setPaymentReminderTemplate(e.target.value)}
                         disabled={!canUpdateSettings}
                       />
-                    </div>
+                    </SettingsField>
                   </div>
                 </div>
               )}
@@ -1546,7 +1553,7 @@ export default function SettingsPage() {
               </div>
               <h2 className="text-xl font-display font-bold">Organização e Modalidades</h2>
             </div>
-            
+
             <ModalityManager />
 
             {/* Google Calendar Card */}
@@ -1575,7 +1582,7 @@ export default function SettingsPage() {
                 </p>
                 <div className="flex flex-col gap-2 sm:flex-row sm:justify-end">
                   {isGoogleConnected && (
-                    <Button 
+                    <Button
                       variant="outline"
                       size="sm"
                       className="w-full sm:w-auto"
@@ -1598,7 +1605,7 @@ export default function SettingsPage() {
                       Analisar Contatos
                     </Button>
                   )}
-                  <Button 
+                  <Button
                     variant={isGoogleConnected ? "outline" : "default"}
                     className={cn(
                       "w-full sm:w-auto",
@@ -1644,10 +1651,10 @@ export default function SettingsPage() {
               />
               <CardContent className="space-y-4">
                 <p className="text-sm text-muted-foreground">
-                  Dê baixa em mensalidades diretamente da sua planilha na nuvem (Google Sheets). 
+                  Dê baixa em mensalidades diretamente da sua planilha na nuvem (Google Sheets).
                   O sistema reconhece as atualizações e atualiza o financeiro do Esportiz em tempo real.
                 </p>
-                
+
                 {isGoogleConnected && (
                   <div className="space-y-2 pt-2 border-t">
                     <div className="flex flex-wrap items-center gap-2 text-xs">
@@ -1661,40 +1668,43 @@ export default function SettingsPage() {
                         {hasGoogleSpreadsheetId ? 'ID da planilha salvo' : 'Informe o ID da planilha'}
                       </StatusPill>
                     </div>
-                    <Label htmlFor="spreadsheet-id">ID da Planilha Google</Label>
-                    <div className="flex gap-2">
-                      <Input 
-                        id="spreadsheet-id"
-                        placeholder="Cole o ID da sua planilha aqui"
-                        defaultValue={profile?.sheets_spreadsheet_id || ''}
-                        disabled={!canUpdateSettings}
-                        onBlur={async (e) => {
-                          if (!canUpdateSettings) return;
-                          const spreadsheetId = e.target.value.trim();
-                          if (spreadsheetId !== (profile?.sheets_spreadsheet_id || '')) {
-                            try {
-                              await updateProfile({ sheets_spreadsheet_id: spreadsheetId });
-                              toast.success(
-                                spreadsheetId
-                                  ? 'ID da planilha salvo. Sheets pronto para sincronização.'
-                                  : 'ID da planilha removido. Google segue conectado; Sheets fica pendente.'
-                              );
-                            } catch (error) {
-                              toast.error('Erro ao salvar ID da planilha.');
+                    <SettingsField
+                      htmlFor="spreadsheet-id"
+                      label="ID da Planilha Google"
+                      descriptionClassName="italic"
+                      description={<>O ID fica na URL da sua planilha: docs.google.com/spreadsheets/d/<span className="text-primary font-bold">ESTE_CODIGO</span>/edit</>}
+                    >
+                      <div className="flex gap-2">
+                        <Input
+                          id="spreadsheet-id"
+                          placeholder="Cole o ID da sua planilha aqui"
+                          defaultValue={profile?.sheets_spreadsheet_id || ''}
+                          disabled={!canUpdateSettings}
+                          onBlur={async (e) => {
+                            if (!canUpdateSettings) return;
+                            const spreadsheetId = e.target.value.trim();
+                            if (spreadsheetId !== (profile?.sheets_spreadsheet_id || '')) {
+                              try {
+                                await updateProfile({ sheets_spreadsheet_id: spreadsheetId });
+                                toast.success(
+                                  spreadsheetId
+                                    ? 'ID da planilha salvo. Sheets pronto para sincronização.'
+                                    : 'ID da planilha removido. Google segue conectado; Sheets fica pendente.'
+                                );
+                              } catch (error) {
+                                toast.error('Erro ao salvar ID da planilha.');
+                              }
                             }
-                          }
-                        }}
-                      />
-                    </div>
-                    <p className="text-[10px] text-muted-foreground italic">
-                      O ID fica na URL da sua planilha: docs.google.com/spreadsheets/d/<span className="text-primary font-bold">ESTE_CODIGO</span>/edit
-                    </p>
+                          }}
+                        />
+                      </div>
+                    </SettingsField>
                   </div>
                 )}
 
                 <div className="flex justify-end">
                   {!isGoogleConnected ? (
-                    <Button 
+                    <Button
                       variant="default"
                       className="w-full bg-[#1D723A] hover:bg-[#1D723A]/90 text-white border-none sm:w-auto"
                       onClick={handleConnectGoogle}

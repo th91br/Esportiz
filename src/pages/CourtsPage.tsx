@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { AppPage } from '@/components/layout/AppPage';
 import { PageHeader } from '@/components/layout/PageHeader';
-import { getLocalTodayDate, toLocalDateString } from '@/lib/dateUtils';
+import { getLocalTodayDate, toLocalDateString, getCourtAvailableHoursInMonth } from '@/lib/dateUtils';
 import { StatCard } from '@/components/StatCard';
 import { Button } from '@/components/ui/button';
 import { useCourts, type Court, SPORT_LABELS, type CourtMetadata, type CourtCoverage, type CourtSportType } from '@/hooks/queries/useCourts';
@@ -341,7 +341,12 @@ export default function CourtsPage() {
   }).length;
 
   const monthReservations = reservations.filter(r => r.date.startsWith(currentMonthStr) && r.status !== 'cancelled');
-  const totalHoursAvailable = activeCourts.length * 15 * new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).getDate();
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = now.getMonth();
+  const totalHoursAvailable = activeCourts.reduce((sum, court) => {
+    return sum + getCourtAvailableHoursInMonth(court, year, month);
+  }, 0);
   const totalHoursBooked = monthReservations.reduce((acc, r) => acc + r.durationMinutes / 60, 0);
   const occupancyRate = totalHoursAvailable > 0 ? Math.round((totalHoursBooked / totalHoursAvailable) * 100) : 0;
 

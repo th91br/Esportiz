@@ -725,6 +725,308 @@ footer{padding:60px 0 30px;border-top:1px solid var(--border-light);background:#
   .zebra-mockup { zoom: 0.78; }
 }
 
+.dashboard-mockup-container {
+  position: relative;
+  padding: 30px 20px;
+  background: #081020;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  overflow: hidden;
+  min-height: 400px;
+  justify-content: center;
+  align-items: center;
+}
+.mockup-card-back {
+  width: 80%;
+  align-self: flex-start;
+  transform: translate(0, -10px);
+  box-shadow: 0 20px 45px rgba(0,0,0,0.6);
+  border-radius: 10px;
+  overflow: hidden;
+  border: 1px solid rgba(255,255,255,0.08);
+  transition: transform 0.3s ease;
+}
+.mockup-card-front {
+  position: absolute;
+  width: 62%;
+  bottom: 24px;
+  right: 20px;
+  box-shadow: 0 30px 60px rgba(0,0,0,0.8);
+  border-radius: 10px;
+  overflow: hidden;
+  border: 1px solid rgba(255,255,255,0.12);
+  transition: transform 0.3s ease;
+}
+@media (max-width: 480px) {
+  .dashboard-mockup-container {
+    min-height: 280px;
+    padding: 16px 10px;
+  }
+  .mockup-card-back {
+    width: 85%;
+  }
+  .mockup-card-front {
+    width: 70%;
+    bottom: 12px;
+    right: 10px;
+  }
+}
+
+
+/* Modalidades High-Fidelity Mockup */
+.ms-modalidades-screen {
+  display: flex;
+  background: #f8fafc;
+  color: #1e293b;
+  font-family: 'Inter', sans-serif;
+  min-height: 480px;
+  width: 100%;
+}
+.ms-mod-sidebar {
+  width: 50px;
+  background: #0d1f3c;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 12px 0;
+  gap: 16px;
+  flex-shrink: 0;
+}
+.ms-mod-sidebar-icon {
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+  background: rgba(255,255,255,0.06);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: rgba(255,255,255,0.6);
+  font-size: 11px;
+}
+.ms-mod-sidebar-icon.active {
+  background: #1db874;
+  color: #fff;
+}
+.ms-mod-main {
+  flex: 1;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  overflow: hidden;
+}
+.ms-mod-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid #e2e8f0;
+  padding-bottom: 8px;
+}
+.ms-mod-breadcrumb {
+  font-size: 11px;
+  color: #64748b;
+  font-weight: 500;
+}
+.ms-mod-top-title {
+  font-family: 'Montserrat', sans-serif;
+  font-size: 18px;
+  font-weight: 800;
+  color: #0f172a;
+  margin: 4px 0 2px;
+}
+.ms-mod-top-sub {
+  font-size: 9px;
+  color: #64748b;
+  margin: 0;
+}
+.ms-mod-metrics-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+.ms-mod-metric-card {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  min-height: 64px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+}
+.ms-mod-metric-card.dark {
+  background: #0d1f3c;
+  color: #fff;
+  border-color: #0d1f3c;
+}
+.ms-mod-metric-card .label {
+  font-size: 8px;
+  font-weight: 600;
+  color: #64748b;
+  text-transform: uppercase;
+}
+.ms-mod-metric-card.dark .label {
+  color: rgba(255,255,255,0.6);
+}
+.ms-mod-metric-card .val {
+  font-size: 16px;
+  font-weight: 800;
+  color: #0f172a;
+  margin: 2px 0;
+}
+.ms-mod-metric-card.dark .val {
+  color: #fff;
+}
+.ms-mod-metric-card .sub {
+  font-size: 7px;
+  color: #64748b;
+}
+.ms-mod-metric-card.dark .sub {
+  color: rgba(255,255,255,0.4);
+}
+.ms-mod-content-row {
+  display: grid;
+  grid-template-columns: 1fr 1.8fr;
+  gap: 12px;
+  flex: 1;
+}
+.ms-mod-panel-card {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+}
+.ms-mod-panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.ms-mod-panel-title {
+  font-size: 11px;
+  font-weight: 800;
+  color: #0f172a;
+}
+.ms-mod-panel-sub {
+  font-size: 7.5px;
+  color: #64748b;
+}
+.ms-mod-list-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 8px;
+  border: 1px solid #f1f5f9;
+  border-radius: 6px;
+  font-size: 9px;
+  font-weight: 600;
+  color: #334155;
+  background: #f8fafc;
+}
+.ms-mod-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  display: inline-block;
+  margin-right: 6px;
+}
+.dot-green { background: #10b981; }
+.dot-red { background: #ef4444; }
+.dot-yellow { background: #f59e0b; }
+.dot-purple { background: #8b5cf6; }
+
+.ms-mod-grid-right {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+.ms-mod-grid-card {
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #fff;
+  padding: 8px 10px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+  position: relative;
+}
+.ms-mod-grid-card-top {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  border-radius: 8px 8px 0 0;
+}
+.ms-mod-grid-card-top.green { background: #10b981; }
+.ms-mod-grid-card-top.red { background: #ef4444; }
+.ms-mod-grid-card-top.yellow { background: #f59e0b; }
+.ms-mod-grid-card-top.purple { background: #8b5cf6; }
+
+.ms-mod-grid-title {
+  font-size: 10px;
+  font-weight: 800;
+  color: #0f172a;
+  margin-top: 4px;
+}
+.ms-mod-grid-sub {
+  font-size: 7px;
+  color: #64748b;
+}
+.ms-mod-grid-stats {
+  display: flex;
+  gap: 16px;
+  margin: 8px 0;
+}
+.ms-mod-grid-stat {
+  display: flex;
+  flex-direction: column;
+}
+.ms-mod-grid-stat-val {
+  font-size: 11px;
+  font-weight: 800;
+  color: #0f172a;
+}
+.ms-mod-grid-stat-lbl {
+  font-size: 7px;
+  color: #64748b;
+}
+.ms-mod-grid-btn {
+  border: 1px solid #e2e8f0;
+  border-radius: 4px;
+  text-align: center;
+  padding: 4px 0;
+  font-size: 8px;
+  font-weight: 700;
+  color: #475569;
+  background: #f8fafc;
+  cursor: pointer;
+}
+@media (max-width: 768px) {
+  .ms-mod-content-row {
+    grid-template-columns: 1fr;
+  }
+}
+@media (max-width: 480px) {
+  .ms-mod-metrics-row {
+    grid-template-columns: 1fr;
+  }
+  .ms-mod-grid-right {
+    grid-template-columns: 1fr;
+  }
+  .ms-mod-sidebar {
+    display: none;
+  }
+}
+
+
+
 /* ═══════════════════════════════════════════════════════════════
    PROBLEM SECTION (REVOLUTIONIZED DESIGN MATCHING IMAGE 2)
    ═══════════════════════════════════════════════════════════════ */
@@ -2205,15 +2507,15 @@ footer{padding:60px 0 30px;border-top:1px solid var(--border-light);background:#
                 <div id="demoListItems">
                   <!-- Staggered mockup list items -->
                   <div class="hero-db-item">
-                    <div class="hero-db-item-name" id="demoItemName1">Lucas Andrade</div>
+                    <div class="hero-db-item-name" id="demoItemName1">Gabriel Soares</div>
                     <div class="hero-db-status paid" id="demoItemStatus1" style="background: var(--demo-accent-bg); color: var(--demo-accent, var(--green)); transition: all 0.4s ease;">Pago</div>
                   </div>
                   <div class="hero-db-item">
-                    <div class="hero-db-item-name" id="demoItemName2">Marina Costa</div>
+                    <div class="hero-db-item-name" id="demoItemName2">Larissa Nogueira</div>
                     <div class="hero-db-status pend" id="demoItemStatus2">Pendente</div>
                   </div>
                   <div class="hero-db-item">
-                    <div class="hero-db-item-name" id="demoItemName3">Pedro Souza</div>
+                    <div class="hero-db-item-name" id="demoItemName3">Isabela Ferreira</div>
                     <div class="hero-db-status paid" id="demoItemStatus3" style="background: var(--demo-accent-bg); color: var(--demo-accent, var(--green)); transition: all 0.4s ease;">Pago</div>
                   </div>
                 </div>
@@ -2612,11 +2914,18 @@ footer{padding:60px 0 30px;border-top:1px solid var(--border-light);background:#
         </ul>
       </div>
       <div class="zebra-img-wrap">
-        <div class="zebra-mockup">
-          <div class="zebra-mockup-bar">
+        <div class="zebra-mockup" style="background: #081020; border-color: rgba(255,255,255,0.08);">
+          <div class="zebra-mockup-bar" style="background: #0f192b; border-bottom-color: rgba(255,255,255,0.08);">
             <span class="dot-r"></span><span class="dot-y"></span><span class="dot-g"></span>
           </div>
-          <img src="/screens/dashboard_inteligente.png" alt="Dashboard Inteligente" style="width: 100%; display: block;" loading="lazy" />
+          <div class="dashboard-mockup-container">
+            <div class="mockup-card-back">
+              <img src="/screens/dashboard_sport_charts.png" alt="Métricas e Gráficos do Dashboard" style="width: 100%; display: block;" loading="lazy" />
+            </div>
+            <div class="mockup-card-front">
+              <img src="/screens/dashboard_sport_agenda.png" alt="Agenda e Ações Rápidas" style="width: 100%; display: block;" loading="lazy" />
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -2759,7 +3068,7 @@ footer{padding:60px 0 30px;border-top:1px solid var(--border-light);background:#
           <div class="zebra-mockup-bar">
             <span class="dot-r"></span><span class="dot-y"></span><span class="dot-g"></span>
           </div>
-          <img src="/screens/calendario.png" alt="Agenda Esportiva" style="width: 100%; display: block;" loading="lazy" />
+          <img src="/screens/calendario_real.png" alt="Agenda Esportiva" style="width: 100%; display: block;" loading="lazy" />
         </div>
       </div>
     </div>
@@ -2777,40 +3086,155 @@ footer{padding:60px 0 30px;border-top:1px solid var(--border-light);background:#
       <div class="zebra-img-wrap">
         <div class="zebra-mockup">
           <div class="zebra-mockup-bar"><span class="dot-r"></span><span class="dot-y"></span><span class="dot-g"></span></div>
-          <div class="mockup-sys" style="aspect-ratio: 16/9; background:#F8FAFC;">
-            <div class="ms-mod-grid">
-              <div class="ms-mod-card shadow-sm">
-                <div class="ms-mod-top green"></div>
-                <div class="ms-mod-body">
-                  <div class="ms-mod-header">
-                    <div>
-                      <div class="ms-mod-title">Futevôlei</div>
-                      <div class="ms-mod-sub">Núcleo Esportivo</div>
-                    </div>
-                    <div class="ms-mod-icon green"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg></div>
-                  </div>
-                  <div class="ms-mod-stats">
-                    <div><div class="ms-mod-stat-val">142</div><div class="ms-mod-stat-lbl">Alunos</div></div>
-                    <div><div class="ms-mod-stat-val">18</div><div class="ms-mod-stat-lbl">Treinos</div></div>
-                  </div>
-                  <div class="ms-mod-btn hover:bg-primary/10 transition-colors">Gerenciar</div>
+          <div class="ms-modalidades-screen">
+            <!-- Sidebar -->
+            <div class="ms-mod-sidebar">
+              <div class="ms-mod-sidebar-icon">📊</div>
+              <div class="ms-mod-sidebar-icon">📅</div>
+              <div class="ms-mod-sidebar-icon">👥</div>
+              <div class="ms-mod-sidebar-icon active">🏸</div>
+              <div class="ms-mod-sidebar-icon">💳</div>
+              <div class="ms-mod-sidebar-icon">⚙️</div>
+            </div>
+            <!-- Main Content -->
+            <div class="ms-mod-main">
+              <!-- Top Bar -->
+              <div class="ms-mod-header">
+                <div>
+                  <span class="ms-mod-breadcrumb">Configurações > Modalidades</span>
+                  <h3 class="ms-mod-top-title">Modalidades</h3>
+                  <p class="ms-mod-top-sub">Gerencie o cadastro de modalidades do seu Escola Esportiva</p>
                 </div>
               </div>
-              <div class="ms-mod-card shadow-sm">
-                <div class="ms-mod-top orange"></div>
-                <div class="ms-mod-body">
-                  <div class="ms-mod-header">
+              
+              <!-- Metrics Row -->
+              <div class="ms-mod-metrics-row">
+                <div class="ms-mod-metric-card" style="border-left: 3px solid #1db874;">
+                  <span class="label">Total de Modalidades</span>
+                  <span class="val">4</span>
+                  <span class="sub">Ativas no sistema</span>
+                </div>
+                <div class="ms-mod-metric-card dark">
+                  <span class="label">Alunos Vinculados</span>
+                  <span class="val">320</span>
+                  <span class="sub">Vinculados a uma modalidade</span>
+                </div>
+                <div class="ms-mod-metric-card" style="border-left: 3px solid #378add;">
+                  <span class="label">Destaque</span>
+                  <span class="val" style="font-size:12px; font-weight:800; font-family:'Montserrat',sans-serif; text-transform:uppercase;">Futebol</span>
+                  <span class="sub">100 alunos ativos</span>
+                </div>
+              </div>
+
+              <!-- Main Content Grid -->
+              <div class="ms-mod-content-row">
+                <!-- Left panel: list -->
+                <div class="ms-mod-panel-card">
+                  <div class="ms-mod-panel-header">
                     <div>
-                      <div class="ms-mod-title">Beach Tennis</div>
-                      <div class="ms-mod-sub">Núcleo Esportivo</div>
+                      <span class="ms-mod-panel-title" style="font-family:'Montserrat',sans-serif;">Modalidades</span>
+                      <p class="ms-mod-panel-sub" style="margin:2px 0 0 0;">Modalidades oferecidas</p>
                     </div>
-                    <div class="ms-mod-icon orange"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg></div>
+                    <div style="background:#1db874; color:#fff; font-size:7.5px; font-weight:700; padding:3px 6px; border-radius:4px;">+ Novo</div>
                   </div>
-                  <div class="ms-mod-stats">
-                    <div><div class="ms-mod-stat-val">84</div><div class="ms-mod-stat-lbl">Alunos</div></div>
-                    <div><div class="ms-mod-stat-val">12</div><div class="ms-mod-stat-lbl">Treinos</div></div>
+                  <div style="display:flex; flex-direction:column; gap:6px; margin-top:4px;">
+                    <div class="ms-mod-list-item">
+                      <span><span class="ms-mod-dot dot-green"></span>Beach Tennis</span>
+                      <span style="color:#64748b; font-size:8px;">✓</span>
+                    </div>
+                    <div class="ms-mod-list-item">
+                      <span><span class="ms-mod-dot dot-red"></span>Futebol</span>
+                      <span style="color:#64748b; font-size:8px;">✓</span>
+                    </div>
+                    <div class="ms-mod-list-item">
+                      <span><span class="ms-mod-dot dot-yellow"></span>Futevôlei</span>
+                      <span style="color:#64748b; font-size:8px;">✓</span>
+                    </div>
+                    <div class="ms-mod-list-item">
+                      <span><span class="ms-mod-dot dot-purple"></span>Vôlei</span>
+                      <span style="color:#64748b; font-size:8px;">✓</span>
+                    </div>
                   </div>
-                  <div class="ms-mod-btn hover:bg-orange-500/10 transition-colors" style="border-color:#F97316; color:#F97316;">Gerenciar</div>
+                </div>
+
+                <!-- Right panel: grid -->
+                <div class="ms-mod-panel-card">
+                  <div class="ms-mod-panel-header">
+                    <div>
+                      <span class="ms-mod-panel-title" style="font-family:'Montserrat',sans-serif;">Visão Geral por Unidade</span>
+                      <p class="ms-mod-panel-sub" style="margin:2px 0 0 0;">Estatísticas de alunos e treinos por modalidade</p>
+                    </div>
+                  </div>
+                  <div class="ms-mod-grid-right">
+                    <!-- Beach Tennis -->
+                    <div class="ms-mod-grid-card">
+                      <div class="ms-mod-grid-card-top green"></div>
+                      <span class="ms-mod-grid-title">Beach Tennis</span>
+                      <span class="ms-mod-grid-sub">Modalidade</span>
+                      <div class="ms-mod-grid-stats">
+                        <div class="ms-mod-grid-stat">
+                          <span class="ms-mod-grid-stat-val">80</span>
+                          <span class="ms-mod-grid-stat-lbl">Alunos</span>
+                        </div>
+                        <div class="ms-mod-grid-stat">
+                          <span class="ms-mod-grid-stat-val">45</span>
+                          <span class="ms-mod-grid-stat-lbl">Treinos</span>
+                        </div>
+                      </div>
+                      <div class="ms-mod-grid-btn">Gerenciar</div>
+                    </div>
+                    <!-- Futebol -->
+                    <div class="ms-mod-grid-card">
+                      <div class="ms-mod-grid-card-top red"></div>
+                      <span class="ms-mod-grid-title">Futebol</span>
+                      <span class="ms-mod-grid-sub">Modalidade</span>
+                      <div class="ms-mod-grid-stats">
+                        <div class="ms-mod-grid-stat">
+                          <span class="ms-mod-grid-stat-val">100</span>
+                          <span class="ms-mod-grid-stat-lbl">Alunos</span>
+                        </div>
+                        <div class="ms-mod-grid-stat">
+                          <span class="ms-mod-grid-stat-val">80</span>
+                          <span class="ms-mod-grid-stat-lbl">Treinos</span>
+                        </div>
+                      </div>
+                      <div class="ms-mod-grid-btn">Gerenciar</div>
+                    </div>
+                    <!-- Futevôlei -->
+                    <div class="ms-mod-grid-card">
+                      <div class="ms-mod-grid-card-top yellow"></div>
+                      <span class="ms-mod-grid-title">Futevôlei</span>
+                      <span class="ms-mod-grid-sub">Modalidade</span>
+                      <div class="ms-mod-grid-stats">
+                        <div class="ms-mod-grid-stat">
+                          <span class="ms-mod-grid-stat-val">45</span>
+                          <span class="ms-mod-grid-stat-lbl">Alunos</span>
+                        </div>
+                        <div class="ms-mod-grid-stat">
+                          <span class="ms-mod-grid-stat-val">40</span>
+                          <span class="ms-mod-grid-stat-lbl">Treinos</span>
+                        </div>
+                      </div>
+                      <div class="ms-mod-grid-btn">Gerenciar</div>
+                    </div>
+                    <!-- Vôlei -->
+                    <div class="ms-mod-grid-card">
+                      <div class="ms-mod-grid-card-top purple"></div>
+                      <span class="ms-mod-grid-title">Vôlei</span>
+                      <span class="ms-mod-grid-sub">Modalidade</span>
+                      <div class="ms-mod-grid-stats">
+                        <div class="ms-mod-grid-stat">
+                          <span class="ms-mod-grid-stat-val">95</span>
+                          <span class="ms-mod-grid-stat-lbl">Alunos</span>
+                        </div>
+                        <div class="ms-mod-grid-stat">
+                          <span class="ms-mod-grid-stat-val">90</span>
+                          <span class="ms-mod-grid-stat-lbl">Treinos</span>
+                        </div>
+                      </div>
+                      <div class="ms-mod-grid-btn">Gerenciar</div>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -2833,7 +3257,7 @@ footer{padding:60px 0 30px;border-top:1px solid var(--border-light);background:#
           <div class="zebra-mockup-bar">
             <span class="dot-r"></span><span class="dot-y"></span><span class="dot-g"></span>
           </div>
-          <img src="/screens/alunos.png" alt="Gestão de Alunos" style="width: 100%; display: block;" loading="lazy" />
+          <img src="/screens/alunos_real.png" alt="Gestão de Alunos" style="width: 100%; display: block;" loading="lazy" />
         </div>
       </div>
     </div>
@@ -2890,7 +3314,7 @@ footer{padding:60px 0 30px;border-top:1px solid var(--border-light);background:#
           <div class="zebra-mockup-bar">
             <span class="dot-r"></span><span class="dot-y"></span><span class="dot-g"></span>
           </div>
-          <img src="/screens/presenca.png" alt="Chamada Rápida" style="width: 100%; display: block;" loading="lazy" />
+          <img src="/screens/presenca_real.png" alt="Chamada Rápida" style="width: 100%; display: block;" loading="lazy" />
         </div>
       </div>
     </div>
@@ -2928,8 +3352,8 @@ footer{padding:60px 0 30px;border-top:1px solid var(--border-light);background:#
                     <div style="color: #EF4444; flex-shrink: 0;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg></div>
                     <div style="flex:1;">
                       <div style="font-size:10.5px; font-weight:700; color:#991B1B;">Mensalidade Atrasada</div>
-                      <div style="font-size:9.5px; color:#7F1D1D; margin-top:2px;"><b>Arthur Silva</b> venceu há 3 dias (R$ 150).</div>
-                      <div style="font-size:9.5px; font-weight:700; color:#B91C1C; margin-top:6px; cursor:pointer;" onclick="alert('Simulação: Abrindo WhatsApp para cobrança automatizada de Arthur!')">Cobrar via WhatsApp →</div>
+                      <div style="font-size:9.5px; color:#7F1D1D; margin-top:2px;"><b>Rodrigo Ramos</b> venceu há 3 dias (R$ 150).</div>
+                      <div style="font-size:9.5px; font-weight:700; color:#B91C1C; margin-top:6px; cursor:pointer;" onclick="alert('Simulação: Abrindo WhatsApp para cobrança automatizada de Rodrigo!')">Cobrar via WhatsApp →</div>
                     </div>
                   </div>
 
@@ -2939,7 +3363,7 @@ footer{padding:60px 0 30px;border-top:1px solid var(--border-light);background:#
                     <div style="color: #0284C7; flex-shrink: 0;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div>
                     <div style="flex:1;">
                       <div style="font-size:10.5px; font-weight:700; color:#0369A1;">Próximo Vencimento</div>
-                      <div style="font-size:9.5px; color:#0C4A6E; margin-top:2px;"><b>Juliana Santos</b> vence hoje (R$ 180).</div>
+                      <div style="font-size:9.5px; color:#0C4A6E; margin-top:2px;"><b>Camila Vasconcelos</b> vence hoje (R$ 180).</div>
                     </div>
                   </div>
 
@@ -2947,7 +3371,7 @@ footer{padding:60px 0 30px;border-top:1px solid var(--border-light);background:#
                     <div style="color: #10B981; flex-shrink: 0;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 21v-8a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8"/><path d="M4 16s.5-1 2-1 2.5 2 4 2 2.5-2 4-2 2.5 2 4 2 2-1 2-1"/><path d="M2 21h20"/><path d="M7 8v3"/><path d="M12 8v3"/><path d="M17 8v3"/><path d="M7 4h.01"/><path d="M12 4h.01"/><path d="M17 4h.01"/></svg></div>
                     <div style="flex:1;">
                       <div style="font-size:10.5px; font-weight:700; color:#047857;">Aniversário de Aluno</div>
-                      <div style="font-size:9.5px; color:#064E3B; margin-top:2px;"><b>Felipe Melo</b> faz aniversário hoje!</div>
+                      <div style="font-size:9.5px; color:#064E3B; margin-top:2px;"><b>Enzo Teixeira</b> faz aniversário hoje!</div>
                       <div style="font-size:9.5px; font-weight:700; color:#059669; margin-top:6px; cursor:pointer;" onclick="alert('Simulação: Mensagem de parabéns enviada via WhatsApp!')">Enviar parabéns →</div>
                     </div>
                   </div>
@@ -2980,7 +3404,7 @@ footer{padding:60px 0 30px;border-top:1px solid var(--border-light);background:#
                   <span>Relatórios</span>
                 </div>
                 <div class="ms-nav-right">
-                  <span>farotoc450@tatefarm...</span>
+                  <span>contato@esportiz.com.br</span>
                   <div class="ms-btn-app">
                     <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
                     Baixar App
@@ -3136,7 +3560,7 @@ footer{padding:60px 0 30px;border-top:1px solid var(--border-light);background:#
                   <div style="font-size:10px; font-weight:600; color:#fff;">Esportiz CT</div>
                 </div>
                 <div class="ms-wa-bubble">
-                  Olá <strong>Ricardo</strong>! 👋<br>
+                  Olá <strong>Daniel</strong>! 👋<br>
                   Sua mensalidade de <strong>Abril (R$ 150,00)</strong> está pendente. <br>
                   Pode nos enviar o comprovante?<br>
                   <span style="color:#34B7F1">pix.esportiz.com.br/123</span>
@@ -3184,7 +3608,7 @@ footer{padding:60px 0 30px;border-top:1px solid var(--border-light);background:#
               <span style="font-size: 8px; padding: 2px 6px; border-radius: 100px; background: #D1FAE5; color: #065F46; font-weight: 700;">Ativo</span>
             </div>
 
-            <div style="font-size: 11px; font-weight: 800; color: #0F172A; margin-bottom: 1px;">Olá, Arthur Silva</div>
+            <div style="font-size: 11px; font-weight: 800; color: #0F172A; margin-bottom: 1px;">Olá, Rodrigo Ramos</div>
             <div style="font-size: 7px; color: #64748B; margin-bottom: 12px;">Plano: Quadra Mensal Pro</div>
 
             <!-- Gráfico de Frequência Circular -->
@@ -3664,7 +4088,7 @@ footer{padding:60px 0 30px;border-top:1px solid var(--border-light);background:#
                 <span style="text-align: right;">Status</span>
               </div>
               <div style="display: grid; grid-template-columns: 1.5fr 1fr 1fr; align-items: center; font-size: 7px; color: var(--foreground);">
-                <span style="font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Lucas Andrade</span>
+                <span style="font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Gabriel Soares</span>
                 <span style="text-align: center; color: var(--foreground-muted);">Mensal</span>
                 <span style="font-size: 5.5px; font-weight: 700; color: var(--green); text-align: right; background: var(--green-tint); padding: 0.5px 3px; border-radius: 3px; justify-self: flex-end;">PAGO</span>
               </div>
@@ -4472,9 +4896,9 @@ const mockupData = {
     val4: '3',
     listTitle: 'Agenda de Hoje',
     items: [
-      { name: 'Lucas Andrade', status: 'Pago', class: 'paid' },
-      { name: 'Marina Costa', status: 'Pendente', class: 'pend' },
-      { name: 'Pedro Souza', status: 'Pago', class: 'paid' }
+      { name: 'Gabriel Soares', status: 'Pago', class: 'paid' },
+      { name: 'Larissa Nogueira', status: 'Pendente', class: 'pend' },
+      { name: 'Isabela Ferreira', status: 'Pago', class: 'paid' }
     ]
   },
   arena: {

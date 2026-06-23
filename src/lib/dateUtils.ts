@@ -91,3 +91,49 @@ export function parseBrazilianDateToIso(value: string): string | null {
 
   return `${String(year).padStart(4, '0')}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
 }
+
+export interface CourtAvailabilityInput {
+  openingTime?: string | null;
+  closingTime?: string | null;
+  daysOfWeek?: number[] | null;
+}
+
+export function getCourtDailyHours(court: CourtAvailabilityInput): number {
+  if (!court.openingTime || !court.closingTime) return 15;
+  const [openH, openM] = court.openingTime.split(':').map(Number);
+  const [closeH, closeM] = court.closingTime.split(':').map(Number);
+  
+  if (isNaN(openH) || isNaN(closeH)) return 15;
+  
+  const openMinutes = openH * 60 + (openM || 0);
+  const closeMinutes = closeH * 60 + (closeM || 0);
+  
+  let diffMinutes = closeMinutes - openMinutes;
+  if (diffMinutes < 0) {
+    diffMinutes += 24 * 60;
+  }
+  
+  return diffMinutes / 60;
+}
+
+export function getCourtAvailableHoursInMonth(
+  court: CourtAvailabilityInput,
+  year: number,
+  month: number
+): number {
+  const dailyHours = getCourtDailyHours(court);
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  let activeDaysCount = 0;
+  
+  const activeDaysSet = new Set(court.daysOfWeek ?? [1, 2, 3, 4, 5, 6, 0]);
+  
+  for (let day = 1; day <= daysInMonth; day++) {
+    const dateObj = new Date(year, month, day);
+    const dayOfWeek = dateObj.getDay();
+    if (activeDaysSet.has(dayOfWeek)) {
+      activeDaysCount++;
+    }
+  }
+  
+  return activeDaysCount * dailyHours;
+}

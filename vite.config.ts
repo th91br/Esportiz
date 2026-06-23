@@ -60,7 +60,7 @@ export default defineConfig(({ mode }) => ({
             label: 'Dashboard de Gestão Inteligente'
           },
           {
-            src: '/screens/alunos.png',
+            src: '/screens/alunos_real.png',
             sizes: '1280x720',
             type: 'image/png',
             label: 'Gestão de Alunos e Matrículas'

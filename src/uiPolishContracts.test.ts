@@ -22,6 +22,7 @@ describe('premium UI polish contracts', () => {
   const reportsPage = readFileSync(resolve(process.cwd(), 'src/pages/ReportsPage.tsx'), 'utf-8');
   const settingsPage = readFileSync(resolve(process.cwd(), 'src/pages/SettingsPage.tsx'), 'utf-8');
   const studentProfilePage = readFileSync(resolve(process.cwd(), 'src/pages/StudentProfilePage.tsx'), 'utf-8');
+  const studentPortalPage = readFileSync(resolve(process.cwd(), 'src/pages/StudentPortalPage.tsx'), 'utf-8');
   const studentsPage = readFileSync(resolve(process.cwd(), 'src/pages/StudentsPage.tsx'), 'utf-8');
   const productsPage = readFileSync(resolve(process.cwd(), 'src/pages/ProductsPage.tsx'), 'utf-8');
   const salesPage = readFileSync(resolve(process.cwd(), 'src/pages/SalesPage.tsx'), 'utf-8');
@@ -235,6 +236,12 @@ describe('premium UI polish contracts', () => {
     expect(studentProfilePage).not.toContain("import { Header } from '@/components/Header';");
     expect(studentProfilePage).not.toContain('<main className="container py-6');
     expect(studentProfilePage).not.toContain('CardTitle className="text-lg flex items-center gap-2"');
+  });
+
+  it('keeps the student portal page on shared icon card titles for compact operational cards', () => {
+    expect(studentPortalPage).toContain("import { IconCardTitle } from '@/components/layout/IconCardTitle';");
+    expect(studentPortalPage).toContain('<IconCardTitle');
+    expect(studentPortalPage).not.toContain('CardTitle className="text-base font-bold flex items-center gap-2"');
   });
 
   it('keeps the products page on the shared app shell and page header pattern', () => {

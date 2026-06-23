@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { LoadingState } from '@/components/ui/loading-state';
+import { IconCardTitle } from '@/components/layout/IconCardTitle';
 import { toast } from 'sonner';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { EsportizIcon } from '@/components/Logo';
@@ -1079,9 +1080,9 @@ CONCORDÂNCIA E ASSINATURA: O contratante declara ter lido, compreendido e aceit
             <Card className="border-primary/10 shadow-sm card-elevated overflow-hidden">
           <div className="h-1 bg-gradient-to-r from-primary via-emerald-500 to-primary" />
           <CardHeader className="pb-4">
-            <CardTitle className="text-base font-bold flex items-center gap-2">
-              <Calendar className="h-4 w-4 text-primary" /> Solicitar Treino/Reposição
-            </CardTitle>
+            <IconCardTitle icon={Calendar} size="base" iconClassName="h-4 w-4">
+              Solicitar Treino/Reposição
+            </IconCardTitle>
             <CardDescription>
               Envie uma solicitação para a escola analisar. O treino só entra na agenda após aprovação interna.
             </CardDescription>
@@ -1214,9 +1215,9 @@ CONCORDÂNCIA E ASSINATURA: O contratante declara ter lido, compreendido e aceit
           {/* CARD 1: FREQUÊNCIA (ACADÊMICO) */}
           <Card className="border-border/50 shadow-sm card-elevated overflow-hidden flex flex-col justify-between">
             <CardHeader className="pb-4">
-              <CardTitle className="text-base font-bold flex items-center gap-2">
-                <UserCheck className="h-4 w-4 text-primary" /> Frequência de Aulas
-              </CardTitle>
+              <IconCardTitle icon={UserCheck} size="base" iconClassName="h-4 w-4">
+                Frequência de Aulas
+              </IconCardTitle>
               <CardDescription>Acompanhe suas faltas e aproveitamento escolar.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
@@ -1282,9 +1283,9 @@ CONCORDÂNCIA E ASSINATURA: O contratante declara ter lido, compreendido e aceit
           {/* CARD 2: TURMA E HORÁRIOS */}
           <Card className="border-border/50 shadow-sm card-elevated lg:col-span-2 flex flex-col justify-between">
             <CardHeader className="pb-4">
-              <CardTitle className="text-base font-bold flex items-center gap-2">
-                <BookOpen className="h-4 w-4 text-primary" /> Grade de Horários e Salas
-              </CardTitle>
+              <IconCardTitle icon={BookOpen} size="base" iconClassName="h-4 w-4">
+                Grade de Horários e Salas
+              </IconCardTitle>
               <CardDescription>Consulte os seus dias, disciplinas e locais de aula.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -1340,9 +1341,9 @@ CONCORDÂNCIA E ASSINATURA: O contratante declara ter lido, compreendido e aceit
           {/* CARD 3: FINANCEIRO (MENSALIDADES) */}
           <Card className="border-border/50 shadow-sm card-elevated lg:col-span-2 flex flex-col justify-between">
             <CardHeader className="pb-4">
-              <CardTitle className="text-base font-bold flex items-center gap-2">
-                <DollarSign className="h-4 w-4 text-primary" /> Faturas e Mensalidades
-              </CardTitle>
+              <IconCardTitle icon={DollarSign} size="base" iconClassName="h-4 w-4">
+                Faturas e Mensalidades
+              </IconCardTitle>
               <CardDescription>Consulte os vencimentos e realize os seus pagamentos.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-3.5">
@@ -1479,9 +1480,9 @@ CONCORDÂNCIA E ASSINATURA: O contratante declara ter lido, compreendido e aceit
           {/* CARD 4: ÚLTIMAS CHAMADAS (PRESENÇAS) */}
           <Card className="border-border/50 shadow-sm card-elevated flex flex-col justify-between">
             <CardHeader className="pb-4">
-              <CardTitle className="text-base font-bold flex items-center gap-2">
-                <ClipboardList className="h-4 w-4 text-primary" /> Histórico de Presenças
-              </CardTitle>
+              <IconCardTitle icon={ClipboardList} size="base" iconClassName="h-4 w-4">
+                Histórico de Presenças
+              </IconCardTitle>
               <CardDescription>Suas últimas 5 chamadas em sala.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-3.5">

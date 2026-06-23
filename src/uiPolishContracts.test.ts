@@ -224,11 +224,14 @@ describe('premium UI polish contracts', () => {
 
   it('keeps the student profile page on the shared app shell while preserving print-only contract output', () => {
     expect(studentProfilePage).toContain("import { AppPage } from '@/components/layout/AppPage';");
+    expect(studentProfilePage).toContain("import { IconCardTitle } from '@/components/layout/IconCardTitle';");
     expect(studentProfilePage).toContain('<AppPage');
+    expect(studentProfilePage).toContain('<IconCardTitle');
     expect(studentProfilePage).toContain('print:hidden');
     expect(studentProfilePage).toContain('hidden print:block');
     expect(studentProfilePage).not.toContain("import { Header } from '@/components/Header';");
     expect(studentProfilePage).not.toContain('<main className="container py-6');
+    expect(studentProfilePage).not.toContain('CardTitle className="text-lg flex items-center gap-2"');
   });
 
   it('keeps the products page on the shared app shell and page header pattern', () => {

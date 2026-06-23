@@ -1,6 +1,7 @@
 import { useState, useMemo, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { AppPage } from '@/components/layout/AppPage';
+import { IconCardTitle } from '@/components/layout/IconCardTitle';
 import { useStudents } from '@/hooks/queries/useStudents';
 import { usePlans } from '@/hooks/queries/usePlans';
 import { useTrainings } from '@/hooks/queries/useTrainings';
@@ -12,7 +13,7 @@ import { useAttendance } from '@/hooks/queries/useAttendance';
 import { StudentForm } from '@/components/StudentForm';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { 
   ArrowLeft, Edit, MapPin, Phone, Mail, FileText, CalendarDays, 
   DollarSign, CheckCircle, XCircle, FileSignature, Activity, TrendingUp, User
@@ -206,7 +207,7 @@ export default function StudentProfilePage() {
             <div className={cn("grid gap-6", isArena ? "grid-cols-1" : "md:grid-cols-2")}>
               <Card>
                 <CardHeader>
-                  <CardTitle className="text-lg flex items-center gap-2"><FileText className="h-5 w-5 text-primary" /> Dados Pessoais</CardTitle>
+                  <IconCardTitle icon={FileText}>Dados Pessoais</IconCardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -239,7 +240,7 @@ export default function StudentProfilePage() {
               {!isArena && (
                 <Card>
                   <CardHeader>
-                    <CardTitle className="text-lg flex items-center gap-2"><CalendarDays className="h-5 w-5 text-primary" /> {labels.groupLabel}</CardTitle>
+                    <IconCardTitle icon={CalendarDays}>{labels.groupLabel}</IconCardTitle>
                   </CardHeader>
                   <CardContent>
                     {studentGroups.length === 0 ? (
@@ -274,7 +275,7 @@ export default function StudentProfilePage() {
           <TabsContent value="finance" className="mt-6 space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
              <Card>
                 <CardHeader>
-                  <CardTitle className="text-lg flex items-center gap-2"><DollarSign className="h-5 w-5 text-primary" /> Histórico Financeiro</CardTitle>
+                  <IconCardTitle icon={DollarSign}>Histórico Financeiro</IconCardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="mb-6 grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -343,7 +344,7 @@ export default function StudentProfilePage() {
             <TabsContent value="attendance" className="mt-6 space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
                <Card>
                   <CardHeader>
-                    <CardTitle className="text-lg flex items-center gap-2"><TrendingUp className="h-5 w-5 text-primary" /> Visão de Frequência</CardTitle>
+                    <IconCardTitle icon={TrendingUp}>Visão de Frequência</IconCardTitle>
                   </CardHeader>
                   <CardContent>
                     <div className="mb-6 grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -414,9 +415,9 @@ export default function StudentProfilePage() {
                 <Card className="border-border/60 shadow-sm">
                   <CardHeader className="pb-4 border-b bg-muted/20">
                     <div className="flex items-center justify-between">
-                      <CardTitle className="text-base font-bold flex items-center gap-2 text-foreground">
-                        <Edit className="h-4 w-4 text-primary" /> Editor de Cláusulas
-                      </CardTitle>
+                      <IconCardTitle icon={Edit} size="base" iconClassName="h-4 w-4" className="text-foreground">
+                        Editor de Cláusulas
+                      </IconCardTitle>
                       <Button variant="ghost" size="sm" onClick={handleResetContract} className="text-xs text-muted-foreground hover:text-primary">
                         Restaurar Padrão
                       </Button>

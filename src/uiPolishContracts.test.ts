@@ -179,11 +179,14 @@ describe('premium UI polish contracts', () => {
 
   it('keeps the reports page on the shared app shell and page header pattern', () => {
     expect(reportsPage).toContain("import { AppPage } from '@/components/layout/AppPage';");
+    expect(reportsPage).toContain("import { IconPanelTitle } from '@/components/layout/IconPanelTitle';");
     expect(reportsPage).toContain("import { PageHeader } from '@/components/layout/PageHeader';");
     expect(reportsPage).toContain('<AppPage');
+    expect(reportsPage).toContain('<IconPanelTitle');
     expect(reportsPage).toContain('<PageHeader');
     expect(reportsPage).not.toContain("import { Header } from '@/components/Header';");
     expect(reportsPage).not.toContain('<main className="container py-6');
+    expect(reportsPage).not.toContain('font-display font-bold text-lg md:text-xl text-foreground flex items-center gap-2');
   });
 
   it('keeps the settings page on the shared app shell and page header pattern', () => {

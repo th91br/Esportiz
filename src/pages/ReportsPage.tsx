@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react';
 import { Eye, EyeOff, Users, Calendar, CheckCircle, DollarSign, TrendingUp, Activity, UserMinus, Lock } from 'lucide-react';
 import { AppPage } from '@/components/layout/AppPage';
+import { IconPanelTitle } from '@/components/layout/IconPanelTitle';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Button } from '@/components/ui/button';
 import { StatCard } from '@/components/StatCard';
@@ -783,9 +784,7 @@ export default function ReportsPage() {
           <div className="card-elevated p-4 md:p-6 border-primary/10">
             <div className="flex items-start justify-between mb-6">
               <div>
-                <h3 className="font-display font-bold text-lg md:text-xl text-foreground flex items-center gap-2">
-                  <TrendingUp className="h-5 w-5 text-primary" /> Balanço Financeiro
-                </h3>
+                <IconPanelTitle icon={TrendingUp}>Balanço Financeiro</IconPanelTitle>
                 <p className="text-sm text-muted-foreground mt-1">Realidade dos pagamentos no período selecionado</p>
               </div>
             </div>
@@ -823,9 +822,9 @@ export default function ReportsPage() {
           <div className="card-elevated p-4 md:p-6 border-emerald/10">
             <div className="flex items-start justify-between mb-5">
               <div>
-                <h3 className="font-display font-bold text-lg md:text-xl text-foreground flex items-center gap-2">
-                  <DollarSign className="h-5 w-5 text-emerald-600" /> Receita por Origem
-                </h3>
+                <IconPanelTitle icon={DollarSign} iconClassName="text-emerald-600">
+                  Receita por Origem
+                </IconPanelTitle>
                 <p className="text-sm text-muted-foreground mt-1">Separação do caixa por frente operacional</p>
               </div>
             </div>
@@ -888,9 +887,7 @@ export default function ReportsPage() {
           <div className="card-elevated p-4 md:p-6 border-primary/10">
             <div className="flex items-start justify-between mb-5">
               <div>
-                <h3 className="font-display font-bold text-lg md:text-xl text-foreground flex items-center gap-2">
-                  <CheckCircle className="h-5 w-5 text-primary" /> Recebido por Forma
-                </h3>
+                <IconPanelTitle icon={CheckCircle}>Recebido por Forma</IconPanelTitle>
                 <p className="text-sm text-muted-foreground mt-1">Vendas, comandas e reservas baixadas</p>
               </div>
             </div>
@@ -1090,9 +1087,7 @@ export default function ReportsPage() {
           <div className="card-elevated p-4 md:p-6 lg:col-span-2 mt-4 border-primary/20 bg-gradient-to-br from-background to-muted/20">
             <div className="flex items-start justify-between mb-6">
               <div>
-                <h3 className="font-display font-bold text-lg md:text-xl text-foreground flex items-center gap-2">
-                  <Activity className="h-5 w-5 text-primary" /> Evolução de Faturamento
-                </h3>
+                <IconPanelTitle icon={Activity}>Evolução de Faturamento</IconPanelTitle>
                 <p className="text-sm text-muted-foreground mt-1">Comparativo de receita prevista vs realizada ({filterLabels[period]})</p>
               </div>
             </div>
@@ -1123,9 +1118,9 @@ export default function ReportsPage() {
             <div className="card-elevated p-4 md:p-6 lg:col-span-2 border-destructive/10 mt-4">
               <div className="flex items-start justify-between mb-6">
                 <div>
-                  <h3 className="font-display font-bold text-lg md:text-xl text-foreground flex items-center gap-2">
-                    <UserMinus className="h-5 w-5 text-destructive" /> Retenção e Churn
-                  </h3>
+                  <IconPanelTitle icon={UserMinus} iconClassName="text-destructive">
+                    Retenção e Churn
+                  </IconPanelTitle>
                   <p className="text-sm text-muted-foreground mt-1">Visão geral do funil de retenção e perda de {labels.studentLabel.toLowerCase()} na base inteira</p>
                 </div>
                 <div className="bg-destructive/10 border border-destructive/20 px-4 py-2 rounded-lg text-center shrink-0">

@@ -1540,9 +1540,9 @@ CONCORDÂNCIA E ASSINATURA: O contratante declara ter lido, compreendido e aceit
             <Card className="border-border/50 shadow-md card-elevated overflow-hidden">
               <div className="h-1 bg-gradient-to-r from-primary to-indigo-600" />
               <CardHeader className="pb-4">
-                <CardTitle className="text-lg font-black font-display flex items-center gap-2">
-                  <ClipboardList className="h-5 w-5 text-primary" /> Contrato de Prestação de Serviços Esportivos
-                </CardTitle>
+                <IconCardTitle icon={ClipboardList} className="font-black font-display">
+                  Contrato de Prestação de Serviços Esportivos
+                </IconCardTitle>
                 <CardDescription>
                   Leia os termos do contrato e registre o seu aceite eletrônico.
                 </CardDescription>

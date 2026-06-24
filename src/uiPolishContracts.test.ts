@@ -245,7 +245,9 @@ describe('premium UI polish contracts', () => {
   it('keeps the student portal page on shared icon card titles for compact operational cards', () => {
     expect(studentPortalPage).toContain("import { IconCardTitle } from '@/components/layout/IconCardTitle';");
     expect(studentPortalPage).toContain('<IconCardTitle');
+    expect(studentPortalPage).toContain('<IconCardTitle icon={ClipboardList} className="font-black font-display">');
     expect(studentPortalPage).not.toContain('CardTitle className="text-base font-bold flex items-center gap-2"');
+    expect(studentPortalPage).not.toContain('CardTitle className="text-lg font-black font-display flex items-center gap-2"');
   });
 
   it('keeps the products page on the shared app shell and page header pattern', () => {

@@ -4,6 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
+import { IconCardTitle } from '@/components/layout/IconCardTitle';
 import { toast } from 'sonner';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { EsportizIcon } from '@/components/Logo';
@@ -429,9 +430,7 @@ export default function OnlineBookingPage() {
           {step === 1 ? (
             <form onSubmit={handleNextStep}>
               <CardHeader className="pb-4">
-                <CardTitle className="text-lg font-bold flex items-center gap-2">
-                  <Clock className="h-5 w-5 text-primary" /> 1. Escolha Data, Quadra & Horário
-                </CardTitle>
+                <IconCardTitle icon={Clock}>1. Escolha Data, Quadra & Horário</IconCardTitle>
                 <CardDescription>Selecione onde e quando deseja jogar.</CardDescription>
               </CardHeader>
 
@@ -563,9 +562,7 @@ export default function OnlineBookingPage() {
             <form onSubmit={handleSubmit}>
               <CardHeader className="pb-4">
                 <div className="flex items-center justify-between">
-                  <CardTitle className="text-lg font-bold flex items-center gap-2">
-                    <ShieldCheck className="h-5 w-5 text-primary" /> 2. Ficha do Jogador
-                  </CardTitle>
+                  <IconCardTitle icon={ShieldCheck}>2. Ficha do Jogador</IconCardTitle>
                   <Button 
                     type="button" 
                     variant="ghost" 

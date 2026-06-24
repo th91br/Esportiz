@@ -26,6 +26,7 @@ describe('premium UI polish contracts', () => {
   const studentsPage = readFileSync(resolve(process.cwd(), 'src/pages/StudentsPage.tsx'), 'utf-8');
   const productsPage = readFileSync(resolve(process.cwd(), 'src/pages/ProductsPage.tsx'), 'utf-8');
   const salesPage = readFileSync(resolve(process.cwd(), 'src/pages/SalesPage.tsx'), 'utf-8');
+  const onlineBookingPage = readFileSync(resolve(process.cwd(), 'src/pages/OnlineBookingPage.tsx'), 'utf-8');
 
   it('does not use thick colored side stripes on polished operational cards', () => {
     expect(notificationBell).not.toContain('border-l-4');
@@ -254,6 +255,13 @@ describe('premium UI polish contracts', () => {
     expect(productsPage).toContain('<PageHeader');
     expect(productsPage).not.toContain("import { Header } from '@/components/Header';");
     expect(productsPage).not.toContain('<main className="container py-6');
+  });
+
+  it('keeps the online booking flow on shared icon card titles for step cards', () => {
+    expect(onlineBookingPage).toContain("import { IconCardTitle } from '@/components/layout/IconCardTitle';");
+    expect(onlineBookingPage).toContain('<IconCardTitle icon={Clock}>');
+    expect(onlineBookingPage).toContain('<IconCardTitle icon={ShieldCheck}>');
+    expect(onlineBookingPage).not.toContain('CardTitle className="text-lg font-bold flex items-center gap-2"');
   });
 
   it('keeps the sales page on the shared app shell and page header pattern', () => {

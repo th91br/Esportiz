@@ -35,7 +35,7 @@ import { useReservations } from '@/hooks/queries/useReservations';
 import { useCourts } from '@/hooks/queries/useCourts';
 import { usePrivacyMode } from '@/hooks/usePrivacyMode';
 import { useBusinessContext } from '@/hooks/useBusinessContext';
-import { getCourtAvailableHoursInMonth } from '@/lib/dateUtils';
+import { calculateArenaOccupancy } from '@/lib/arenaOccupancy';
 import { getActiveMonthlyStudents, getTotalStudents } from '@/lib/studentHelpers';
 import { formatCurrency } from '@/lib/formatCurrency';
 import { getReservationPaidAmount } from '@/lib/financialContracts';
@@ -212,15 +212,9 @@ export default function Index() {
 
   // ── Arena Specific Stats ──
   const occupancyRate = isArena ? (() => {
-    const activeCourts = courts.filter(c => c.isActive);
     const year = now.getFullYear();
     const month = now.getMonth();
-    const totalHoursAvailable = activeCourts.reduce((sum, court) => {
-      return sum + getCourtAvailableHoursInMonth(court, year, month);
-    }, 0);
-    const monthReservations = reservations.filter(r => r.date.startsWith(currentMonthStr) && r.status !== 'cancelled');
-    const totalHoursBooked = monthReservations.reduce((acc, r) => acc + (r.durationMinutes || 60) / 60, 0);
-    return totalHoursAvailable > 0 ? Math.round((totalHoursBooked / totalHoursAvailable) * 100) : 0;
+    return calculateArenaOccupancy({ courts, reservations, year, month }).rate;
   })() : 0;
 
   // ── Métricas de Desempenho Individual (para funcionários) ──

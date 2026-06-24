@@ -117,13 +117,16 @@ describe('premium UI polish contracts', () => {
 
   it('keeps the contracts page on the shared app shell while preserving print-only output', () => {
     expect(contractsPage).toContain("import { AppPage } from '@/components/layout/AppPage';");
+    expect(contractsPage).toContain("import { IconCardTitle } from '@/components/layout/IconCardTitle';");
     expect(contractsPage).toContain("import { PageHeader } from '@/components/layout/PageHeader';");
     expect(contractsPage).toContain('<AppPage');
+    expect(contractsPage).toContain('<IconCardTitle');
     expect(contractsPage).toContain('<PageHeader');
     expect(contractsPage).toContain('print:hidden');
     expect(contractsPage).toContain('hidden print:block');
     expect(contractsPage).not.toContain("import { Header } from '@/components/Header';");
     expect(contractsPage).not.toContain('<main className="container py-6');
+    expect(contractsPage).not.toContain('CardTitle className="text-lg flex items-center gap-2"');
   });
 
   it('keeps the dashboard page on the shared app shell pattern', () => {
@@ -255,10 +258,13 @@ describe('premium UI polish contracts', () => {
 
   it('keeps the sales page on the shared app shell and page header pattern', () => {
     expect(salesPage).toContain("import { AppPage } from '@/components/layout/AppPage';");
+    expect(salesPage).toContain("import { IconCardTitle } from '@/components/layout/IconCardTitle';");
     expect(salesPage).toContain("import { PageHeader } from '@/components/layout/PageHeader';");
     expect(salesPage).toContain('<AppPage');
+    expect(salesPage).toContain('<IconCardTitle');
     expect(salesPage).toContain('<PageHeader');
     expect(salesPage).not.toContain("import { Header } from '@/components/Header';");
     expect(salesPage).not.toContain('<main className="container py-6');
+    expect(salesPage).not.toContain('CardTitle className="text-lg flex items-center gap-2"');
   });
 });

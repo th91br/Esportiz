@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react';
 import { AppPage } from '@/components/layout/AppPage';
+import { IconCardTitle } from '@/components/layout/IconCardTitle';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { useProducts } from '@/hooks/queries/useProducts';
 import { useSales, getPaymentMethodLabel, type PaymentMethod, type Sale } from '@/hooks/queries/useSales';
@@ -278,15 +279,14 @@ export default function SalesPage() {
           <div className="lg:col-span-1">
             <Card className="sticky top-20">
               <CardHeader>
-                <CardTitle className="text-lg flex items-center gap-2">
-                  <ShoppingCart className="h-5 w-5" />
+                <IconCardTitle icon={ShoppingCart} iconClassName="text-foreground">
                   Carrinho
                   {cart.length > 0 && (
                     <span className="bg-primary/10 text-primary text-xs font-bold px-2 py-0.5 rounded-full">
                       {cart.reduce((s, i) => s + i.quantity, 0)}
                     </span>
                   )}
-                </CardTitle>
+                </IconCardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 {cart.length === 0 ? (
@@ -378,10 +378,9 @@ export default function SalesPage() {
           <CardHeader className="space-y-4">
             <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
               <div>
-                <CardTitle className="text-lg flex items-center gap-2">
-                  <Clock className="h-5 w-5 text-muted-foreground" />
+                <IconCardTitle icon={Clock} iconClassName="text-muted-foreground">
                   Histórico de Vendas
-                </CardTitle>
+                </IconCardTitle>
                 <p className="text-sm text-muted-foreground mt-1">
                   {historyTransactionCount} atendimento(s) • {filteredHistorySales.length} item(ns) • {formatCurrency(historyTotal)}
                 </p>

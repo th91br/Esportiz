@@ -1,10 +1,11 @@
 import { useState, useMemo } from 'react';
 import { AppPage } from '@/components/layout/AppPage';
+import { IconCardTitle } from '@/components/layout/IconCardTitle';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { FileSignature, FileText, Search, User, Printer } from 'lucide-react';
 import { useStudents } from '@/hooks/queries/useStudents';
 import { usePlans } from '@/hooks/queries/usePlans';
@@ -132,9 +133,7 @@ export default function ContractsPage() {
             ) : (
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between pb-4 border-b">
-                  <CardTitle className="text-lg flex items-center gap-2">
-                    <FileSignature className="h-5 w-5 text-primary" /> Visualização Prévia do Contrato
-                  </CardTitle>
+                  <IconCardTitle icon={FileSignature}>Visualização Prévia do Contrato</IconCardTitle>
                   <Button onClick={handlePrintContract} variant="outline" size="sm" className="gap-2">
                     <Printer className="h-4 w-4" /> Imprimir
                   </Button>

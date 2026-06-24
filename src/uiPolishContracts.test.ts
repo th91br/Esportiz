@@ -27,6 +27,7 @@ describe('premium UI polish contracts', () => {
   const productsPage = readFileSync(resolve(process.cwd(), 'src/pages/ProductsPage.tsx'), 'utf-8');
   const salesPage = readFileSync(resolve(process.cwd(), 'src/pages/SalesPage.tsx'), 'utf-8');
   const onlineBookingPage = readFileSync(resolve(process.cwd(), 'src/pages/OnlineBookingPage.tsx'), 'utf-8');
+  const modalityManager = readFileSync(resolve(process.cwd(), 'src/components/ModalityManager.tsx'), 'utf-8');
 
   it('does not use thick colored side stripes on polished operational cards', () => {
     expect(notificationBell).not.toContain('border-l-4');
@@ -78,6 +79,12 @@ describe('premium UI polish contracts', () => {
     expect(modalitiesPage).toContain('<PageHeader');
     expect(modalitiesPage).not.toContain("import { Header } from '@/components/Header';");
     expect(modalitiesPage).not.toContain('<main className="container py-6');
+  });
+
+  it('keeps the modality manager on shared icon card titles', () => {
+    expect(modalityManager).toContain("import { IconCardTitle } from '@/components/layout/IconCardTitle';");
+    expect(modalityManager).toContain('<IconCardTitle icon={Tag} className="font-display">');
+    expect(modalityManager).not.toContain('CardTitle className="flex items-center gap-2 text-lg font-display"');
   });
 
   it('keeps the plans page on the shared app shell and page header pattern', () => {

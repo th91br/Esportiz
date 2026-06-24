@@ -2,7 +2,8 @@ import { useState } from 'react';
 import { Plus, Pencil, Trash2, Tag, Check, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { IconCardTitle } from '@/components/layout/IconCardTitle';
+import { Card, CardContent, CardDescription, CardHeader } from '@/components/ui/card';
 import { useModalities, Modality } from '@/hooks/queries/useModalities';
 import { useBusinessContext } from '@/hooks/useBusinessContext';
 import { cn } from '@/lib/utils';
@@ -75,10 +76,9 @@ export function ModalityManager() {
       <div className="h-1 bg-gradient-to-r from-primary/50 to-primary" />
       <CardHeader className="flex flex-row items-center justify-between pb-2">
         <div className="space-y-1">
-          <CardTitle className="flex items-center gap-2 text-lg font-display">
-            <Tag className="h-5 w-5 text-primary" />
+          <IconCardTitle icon={Tag} className="font-display">
             {labels.modalityLabel}
-          </CardTitle>
+          </IconCardTitle>
           <CardDescription>Gerencie o(s) {labels.modalityLabel.toLowerCase()} oferecido(s) pela(o) {labels.ctLabelShort}.</CardDescription>
         </div>
         {!isAdding && (

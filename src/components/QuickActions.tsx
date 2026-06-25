@@ -30,7 +30,7 @@ export function QuickActions() {
   return (
     <Card className="card-elevated border border-border/50 h-full flex flex-col">
       <CardHeader className="pb-4">
-        <CardTitle className="text-lg font-display flex items-center gap-2">
+        <CardTitle className="text-lg font-display">
           Ações Rápidas
         </CardTitle>
       </CardHeader>

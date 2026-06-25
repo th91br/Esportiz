@@ -98,12 +98,15 @@ describe('premium UI polish contracts', () => {
     expect(communicationPage).toContain("import { IconDialogTitle } from '@/components/layout/IconDialogTitle';");
     expect(comandasPage).toContain("import { IconDialogTitle } from '@/components/layout/IconDialogTitle';");
     expect(arenaAgendaPage).toContain("import { IconDialogTitle } from '@/components/layout/IconDialogTitle';");
+    expect(paymentsPage).toContain("import { IconDialogTitle } from '@/components/layout/IconDialogTitle';");
     expect(communicationPage).toContain('<IconDialogTitle icon={MessageCircle}>');
     expect(comandasPage).toContain('<IconDialogTitle icon={CreditCard}>');
     expect(arenaAgendaPage).toContain('<IconDialogTitle icon={Lock} iconClassName="text-zinc-500">');
+    expect(paymentsPage).toContain('<IconDialogTitle icon={DollarSign}>');
     expect(communicationPage).not.toContain('DialogTitle className="font-display text-xl font-bold flex items-center gap-2"');
     expect(comandasPage).not.toContain('DialogTitle className="font-display text-xl font-bold flex items-center gap-2"');
     expect(arenaAgendaPage).not.toContain('DialogTitle className="font-display text-xl font-bold flex items-center gap-2 text-foreground"');
+    expect(paymentsPage).not.toContain('DialogTitle className="flex items-center gap-2 text-foreground font-display font-bold"');
   });
 
   it('keeps plain commerce card titles on the premium display rhythm', () => {

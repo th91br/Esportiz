@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { AppPage } from '@/components/layout/AppPage';
 import { PageHeader } from '@/components/layout/PageHeader';
+import { IconDialogTitle } from '@/components/layout/IconDialogTitle';
 import { useStudents } from '@/hooks/queries/useStudents';
 import { usePlans } from '@/hooks/queries/usePlans';
 import { usePayments } from '@/hooks/queries/usePayments';
@@ -23,7 +24,7 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import {
-  Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter
+  Dialog, DialogContent, DialogDescription, DialogHeader, DialogFooter
 } from '@/components/ui/dialog';
 import { useBusinessContext } from '@/hooks/useBusinessContext';
 import { useRolePermissions } from '@/hooks/useRolePermissions';
@@ -685,9 +686,9 @@ export default function PaymentsPage() {
           <Dialog open={!!receivingPayment} onOpenChange={(open) => !open && setReceivingPayment(null)}>
             <DialogContent className="sm:max-w-md">
               <DialogHeader>
-                <DialogTitle className="flex items-center gap-2 text-foreground font-display font-bold">
-                  <DollarSign className="h-5 w-5 text-primary" /> Confirmar Recebimento
-                </DialogTitle>
+                <IconDialogTitle icon={DollarSign}>
+                  Confirmar Recebimento
+                </IconDialogTitle>
                 <DialogDescription>
                   Registre o pagamento para o(a) aluno(a) <strong className="text-foreground font-semibold">{students.find(s => s.id === receivingPayment.studentId)?.name}</strong>.
                 </DialogDescription>

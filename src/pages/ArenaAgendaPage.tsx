@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react';
 import { AppPage } from '@/components/layout/AppPage';
 import { PageHeader } from '@/components/layout/PageHeader';
+import { IconDialogTitle } from '@/components/layout/IconDialogTitle';
 import { Button } from '@/components/ui/button';
 import { ReservationModal } from '@/components/ReservationModal';
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet';
@@ -14,7 +15,7 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -912,9 +913,9 @@ export default function ArenaAgendaPage() {
       <Dialog open={blockDayOpen} onOpenChange={setBlockDayOpen}>
         <DialogContent className="sm:max-w-md bg-background border shadow-2xl p-6">
           <DialogHeader>
-            <DialogTitle className="font-display text-xl font-bold flex items-center gap-2 text-foreground">
-              <Lock className="h-5 w-5 text-zinc-500" /> Bloquear Funcionamento
-            </DialogTitle>
+            <IconDialogTitle icon={Lock} iconClassName="text-zinc-500">
+              Bloquear Funcionamento
+            </IconDialogTitle>
             <DialogDescription className="text-sm text-muted-foreground mt-1">
               Feche as quadras para feriados, manutenções ou folgas gerais neste dia.
             </DialogDescription>

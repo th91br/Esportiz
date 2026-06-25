@@ -1,6 +1,7 @@
 import { useState, useMemo, useEffect } from 'react';
 import { AppPage } from '@/components/layout/AppPage';
 import { PageHeader } from '@/components/layout/PageHeader';
+import { IconDialogTitle } from '@/components/layout/IconDialogTitle';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
@@ -14,7 +15,7 @@ import { useBusinessContext } from '@/hooks/useBusinessContext';
 import { useProfile } from '@/hooks/queries/useProfile';
 import { useReservations } from '@/hooks/queries/useReservations';
 import { useRolePermissions } from '@/hooks/useRolePermissions';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogHeader } from '@/components/ui/dialog';
 import { toast } from 'sonner';
 import { getLocalTodayDate, toLocalDateString } from '@/lib/dateUtils';
 import { getRemainingPaymentAmount } from '@/lib/financialContracts';
@@ -503,10 +504,9 @@ export default function CommunicationPage() {
       <Dialog open={!!sendingStudent} onOpenChange={(open) => { if (!open) setSendingStudent(null); }}>
         <DialogContent className="max-w-md rounded-2xl p-6 border border-border/50 backdrop-blur-xl bg-background/95">
           <DialogHeader>
-            <DialogTitle className="font-display text-xl font-bold flex items-center gap-2">
-              <MessageCircle className="h-5 w-5 text-primary" />
+            <IconDialogTitle icon={MessageCircle}>
               Confirmar Envio
-            </DialogTitle>
+            </IconDialogTitle>
             <DialogDescription>
               Revise os dados de envio antes de abrir o WhatsApp.
             </DialogDescription>

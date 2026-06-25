@@ -1,6 +1,7 @@
 import { useState, useMemo, useEffect, type KeyboardEvent } from 'react';
 import { AppPage } from '@/components/layout/AppPage';
 import { PageHeader } from '@/components/layout/PageHeader';
+import { IconDialogTitle } from '@/components/layout/IconDialogTitle';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -738,10 +739,9 @@ export default function ComandasPage() {
       <Dialog open={!!closingComanda} onOpenChange={(open) => { if (!open) setClosingComanda(null); }}>
         <DialogContent className="max-w-md rounded-2xl p-6">
           <DialogHeader>
-            <DialogTitle className="font-display text-xl font-bold flex items-center gap-2">
-              <CreditCard className="h-5 w-5 text-primary" />
+            <IconDialogTitle icon={CreditCard}>
               Fechamento de Conta
-            </DialogTitle>
+            </IconDialogTitle>
             <DialogDescription>
               Selecione o método de pagamento recebido para finalizar a comanda de R$ {closingComanda && pv(closingComanda.totalAmount.toFixed(2))}.
             </DialogDescription>

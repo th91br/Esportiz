@@ -94,6 +94,18 @@ describe('premium UI polish contracts', () => {
     expect(quickActions).not.toContain('CardTitle className="text-lg font-display flex items-center gap-2"');
   });
 
+  it('keeps repeated icon dialog titles on the shared icon dialog title component', () => {
+    expect(communicationPage).toContain("import { IconDialogTitle } from '@/components/layout/IconDialogTitle';");
+    expect(comandasPage).toContain("import { IconDialogTitle } from '@/components/layout/IconDialogTitle';");
+    expect(arenaAgendaPage).toContain("import { IconDialogTitle } from '@/components/layout/IconDialogTitle';");
+    expect(communicationPage).toContain('<IconDialogTitle icon={MessageCircle}>');
+    expect(comandasPage).toContain('<IconDialogTitle icon={CreditCard}>');
+    expect(arenaAgendaPage).toContain('<IconDialogTitle icon={Lock} iconClassName="text-zinc-500">');
+    expect(communicationPage).not.toContain('DialogTitle className="font-display text-xl font-bold flex items-center gap-2"');
+    expect(comandasPage).not.toContain('DialogTitle className="font-display text-xl font-bold flex items-center gap-2"');
+    expect(arenaAgendaPage).not.toContain('DialogTitle className="font-display text-xl font-bold flex items-center gap-2 text-foreground"');
+  });
+
   it('keeps plain commerce card titles on the premium display rhythm', () => {
     expect(salesPage).toContain('CardTitle className="text-lg font-display"');
     expect(expensesPage).toContain('CardTitle className="text-lg font-display"');

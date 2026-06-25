@@ -6,6 +6,7 @@ import { SettingsCardHeader } from '@/components/layout/SettingsCardHeader';
 import { SettingsField } from '@/components/layout/SettingsField';
 import { SettingsGroupTitle } from '@/components/layout/SettingsGroupTitle';
 import { SettingsSection } from '@/components/layout/SettingsSection';
+import { IconAlertDialogTitle } from '@/components/layout/IconAlertDialogTitle';
 import { StatusPill } from '@/components/ui/status-pill';
 import { useProfile } from '@/hooks/queries/useProfile';
 import { Button } from '@/components/ui/button';
@@ -1239,10 +1240,9 @@ export default function SettingsPage() {
         >
           <AlertDialogContent className="max-w-md">
             <AlertDialogHeader>
-              <AlertDialogTitle className="flex items-center gap-2 text-xl font-bold">
-                <AlertCircle className="h-6 w-6 text-destructive shrink-0" />
+              <IconAlertDialogTitle icon={AlertCircle}>
                 Excluir Membro de Equipe?
-              </AlertDialogTitle>
+              </IconAlertDialogTitle>
               <AlertDialogDescription className="space-y-4 pt-2">
                 <p className="text-sm leading-relaxed text-foreground">
                   Você tem certeza de que deseja excluir permanentemente o funcionário{' '}
@@ -1748,10 +1748,9 @@ export default function SettingsPage() {
       <AlertDialog open={showNicheConfirmation} onOpenChange={(open) => { if (!open) handleCancelNicheChange(); }}>
         <AlertDialogContent className="max-w-md">
           <AlertDialogHeader>
-            <AlertDialogTitle className="flex items-center gap-2 text-xl font-bold">
-              <AlertCircle className="h-6 w-6 text-amber-500 shrink-0" />
+            <IconAlertDialogTitle icon={AlertCircle} iconClassName="text-amber-500">
               Confirmar Alteração de Segmento?
-            </AlertDialogTitle>
+            </IconAlertDialogTitle>
             <AlertDialogDescription className="space-y-4 pt-2">
               <p className="text-sm leading-relaxed text-foreground">
                 Você está alterando o segmento do seu negócio de{' '}

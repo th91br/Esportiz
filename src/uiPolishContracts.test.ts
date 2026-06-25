@@ -237,6 +237,7 @@ describe('premium UI polish contracts', () => {
     expect(settingsPage).toContain("import { SettingsField } from '@/components/layout/SettingsField';");
     expect(settingsPage).toContain("import { SettingsGroupTitle } from '@/components/layout/SettingsGroupTitle';");
     expect(settingsPage).toContain("import { SettingsSection } from '@/components/layout/SettingsSection';");
+    expect(settingsPage).toContain("import { IconAlertDialogTitle } from '@/components/layout/IconAlertDialogTitle';");
     expect(settingsPage).toContain("import { StatusPill } from '@/components/ui/status-pill';");
     expect(settingsPage).toContain('<AppPage');
     expect(settingsPage).toContain('<PageHeader');
@@ -244,6 +245,8 @@ describe('premium UI polish contracts', () => {
     expect(settingsPage).toContain('<SettingsField');
     expect(settingsPage).toContain('<SettingsGroupTitle');
     expect(settingsPage).toContain('<SettingsSection');
+    expect(settingsPage).toContain('<IconAlertDialogTitle icon={AlertCircle}>');
+    expect(settingsPage).toContain('<IconAlertDialogTitle icon={AlertCircle} iconClassName="text-amber-500">');
     expect(settingsPage).toContain('<StatusPill');
     expect(settingsPage).toContain('<AlertDialog open={showNicheConfirmation}');
     expect((settingsPage.match(/<CardTitle className="flex items-center gap-2 text-lg">/g) ?? []).length).toBeLessThanOrEqual(2);
@@ -255,6 +258,7 @@ describe('premium UI polish contracts', () => {
     expect(settingsPage).not.toContain('text-green-600 bg-green-50');
     expect(settingsPage).not.toContain('text-amber-600 bg-amber-50');
     expect(settingsPage).not.toContain('text-xs font-bold text-muted-foreground uppercase tracking-wider');
+    expect(settingsPage).not.toContain('AlertDialogTitle className="flex items-center gap-2 text-xl font-bold"');
   });
 
   it('keeps the students/reservants page on the shared app shell and page header pattern', () => {

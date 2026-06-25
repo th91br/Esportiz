@@ -226,7 +226,7 @@ export default function SalesPage() {
           <div className="lg:col-span-2">
             <Card>
               <CardHeader>
-                <CardTitle className="text-lg">
+                <CardTitle className="text-lg font-display">
                   {isArena ? 'Selecione os Produtos' : 'Uniformes e Materiais Esportivos'}
                 </CardTitle>
               </CardHeader>

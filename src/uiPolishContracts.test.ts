@@ -26,6 +26,7 @@ describe('premium UI polish contracts', () => {
   const studentsPage = readFileSync(resolve(process.cwd(), 'src/pages/StudentsPage.tsx'), 'utf-8');
   const productsPage = readFileSync(resolve(process.cwd(), 'src/pages/ProductsPage.tsx'), 'utf-8');
   const salesPage = readFileSync(resolve(process.cwd(), 'src/pages/SalesPage.tsx'), 'utf-8');
+  const expensesPage = readFileSync(resolve(process.cwd(), 'src/pages/ExpensesPage.tsx'), 'utf-8');
   const onlineBookingPage = readFileSync(resolve(process.cwd(), 'src/pages/OnlineBookingPage.tsx'), 'utf-8');
   const modalityManager = readFileSync(resolve(process.cwd(), 'src/components/ModalityManager.tsx'), 'utf-8');
   const quickActions = readFileSync(resolve(process.cwd(), 'src/components/QuickActions.tsx'), 'utf-8');
@@ -91,6 +92,13 @@ describe('premium UI polish contracts', () => {
   it('keeps quick actions card title free of unused icon layout classes', () => {
     expect(quickActions).toContain('CardTitle className="text-lg font-display"');
     expect(quickActions).not.toContain('CardTitle className="text-lg font-display flex items-center gap-2"');
+  });
+
+  it('keeps plain commerce card titles on the premium display rhythm', () => {
+    expect(salesPage).toContain('CardTitle className="text-lg font-display"');
+    expect(expensesPage).toContain('CardTitle className="text-lg font-display"');
+    expect(salesPage).not.toContain('CardTitle className="text-lg"');
+    expect(expensesPage).not.toContain('CardTitle className="text-lg"');
   });
 
   it('keeps the plans page on the shared app shell and page header pattern', () => {

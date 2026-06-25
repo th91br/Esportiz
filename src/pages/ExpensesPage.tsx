@@ -358,7 +358,7 @@ export default function ExpensesPage() {
         {/* Expenses List */}
         <Card>
           <CardHeader>
-            <CardTitle className="text-lg">Lançamentos do Mês</CardTitle>
+            <CardTitle className="text-lg font-display">Lançamentos do Mês</CardTitle>
           </CardHeader>
           <CardContent>
             {loadingExpenses ? (

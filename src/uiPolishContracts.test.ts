@@ -131,6 +131,12 @@ describe('premium UI polish contracts', () => {
     expect(plansPage).not.toContain('<main className="container py-6');
   });
 
+  it('keeps the plans catalog empty result on the shared empty state', () => {
+    expect(plansPage).toContain("import { EmptyState } from '@/components/ui/empty-state';");
+    expect((plansPage.match(/<EmptyState/g) ?? []).length).toBe(1);
+    expect(plansPage).not.toContain('<div className="col-span-full card-elevated p-12 text-center">');
+  });
+
   it('keeps the attendance page on the shared app shell and page header pattern', () => {
     expect(attendancePage).toContain("import { AppPage } from '@/components/layout/AppPage';");
     expect(attendancePage).toContain("import { PageHeader } from '@/components/layout/PageHeader';");

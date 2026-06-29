@@ -3,6 +3,7 @@ import { DollarSign, Plus, Pencil, Trash2, Eye, EyeOff } from 'lucide-react';
 import { AppPage } from '@/components/layout/AppPage';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Button } from '@/components/ui/button';
+import { EmptyState } from '@/components/ui/empty-state';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
@@ -138,11 +139,12 @@ export default function PlansPage() {
             );
           })}
           {plans.length === 0 && (
-            <div className="col-span-full card-elevated p-12 text-center">
-              <DollarSign className="h-12 w-12 mx-auto text-muted-foreground/50 mb-3" />
-              <p className="text-lg font-medium text-muted-foreground">Nenhum {labels.planLabelSingular.toLowerCase()} cadastrado</p>
-              <p className="text-sm text-muted-foreground/70 mt-1">Crie seu(sua) primeiro(a) {labels.planLabelSingular.toLowerCase()} de {labels.trainingLabelSingular.toLowerCase()}</p>
-            </div>
+            <EmptyState
+              icon={DollarSign}
+              title={`Nenhum ${labels.planLabelSingular.toLowerCase()} cadastrado`}
+              description={`Crie seu(sua) primeiro(a) ${labels.planLabelSingular.toLowerCase()} de ${labels.trainingLabelSingular.toLowerCase()}`}
+              className="col-span-full card-elevated p-12"
+            />
           )}
         </div>
 

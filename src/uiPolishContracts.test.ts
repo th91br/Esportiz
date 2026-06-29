@@ -149,6 +149,15 @@ describe('premium UI polish contracts', () => {
     expect(birthdaysPage).not.toContain('<main className="container py-6');
   });
 
+  it('keeps birthday loading and empty results on shared state components', () => {
+    expect(birthdaysPage).toContain("import { EmptyState } from '@/components/ui/empty-state';");
+    expect(birthdaysPage).toContain("import { LoadingState } from '@/components/ui/loading-state';");
+    expect((birthdaysPage.match(/<EmptyState/g) ?? []).length).toBe(3);
+    expect(birthdaysPage).toContain('<LoadingState label="Carregando aniversariantes" className="py-8" />');
+    expect(birthdaysPage).not.toContain('text-center py-12 bg-muted/30 rounded-2xl border border-dashed');
+    expect(birthdaysPage).not.toContain('<div className="text-center text-muted-foreground py-8">');
+  });
+
   it('keeps the groups page on the shared app shell and page header pattern', () => {
     expect(groupsPage).toContain("import { AppPage } from '@/components/layout/AppPage';");
     expect(groupsPage).toContain("import { PageHeader } from '@/components/layout/PageHeader';");

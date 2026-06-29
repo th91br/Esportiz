@@ -15,6 +15,8 @@ import { PageHeader } from '@/components/layout/PageHeader';
 import { useStudents } from '@/hooks/queries/useStudents';
 import { useProfile } from '@/hooks/queries/useProfile';
 import { Button } from '@/components/ui/button';
+import { EmptyState } from '@/components/ui/empty-state';
+import { LoadingState } from '@/components/ui/loading-state';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent } from '@/components/ui/card';
 import type { Student } from '@/data/mockData';
@@ -169,7 +171,7 @@ export default function BirthdaysPage() {
       />
 
         {loadingStudents ? (
-          <div className="text-center text-muted-foreground py-8">Carregando aniversariantes...</div>
+          <LoadingState label="Carregando aniversariantes" className="py-8" />
         ) : (
           <Tabs defaultValue="today" className="w-full">
             <TabsList className="grid w-full grid-cols-3 mb-6">
@@ -194,11 +196,13 @@ export default function BirthdaysPage() {
 
             <TabsContent value="today" className="space-y-4">
               {birthdaysToday.length === 0 ? (
-                <div className="text-center py-12 bg-muted/30 rounded-2xl border border-dashed">
-                  <Gift className="h-12 w-12 text-muted-foreground/30 mx-auto mb-3" />
-                  <h3 className="text-lg font-medium text-muted-foreground">Nenhum aniversariante hoje</h3>
-                  <p className="text-sm text-muted-foreground/70">As celebrações retornam em breve!</p>
-                </div>
+                <EmptyState
+                  icon={Gift}
+                  title="Nenhum aniversariante hoje"
+                  description="As celebrações retornam em breve!"
+                  variant="outlined"
+                  className="py-12"
+                />
               ) : (
                 <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                   {birthdaysToday.map(student => (
@@ -210,10 +214,12 @@ export default function BirthdaysPage() {
 
             <TabsContent value="week" className="space-y-4">
               {birthdaysThisWeek.length === 0 ? (
-                <div className="text-center py-12 bg-muted/30 rounded-2xl border border-dashed">
-                  <CalendarDays className="h-12 w-12 text-muted-foreground/30 mx-auto mb-3" />
-                  <p className="text-lg font-medium text-muted-foreground">Nenhum aniversariante nesta semana</p>
-                </div>
+                <EmptyState
+                  icon={CalendarDays}
+                  title="Nenhum aniversariante nesta semana"
+                  variant="outlined"
+                  className="py-12"
+                />
               ) : (
                 <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                   {birthdaysThisWeek.map(student => (
@@ -225,10 +231,12 @@ export default function BirthdaysPage() {
 
             <TabsContent value="month" className="space-y-4">
               {birthdaysThisMonth.length === 0 ? (
-                <div className="text-center py-12 bg-muted/30 rounded-2xl border border-dashed">
-                  <CalendarRange className="h-12 w-12 text-muted-foreground/30 mx-auto mb-3" />
-                  <p className="text-lg font-medium text-muted-foreground">Nenhum aniversariante neste mês</p>
-                </div>
+                <EmptyState
+                  icon={CalendarRange}
+                  title="Nenhum aniversariante neste mês"
+                  variant="outlined"
+                  className="py-12"
+                />
               ) : (
                 <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                   {birthdaysThisMonth.map(student => (

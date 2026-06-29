@@ -11,6 +11,7 @@ import { usePrivacyMode } from '@/hooks/usePrivacyMode';
 import { formatCurrency } from '@/lib/formatCurrency';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { EmptyState } from '@/components/ui/empty-state';
 import { Checkbox } from '@/components/ui/checkbox';
 import { ArenaPartialPaymentDialog } from '@/components/arena/ArenaPartialPaymentDialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -345,20 +346,24 @@ export default function PaymentsPage() {
         {showReservationsTab ? (
           // --- VIEW 1: LOCAÇÕES AVULSAS (AGENDA) ---
           monthReservations.length === 0 ? (
-            <div className="card-elevated p-12 text-center">
-              <CalendarDays className="h-12 w-12 mx-auto text-muted-foreground/30 mb-4" />
-              <h3 className="font-display font-semibold text-lg text-foreground">Nenhuma locação avulsa para {monthOptions[selectedMonth - 1]}/{selectedYear}</h3>
-              <p className="text-sm text-muted-foreground mt-1">As reservas agendadas e confirmadas na agenda de quadras aparecerão aqui automaticamente.</p>
-            </div>
+            <EmptyState
+              icon={CalendarDays}
+              title={`Nenhuma locação avulsa para ${monthOptions[selectedMonth - 1]}/${selectedYear}`}
+              description="As reservas agendadas e confirmadas na agenda de quadras aparecerão aqui automaticamente."
+              className="card-elevated p-12"
+            />
           ) : filteredReservations.length === 0 ? (
-            <div className="card-elevated p-12 text-center">
-              <Search className="h-12 w-12 mx-auto text-muted-foreground/30 mb-4" />
-              <h3 className="font-display font-semibold text-lg text-foreground">Nenhuma locação encontrada</h3>
-              <p className="text-sm text-muted-foreground mt-1">Não encontramos nenhum resultado para "{searchTerm}".</p>
-              <Button variant="link" onClick={() => setSearchTerm('')} className="mt-2">
-                Limpar busca
-              </Button>
-            </div>
+            <EmptyState
+              icon={Search}
+              title="Nenhuma locação encontrada"
+              description={`Não encontramos nenhum resultado para "${searchTerm}".`}
+              action={(
+                <Button variant="link" onClick={() => setSearchTerm('')}>
+                  Limpar busca
+                </Button>
+              )}
+              className="card-elevated p-12"
+            />
           ) : (
             <div className="space-y-3">
               {filteredReservations.map(reservation => {
@@ -443,20 +448,24 @@ export default function PaymentsPage() {
         ) : (
           // --- VIEW 2: MENSALISTAS / PACOTES (PRO-RATA / REGULARES) ---
           !hasMonthlyPaymentRecords ? (
-            <div className="card-elevated p-12 text-center">
-              <DollarSign className="h-12 w-12 mx-auto text-muted-foreground/30 mb-4" />
-              <h3 className="font-display font-semibold text-lg text-foreground">Nenhum pagamento para {monthOptions[selectedMonth - 1]}/{selectedYear}</h3>
-              <p className="text-sm text-muted-foreground mt-1">{labels.studentLabel} com {labels.planLabel.toLowerCase()} mensal e dia de vencimento definido aparecerão aqui automaticamente.</p>
-            </div>
+            <EmptyState
+              icon={DollarSign}
+              title={`Nenhum pagamento para ${monthOptions[selectedMonth - 1]}/${selectedYear}`}
+              description={`${labels.studentLabel} com ${labels.planLabel.toLowerCase()} mensal e dia de vencimento definido aparecerão aqui automaticamente.`}
+              className="card-elevated p-12"
+            />
           ) : !hasFilteredPaymentRecords ? (
-            <div className="card-elevated p-12 text-center">
-              <Search className="h-12 w-12 mx-auto text-muted-foreground/30 mb-4" />
-              <h3 className="font-display font-semibold text-lg text-foreground">Nenhum(a) {labels.studentLabelSingular.toLowerCase()} encontrado(a)</h3>
-              <p className="text-sm text-muted-foreground mt-1">Não encontramos nenhum resultado para "{searchTerm}".</p>
-              <Button variant="link" onClick={() => setSearchTerm('')} className="mt-2">
-                Limpar busca
-              </Button>
-            </div>
+            <EmptyState
+              icon={Search}
+              title={`Nenhum(a) ${labels.studentLabelSingular.toLowerCase()} encontrado(a)`}
+              description={`Não encontramos nenhum resultado para "${searchTerm}".`}
+              action={(
+                <Button variant="link" onClick={() => setSearchTerm('')}>
+                  Limpar busca
+                </Button>
+              )}
+              className="card-elevated p-12"
+            />
           ) : (
             <div className="space-y-3">
               {/* Barra de Ações em Lote */}

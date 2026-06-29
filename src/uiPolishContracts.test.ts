@@ -74,6 +74,12 @@ describe('premium UI polish contracts', () => {
     expect(paymentsPage).not.toContain('<main className="container py-6');
   });
 
+  it('keeps payment and reservation empty results on the shared empty state', () => {
+    expect(paymentsPage).toContain("import { EmptyState } from '@/components/ui/empty-state';");
+    expect((paymentsPage.match(/<EmptyState/g) ?? []).length).toBe(4);
+    expect(paymentsPage).not.toContain('<div className="card-elevated p-12 text-center">');
+  });
+
   it('keeps the modalities page on the shared app shell and page header pattern', () => {
     expect(modalitiesPage).toContain("import { AppPage } from '@/components/layout/AppPage';");
     expect(modalitiesPage).toContain("import { PageHeader } from '@/components/layout/PageHeader';");

@@ -10,6 +10,8 @@ import {
   UsersRound, UserPlus, UserMinus, ChevronDown, ChevronUp, Check, X
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { EmptyState } from '@/components/ui/empty-state';
+import { LoadingState } from '@/components/ui/loading-state';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent } from '@/components/ui/card';
@@ -395,22 +397,23 @@ export default function GroupsPage() {
 
       {/* Groups Grid */}
       {loadingGroups ? (
-        <div className="text-center py-12 text-muted-foreground font-medium">Carregando {labels.groupLabel.toLowerCase()}...</div>
+        <LoadingState label={`Carregando ${labels.groupLabel.toLowerCase()}`} className="py-12" />
       ) : filteredGroups.length === 0 ? (
-        <div className="card-elevated border border-border/50 shadow-sm p-12 text-center">
-          <UsersRound className="h-12 w-12 mx-auto text-muted-foreground/50 mb-3" />
-          <p className="text-lg font-medium text-muted-foreground">
-            {searchQuery ? `Nenhuma ${labels.groupLabelSingular.toLowerCase()} encontrada` : `Nenhuma ${labels.groupLabelSingular.toLowerCase()} cadastrada`}
-          </p>
-          <p className="text-sm text-muted-foreground/70 mt-1">
-            {searchQuery ? 'Tente outro termo de busca' : `Crie sua primeira ${labels.groupLabelSingular.toLowerCase()} para organizar seus ${labels.studentLabel.toLowerCase()}`}
-          </p>
-          {!searchQuery && canCreateGroups && (
-            <Button onClick={handleNewGroup} className="mt-4 btn-primary-gradient gap-2">
+        <EmptyState
+          icon={UsersRound}
+          title={searchQuery
+            ? `Nenhuma ${labels.groupLabelSingular.toLowerCase()} encontrada`
+            : `Nenhuma ${labels.groupLabelSingular.toLowerCase()} cadastrada`}
+          description={searchQuery
+            ? 'Tente outro termo de busca'
+            : `Crie sua primeira ${labels.groupLabelSingular.toLowerCase()} para organizar seus ${labels.studentLabel.toLowerCase()}`}
+          action={!searchQuery && canCreateGroups ? (
+            <Button onClick={handleNewGroup} className="btn-primary-gradient gap-2">
               <Plus className="h-4 w-4" />Criar {labels.groupLabelSingular}
             </Button>
-          )}
-        </div>
+          ) : undefined}
+          className="card-elevated p-12"
+        />
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
           {filteredGroups.map((group, index) => {

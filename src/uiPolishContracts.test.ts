@@ -167,6 +167,15 @@ describe('premium UI polish contracts', () => {
     expect(groupsPage).not.toContain('<main className="container py-6');
   });
 
+  it('keeps the groups grid loading and empty result on shared state components', () => {
+    expect(groupsPage).toContain("import { EmptyState } from '@/components/ui/empty-state';");
+    expect(groupsPage).toContain("import { LoadingState } from '@/components/ui/loading-state';");
+    expect((groupsPage.match(/<EmptyState/g) ?? []).length).toBe(1);
+    expect((groupsPage.match(/<LoadingState/g) ?? []).length).toBe(1);
+    expect(groupsPage).not.toContain('<div className="text-center py-12 text-muted-foreground font-medium">');
+    expect(groupsPage).not.toContain('card-elevated border border-border/50 shadow-sm p-12 text-center');
+  });
+
   it('keeps the contracts page on the shared app shell while preserving print-only output', () => {
     expect(contractsPage).toContain("import { AppPage } from '@/components/layout/AppPage';");
     expect(contractsPage).toContain("import { IconCardTitle } from '@/components/layout/IconCardTitle';");

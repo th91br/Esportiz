@@ -89,6 +89,13 @@ describe('premium UI polish contracts', () => {
     expect(modalitiesPage).not.toContain('<main className="container py-6');
   });
 
+  it('keeps the modalities overview empty result on the shared empty state', () => {
+    expect(modalitiesPage).toContain("import { EmptyState } from '@/components/ui/empty-state';");
+    expect((modalitiesPage.match(/<EmptyState/g) ?? []).length).toBe(1);
+    expect(modalitiesPage).toContain('variant="outlined"');
+    expect(modalitiesPage).not.toContain('<div className="col-span-full py-12 text-center border-2 border-dashed rounded-xl bg-muted/30">');
+  });
+
   it('keeps the modality manager on shared icon card titles', () => {
     expect(modalityManager).toContain("import { IconCardTitle } from '@/components/layout/IconCardTitle';");
     expect(modalityManager).toContain('<IconCardTitle icon={Tag} className="font-display">');

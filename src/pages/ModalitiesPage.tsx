@@ -7,6 +7,7 @@ import { useStudents } from '@/hooks/queries/useStudents';
 import { useTrainings } from '@/hooks/queries/useTrainings';
 import { Tag, Users, Calendar, Award } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
+import { EmptyState } from '@/components/ui/empty-state';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
@@ -118,9 +119,11 @@ export default function ModalitiesPage() {
                   ))}
                   
                   {modalities.length === 0 && (
-                    <div className="col-span-full py-12 text-center border-2 border-dashed rounded-xl bg-muted/30">
-                      <p className="text-sm text-muted-foreground">Cadastre sua primeira {labels.modalityLabelSingular.toLowerCase()} para ver as estatísticas.</p>
-                    </div>
+                    <EmptyState
+                      title={`Cadastre sua primeira ${labels.modalityLabelSingular.toLowerCase()} para ver as estatísticas.`}
+                      variant="outlined"
+                      className="col-span-full py-12"
+                    />
                   )}
                 </div>
               </CardContent>

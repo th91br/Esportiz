@@ -15,7 +15,7 @@ import { EmptyState } from '@/components/ui/empty-state';
 import { Checkbox } from '@/components/ui/checkbox';
 import { ArenaPartialPaymentDialog } from '@/components/arena/ArenaPartialPaymentDialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Check, X, DollarSign, AlertTriangle, Clock, TrendingUp, Eye, EyeOff, Percent, Trash2, Download, Search, CalendarDays, RotateCcw } from 'lucide-react';
+import { Check, X, DollarSign, AlertTriangle, Clock, TrendingUp, Eye, EyeOff, Percent, Trash2, Download, Search, CalendarDays, RotateCcw, Users } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { exportToCSV } from '@/lib/exportUtils';
 import { Input } from '@/components/ui/input';
@@ -125,8 +125,6 @@ export default function PaymentsPage() {
       });
   }, [monthCancelledPayments, students, searchTerm]);
 
-  const hasMonthlyPaymentRecords = monthPayments.length > 0 || monthCancelledPayments.length > 0;
-  const hasFilteredPaymentRecords = filteredPayments.length > 0 || filteredCancelledPayments.length > 0;
 
   const handleSelectAll = () => {
     if (selectedPayments.length === filteredPayments.length) {
@@ -142,13 +140,24 @@ export default function PaymentsPage() {
     );
   };
 
-  // --- Single Reservations (Locações) filtering ---
-  const monthReservations = useMemo(() => {
+  // --- Reservations filtering split by type ---
+  const monthAllReservations = useMemo(() => {
     return reservations.filter(r => r.date.startsWith(monthRef) && r.status !== 'cancelled');
   }, [reservations, monthRef]);
 
+  // Locações Avulsas: only non-monthly reservations
+  const monthAvulsaReservations = useMemo(() => {
+    return monthAllReservations.filter(r => r.reservationType === 'avulsa');
+  }, [monthAllReservations]);
+
+  // Mensalistas da Arena: monthly court reservations
+  const monthMensalistaReservations = useMemo(() => {
+    return monthAllReservations.filter(r => r.reservationType === 'mensalista');
+  }, [monthAllReservations]);
+
+
   const filteredReservations = useMemo(() => {
-    return monthReservations
+    return monthAvulsaReservations
       .filter(r => {
         const student = students.find(s => s.id === r.reservanteIds[0]);
         const reservanteName = student?.name || r.notes || 'Reserva Avulsa';
@@ -158,7 +167,20 @@ export default function PaymentsPage() {
         if (a.date !== b.date) return a.date.localeCompare(b.date);
         return a.time.localeCompare(b.time);
       });
-  }, [monthReservations, students, searchTerm]);
+  }, [monthAvulsaReservations, students, searchTerm]);
+
+  const filteredMensalistaReservations = useMemo(() => {
+    return monthMensalistaReservations
+      .filter(r => {
+        const student = students.find(s => s.id === r.reservanteIds[0]);
+        const reservanteName = student?.name || r.notes || 'Mensalista';
+        return reservanteName.toLowerCase().includes(searchTerm.toLowerCase());
+      })
+      .sort((a, b) => {
+        if (a.date !== b.date) return a.date.localeCompare(b.date);
+        return a.time.localeCompare(b.time);
+      });
+  }, [monthMensalistaReservations, students, searchTerm]);
 
   const getStatus = useCallback((p: typeof monthPayments[0]): 'paid' | 'pending' | 'overdue' => {
     return getPaymentFinancialStatus(p, todayStr);
@@ -168,15 +190,30 @@ export default function PaymentsPage() {
   const showReservationsTab = isArena && activeSubTab === 'reservas';
 
   const paymentSummary = useMemo(() => summarizePayments(monthPayments, todayStr), [monthPayments, todayStr]);
-  const reservationSummary = useMemo(
-    () => summarizeReservationReceivables(monthReservations, todayStr),
-    [monthReservations, todayStr],
+  const avulsaReservationSummary = useMemo(
+    () => summarizeReservationReceivables(monthAvulsaReservations, todayStr),
+    [monthAvulsaReservations, todayStr],
   );
-  const activeSummary = showReservationsTab ? reservationSummary : paymentSummary;
+  const mensalistaReservationSummary = useMemo(
+    () => summarizeReservationReceivables(monthMensalistaReservations, todayStr),
+    [monthMensalistaReservations, todayStr],
+  );
+  // For the pacotes tab, combine monthly plan payments + mensalista reservations
+  const combinedPacotesSummary = useMemo(() => ({
+    totalAmount: paymentSummary.totalAmount + mensalistaReservationSummary.totalAmount,
+    totalPaid: paymentSummary.totalPaid + mensalistaReservationSummary.totalPaid,
+    totalPending: paymentSummary.totalPending + mensalistaReservationSummary.totalPending,
+    overdueCount: paymentSummary.overdueCount + mensalistaReservationSummary.overdueCount,
+  }), [paymentSummary, mensalistaReservationSummary]);
+  const activeSummary = showReservationsTab ? avulsaReservationSummary : combinedPacotesSummary;
   const totalAmount = activeSummary.totalAmount;
   const totalPaid = activeSummary.totalPaid;
   const totalPending = activeSummary.totalPending;
   const overdueCount = activeSummary.overdueCount;
+
+  // Computed after mensalista reservations are available
+  const hasMonthlyPaymentRecords = monthPayments.length > 0 || monthCancelledPayments.length > 0 || monthMensalistaReservations.length > 0;
+  const hasFilteredPaymentRecords = filteredPayments.length > 0 || filteredCancelledPayments.length > 0 || filteredMensalistaReservations.length > 0;
 
   const handleToggleReservationPayment = async (reservation: typeof reservations[0]) => {
     try {
@@ -309,13 +346,13 @@ export default function PaymentsPage() {
                   : 'text-muted-foreground hover:bg-muted/40 hover:text-foreground'
               )}
             >
-              <Percent className="h-3.5 w-3.5" />
-              Pacotes Mensais (Mensalistas)
+              <Users className="h-3.5 w-3.5" />
+              Mensalistas
               <span className={cn(
                 'text-[10px] px-1.5 py-0.5 rounded-full font-bold ml-1',
                 activeSubTab === 'pacotes' ? 'bg-white/25 text-white' : 'bg-muted text-muted-foreground'
               )}>
-                {monthPayments.length}
+                {monthPayments.length + monthMensalistaReservations.length}
               </span>
             </button>
             <button
@@ -331,12 +368,12 @@ export default function PaymentsPage() {
               )}
             >
               <CalendarDays className="h-3.5 w-3.5" />
-              Locações Avulsas (Agenda)
+              Locações Avulsas
               <span className={cn(
                 'text-[10px] px-1.5 py-0.5 rounded-full font-bold ml-1',
                 activeSubTab === 'reservas' ? 'bg-white/25 text-white' : 'bg-muted text-muted-foreground'
               )}>
-                {monthReservations.length}
+                {monthAvulsaReservations.length}
               </span>
             </button>
           </div>
@@ -345,7 +382,7 @@ export default function PaymentsPage() {
         {/* Dynamic Payment / Reservation list */}
         {showReservationsTab ? (
           // --- VIEW 1: LOCAÇÕES AVULSAS (AGENDA) ---
-          monthReservations.length === 0 ? (
+          monthAvulsaReservations.length === 0 ? (
             <EmptyState
               icon={CalendarDays}
               title={`Nenhuma locação avulsa para ${monthOptions[selectedMonth - 1]}/${selectedYear}`}
@@ -368,9 +405,9 @@ export default function PaymentsPage() {
             <div className="space-y-3">
               {filteredReservations.map(reservation => {
                 const firstStudent = students.find(s => s.id === reservation.reservanteIds[0]);
-                const reservanteName = firstStudent?.name || reservation.notes || 'Reserva Avulsa / Sem Nome';
+                const reservanteName = firstStudent?.name || reservation.notes || 'Sem nome';
                 const court = courts.find(c => c.id === reservation.courtId);
-                const courtName = court?.name || 'Quadra Desconhecida';
+                const courtName = court?.name || 'Quadra';
                 const status = reservation.paymentStatus;
                 const isOverdue = status === 'pending' && reservation.date < todayStr;
                 const canChangeReservationPayment = status === 'paid' ? canReopenPayments : canReceivePayments;
@@ -384,10 +421,10 @@ export default function PaymentsPage() {
                           variant={status === 'paid' ? 'success' : isOverdue ? 'destructive' : 'warning'}
                           className="text-xs font-bold"
                         >
-                          {status === 'paid' ? '✓ Pago' : isOverdue ? '⚠ Atrasado (Data Passada)' : '⏳ Pendente'}
+                          {status === 'paid' ? '✓ Pago' : isOverdue ? '⚠ Atrasado' : '⏳ Pendente'}
                         </Badge>
                         <Badge variant="outline" className="text-xs bg-muted/30">
-                          Reserva Avulsa
+                          Avulsa
                         </Badge>
                       </div>
                       <div className="text-sm text-muted-foreground mt-1.5 flex flex-wrap gap-x-4 gap-y-1 items-center">
@@ -406,7 +443,7 @@ export default function PaymentsPage() {
                         )}
                         {status === 'pending' && reservation.totalPaid > 0 && (
                           <span className="text-emerald-600 dark:text-emerald-400 font-medium text-xs">
-                            Já Pago: {formatCurrency(reservation.totalPaid)} | Falta: {formatCurrency(reservation.remainingBalance)}
+                            Recebido: {formatCurrency(reservation.totalPaid)} · Restante: {formatCurrency(reservation.remainingBalance)}
                           </span>
                         )}
                       </div>
@@ -430,7 +467,7 @@ export default function PaymentsPage() {
                       >
                         {status === 'paid' ? (
                           <>
-                            <X className="h-3.5 w-3.5 mr-1" /> Estornar / Pendente
+                            <X className="h-3.5 w-3.5 mr-1" /> Estornar
                           </>
                         ) : (
                           <>
@@ -633,6 +670,99 @@ export default function PaymentsPage() {
                   </div>
                 );
               })}
+
+              {/* Reservas mensais de quadra */}
+              {isArena && filteredMensalistaReservations.length > 0 && (
+                <>
+                  {filteredPayments.length > 0 && (
+                    <div className="flex items-center gap-3 mt-4 mb-1">
+                      <div className="h-px flex-1 bg-border/60" />
+                      <span className="text-xs font-semibold text-muted-foreground shrink-0">
+                        Reservas de Quadra
+                      </span>
+                      <div className="h-px flex-1 bg-border/60" />
+                    </div>
+                  )}
+
+                  {filteredMensalistaReservations.map(reservation => {
+                    const firstStudent = students.find(s => s.id === reservation.reservanteIds[0]);
+                    const reservanteName = firstStudent?.name || reservation.notes || 'Sem nome';
+                    const court = courts.find(c => c.id === reservation.courtId);
+                    const courtName = court?.name || 'Quadra';
+                    const status = reservation.paymentStatus;
+                    const isOverdue = status === 'pending' && reservation.date < todayStr;
+                    const canChangeReservationPayment = status === 'paid' ? canReopenPayments : canReceivePayments;
+
+                    return (
+                      <div key={reservation.id} className="card-elevated p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 hover:border-primary/20 transition-all">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="font-semibold text-foreground truncate">{reservanteName}</span>
+                            <Badge
+                              variant={status === 'paid' ? 'success' : isOverdue ? 'destructive' : 'warning'}
+                              className="text-xs font-bold"
+                            >
+                              {status === 'paid' ? '✓ Pago' : isOverdue ? '⚠ Atrasado' : '⏳ Pendente'}
+                            </Badge>
+                            <Badge variant="outline" className="text-xs bg-muted/30">
+                              Mensalista
+                            </Badge>
+                          </div>
+                          <div className="text-sm text-muted-foreground mt-1.5 flex flex-wrap gap-x-4 gap-y-1 items-center">
+                            <span className="flex items-center gap-1">
+                              <span className="h-2.5 w-2.5 rounded-full inline-block" style={{ backgroundColor: court?.color || '#f97316' }} />
+                              {courtName}
+                            </span>
+                            <span>{formatCurrency(reservation.finalPrice)}</span>
+                            <span>
+                              {new Date(reservation.date + 'T12:00:00').toLocaleDateString('pt-BR')} às {reservation.time} ({reservation.durationMinutes} min)
+                            </span>
+                            {reservation.paymentMethod && status === 'paid' && (
+                              <span className="text-emerald-600 dark:text-emerald-400 font-medium">
+                                Pago via {PAYMENT_METHOD_LABELS[reservation.paymentMethod]}
+                              </span>
+                            )}
+                            {status === 'pending' && reservation.totalPaid > 0 && (
+                              <span className="text-emerald-600 dark:text-emerald-400 font-medium text-xs">
+                                Recebido: {formatCurrency(reservation.totalPaid)} · Restante: {formatCurrency(reservation.remainingBalance)}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                        {canChangeReservationPayment && (
+                        <div className="flex items-center gap-2 self-stretch sm:self-auto justify-end mt-2 sm:mt-0">
+                          <Button
+                            size="sm"
+                            variant={status === 'paid' ? 'outline' : 'default'}
+                            className={cn(
+                              'text-xs font-bold w-full sm:w-auto',
+                              status === 'paid' ? 'text-muted-foreground hover:bg-destructive/5 hover:text-destructive' : 'btn-primary-gradient'
+                            )}
+                            onClick={() => {
+                              if (status === 'paid') {
+                                handleToggleReservationPayment(reservation);
+                              } else {
+                                setArenaPaymentDialogRes(reservation);
+                              }
+                            }}
+                          >
+                            {status === 'paid' ? (
+                              <>
+                                <X className="h-3.5 w-3.5 mr-1" /> Estornar
+                              </>
+                            ) : (
+                              <>
+                                <Check className="h-3.5 w-3.5 mr-1" /> Confirmar Pagamento
+                              </>
+                            )}
+                          </Button>
+                        </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </>
+              )}
 
               {canDeletePayments && filteredCancelledPayments.length > 0 && (
                 <div className="mt-5 rounded-2xl border border-amber-200 bg-amber-50/80 p-4 dark:border-amber-900/60 dark:bg-amber-950/20">

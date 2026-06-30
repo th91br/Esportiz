@@ -212,6 +212,13 @@ describe('premium UI polish contracts', () => {
     expect(courtsPage).not.toContain('<main className="container py-6');
   });
 
+  it('keeps the courts catalog empty result on the shared empty state', () => {
+    expect(courtsPage).toContain("import { EmptyState } from '@/components/ui/empty-state';");
+    expect((courtsPage.match(/<EmptyState/g) ?? []).length).toBe(1);
+    expect(courtsPage).toContain('action={canCreateCourts ? (');
+    expect(courtsPage).not.toContain('<div className="card-elevated p-16 text-center space-y-4">');
+  });
+
   it('keeps the arena agenda page on the shared app shell and page header pattern', () => {
     expect(arenaAgendaPage).toContain("import { AppPage } from '@/components/layout/AppPage';");
     expect(arenaAgendaPage).toContain("import { PageHeader } from '@/components/layout/PageHeader';");

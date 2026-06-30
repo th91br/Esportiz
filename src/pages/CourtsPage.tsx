@@ -5,6 +5,7 @@ import { getLocalTodayDate, toLocalDateString } from '@/lib/dateUtils';
 import { calculateArenaOccupancy } from '@/lib/arenaOccupancy';
 import { StatCard } from '@/components/StatCard';
 import { Button } from '@/components/ui/button';
+import { EmptyState } from '@/components/ui/empty-state';
 import { useCourts, type Court, SPORT_LABELS, type CourtMetadata, type CourtCoverage, type CourtSportType } from '@/hooks/queries/useCourts';
 import { useReservations, type Reservation } from '@/hooks/queries/useReservations';
 import { ReservationModal } from '@/components/ReservationModal';
@@ -384,20 +385,17 @@ export default function CourtsPage() {
 
         {/* Courts Grid */}
         {courts.length === 0 && !loadingCourts ? (
-          <div className="card-elevated p-16 text-center space-y-4">
-            <div className="h-20 w-20 mx-auto rounded-2xl bg-primary/10 flex items-center justify-center">
-              <Layers className="h-10 w-10 text-primary/60" />
-            </div>
-            <div>
-              <h3 className="font-display font-bold text-xl">Nenhuma quadra cadastrada</h3>
-              <p className="text-muted-foreground mt-1">Cadastre sua primeira quadra para começar a gerenciar reservas.</p>
-            </div>
-            {canCreateCourts && (
+          <EmptyState
+            icon={Layers}
+            title="Nenhuma quadra cadastrada"
+            description="Cadastre sua primeira quadra para começar a gerenciar reservas."
+            action={canCreateCourts ? (
               <Button className="btn-primary-gradient gap-2" onClick={() => openForm()}>
                 <Plus className="h-4 w-4" /> Cadastrar Primeira Quadra
               </Button>
-            )}
-          </div>
+            ) : undefined}
+            className="card-elevated p-16"
+          />
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 md:gap-5">
             {courts.map(court => {

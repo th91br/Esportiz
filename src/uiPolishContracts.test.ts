@@ -300,6 +300,12 @@ describe('premium UI polish contracts', () => {
     expect(studentsPage).not.toContain('<main className="container py-6');
   });
 
+  it('keeps the students/reservants empty result on the shared empty state', () => {
+    expect(studentsPage).toContain("import { EmptyState } from '@/components/ui/empty-state';");
+    expect((studentsPage.match(/<EmptyState/g) ?? []).length).toBe(1);
+    expect(studentsPage).not.toContain('<div className="card-elevated p-12 text-center">');
+  });
+
   it('keeps the student profile page on the shared app shell while preserving print-only contract output', () => {
     expect(studentProfilePage).toContain("import { AppPage } from '@/components/layout/AppPage';");
     expect(studentProfilePage).toContain("import { IconCardTitle } from '@/components/layout/IconCardTitle';");

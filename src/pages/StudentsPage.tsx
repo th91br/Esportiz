@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Search, Users, UserCheck, UserMinus, UserX, Download } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { EmptyState } from '@/components/ui/empty-state';
 import { AppPage } from '@/components/layout/AppPage';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { StatCard } from '@/components/StatCard';
@@ -190,15 +191,14 @@ export default function StudentsPage() {
             ))}
           </div>
         ) : (
-          <div className="card-elevated p-12 text-center">
-            <Users className="h-12 w-12 mx-auto text-muted-foreground/50 mb-3" />
-            <p className="text-lg font-medium text-muted-foreground">Nenhum {labels.studentLabelSingular.toLowerCase()} encontrado</p>
-            <p className="text-sm text-muted-foreground/70 mt-1">
-              {canCreateStudents
-                ? `Tente ajustar os filtros ou adicione um(a) novo(a) ${labels.studentLabelSingular.toLowerCase()}`
-                : 'Tente ajustar os filtros para encontrar outro registro.'}
-            </p>
-          </div>
+          <EmptyState
+            icon={Users}
+            title={`Nenhum ${labels.studentLabelSingular.toLowerCase()} encontrado`}
+            description={canCreateStudents
+              ? `Tente ajustar os filtros ou adicione um(a) novo(a) ${labels.studentLabelSingular.toLowerCase()}`
+              : 'Tente ajustar os filtros para encontrar outro registro.'}
+            className="card-elevated p-12"
+          />
         )}
     </AppPage>
   );

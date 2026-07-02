@@ -1,6 +1,7 @@
 import { MapPin, Users, Clock, Sun, Sunset, Moon, ArrowRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
+import { EmptyState } from '@/components/ui/empty-state';
 import { useTrainings } from '@/hooks/queries/useTrainings';
 import { useStudents } from '@/hooks/queries/useStudents';
 import { getDayName, formatDate, getEndTime, getTimePeriod } from '@/data/mockData';
@@ -109,13 +110,21 @@ export function TodaySchedule() {
             );
           })
         ) : (
-          <div className="flex flex-col items-center justify-center h-full min-h-[200px] text-center p-6 border-2 border-dashed border-border/50 rounded-2xl bg-muted/10">
-            <div className="bg-primary/10 p-4 rounded-full mb-4">
-              <Sun className="h-8 w-8 text-primary opacity-80" />
-            </div>
-            <p className="text-foreground font-semibold text-lg">Nenhum(a) {labels.trainingLabelSingular.toLowerCase()} hoje</p>
-            <p className="text-sm text-muted-foreground mt-1 max-w-[200px]">Aproveite o dia livre ou crie um(a) novo(a) {labels.trainingLabelSingular.toLowerCase()} no calendário.</p>
-          </div>
+          <EmptyState
+            icon={Sun}
+            title={(
+              <span className="text-lg font-semibold text-foreground">
+                Nenhum(a) {labels.trainingLabelSingular.toLowerCase()} hoje
+              </span>
+            )}
+            description={(
+              <span className="inline-block max-w-[200px]">
+                Aproveite o dia livre ou crie um(a) novo(a) {labels.trainingLabelSingular.toLowerCase()} no calendário.
+              </span>
+            )}
+            variant="outlined"
+            className="flex h-full min-h-[200px] flex-col items-center justify-center p-6"
+          />
         )}
       </div>
       

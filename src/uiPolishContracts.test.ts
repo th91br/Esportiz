@@ -30,6 +30,8 @@ describe('premium UI polish contracts', () => {
   const onlineBookingPage = readFileSync(resolve(process.cwd(), 'src/pages/OnlineBookingPage.tsx'), 'utf-8');
   const modalityManager = readFileSync(resolve(process.cwd(), 'src/components/ModalityManager.tsx'), 'utf-8');
   const quickActions = readFileSync(resolve(process.cwd(), 'src/components/QuickActions.tsx'), 'utf-8');
+  const todaySchedule = readFileSync(resolve(process.cwd(), 'src/components/TodaySchedule.tsx'), 'utf-8');
+  const arenaTodaySchedule = readFileSync(resolve(process.cwd(), 'src/components/ArenaTodaySchedule.tsx'), 'utf-8');
 
   it('does not use thick colored side stripes on polished operational cards', () => {
     expect(notificationBell).not.toContain('border-l-4');
@@ -110,6 +112,17 @@ describe('premium UI polish contracts', () => {
     expect(modalityManager).toContain('onClick={() => setIsAdding(true)}');
     expect(modalityManager).not.toContain('<div className="py-8 text-center border-2 border-dashed border-muted rounded-xl">');
     expect(modalityManager).not.toContain('<div className="py-4 text-center text-sm text-muted-foreground">Carregando modalidades...</div>');
+  });
+
+  it('keeps both today schedule empty results on the shared empty state', () => {
+    expect(todaySchedule).toContain("import { EmptyState } from '@/components/ui/empty-state';");
+    expect(arenaTodaySchedule).toContain("import { EmptyState } from '@/components/ui/empty-state';");
+    expect((todaySchedule.match(/<EmptyState/g) ?? []).length).toBe(1);
+    expect((arenaTodaySchedule.match(/<EmptyState/g) ?? []).length).toBe(1);
+    expect(todaySchedule).toContain('todayTrainings.length > 0 ? (');
+    expect(arenaTodaySchedule).toContain('todayReservations.length > 0 ? (');
+    expect(todaySchedule).not.toContain('min-h-[200px] text-center p-6 border-2 border-dashed');
+    expect(arenaTodaySchedule).not.toContain('min-h-[200px] text-center p-6 border-2 border-dashed');
   });
 
   it('keeps quick actions card title free of unused icon layout classes', () => {

@@ -1,6 +1,7 @@
 import { MapPin, User, Clock, ArrowRight, Calendar } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
+import { EmptyState } from '@/components/ui/empty-state';
 import { useReservations } from '@/hooks/queries/useReservations';
 import { useCourts, SPORT_LABELS } from '@/hooks/queries/useCourts';
 import { useStudents } from '@/hooks/queries/useStudents';
@@ -100,13 +101,17 @@ export function ArenaTodaySchedule() {
             );
           })
         ) : (
-          <div className="flex flex-col items-center justify-center h-full min-h-[200px] text-center p-6 border-2 border-dashed border-border/50 rounded-2xl bg-muted/10">
-            <div className="bg-primary/10 p-4 rounded-full mb-4">
-              <Calendar className="h-8 w-8 text-primary opacity-80" />
-            </div>
-            <p className="text-foreground font-semibold text-lg">Nenhuma reserva hoje</p>
-            <p className="text-sm text-muted-foreground mt-1 max-w-[200px]">Os horários das quadras estão totalmente livres.</p>
-          </div>
+          <EmptyState
+            icon={Calendar}
+            title={<span className="text-lg font-semibold text-foreground">Nenhuma reserva hoje</span>}
+            description={(
+              <span className="inline-block max-w-[200px]">
+                Os horários das quadras estão totalmente livres.
+              </span>
+            )}
+            variant="outlined"
+            className="flex h-full min-h-[200px] flex-col items-center justify-center p-6"
+          />
         )}
       </div>
       

@@ -1,7 +1,9 @@
 import { useState } from 'react';
 import { Plus, Pencil, Trash2, Tag, Check, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { EmptyState } from '@/components/ui/empty-state';
 import { Input } from '@/components/ui/input';
+import { LoadingState } from '@/components/ui/loading-state';
 import { IconCardTitle } from '@/components/layout/IconCardTitle';
 import { Card, CardContent, CardDescription, CardHeader } from '@/components/ui/card';
 import { useModalities, Modality } from '@/hooks/queries/useModalities';
@@ -129,13 +131,19 @@ export function ModalityManager() {
 
         <div className="grid gap-2">
           {loadingModalities ? (
-            <div className="py-4 text-center text-sm text-muted-foreground">Carregando modalidades...</div>
+            <LoadingState label="Carregando modalidades" className="py-4" />
           ) : modalities.length === 0 && !isAdding ? (
-            <div className="py-8 text-center border-2 border-dashed border-muted rounded-xl">
-              <Tag className="h-8 w-8 mx-auto text-muted-foreground/30 mb-2" />
-              <p className="text-sm text-muted-foreground">Nenhum(a) {labels.modalityLabelSingular.toLowerCase()} cadastrado(a).</p>
-              <Button variant="link" size="sm" onClick={() => setIsAdding(true)}>Criar o(a) primeiro(a)</Button>
-            </div>
+            <EmptyState
+              icon={Tag}
+              title={`Nenhum(a) ${labels.modalityLabelSingular.toLowerCase()} cadastrado(a).`}
+              action={(
+                <Button variant="link" size="sm" onClick={() => setIsAdding(true)}>
+                  Criar o(a) primeiro(a)
+                </Button>
+              )}
+              variant="outlined"
+              className="py-8"
+            />
           ) : (
             modalities.map((modality) => (
               <div key={modality.id} className="group flex items-center justify-between p-2.5 rounded-xl border border-border/50 hover:bg-muted/30 transition-colors">

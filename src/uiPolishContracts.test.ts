@@ -102,6 +102,16 @@ describe('premium UI polish contracts', () => {
     expect(modalityManager).not.toContain('CardTitle className="flex items-center gap-2 text-lg font-display"');
   });
 
+  it('keeps modality manager loading and empty results on shared state components', () => {
+    expect(modalityManager).toContain("import { EmptyState } from '@/components/ui/empty-state';");
+    expect(modalityManager).toContain("import { LoadingState } from '@/components/ui/loading-state';");
+    expect((modalityManager.match(/<EmptyState/g) ?? []).length).toBe(1);
+    expect((modalityManager.match(/<LoadingState/g) ?? []).length).toBe(1);
+    expect(modalityManager).toContain('onClick={() => setIsAdding(true)}');
+    expect(modalityManager).not.toContain('<div className="py-8 text-center border-2 border-dashed border-muted rounded-xl">');
+    expect(modalityManager).not.toContain('<div className="py-4 text-center text-sm text-muted-foreground">Carregando modalidades...</div>');
+  });
+
   it('keeps quick actions card title free of unused icon layout classes', () => {
     expect(quickActions).toContain('CardTitle className="text-lg font-display"');
     expect(quickActions).not.toContain('CardTitle className="text-lg font-display flex items-center gap-2"');

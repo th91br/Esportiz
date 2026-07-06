@@ -276,6 +276,15 @@ describe('premium UI polish contracts', () => {
     expect(communicationPage).not.toContain('<main className="container py-6');
   });
 
+  it('keeps communication audience loading and empty results on shared state components', () => {
+    expect(communicationPage).toContain("import { EmptyState } from '@/components/ui/empty-state';");
+    expect(communicationPage).toContain("import { LoadingState } from '@/components/ui/loading-state';");
+    expect((communicationPage.match(/<EmptyState/g) ?? []).length).toBe(1);
+    expect((communicationPage.match(/<LoadingState/g) ?? []).length).toBe(1);
+    expect(communicationPage).not.toContain('animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full');
+    expect(communicationPage).not.toContain('flex-1 flex flex-col items-center justify-center text-center p-8 bg-muted/20');
+  });
+
   it('keeps the calendar page on the shared app shell and page header pattern', () => {
     expect(calendarPage).toContain("import { AppPage } from '@/components/layout/AppPage';");
     expect(calendarPage).toContain("import { PageHeader } from '@/components/layout/PageHeader';");

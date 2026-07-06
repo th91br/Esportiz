@@ -3,6 +3,8 @@ import { AppPage } from '@/components/layout/AppPage';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { IconDialogTitle } from '@/components/layout/IconDialogTitle';
 import { Button } from '@/components/ui/button';
+import { EmptyState } from '@/components/ui/empty-state';
+import { LoadingState } from '@/components/ui/loading-state';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -434,17 +436,15 @@ export default function CommunicationPage() {
             </div>
 
             {loading ? (
-              <div className="flex-1 flex items-center justify-center">
-                <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full" />
-              </div>
+              <LoadingState label="Carregando lista de disparo" className="flex-1 items-center" />
             ) : targetStudents.length === 0 ? (
-              <div className="flex-1 flex flex-col items-center justify-center text-center p-8 bg-muted/20 rounded-xl border border-dashed border-border/50">
-                <MessageCircle className="h-12 w-12 text-muted-foreground/30 mb-4" />
-                <h3 className="text-lg font-semibold text-foreground">Nenhum(a) {labels.studentLabelSingular.toLowerCase()} encontrado(a)</h3>
-                <p className="text-sm text-muted-foreground max-w-sm mt-2">
-                  Não existem {labels.studentLabel.toLowerCase()} correspondentes a este filtro no momento. Tente selecionar outro público-alvo.
-                </p>
-              </div>
+              <EmptyState
+                icon={MessageCircle}
+                title={`Nenhum(a) ${labels.studentLabelSingular.toLowerCase()} encontrado(a)`}
+                description={`Não existem ${labels.studentLabel.toLowerCase()} correspondentes a este filtro no momento. Tente selecionar outro público-alvo.`}
+                variant="outlined"
+                className="flex flex-1 flex-col items-center justify-center p-8"
+              />
             ) : (
               <div className="flex-1 overflow-y-auto pr-2 space-y-3 custom-scrollbar">
                 {targetStudents.map(student => {

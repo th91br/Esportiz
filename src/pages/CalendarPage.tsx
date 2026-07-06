@@ -4,6 +4,7 @@ import { ChevronLeft, ChevronRight, Plus, Sun, Sunset, Moon, MapPin, Users, Cloc
 import { AppPage } from '@/components/layout/AppPage';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Button } from '@/components/ui/button';
+import { EmptyState } from '@/components/ui/empty-state';
 import { cn } from '@/lib/utils';
 import {
   getDayName, formatDate, getWeekDatesArray, getEndTime, getTimePeriod, timeSlots, getMonthName, getWeekNumber, getWeekOffsetForDate,
@@ -710,14 +711,17 @@ export default function CalendarPage() {
                 })}
               </div>
             ) : (
-              <div className="text-center py-8">
-                <p className="text-muted-foreground">Nenhum(a) {labels.trainingLabelSingular.toLowerCase()} agendado(a) para este dia</p>
-                {canCreateTraining && (
-                  <Button className="mt-4" variant="outline" onClick={() => setNewTrainingOpen(true)}>
-                    <Plus className="h-4 w-4 mr-2" />Agendar {labels.trainingLabelSingular.toLowerCase()}
+              <EmptyState
+                icon={CalendarDays}
+                title={`Nenhum(a) ${labels.trainingLabelSingular.toLowerCase()} agendado(a) para este dia`}
+                action={canCreateTraining ? (
+                  <Button variant="outline" onClick={() => setNewTrainingOpen(true)}>
+                    <Plus className="mr-2 h-4 w-4" />
+                    Agendar {labels.trainingLabelSingular.toLowerCase()}
                   </Button>
-                )}
-              </div>
+                ) : undefined}
+                className="py-8"
+              />
             )}
           </div>
         </>

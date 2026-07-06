@@ -285,6 +285,14 @@ describe('premium UI polish contracts', () => {
     expect(calendarPage).not.toContain('<main className="container py-6');
   });
 
+  it('keeps the selected calendar day empty result on the shared empty state', () => {
+    expect(calendarPage).toContain("import { EmptyState } from '@/components/ui/empty-state';");
+    expect((calendarPage.match(/<EmptyState/g) ?? []).length).toBe(1);
+    expect(calendarPage).toContain('action={canCreateTraining ? (');
+    expect(calendarPage).toContain('onClick={() => setNewTrainingOpen(true)}');
+    expect(calendarPage).not.toContain('<div className="text-center py-8">');
+  });
+
   it('keeps the reports page on the shared app shell and page header pattern', () => {
     expect(reportsPage).toContain("import { AppPage } from '@/components/layout/AppPage';");
     expect(reportsPage).toContain("import { IconPanelTitle } from '@/components/layout/IconPanelTitle';");

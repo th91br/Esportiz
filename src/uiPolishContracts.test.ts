@@ -265,6 +265,13 @@ describe('premium UI polish contracts', () => {
     expect(arenaAgendaPage).not.toContain('<main className="container py-6');
   });
 
+  it('keeps the arena agenda empty courts result on the shared empty state', () => {
+    expect(arenaAgendaPage).toContain("import { EmptyState } from '@/components/ui/empty-state';");
+    expect((arenaAgendaPage.match(/<EmptyState/g) ?? []).length).toBe(1);
+    expect(arenaAgendaPage).toContain('displayedCourts.length === 0 ? (');
+    expect(arenaAgendaPage).toContain('Nenhuma quadra ativa');
+    expect(arenaAgendaPage).not.toContain('<div className="card-elevated p-16 text-center">');
+  });
   it('keeps the comandas page on the shared app shell and page header pattern', () => {
     expect(comandasPage).toContain("import { AppPage } from '@/components/layout/AppPage';");
     expect(comandasPage).toContain("import { PageHeader } from '@/components/layout/PageHeader';");

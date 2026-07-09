@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react';
 import { AppPage } from '@/components/layout/AppPage';
 import { PageHeader } from '@/components/layout/PageHeader';
+import { EmptyState } from '@/components/ui/empty-state';
 import { IconDialogTitle } from '@/components/layout/IconDialogTitle';
 import { Button } from '@/components/ui/button';
 import { ReservationModal } from '@/components/ReservationModal';
@@ -631,11 +632,16 @@ export default function ArenaAgendaPage() {
 
         {/* Grid */}
         {displayedCourts.length === 0 ? (
-          <div className="card-elevated p-16 text-center">
-            <Calendar className="h-12 w-12 mx-auto text-muted-foreground/30 mb-4" />
-            <h3 className="font-bold text-xl">Nenhuma quadra ativa</h3>
-            <p className="text-muted-foreground mt-1">Cadastre quadras em <strong>Quadras</strong> para visualizar a agenda.</p>
-          </div>
+          <EmptyState
+            icon={Calendar}
+            title={<span className="font-bold text-xl text-foreground">Nenhuma quadra ativa</span>}
+            description={(
+              <span>
+                Cadastre quadras em <strong>Quadras</strong> para visualizar a agenda.
+              </span>
+            )}
+            className="card-elevated p-16"
+          />
         ) : (
           <div className="rounded-2xl border border-border/50 overflow-auto shadow-sm bg-background">
             {/* Header row */}

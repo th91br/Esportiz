@@ -2,6 +2,7 @@ import { useState, useMemo } from 'react';
 import { AppPage } from '@/components/layout/AppPage';
 import { IconCardTitle } from '@/components/layout/IconCardTitle';
 import { PageHeader } from '@/components/layout/PageHeader';
+import { EmptyState } from '@/components/ui/empty-state';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -123,13 +124,16 @@ export default function ContractsPage() {
           {/* Visualização do Contrato */}
           <div className="lg:col-span-2">
             {!student ? (
-              <div className="card-elevated p-12 text-center flex flex-col items-center justify-center min-h-[400px]">
-                <FileText className="h-16 w-16 text-muted-foreground/30 mb-4" />
-                <h3 className="text-xl font-bold font-display text-foreground">Nenhum contrato selecionado</h3>
-                <p className="text-sm text-muted-foreground max-w-md mt-2">
-                  Selecione um(a) {labels.studentLabelSingular.toLowerCase()} no painel ao lado para gerar o contrato digital com todas as cláusulas e valores preenchidos.
-                </p>
-              </div>
+              <EmptyState
+                icon={FileText}
+                title={<span className="text-xl font-bold font-display text-foreground">Nenhum contrato selecionado</span>}
+                description={(
+                  <span className="block max-w-md">
+                    Selecione um(a) {labels.studentLabelSingular.toLowerCase()} no painel ao lado para gerar o contrato digital com todas as cláusulas e valores preenchidos.
+                  </span>
+                )}
+                className="card-elevated p-12 min-h-[400px] flex flex-col items-center justify-center"
+              />
             ) : (
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between pb-4 border-b">

@@ -226,6 +226,13 @@ describe('premium UI polish contracts', () => {
     expect(contractsPage).not.toContain('CardTitle className="text-lg flex items-center gap-2"');
   });
 
+  it('keeps the contract preview empty result on the shared empty state', () => {
+    expect(contractsPage).toContain("import { EmptyState } from '@/components/ui/empty-state';");
+    expect((contractsPage.match(/<EmptyState/g) ?? []).length).toBe(1);
+    expect(contractsPage).toContain('!student ? (');
+    expect(contractsPage).toContain('Nenhum contrato selecionado');
+    expect(contractsPage).not.toContain('<div className="card-elevated p-12 text-center flex flex-col items-center justify-center min-h-[400px]">');
+  });
   it('keeps the dashboard page on the shared app shell pattern', () => {
     expect(indexPage).toContain("import { AppPage } from '@/components/layout/AppPage';");
     expect(indexPage).toContain('<AppPage');

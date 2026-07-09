@@ -1,6 +1,8 @@
 import { useState, useMemo, useEffect, type KeyboardEvent } from 'react';
 import { AppPage } from '@/components/layout/AppPage';
 import { PageHeader } from '@/components/layout/PageHeader';
+import { EmptyState } from '@/components/ui/empty-state';
+import { LoadingState } from '@/components/ui/loading-state';
 import { IconDialogTitle } from '@/components/layout/IconDialogTitle';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -285,36 +287,29 @@ export default function ComandasPage() {
 
         {/* Main Grid List */}
         {loadingComandas ? (
-          <div className="flex flex-col items-center justify-center py-24 gap-4 animate-pulse">
-            <RefreshCw className="h-10 w-10 text-primary animate-spin" />
-            <p className="text-muted-foreground font-semibold">Buscando comandas no banco...</p>
-          </div>
+          <LoadingState label="Buscando comandas no banco" className="py-24" />
         ) : filteredComandas.length === 0 ? (
-          <Card className="border-dashed border-2 py-16 text-center shadow-none animate-fade-up">
-            <CardHeader className="flex items-center justify-center">
-              <div className="bg-primary/5 p-4 rounded-full">
-                <ShoppingBag className="h-12 w-12 text-primary" />
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-2">
-              <h3 className="font-display font-bold text-lg text-foreground">
-                Nenhuma comanda encontrada
-              </h3>
-              <p className="text-muted-foreground text-sm max-w-sm mx-auto">
-                {searchQuery 
+          <EmptyState
+            icon={ShoppingBag}
+            variant="outlined"
+            title={<span className="font-display font-bold text-lg text-foreground">Nenhuma comanda encontrada</span>}
+            description={(
+              <span className="block max-w-sm">
+                {searchQuery
                   ? 'Nenhum resultado corresponde à sua pesquisa de filtro.'
-                  : activeTab === 'open' 
+                  : activeTab === 'open'
                   ? 'Não há comandas abertas no momento. Abra uma para começar o consumo.'
                   : 'Histórico de comandas fechadas está vazio.'}
-              </p>
-              {!searchQuery && activeTab === 'open' && canCreateComandas && (
-                <Button onClick={() => setOpenModalOpen(true)} className="mt-4 btn-primary-gradient shadow-md">
-                  <Plus className="h-4 w-4 mr-1" />
-                  Abrir Primeira Comanda
-                </Button>
-              )}
-            </CardContent>
-          </Card>
+              </span>
+            )}
+            action={!searchQuery && activeTab === 'open' && canCreateComandas ? (
+              <Button onClick={() => setOpenModalOpen(true)} className="btn-primary-gradient shadow-md">
+                <Plus className="h-4 w-4 mr-1" />
+                Abrir Primeira Comanda
+              </Button>
+            ) : undefined}
+            className="py-16 animate-fade-up"
+          />
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 animate-fade-up">
             {filteredComandas.map((comanda) => (

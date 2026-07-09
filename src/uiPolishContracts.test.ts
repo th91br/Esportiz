@@ -281,6 +281,15 @@ describe('premium UI polish contracts', () => {
     expect(comandasPage).not.toContain('<main className="container py-6');
   });
 
+  it('keeps the comandas main list loading and empty results on shared state components', () => {
+    expect(comandasPage).toContain("import { EmptyState } from '@/components/ui/empty-state';");
+    expect(comandasPage).toContain("import { LoadingState } from '@/components/ui/loading-state';");
+    expect((comandasPage.match(/<EmptyState/g) ?? []).length).toBe(1);
+    expect((comandasPage.match(/<LoadingState/g) ?? []).length).toBe(1);
+    expect(comandasPage).toContain('onClick={() => setOpenModalOpen(true)}');
+    expect(comandasPage).not.toContain('<div className="flex flex-col items-center justify-center py-24 gap-4 animate-pulse">');
+    expect(comandasPage).not.toContain('<Card className="border-dashed border-2 py-16 text-center shadow-none animate-fade-up">');
+  });
   it('keeps the communication page on the shared app shell and page header pattern', () => {
     expect(communicationPage).toContain("import { AppPage } from '@/components/layout/AppPage';");
     expect(communicationPage).toContain("import { PageHeader } from '@/components/layout/PageHeader';");

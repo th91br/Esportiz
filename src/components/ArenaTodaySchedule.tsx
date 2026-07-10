@@ -2,6 +2,7 @@ import { MapPin, User, Clock, ArrowRight, Calendar } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/empty-state';
+import { LoadingState } from '@/components/ui/loading-state';
 import { useReservations } from '@/hooks/queries/useReservations';
 import { useCourts, SPORT_LABELS } from '@/hooks/queries/useCourts';
 import { useStudents } from '@/hooks/queries/useStudents';
@@ -31,7 +32,12 @@ export function ArenaTodaySchedule() {
     .sort((a, b) => a.time.localeCompare(b.time));
 
   if (loadingReservations || loadingCourts) {
-    return <div className="card-elevated p-6 animate-pulse bg-muted/20 h-[300px] rounded-2xl"></div>;
+    return (
+      <LoadingState
+        label="Carregando agenda de hoje"
+        className="card-elevated h-[300px] items-center rounded-2xl bg-muted/20 p-6"
+      />
+    );
   }
 
   return (

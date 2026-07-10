@@ -2,6 +2,7 @@ import { MapPin, Users, Clock, Sun, Sunset, Moon, ArrowRight } from 'lucide-reac
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/empty-state';
+import { LoadingState } from '@/components/ui/loading-state';
 import { useTrainings } from '@/hooks/queries/useTrainings';
 import { useStudents } from '@/hooks/queries/useStudents';
 import { getDayName, formatDate, getEndTime, getTimePeriod } from '@/data/mockData';
@@ -19,7 +20,14 @@ export function TodaySchedule() {
   const today = getLocalTodayDate();
   const todayTrainings = trainings.filter(t => t.date === today).sort((a, b) => a.time.localeCompare(b.time));
 
-  if (loadingTrainings) return <div className="card-elevated p-6 animate-pulse bg-muted/20 h-[300px] rounded-2xl"></div>;
+  if (loadingTrainings) {
+    return (
+      <LoadingState
+        label="Carregando agenda de hoje"
+        className="card-elevated h-[300px] items-center rounded-2xl bg-muted/20 p-6"
+      />
+    );
+  }
 
   return (
     <div className="card-elevated p-5 md:p-6 flex flex-col h-full bg-card border border-border/50">

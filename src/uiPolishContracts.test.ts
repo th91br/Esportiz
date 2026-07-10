@@ -125,6 +125,17 @@ describe('premium UI polish contracts', () => {
     expect(arenaTodaySchedule).not.toContain('min-h-[200px] text-center p-6 border-2 border-dashed');
   });
 
+  it('keeps both today schedule loading results on shared loading states', () => {
+    expect(todaySchedule).toContain("import { LoadingState } from '@/components/ui/loading-state';");
+    expect(arenaTodaySchedule).toContain("import { LoadingState } from '@/components/ui/loading-state';");
+    expect((todaySchedule.match(/<LoadingState/g) ?? []).length).toBe(1);
+    expect((arenaTodaySchedule.match(/<LoadingState/g) ?? []).length).toBe(1);
+    expect(todaySchedule).toContain('if (loadingTrainings)');
+    expect(arenaTodaySchedule).toContain('if (loadingReservations || loadingCourts)');
+    expect(todaySchedule).not.toContain('card-elevated p-6 animate-pulse bg-muted/20 h-[300px] rounded-2xl');
+    expect(arenaTodaySchedule).not.toContain('card-elevated p-6 animate-pulse bg-muted/20 h-[300px] rounded-2xl');
+  });
+
   it('keeps quick actions card title free of unused icon layout classes', () => {
     expect(quickActions).toContain('CardTitle className="text-lg font-display"');
     expect(quickActions).not.toContain('CardTitle className="text-lg font-display flex items-center gap-2"');

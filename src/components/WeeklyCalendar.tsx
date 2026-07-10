@@ -2,6 +2,7 @@ import { useState, useMemo } from 'react';
 import { Calendar, MapPin, Users, Sun, Sunset, Moon, Clock, ChevronLeft, ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
+import { EmptyState } from '@/components/ui/empty-state';
 import {
   getDayName,
   formatDate,
@@ -147,7 +148,7 @@ export function WeeklyCalendar() {
                   })}
                 </div>
               ) : (
-                <div className="p-4 text-center text-sm text-muted-foreground">Sem treinos agendados</div>
+                <EmptyState title="Sem treinos agendados" className="p-4 text-sm" />
               )}
             </div>
           );

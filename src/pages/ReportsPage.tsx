@@ -718,7 +718,7 @@ export default function ReportsPage() {
         )}
 
         {/* KPIs Premium */}
-        <section className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-4 xl:gap-3 animate-fade-in xl:grid-cols-7">
+        <section className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-4 xl:gap-3 animate-fade-in xl:grid-cols-4 2xl:grid-cols-7">
           <StatCard 
             title={`${labels.studentLabel} Base`} 
             value={privacyMode ? '••••' : totalActive} 

@@ -84,9 +84,13 @@ export function StatCard({
           <p
             className={cn(
               'stat-value font-extrabold tracking-tight truncate',
-              String(value).length > 8
-                ? 'text-lg min-[400px]:text-xl lg:text-xl xl:text-2xl'
-                : 'text-xl min-[400px]:text-2xl lg:text-3xl'
+              String(value).length > 13
+                ? 'text-sm min-[400px]:text-base lg:text-base xl:text-base 2xl:text-lg'
+                : String(value).length > 10
+                ? 'text-base min-[400px]:text-lg lg:text-lg xl:text-lg 2xl:text-xl'
+                : String(value).length > 8
+                ? 'text-lg min-[400px]:text-xl lg:text-xl xl:text-xl 2xl:text-2xl'
+                : 'text-xl min-[400px]:text-2xl lg:text-3xl 2xl:text-4xl'
             )}
             title={String(value)}
           >

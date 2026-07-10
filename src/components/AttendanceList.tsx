@@ -2,6 +2,7 @@
 import { Check, X, Clock, MapPin, AlertCircle, AlertTriangle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
+import { EmptyState } from '@/components/ui/empty-state';
 import { getDayName, formatDate, getEndTime, getTimePeriod } from '@/data/mockData';
 import { useTrainings } from '@/hooks/queries/useTrainings';
 import { useStudents } from '@/hooks/queries/useStudents';
@@ -134,11 +135,17 @@ export function AttendanceList({ selectedDate }: AttendanceListProps) {
 
   if (dayTrainings.length === 0) {
     return (
-      <div className="card-elevated p-8 text-center">
-        <Clock className="h-12 w-12 mx-auto text-muted-foreground/50 mb-3" />
-        <p className="text-lg font-medium text-muted-foreground">Sem {labels.trainingLabel.toLowerCase()} para esta data</p>
-        <p className="text-sm text-muted-foreground/70 mt-1">{getDayName(activeDate)}, {formatDate(activeDate)}</p>
-      </div>
+      <EmptyState
+        icon={Clock}
+        title={(
+          <span className="text-lg font-medium text-foreground">
+            Sem {labels.trainingLabel.toLowerCase()} para esta data
+          </span>
+        )}
+        description={`${getDayName(activeDate)}, ${formatDate(activeDate)}`}
+        variant="outlined"
+        className="card-elevated p-8"
+      />
     );
   }
 

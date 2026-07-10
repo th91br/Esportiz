@@ -9,6 +9,7 @@ describe('premium UI polish contracts', () => {
   const contractsPage = readFileSync(resolve(process.cwd(), 'src/pages/ContractsPage.tsx'), 'utf-8');
   const arenaAgendaPage = readFileSync(resolve(process.cwd(), 'src/pages/ArenaAgendaPage.tsx'), 'utf-8');
   const attendancePage = readFileSync(resolve(process.cwd(), 'src/pages/AttendancePage.tsx'), 'utf-8');
+  const attendanceList = readFileSync(resolve(process.cwd(), 'src/components/AttendanceList.tsx'), 'utf-8');
   const birthdaysPage = readFileSync(resolve(process.cwd(), 'src/pages/BirthdaysPage.tsx'), 'utf-8');
   const calendarPage = readFileSync(resolve(process.cwd(), 'src/pages/CalendarPage.tsx'), 'utf-8');
   const groupsPage = readFileSync(resolve(process.cwd(), 'src/pages/GroupsPage.tsx'), 'utf-8');
@@ -185,6 +186,14 @@ describe('premium UI polish contracts', () => {
     expect(attendancePage).toContain('<PageHeader');
     expect(attendancePage).not.toContain("import { Header } from '@/components/Header';");
     expect(attendancePage).not.toContain('<main className="container py-6');
+  });
+
+  it('keeps the attendance list empty result on the shared empty state', () => {
+    expect(attendanceList).toContain("import { EmptyState } from '@/components/ui/empty-state';");
+    expect((attendanceList.match(/<EmptyState/g) ?? []).length).toBe(1);
+    expect(attendanceList).toContain('if (dayTrainings.length === 0)');
+    expect(attendanceList).toContain('Sem {labels.trainingLabel.toLowerCase()} para esta data');
+    expect(attendanceList).not.toContain('<div className="card-elevated p-8 text-center">');
   });
 
   it('keeps the birthdays page on the shared app shell and page header pattern', () => {

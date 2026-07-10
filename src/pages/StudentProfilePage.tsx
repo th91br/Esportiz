@@ -12,6 +12,7 @@ import { useProfile } from '@/hooks/queries/useProfile';
 import { useAttendance } from '@/hooks/queries/useAttendance';
 import { StudentForm } from '@/components/StudentForm';
 import { Button } from '@/components/ui/button';
+import { LoadingState } from '@/components/ui/loading-state';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { 
@@ -111,8 +112,8 @@ export default function StudentProfilePage() {
 
   if (loading) {
     return (
-      <AppPage contentClassName="py-8 text-center text-muted-foreground">
-        Carregando perfil...
+      <AppPage contentClassName="py-8">
+        <LoadingState label="Carregando perfil" className="py-8" />
       </AppPage>
     );
   }

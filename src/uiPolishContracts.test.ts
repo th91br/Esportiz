@@ -432,6 +432,13 @@ describe('premium UI polish contracts', () => {
     expect(studentProfilePage).not.toContain('CardTitle className="text-lg flex items-center gap-2"');
   });
 
+  it('keeps the student profile loading result on the shared loading state', () => {
+    expect(studentProfilePage).toContain("import { LoadingState } from '@/components/ui/loading-state';");
+    expect((studentProfilePage.match(/<LoadingState/g) ?? []).length).toBe(1);
+    expect(studentProfilePage).toContain('<LoadingState label="Carregando perfil" className="py-8" />');
+    expect(studentProfilePage).not.toContain('<AppPage contentClassName="py-8 text-center text-muted-foreground">');
+  });
+
   it('keeps the student portal page on shared icon card titles for compact operational cards', () => {
     expect(studentPortalPage).toContain("import { IconCardTitle } from '@/components/layout/IconCardTitle';");
     expect(studentPortalPage).toContain('<IconCardTitle');

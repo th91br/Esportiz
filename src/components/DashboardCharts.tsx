@@ -1,5 +1,6 @@
 import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip, Area, AreaChart, CartesianGrid } from 'recharts';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { EmptyState } from '@/components/ui/empty-state';
 import type { Payment, Attendance } from '@/data/mockData';
 import type { Reservation } from '@/hooks/queries/useReservations';
 import type { Sale } from '@/hooks/queries/useSales';
@@ -16,6 +17,10 @@ interface DashboardChartsProps {
     reservations?: Reservation[];
     sales?: Sale[];
     financialOnly?: boolean;
+}
+
+function ChartEmptyState() {
+    return <EmptyState title="Sem dados" variant="outlined" className="h-full p-4 text-sm" />;
 }
 
 export function DashboardCharts({ 
@@ -135,9 +140,7 @@ export function DashboardCharts({
                 <CardContent>
                     <div className="h-[300px] w-full mt-4">
                         {maxRevenue === 0 ? (
-                            <div className="w-full h-full flex items-center justify-center bg-muted/10 rounded-xl border border-dashed border-border/50">
-                                <p className="text-muted-foreground font-medium text-sm">Sem dados</p>
-                            </div>
+                            <ChartEmptyState />
                         ) : (
                             <ResponsiveContainer width="100%" height="100%">
                                 <BarChart data={revenueData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
@@ -175,9 +178,7 @@ export function DashboardCharts({
                 <CardContent>
                     <div className="h-[300px] w-full mt-4">
                         {maxSecondValue === 0 ? (
-                            <div className="w-full h-full flex items-center justify-center bg-muted/10 rounded-xl border border-dashed border-border/50">
-                                <p className="text-muted-foreground font-medium text-sm">Sem dados</p>
-                            </div>
+                            <ChartEmptyState />
                         ) : (
                             <ResponsiveContainer width="100%" height="100%">
                                 <AreaChart data={secondChartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>

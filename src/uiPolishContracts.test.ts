@@ -31,6 +31,7 @@ describe('premium UI polish contracts', () => {
   const onlineBookingPage = readFileSync(resolve(process.cwd(), 'src/pages/OnlineBookingPage.tsx'), 'utf-8');
   const modalityManager = readFileSync(resolve(process.cwd(), 'src/components/ModalityManager.tsx'), 'utf-8');
   const quickActions = readFileSync(resolve(process.cwd(), 'src/components/QuickActions.tsx'), 'utf-8');
+  const dashboardCharts = readFileSync(resolve(process.cwd(), 'src/components/DashboardCharts.tsx'), 'utf-8');
   const weeklyCalendar = readFileSync(resolve(process.cwd(), 'src/components/WeeklyCalendar.tsx'), 'utf-8');
   const todaySchedule = readFileSync(resolve(process.cwd(), 'src/components/TodaySchedule.tsx'), 'utf-8');
   const arenaTodaySchedule = readFileSync(resolve(process.cwd(), 'src/components/ArenaTodaySchedule.tsx'), 'utf-8');
@@ -143,6 +144,14 @@ describe('premium UI polish contracts', () => {
     expect(weeklyCalendar).toContain('dayTrainings.length > 0 ? (');
     expect(weeklyCalendar).toContain('title="Sem treinos agendados"');
     expect(weeklyCalendar).not.toContain('<div className="p-4 text-center text-sm text-muted-foreground">Sem treinos agendados</div>');
+  });
+
+  it('keeps dashboard chart no-data placeholders on the shared empty state', () => {
+    expect(dashboardCharts).toContain("import { EmptyState } from '@/components/ui/empty-state';");
+    expect((dashboardCharts.match(/<EmptyState/g) ?? []).length).toBe(1);
+    expect((dashboardCharts.match(/<ChartEmptyState/g) ?? []).length).toBe(2);
+    expect(dashboardCharts).toContain('function ChartEmptyState()');
+    expect(dashboardCharts).not.toContain('w-full h-full flex items-center justify-center bg-muted/10 rounded-xl border border-dashed border-border/50');
   });
 
   it('keeps quick actions card title free of unused icon layout classes', () => {

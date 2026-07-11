@@ -22,6 +22,8 @@ export type Database = {
           id: string
           organization_id: string | null
           present: boolean
+          justified: boolean
+          justification_notes: string | null
           student_id: string
           training_id: string
           user_id: string
@@ -33,6 +35,8 @@ export type Database = {
           id?: string
           organization_id?: string | null
           present?: boolean
+          justified?: boolean
+          justification_notes?: string | null
           student_id: string
           training_id: string
           user_id: string
@@ -44,6 +48,8 @@ export type Database = {
           id?: string
           organization_id?: string | null
           present?: boolean
+          justified?: boolean
+          justification_notes?: string | null
           student_id?: string
           training_id?: string
           user_id?: string
@@ -1021,6 +1027,9 @@ export type Database = {
           completed_at: string | null
           google_event_id: string | null
           metadata: Json | null
+          cancelled: boolean
+          cancellation_reason: string | null
+          cancellation_notes: string | null
         }
         Insert: {
           created_at?: string
@@ -1040,6 +1049,9 @@ export type Database = {
           completed_at?: string | null
           google_event_id?: string | null
           metadata?: Json | null
+          cancelled?: boolean
+          cancellation_reason?: string | null
+          cancellation_notes?: string | null
         }
         Update: {
           created_at?: string
@@ -1059,6 +1071,9 @@ export type Database = {
           completed_at?: string | null
           google_event_id?: string | null
           metadata?: Json | null
+          cancelled?: boolean
+          cancellation_reason?: string | null
+          cancellation_notes?: string | null
         }
         Relationships: []
       }

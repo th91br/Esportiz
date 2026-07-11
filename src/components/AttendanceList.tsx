@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { Check, X, Clock, MapPin, AlertCircle, AlertTriangle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -7,6 +6,8 @@ import { getDayName, formatDate, getEndTime, getTimePeriod } from '@/data/mockDa
 import { useTrainings } from '@/hooks/queries/useTrainings';
 import { useStudents } from '@/hooks/queries/useStudents';
 import { useAttendance } from '@/hooks/queries/useAttendance';
+import type { SetAttendanceStatusParams } from '@/hooks/queries/useAttendance';
+import type { Attendance, Student, Training } from '@/data/mockData';
 import { useBusinessContext } from '@/hooks/useBusinessContext';
 import { useState } from 'react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -31,13 +32,13 @@ function AttendanceRow({
   attDetail, 
   setAttendanceStatus 
 }: { 
-  student: any; 
-  training: any; 
-  activeDate: string; 
-  disabled: boolean; 
-  status: 'presente' | 'falta' | 'justificada' | undefined; 
-  attDetail: any; 
-  setAttendanceStatus: any; 
+  student: Student;
+  training: Training;
+  activeDate: string;
+  disabled: boolean;
+  status: 'presente' | 'falta' | 'justificada' | undefined;
+  attDetail: Attendance | undefined;
+  setAttendanceStatus: (params: SetAttendanceStatusParams) => Promise<void>;
 }) {
   const [justificationNotes, setJustificationNotes] = useState(attDetail?.justificationNotes || '');
   const [popoverOpen, setPopoverOpen] = useState(false);

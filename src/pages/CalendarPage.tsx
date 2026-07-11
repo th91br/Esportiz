@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState, useMemo } from 'react';
 import { ChevronLeft, ChevronRight, Plus, Sun, Sunset, Moon, MapPin, Users, Clock, Pencil, Trash2, CalendarDays, CalendarRange, Repeat } from 'lucide-react';
 import { AppPage } from '@/components/layout/AppPage';
@@ -37,6 +36,10 @@ import { useModalities } from '@/hooks/queries/useModalities';
 const periodIcons = { manhã: Sun, tarde: Sunset, noite: Moon };
 const periodStyles = { manhã: 'bg-amber-500', tarde: 'bg-orange-500', noite: 'bg-indigo-500' };
 type RecurrenceMode = 'none' | 'month' | 'quarter';
+type CancellationReason = NonNullable<Training['cancellationReason']>;
+
+const isCancellationReason = (value: string): value is CancellationReason =>
+  value === 'holiday' || value === 'weather' || value === 'coach_absence' || value === 'other';
 
 function TrainingFormDialog({
   open, onOpenChange, training, selectedDate, onSaved,
@@ -59,7 +62,7 @@ function TrainingFormDialog({
   const [studentSearch, setStudentSearch] = useState('');
   const { labels } = useBusinessContext();
   const [cancelled, setCancelled] = useState(training?.cancelled || false);
-  const [cancellationReason, setCancellationReason] = useState<'holiday' | 'weather' | 'coach_absence' | 'other'>(training?.cancellationReason || 'holiday');
+  const [cancellationReason, setCancellationReason] = useState<CancellationReason>(training?.cancellationReason || 'holiday');
   const [cancellationNotes, setCancellationNotes] = useState(training?.cancellationNotes || '');
 
   const filteredStudents = activeStudents.filter((s) =>
@@ -253,7 +256,9 @@ function TrainingFormDialog({
                     <Label className="text-xs">Motivo do Cancelamento</Label>
                     <Select
                       value={cancellationReason}
-                      onValueChange={(value) => setCancellationReason(value as any)}
+                      onValueChange={(value) => {
+                        if (isCancellationReason(value)) setCancellationReason(value);
+                      }}
                     >
                       <SelectTrigger className="h-9">
                         <SelectValue placeholder="Selecione o motivo" />

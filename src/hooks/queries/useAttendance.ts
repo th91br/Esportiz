@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
@@ -8,6 +7,15 @@ import { useProfile } from '@/hooks/queries/useProfile';
 import { useCallback } from 'react';
 import { syncAfterScheduleMutation } from '@/lib/querySync';
 import type { Tables, TablesUpdate } from '@/integrations/supabase/types';
+
+export type AttendanceStatus = 'presente' | 'falta' | 'justificada';
+export interface SetAttendanceStatusParams {
+    trainingId: string;
+    studentId: string;
+    date: string;
+    status: AttendanceStatus;
+    justificationNotes?: string;
+}
 
 export function useAttendance(options: { enabled?: boolean } = {}) {
     const queryClient = useQueryClient();
@@ -29,14 +37,14 @@ export function useAttendance(options: { enabled?: boolean } = {}) {
                 .eq('business_type', businessType)
                 .order('date', { ascending: false });
             if (error) throw error;
-            return (data || []).map((a: any) => ({
+            return (data || []).map((a: Tables<'attendance'>) => ({
                 id: a.id,
                 trainingId: a.training_id,
                 studentId: a.student_id,
                 present: a.present,
                 date: a.date,
                 justified: a.justified,
-                justificationNotes: a.justification_notes,
+                justificationNotes: a.justification_notes ?? undefined,
             })) as Attendance[];
         },
         enabled: attendanceEnabled && !!tenantId,
@@ -49,13 +57,8 @@ export function useAttendance(options: { enabled?: boolean } = {}) {
             date, 
             status, 
             justificationNotes 
-        }: { 
-            trainingId: string, 
-            studentId: string, 
-            date: string, 
-            status: 'presente' | 'falta' | 'justificada', 
-            justificationNotes?: string 
-        }) => {
+        }: SetAttendanceStatusParams) => {
+
             if (!user) throw new Error('Usuário não autenticado');
 
             const existing = attendance.find((a) => a.trainingId === trainingId && a.studentId === studentId);
@@ -131,7 +134,7 @@ export function useAttendance(options: { enabled?: boolean } = {}) {
         loadingAttendance,
         getAttendanceStatus,
         getAttendanceDetail,
-        setAttendanceStatus: async (params: { trainingId: string, studentId: string, date: string, status: 'presente' | 'falta' | 'justificada', justificationNotes?: string }) =>
+        setAttendanceStatus: async (params: SetAttendanceStatusParams) =>
             toggleAttendanceMutation.mutateAsync(params),
         toggleAttendance: async (trainingId: string, studentId: string, date: string, forcedStatus?: boolean) => {
             const status = forcedStatus === true ? 'presente' : 'falta';

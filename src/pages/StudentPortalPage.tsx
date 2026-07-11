@@ -5,18 +5,15 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
-import { LoadingState } from '@/components/ui/loading-state';
 import { IconCardTitle } from '@/components/layout/IconCardTitle';
+import {
+  StudentPortalPixDialog,
+  type PaymentValueMode,
+  type SelectedPixPayment,
+} from '@/components/student-portal/StudentPortalPixDialog';
 import { toast } from 'sonner';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { EsportizIcon } from '@/components/Logo';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-} from '@/components/ui/dialog';
 import QRCode from 'qrcode';
 import { 
   CheckCircle2, XCircle, LogOut, Clock, Calendar, GraduationCap, 
@@ -39,6 +36,7 @@ import {
 import { formatCpfInputValue } from '@/lib/cpfInput';
 import { getEndTime } from '@/data/mockData';
 import { buildWhatsAppUrl, normalizeWhatsAppPhone } from '@/lib/communicationContracts';
+import { generatePixCopiaCola } from '@/lib/pixPayload';
 
 interface AttendanceLog {
   date: string;
@@ -184,62 +182,6 @@ const getRequestStatus = (status: TrainingRequestLog['status']) => {
   }
 };
 
-// --- PIX EMV GENERATOR ---
-function getCRC16(payload: string): string {
-  let crc = 0xFFFF;
-  const polynomial = 0x1021;
-
-  for (let i = 0; i < payload.length; i++) {
-    const code = payload.charCodeAt(i);
-    for (let bit = 0; bit < 8; bit++) {
-      const bitOnCrc = ((crc >> 15) & 1) === 1;
-      const bitOnByte = ((code >> (7 - bit)) & 1) === 1;
-      crc = (crc << 1) & 0xFFFF;
-      if (bitOnCrc !== bitOnByte) {
-        crc ^= polynomial;
-      }
-    }
-  }
-
-  return crc.toString(16).toUpperCase().padStart(4, '0');
-}
-
-function formatEMVTag(tag: string, value: string): string {
-  const len = value.length.toString().padStart(2, '0');
-  return `${tag}${len}${value}`;
-}
-
-function cleanString(str: string): string {
-  return str
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .replace(/[^A-Z0-9 ]/gi, '')
-    .toUpperCase();
-}
-
-function generatePixCopiaCola(key: string, amount: number, receiver: string): string {
-  const gui = formatEMVTag('00', 'br.gov.bcb.pix');
-  const pixKey = formatEMVTag('01', key);
-  const merchantAccountInfo = formatEMVTag('26', `${gui}${pixKey}`);
-
-  const payloadFormat = formatEMVTag('00', '01');
-  const merchantCategory = formatEMVTag('52', '0000');
-  const currency = formatEMVTag('53', '986');
-  const amountStr = formatEMVTag('54', amount.toFixed(2));
-  const country = formatEMVTag('58', 'BR');
-
-  const cleanReceiver = cleanString(receiver || 'ESPORTIZ SPORT').substring(0, 25) || 'ESPORTIZ SPORT';
-  const merchantName = formatEMVTag('59', cleanReceiver);
-  const merchantCity = formatEMVTag('60', 'BRASILIA');
-
-  const txid = formatEMVTag('05', '***');
-  const additionalData = formatEMVTag('62', txid);
-
-  const payload = `${payloadFormat}${merchantAccountInfo}${merchantCategory}${currency}${amountStr}${country}${merchantName}${merchantCity}${additionalData}6304`;
-  const crc = getCRC16(payload);
-  return `${payload}${crc}`;
-}
-
 export default function StudentPortalPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const ownerId = searchParams.get('ct');
@@ -255,20 +197,14 @@ export default function StudentPortalPage() {
   const [signing, setSigning] = useState(false);
 
   // Pix modal state
-  const [selectedPixPayment, setSelectedPixPayment] = useState<{
-    id: string;
-    amount: number;
-    amountStr: string;
-    monthRef: string;
-    isAdhoc?: boolean;
-  } | null>(null);
+  const [selectedPixPayment, setSelectedPixPayment] = useState<SelectedPixPayment | null>(null);
   const [pixModalOpen, setPixModalOpen] = useState(false);
   const [copiedCode, setCopiedCode] = useState(false);
   const [pixQrCodeUrl, setPixQrCodeUrl] = useState('');
   const [pixCode, setPixCode] = useState('');
   const [generatingQrCode, setGeneratingQrCode] = useState(false);
   const [adhocInputAmount, setAdhocInputAmount] = useState<string>('');
-  const [paymentValueMode, setPaymentValueMode] = useState<'remaining' | 'custom'>('remaining');
+  const [paymentValueMode, setPaymentValueMode] = useState<PaymentValueMode>('remaining');
   const [customAmountInput, setCustomAmountInput] = useState<string>('');
 
   // Login Input State
@@ -694,7 +630,9 @@ CONCORDÂNCIA E ASSINATURA: O contratante declara ter lido, compreendido e aceit
       setPixQrCodeUrl(qrDataUrl);
     } catch (err) {
       console.error('Erro ao gerar QRCode adhoc:', err);
-    setGeneratingQrCode(false);
+      toast.error('Não foi possível gerar o QR Code Pix localmente.');
+    } finally {
+      setGeneratingQrCode(false);
     }
   };
 
@@ -740,7 +678,7 @@ CONCORDÂNCIA E ASSINATURA: O contratante declara ter lido, compreendido e aceit
     }
   };
 
-  const handleTogglePaymentValueMode = async (mode: 'remaining' | 'custom') => {
+  const handleTogglePaymentValueMode = async (mode: PaymentValueMode) => {
     setPaymentValueMode(mode);
     if (!selectedPixPayment) return;
 
@@ -1614,199 +1552,25 @@ CONCORDÂNCIA E ASSINATURA: O contratante declara ter lido, compreendido e aceit
           </div>
         )}
 
-        {/* DIALOG DE PAGAMENTO PIX */}
-        <Dialog open={pixModalOpen} onOpenChange={setPixModalOpen}>
-          <DialogContent className="max-w-md w-full border-border/80 shadow-2xl overflow-hidden card-elevated p-6 sm:p-7">
-            <DialogHeader className="text-center space-y-2 pb-2 border-b border-border/40">
-              <div className="mx-auto w-12 h-12 bg-primary/10 text-primary rounded-2xl flex items-center justify-center mb-1 border border-primary/15">
-                <QrCode className="h-6 w-6 text-primary" />
-              </div>
-              <DialogTitle className="text-xl font-black font-display text-foreground tracking-tight leading-none">
-                Pagamento via Pix
-              </DialogTitle>
-              <DialogDescription className="text-xs text-muted-foreground">
-                Escola: <strong className="text-foreground font-semibold">{schoolName}</strong>
-              </DialogDescription>
-            </DialogHeader>
-
-            {selectedPixPayment && (
-              <div className="space-y-6 pt-4">
-                {selectedPixPayment.isAdhoc ? (
-                  /* CARD DE DETALHES DO PAGAMENTO AVULSO (GLASSMORPHISM) */
-                  <div className="bg-muted/30 border border-border/40 rounded-2xl p-4 space-y-3.5 shadow-inner text-left">
-                    <div className="flex justify-between items-center">
-                      <div className="space-y-0.5">
-                        <span className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider block">Referência</span>
-                        <span className="text-sm font-bold text-foreground">Pagamento Avulso</span>
-                      </div>
-                      <div className="text-right space-y-0.5">
-                        <span className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider block">Recebedor</span>
-                        <span className="text-xs font-semibold text-foreground truncate max-w-[150px] block">{paymentConfig?.pix_receiver || schoolName}</span>
-                      </div>
-                    </div>
-                    <div className="space-y-1.5">
-                      <label className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider block">Valor do Pagamento</label>
-                      <Input
-                        type="text"
-                        placeholder="R$ 0,00"
-                        className="bg-background font-extrabold text-foreground text-sm h-10 rounded-xl"
-                        value={adhocInputAmount}
-                        onChange={(e) => handleAdhocAmountInputChange(e.target.value)}
-                      />
-                    </div>
-                  </div>
-                ) : (
-                  /* CARD DE DETALHES DO PAGAMENTO MENSALIDADE (TAB-CHOICE & GLASSMORPHISM) */
-                  <div className="space-y-3.5 text-left">
-                    <label className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider block">Opção de Pagamento</label>
-                    <div className="grid grid-cols-2 gap-2 bg-muted/40 p-1 rounded-xl border border-border/40">
-                      <button
-                        type="button"
-                        onClick={() => handleTogglePaymentValueMode('remaining')}
-                        className={cn(
-                          "py-2 text-xs font-bold rounded-lg transition-all",
-                          paymentValueMode === 'remaining'
-                            ? "bg-background text-primary shadow-sm"
-                            : "text-muted-foreground hover:text-foreground"
-                        )}
-                      >
-                        Restante ({selectedPixPayment.amountStr})
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => handleTogglePaymentValueMode('custom')}
-                        className={cn(
-                          "py-2 text-xs font-bold rounded-lg transition-all",
-                          paymentValueMode === 'custom'
-                            ? "bg-background text-primary shadow-sm"
-                            : "text-muted-foreground hover:text-foreground"
-                        )}
-                      >
-                        Outro Valor (Parcial)
-                      </button>
-                    </div>
-
-                    {paymentValueMode === 'custom' ? (
-                      <div className="space-y-1.5 pt-1">
-                        <label className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider">Digite o valor a pagar (R$)</label>
-                        <Input
-                          type="text"
-                          placeholder="R$ 0,00"
-                          className="bg-background font-extrabold text-foreground text-sm h-10 rounded-xl"
-                          value={customAmountInput}
-                          onChange={(e) => handleCustomAmountChange(e.target.value, selectedPixPayment.amount)}
-                        />
-                      </div>
-                    ) : (
-                      <div className="bg-muted/30 border border-border/40 rounded-2xl p-4 flex justify-between items-center shadow-inner text-left">
-                        <div className="space-y-1">
-                          <span className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider block">Referência</span>
-                          <span className="text-sm font-bold text-foreground">Mensalidade - {selectedPixPayment.monthRef}</span>
-                        </div>
-                        <div className="text-right space-y-1">
-                          <span className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider block">Valor a pagar</span>
-                          <span className="text-lg font-black text-primary font-display">{selectedPixPayment.amountStr}</span>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                {/* QR CODE COM DETECTOR DE ESCANEAMENTO ANIMADO */}
-                <div className="flex flex-col items-center justify-center space-y-3">
-                  <div className="relative p-3 bg-white dark:bg-white rounded-3xl shadow-md border border-border/30 overflow-hidden group">
-                    {/* Bordas decorativas animadas */}
-                    <div className="absolute top-0 left-0 w-6 h-6 border-t-4 border-l-4 border-primary rounded-tl-2xl" />
-                    <div className="absolute top-0 right-0 w-6 h-6 border-t-4 border-r-4 border-primary rounded-tr-2xl" />
-                    <div className="absolute bottom-0 left-0 w-6 h-6 border-b-4 border-l-4 border-primary rounded-bl-2xl" />
-                    <div className="absolute bottom-0 right-0 w-6 h-6 border-b-4 border-r-4 border-primary rounded-br-2xl" />
-                    
-                    {(selectedPixPayment.isAdhoc && !pixQrCodeUrl) || (paymentValueMode === 'custom' && !pixQrCodeUrl) ? (
-                      <div className="w-[200px] h-[200px] sm:w-[220px] sm:h-[220px] flex flex-col items-center justify-center bg-muted/20 text-muted-foreground text-center p-4">
-                        <QrCode className="h-8 w-8 opacity-45 mb-2 text-primary" />
-                        <span className="text-[10px] font-bold uppercase tracking-wider">Digite o valor acima</span>
-                        <span className="text-[9px] opacity-75 mt-1">para gerar o QR Code Pix</span>
-                      </div>
-                    ) : generatingQrCode ? (
-                      <LoadingState
-                        label="Gerando QR Code Pix"
-                        className="w-[200px] h-[200px] sm:w-[220px] sm:h-[220px] items-center bg-muted/20"
-                      />
-                    ) : (
-                      pixQrCodeUrl && (
-                        <img 
-                          src={pixQrCodeUrl} 
-                          alt="QR Code Pix" 
-                          className="w-[200px] h-[200px] sm:w-[220px] sm:h-[220px] object-contain transition-transform duration-300 group-hover:scale-105" 
-                        />
-                      )
-                    )}
-                  </div>
-                  <span className="text-[10px] text-muted-foreground font-bold tracking-wide uppercase">
-                    {!pixQrCodeUrl ? 'Aguardando valor' : 'Aponte a câmera do seu banco para pagar'}
-                  </span>
-                </div>
-
-                {/* COPIA E COLA BOX */}
-                <div className="space-y-2 text-left">
-                  <div className="flex items-center justify-between">
-                    <span className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider">Pix Copia e Cola</span>
-                    {paymentConfig?.pix_receiver && (
-                      <span className="text-[10px] text-muted-foreground">
-                        Recebedor: <strong className="text-foreground font-semibold">{paymentConfig.pix_receiver}</strong>
-                      </span>
-                    )}
-                  </div>
-                  
-                  <div className="flex gap-2">
-                    <div className="flex-1 bg-muted/40 border border-border/50 rounded-xl px-3 py-2.5 font-mono text-[10px] text-muted-foreground break-all select-all line-clamp-2 min-h-[52px] leading-relaxed shadow-inner">
-                      {pixCode || 'Digite o valor para gerar o código Pix Copia e Cola'}
-                    </div>
-                    <Button
-                      onClick={() => handleCopyPixCode(pixCode)}
-                      disabled={!pixCode}
-                      className={cn(
-                        "shrink-0 h-auto px-4 rounded-xl font-bold transition-all duration-300",
-                        copiedCode 
-                          ? "bg-emerald-500 hover:bg-emerald-600 text-white" 
-                          : "btn-primary-gradient"
-                      )}
-                    >
-                      {copiedCode ? (
-                        <CheckCircle2 className="h-4 w-4 animate-bounce" />
-                      ) : (
-                        <Copy className="h-4 w-4" />
-                      )}
-                    </Button>
-                  </div>
-                </div>
-
-                {/* CONFIRMAÇÃO VIA WHATSAPP */}
-                {pixCode && (
-                  <div className="pt-2">
-                    <Button
-                      onClick={() => handleConfirmPaymentWhatsApp()}
-                      className="w-full bg-[#25D366] hover:bg-[#20ba5a] text-white font-bold py-5 rounded-xl flex items-center justify-center gap-2 shadow-sm transition-all duration-300"
-                    >
-                      <MessageSquare className="h-5 w-5" />
-                      Já paguei, enviar comprovante!
-                    </Button>
-                  </div>
-                )}
-
-                {/* INSTRUÇÕES */}
-                <div className="bg-muted/10 border border-border/30 rounded-2xl p-4 space-y-2 text-xs text-muted-foreground text-left">
-                  <span className="font-bold text-foreground block">Como pagar:</span>
-                  <ol className="list-decimal pl-4 space-y-1">
-                    <li>Abra o aplicativo de pagamentos do seu banco.</li>
-                    <li>Escolha a opção de pagar via Pix (com leitura de QR Code ou Pix Copia e Cola).</li>
-                    <li>Escaneie o QR Code acima ou cole o código copiado e confirme o pagamento.</li>
-                  </ol>
-                </div>
-              </div>
-            )}
-          </DialogContent>
-        </Dialog>
+        <StudentPortalPixDialog
+          open={pixModalOpen}
+          onOpenChange={setPixModalOpen}
+          schoolName={schoolName}
+          paymentReceiver={paymentConfig?.pix_receiver}
+          selectedPayment={selectedPixPayment}
+          paymentValueMode={paymentValueMode}
+          adhocInputAmount={adhocInputAmount}
+          customAmountInput={customAmountInput}
+          pixCode={pixCode}
+          pixQrCodeUrl={pixQrCodeUrl}
+          generatingQrCode={generatingQrCode}
+          copiedCode={copiedCode}
+          onAdhocAmountChange={handleAdhocAmountInputChange}
+          onCustomAmountChange={handleCustomAmountChange}
+          onPaymentValueModeChange={handleTogglePaymentValueMode}
+          onCopyPixCode={handleCopyPixCode}
+          onConfirmPayment={handleConfirmPaymentWhatsApp}
+        />
       </main>
     </div>
   );

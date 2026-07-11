@@ -1,62 +1,115 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2"
+import {
+  CONTACT_FORM_MAX_BODY_BYTES,
+  escapeHtml,
+  parseContactFormInput,
+  resolveAllowedOrigin,
+} from './contactFormSecurity.ts'
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
+const getCorsHeaders = (allowedOrigin: string | null) => ({
+  ...(allowedOrigin ? { "Access-Control-Allow-Origin": allowedOrigin } : {}),
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-}
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
+  "Vary": "Origin",
+})
+
+const jsonResponse = (body: Record<string, unknown>, status: number, corsHeaders: Record<string, string>) =>
+  new Response(JSON.stringify(body), {
+    headers: { ...corsHeaders, "Content-Type": "application/json" },
+    status,
+  })
 
 serve(async (req) => {
-  // Handle CORS preflight
+  const requestOrigin = req.headers.get('origin')
+  const allowedOrigin = resolveAllowedOrigin(
+    requestOrigin,
+    Deno.env.get('CONTACT_FORM_ALLOWED_ORIGINS'),
+  )
+  const corsHeaders = getCorsHeaders(allowedOrigin)
+
+  if (requestOrigin && !allowedOrigin) {
+    return jsonResponse({ error: 'Origem não autorizada.' }, 403, corsHeaders)
+  }
+
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders })
   }
 
-  try {
-    const body = await req.json()
-    const { name, email, phone, arenaName, reason, message } = body
+  if (req.method !== 'POST') {
+    return jsonResponse({ error: 'Método não permitido.' }, 405, corsHeaders)
+  }
 
-    // Validate request body
-    if (!name || !email || !phone || !reason || !message) {
-      throw new Error("Preencha todos os campos obrigatórios (Nome, E-mail, Celular, Motivo e Mensagem).")
+  try {
+    const contentLength = Number(req.headers.get('content-length') ?? 0)
+    if (contentLength > CONTACT_FORM_MAX_BODY_BYTES) {
+      return jsonResponse({ error: 'Formulário excede o tamanho permitido.' }, 413, corsHeaders)
     }
 
-    // Initialize Supabase Client using Service Role Key to bypass RLS safely
+    const rawBody = await req.text()
+    if (new TextEncoder().encode(rawBody).byteLength > CONTACT_FORM_MAX_BODY_BYTES) {
+      return jsonResponse({ error: 'Formulário excede o tamanho permitido.' }, 413, corsHeaders)
+    }
+
+    let body: unknown
+    try {
+      body = JSON.parse(rawBody)
+    } catch {
+      return jsonResponse({ error: 'Dados do formulário inválidos.' }, 400, corsHeaders)
+    }
+
+    const parsed = parseContactFormInput(body)
+    if (!parsed.success) {
+      return jsonResponse({ error: parsed.error }, 422, corsHeaders)
+    }
+    if (parsed.isSpam) {
+      return jsonResponse({ success: true }, 200, corsHeaders)
+    }
+
+    const { name, email, phone, arenaName, reason, message } = parsed.data
     const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? ""
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
-    const supabase = createClient(supabaseUrl, supabaseServiceKey)
+    if (!supabaseUrl || !supabaseServiceKey) {
+      console.error('contact-form configuration_missing')
+      return jsonResponse({ error: 'Serviço temporariamente indisponível.' }, 503, corsHeaders)
+    }
 
-    // Save lead in the database
+    const supabase = createClient(supabaseUrl, supabaseServiceKey)
     const { error: dbError } = await supabase
       .from("contact_submissions")
       .insert({
         name,
         email,
         phone,
-        arena_name: arenaName || null,
+        arena_name: arenaName,
         reason,
         message,
-        status: "pending"
+        status: "pending",
       })
 
     if (dbError) {
-      console.error("Database Insert Error:", dbError)
-      throw new Error("Erro interno ao salvar os dados no banco de dados.")
+      console.error('contact-form database_insert_failed', { code: dbError.code })
+      return jsonResponse({ error: 'Não foi possível enviar a mensagem agora.' }, 500, corsHeaders)
     }
 
-    // Attempt to notify by email using Resend
     const resendApiKey = Deno.env.get("RESEND_API_KEY")
     if (resendApiKey) {
+      const safeName = escapeHtml(name)
+      const safeEmail = escapeHtml(email)
+      const safePhone = escapeHtml(phone)
+      const safeArenaName = escapeHtml(arenaName ?? 'Não informada')
+      const safeReason = escapeHtml(reason)
+      const safeMessage = escapeHtml(message)
       const emailHtml = `
         <h3>Novo Contato Recebido - Esportiz</h3>
-        <p><strong>Nome:</strong> ${name}</p>
-        <p><strong>E-mail:</strong> ${email}</p>
-        <p><strong>WhatsApp/Celular:</strong> ${phone}</p>
-        <p><strong>Escola ou Arena:</strong> ${arenaName || 'Não informada'}</p>
-        <p><strong>Motivo do Contato:</strong> ${reason}</p>
+        <p><strong>Nome:</strong> ${safeName}</p>
+        <p><strong>E-mail:</strong> ${safeEmail}</p>
+        <p><strong>WhatsApp/Celular:</strong> ${safePhone}</p>
+        <p><strong>Escola ou Arena:</strong> ${safeArenaName}</p>
+        <p><strong>Motivo do Contato:</strong> ${safeReason}</p>
         <br />
         <p><strong>Mensagem:</strong></p>
-        <div style="background: #f4f6f8; padding: 16px; border-radius: 8px; border: 1px solid #d1d7e0; white-space: pre-wrap;">${message}</div>
+        <div style="background: #f4f6f8; padding: 16px; border-radius: 8px; border: 1px solid #d1d7e0; white-space: pre-wrap;">${safeMessage}</div>
         <hr style="border: none; border-top: 1px solid #e1e7f0; margin-top: 24px;" />
         <p style="font-size: 12px; color: #5c6e8a;">Esta mensagem foi salva no banco de dados do Supabase.</p>
       `
@@ -65,34 +118,26 @@ serve(async (req) => {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "Authorization": `Bearer ${resendApiKey}`
+          "Authorization": `Bearer ${resendApiKey}`,
         },
         body: JSON.stringify({
           from: "Esportiz Contato <onboarding@resend.dev>",
           to: ["esportiz@outlook.com.br"],
           subject: `Novo Lead Esportiz: ${name} (${reason})`,
-          html: emailHtml
-        })
+          html: emailHtml,
+        }),
       })
 
       if (!resendResponse.ok) {
-        const errorText = await resendResponse.text()
-        console.error("Resend API Error details:", errorText)
+        console.error('contact-form email_dispatch_failed', { status: resendResponse.status })
       }
     } else {
-      console.warn("RESEND_API_KEY not configured in Supabase. E-mail dispatch skipped.")
+      console.warn('contact-form email_dispatch_skipped')
     }
 
-    return new Response(JSON.stringify({ success: true }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-      status: 200,
-    })
-
-  } catch (error) {
-    const msg = error instanceof Error ? error.message : "Erro desconhecido"
-    return new Response(JSON.stringify({ error: msg }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-      status: 400,
-    })
+    return jsonResponse({ success: true }, 200, corsHeaders)
+  } catch {
+    console.error('contact-form unexpected_failure')
+    return jsonResponse({ error: 'Não foi possível enviar a mensagem agora.' }, 500, corsHeaders)
   }
 })

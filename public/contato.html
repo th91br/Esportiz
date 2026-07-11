@@ -392,6 +392,10 @@ select.form-control {
       <!-- Coluna Direita: Formulário de Contato Dinâmico -->
       <div class="form-card" id="formCard">
         <form id="contactForm" onsubmit="submitForm(event)" style="display:flex; flex-direction:column;">
+          <div aria-hidden="true" style="position:absolute;left:-10000px;width:1px;height:1px;overflow:hidden;">
+            <label for="website">Website</label>
+            <input type="text" id="website" tabindex="-1" autocomplete="off" />
+          </div>
           <h2 style="font-family:'Montserrat',sans-serif; font-size: 22px; font-weight: 800; color: var(--foreground); margin-bottom: 8px; margin-top: 0;">Envie uma mensagem</h2>
           <p style="font-size: 14px; color: var(--foreground-muted); margin-bottom: 24px; line-height: 1.5;">Conte um pouco sobre sua necessidade para direcionarmos seu atendimento de forma rápida.</p>
           
@@ -485,6 +489,8 @@ function maskPhone(input) {
   }
 }
 
+const formStartedAt = Date.now();
+
 function submitForm(event) {
   event.preventDefault();
 
@@ -494,6 +500,7 @@ function submitForm(event) {
   const arenaName = document.getElementById('arenaName').value;
   const reason = document.getElementById('reason').value;
   const message = document.getElementById('message').value;
+  const website = document.getElementById('website').value;
 
   const btn = document.getElementById('submitBtn');
   const btnText = document.getElementById('btnText');
@@ -527,7 +534,7 @@ function submitForm(event) {
       'apikey': anonKey,
       'Authorization': `Bearer ${anonKey}`
     },
-    body: JSON.stringify({ name, email, phone, arenaName, reason, message })
+    body: JSON.stringify({ name, email, phone, arenaName, reason, message, website, formStartedAt })
   })
   .then(async (response) => {
     const data = await response.json();

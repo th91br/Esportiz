@@ -90,7 +90,7 @@ export function StatCard({
                 ? 'text-base min-[400px]:text-lg lg:text-lg xl:text-lg 2xl:text-xl'
                 : String(value).length > 8
                 ? 'text-lg min-[400px]:text-xl lg:text-xl xl:text-xl 2xl:text-2xl'
-                : 'text-xl min-[400px]:text-2xl lg:text-3xl 2xl:text-4xl'
+                : 'text-xl min-[400px]:text-2xl lg:text-2xl xl:text-2xl 2xl:text-3xl'
             )}
             title={String(value)}
           >

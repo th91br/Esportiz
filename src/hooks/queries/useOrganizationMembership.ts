@@ -1,3 +1,4 @@
+import { reportError } from '@/lib/observability';
 import { useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '@/contexts/auth';
@@ -60,7 +61,7 @@ export function useOrganizationMembership() {
         .order('created_at', { ascending: true });
 
       if (memberError) {
-        console.error('Error fetching organization membership:', memberError);
+        reportError('organization.membership_load_failed', memberError);
         throw memberError;
       }
 

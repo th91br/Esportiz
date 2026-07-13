@@ -6,7 +6,7 @@ import { PWABadge } from "@/components/PWABadge";
 import { AppErrorBoundary } from "@/components/AppErrorBoundary";
 import { LoadingState } from "@/components/ui/loading-state";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { MutationCache, QueryCache, QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { useAuth } from "@/contexts/auth";
@@ -18,6 +18,7 @@ import { canAccessPath as canAccessRolePath } from "./lib/rolePermissions";
 import { shouldRevokeOrganizationSession } from "./lib/organizationAccess";
 import { SidebarProvider } from "@/contexts/SidebarContext";
 import { Sidebar } from "@/components/Sidebar";
+import { reportError } from "@/lib/observability";
 
 const LoginPage = lazy(() => import("./pages/LoginPage"));
 const LandingPage = lazy(() => import("./pages/LandingPage"));
@@ -48,7 +49,18 @@ const EnrollmentUnavailablePage = lazy(() => import("./pages/EnrollmentUnavailab
 const StudentPortalPage = lazy(() => import("./pages/StudentPortalPage"));
 const OnlineBookingPage = lazy(() => import("./pages/OnlineBookingPage"));
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  queryCache: new QueryCache({
+    onError: (error, query) => {
+      reportError('query.failed', error, { queryHash: query.queryHash });
+    },
+  }),
+  mutationCache: new MutationCache({
+    onError: (error, _variables, _context, mutation) => {
+      reportError('mutation.failed', error, { mutationId: mutation.mutationId });
+    },
+  }),
+});
 function FullScreenLoader() {
   return <LoadingState label="Carregando aplicativo" className="min-h-screen items-center bg-background" />;
 }

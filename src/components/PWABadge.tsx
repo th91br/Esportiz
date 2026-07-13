@@ -1,3 +1,4 @@
+import { reportError } from '@/lib/observability';
 import { useRegisterSW } from "virtual:pwa-register/react";
 import { Button } from "@/components/ui/button";
 import { useCallback, useEffect } from "react";
@@ -16,12 +17,12 @@ export function PWABadge() {
         setInterval(() => {
           if (!(!r.installing && navigator)) return;
           if (('connection' in navigator) && !navigator.onLine) return;
-          r.update().catch(err => console.error("SW update error", err));
+          r.update().catch((error) => reportError('pwa.service_worker_update_failed', error));
         }, 60 * 60 * 1000);
       }
     },
     onRegisterError(error) {
-      console.error("SW registration error", error);
+      reportError('pwa.service_worker_registration_failed', error);
     },
   });
 

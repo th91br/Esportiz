@@ -1,3 +1,4 @@
+import { reportError } from '@/lib/observability';
 import { useState, useMemo, useEffect, useCallback } from 'react';
 import { Bell, Clock, Users, MapPin, AlertTriangle, X, Check, Trash2, CheckCheck, Calendar, Cake, CreditCard, Undo2, ClipboardList } from 'lucide-react';
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger, SheetClose } from '@/components/ui/sheet';
@@ -42,7 +43,7 @@ function getDismissed(): DismissedNotifications {
       return { ...parsed, dismissDate: today };
     }
   } catch (err) {
-    console.error('Error reading dismissed notifications:', err);
+    reportError('notifications.preferences_read_failed', err);
   }
   return { trainings: [], overduePayments: false, dismissDate: getLocalTodayDate() };
 }

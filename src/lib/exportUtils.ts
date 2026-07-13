@@ -1,8 +1,9 @@
+import { reportWarning } from '@/lib/observability';
 import { getLocalTodayDate } from '@/lib/dateUtils';
 
 export function exportToCSV(data: Record<string, unknown>[], filename: string) {
   if (!data || !data.length) {
-    console.error('No data to export');
+    reportWarning('export.empty_data', { filename });
     return;
   }
 

@@ -6,6 +6,7 @@ import {
   isDynamicImportLoadError,
   recoverAppRuntime,
 } from '@/lib/appRecovery';
+import { reportError } from '@/lib/observability';
 
 type AppErrorBoundaryProps = {
   children: ReactNode;
@@ -13,19 +14,22 @@ type AppErrorBoundaryProps = {
 
 type AppErrorBoundaryState = {
   hasError: boolean;
-  error: Error | null;
+  errorId: string | null;
   isRecovering: boolean;
 };
 
 export class AppErrorBoundary extends Component<AppErrorBoundaryProps, AppErrorBoundaryState> {
-  state: AppErrorBoundaryState = { hasError: false, error: null, isRecovering: false };
+  state: AppErrorBoundaryState = { hasError: false, errorId: null, isRecovering: false };
 
   static getDerivedStateFromError(error: Error) {
-    return { hasError: true, error };
+    return { hasError: true };
   }
 
   componentDidCatch(error: Error, info: ErrorInfo) {
-    console.error('App render error:', error, info);
+    const event = reportError('react.render_failed', error, {
+      componentStack: info.componentStack,
+    });
+    this.setState({ errorId: event.id });
 
     if (isDynamicImportLoadError(error) && !hasAttemptedAppRecovery()) {
       this.setState({ isRecovering: true });
@@ -60,10 +64,10 @@ export class AppErrorBoundary extends Component<AppErrorBoundaryProps, AppErrorB
               : "Ocorreu um erro inesperado. Clique abaixo para tentar corrigir e atualizar o app."}
           </p>
           
-          {this.state.error && (
-            <div className="mt-2 p-2 bg-destructive/5 rounded text-xs text-destructive font-mono text-left overflow-auto max-h-32">
-              {this.state.error.message}
-            </div>
+          {this.state.errorId && (
+            <p className="mt-3 text-xs text-muted-foreground">
+              Código do erro: <span className="font-mono">{this.state.errorId}</span>
+            </p>
           )}
           
           {!attempted ? (

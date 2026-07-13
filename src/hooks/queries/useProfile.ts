@@ -1,3 +1,4 @@
+import { reportError, reportWarning } from '@/lib/observability';
 import { useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -106,7 +107,7 @@ async function buildInvitedMemberProfile(userId: string): Promise<Profile | null
     .maybeSingle();
 
   if (membershipError) {
-    console.error('Error fetching invited member organization:', membershipError);
+    reportError('profile.invited_membership_load_failed', membershipError);
     throw membershipError;
   }
 
@@ -119,7 +120,7 @@ async function buildInvitedMemberProfile(userId: string): Promise<Profile | null
     .maybeSingle();
 
   if (organizationError) {
-    console.error('Error fetching invited member organization owner:', organizationError);
+    reportError('profile.organization_owner_load_failed', organizationError);
     throw organizationError;
   }
 
@@ -132,7 +133,7 @@ async function buildInvitedMemberProfile(userId: string): Promise<Profile | null
     .maybeSingle();
 
   if (ownerProfileError) {
-    console.error('Error fetching organization owner profile:', ownerProfileError);
+    reportError('profile.owner_profile_load_failed', ownerProfileError);
     throw ownerProfileError;
   }
 
@@ -183,7 +184,7 @@ async function buildInvitedMemberProfile(userId: string): Promise<Profile | null
     .single();
 
   if (syncError) {
-    console.warn('Could not sync invited member profile; using runtime organization context.', syncError);
+    reportWarning('profile.invited_profile_sync_failed', { reason: syncError });
     return fallbackProfile;
   }
 
@@ -206,7 +207,7 @@ export function useProfile() {
         .maybeSingle();
 
       if (error) {
-        console.error('Error fetching profile:', error);
+        reportError('profile.load_failed', error);
         throw error;
       }
 
@@ -226,7 +227,7 @@ export function useProfile() {
           .maybeSingle();
 
         if (ownerError) {
-          console.error('Error fetching owner profile in query:', ownerError);
+          reportError('profile.owner_settings_load_failed', ownerError);
         } else if (ownerData) {
           const ownerProfile = normalizeProfile(ownerData);
           return {
@@ -259,7 +260,7 @@ export function useProfile() {
         .maybeSingle();
 
       if (fetchError) {
-        console.error('Error fetching existing profile:', fetchError);
+        reportError('profile.existence_check_failed', fetchError);
         throw fetchError;
       }
 
@@ -276,7 +277,7 @@ export function useProfile() {
           .single();
 
         if (error) {
-          console.error('Error updating profile:', error);
+          reportError('profile.update_failed', error);
           throw error;
         }
         result = data;
@@ -292,7 +293,7 @@ export function useProfile() {
           .single();
 
         if (error) {
-          console.error('Error inserting profile:', error);
+          reportError('profile.create_failed', error);
           throw error;
         }
         result = data;
@@ -322,7 +323,7 @@ export function useProfile() {
         .upload(filePath, file);
 
       if (uploadError) {
-        console.error('Error uploading logo:', uploadError);
+        reportError('profile.logo_upload_failed', uploadError);
         throw uploadError;
       }
 

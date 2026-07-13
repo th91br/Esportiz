@@ -77,7 +77,7 @@ serve(async (req) => {
     const tokens = await tokenResponse.json()
 
     if (tokens.error) {
-      console.error('Google Token Error:', tokens)
+      console.error('google-auth token_exchange_failed', { status: tokenResponse.status })
       throw new Error(tokens.error_description || tokens.error)
     }
 

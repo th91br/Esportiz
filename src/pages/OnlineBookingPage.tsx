@@ -1,3 +1,4 @@
+import { reportError } from '@/lib/observability';
 import { useState, useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -112,7 +113,7 @@ export default function OnlineBookingPage() {
         }
       } catch (err: unknown) {
         const error = err as Error;
-        console.error('Erro ao buscar dados da arena:', error);
+        reportError('public_booking.tenant_load_failed', error);
         toast.error('Erro ao carregar dados do CT.');
       } finally {
         setLoading(false);
@@ -268,7 +269,7 @@ export default function OnlineBookingPage() {
         price: (getCalculatedPrice(selectedCourt, selectedTimeSlot) * selectedDuration) / 60,
       });
     } catch (err: unknown) {
-      console.error('Erro ao submeter agendamento:', err);
+      reportError('public_booking.submission_failed', err);
       toast.error('Ocorreu um erro ao processar sua reserva.');
     } finally {
       setSubmitting(false);

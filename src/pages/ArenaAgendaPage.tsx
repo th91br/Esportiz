@@ -1,3 +1,4 @@
+import { reportError } from '@/lib/observability';
 import { useState, useMemo } from 'react';
 import { AppPage } from '@/components/layout/AppPage';
 import { PageHeader } from '@/components/layout/PageHeader';
@@ -390,7 +391,7 @@ export default function ArenaAgendaPage() {
       setBlockDayOpen(false);
       setBlockDayReason('');
     } catch (err) {
-      console.error(err);
+      reportError('arena.day_block_failed', err);
       toast.error('Erro ao bloquear o dia.');
     } finally {
       setBlockingDay(false);

@@ -1,3 +1,4 @@
+import { reportError } from '@/lib/observability';
 import { useState, useEffect, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -283,7 +284,7 @@ CONCORDÂNCIA E ASSINATURA: O contratante declara ter lido, compreendido e aceit
         toast.error(data?.error || 'Erro ao assinar o contrato.');
       }
     } catch (err) {
-      console.error('Erro ao assinar contrato:', err);
+      reportError('student_portal.contract_signature_failed', err);
       toast.error('Erro ao processar assinatura eletrônica.');
     } finally {
       setSigning(false);
@@ -372,7 +373,7 @@ CONCORDÂNCIA E ASSINATURA: O contratante declara ter lido, compreendido e aceit
         toast.error('Dados incorretos. CPF ou Data de Nascimento inválidos.');
       }
     } catch (err: unknown) {
-      console.error('Erro de autenticação no portal:', err);
+      reportError('student_portal.authentication_failed', err);
       toast.error('Ocorreu um erro ao conectar com o servidor.');
     } finally {
       setAuthenticating(false);
@@ -427,7 +428,7 @@ CONCORDÂNCIA E ASSINATURA: O contratante declara ter lido, compreendido e aceit
         }
       }
     } catch (error) {
-      console.error('Erro ao restaurar sessão do portal:', error);
+      reportError('student_portal.session_restore_failed', error);
     }
 
     if (sessionKey) {
@@ -457,7 +458,7 @@ CONCORDÂNCIA E ASSINATURA: O contratante declara ter lido, compreendido e aceit
           });
         }
       } catch (error) {
-        console.error('Erro ao carregar marca do portal:', error);
+        reportError('student_portal.brand_load_failed', error);
       }
     };
 
@@ -525,7 +526,7 @@ CONCORDÂNCIA E ASSINATURA: O contratante declara ter lido, compreendido e aceit
       navigator.clipboard.writeText(brCode);
       toast.success(`Pix Copia e Cola gerado e copiado! Valor: ${amountStr}`);
     } catch (err) {
-      console.error(err);
+      reportError('student_portal.clipboard_operation_failed', err);
       toast.error('Erro ao gerar código Pix Copia e Cola.');
     }
   };
@@ -562,7 +563,7 @@ CONCORDÂNCIA E ASSINATURA: O contratante declara ter lido, compreendido e aceit
       const qrDataUrl = await QRCode.toDataURL(brCode, { width: 260, margin: 1 });
       setPixQrCodeUrl(qrDataUrl);
     } catch (err) {
-      console.error('Erro ao gerar QRCode:', err);
+      reportError('student_portal.pix_qr_generation_failed', err);
       toast.error('Não foi possível gerar o QR Code Pix localmente.');
     } finally {
       setGeneratingQrCode(false);
@@ -576,7 +577,7 @@ CONCORDÂNCIA E ASSINATURA: O contratante declara ter lido, compreendido e aceit
       toast.success('Código Pix Copia e Cola copiado com sucesso!');
       setTimeout(() => setCopiedCode(false), 2000);
     } catch (err) {
-      console.error(err);
+      reportError('student_portal.clipboard_operation_failed', err);
       toast.error('Erro ao copiar código Pix.');
     }
   };
@@ -629,7 +630,7 @@ CONCORDÂNCIA E ASSINATURA: O contratante declara ter lido, compreendido e aceit
       const qrDataUrl = await QRCode.toDataURL(brCode, { width: 260, margin: 1 });
       setPixQrCodeUrl(qrDataUrl);
     } catch (err) {
-      console.error('Erro ao gerar QRCode adhoc:', err);
+      reportError('student_portal.adhoc_pix_qr_generation_failed', err);
       toast.error('Não foi possível gerar o QR Code Pix localmente.');
     } finally {
       setGeneratingQrCode(false);
@@ -672,7 +673,7 @@ CONCORDÂNCIA E ASSINATURA: O contratante declara ter lido, compreendido e aceit
       const qrDataUrl = await QRCode.toDataURL(brCode, { width: 260, margin: 1 });
       setPixQrCodeUrl(qrDataUrl);
     } catch (err) {
-      console.error('Erro ao gerar QRCode customizado:', err);
+      reportError('student_portal.custom_pix_qr_generation_failed', err);
     } finally {
       setGeneratingQrCode(false);
     }
@@ -694,7 +695,7 @@ CONCORDÂNCIA E ASSINATURA: O contratante declara ter lido, compreendido e aceit
         const qrDataUrl = await QRCode.toDataURL(brCode, { width: 260, margin: 1 });
         setPixQrCodeUrl(qrDataUrl);
       } catch (err) {
-        console.error('Erro ao gerar QRCode:', err);
+        reportError('student_portal.pix_qr_refresh_failed', err);
       } finally {
         setGeneratingQrCode(false);
       }
@@ -767,7 +768,7 @@ CONCORDÂNCIA E ASSINATURA: O contratante declara ter lido, compreendido e aceit
       setRequestMessage('');
       await loadTrainingRequests(cpf, birthDate);
     } catch (error) {
-      console.error('Erro ao enviar solicitação:', error);
+      reportError('student_portal.training_request_failed', error);
       toast.error('Ocorreu um erro ao enviar a solicitação.');
     } finally {
       setSubmittingRequest(false);

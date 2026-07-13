@@ -1,3 +1,4 @@
+import { reportError } from '@/lib/observability';
 import { useState, useMemo } from 'react';
 import { AppPage } from '@/components/layout/AppPage';
 import { PageHeader } from '@/components/layout/PageHeader';
@@ -151,7 +152,7 @@ export default function ProductsPage() {
       setIsFormOpen(false);
       resetForm();
     } catch (error) {
-      console.error(error);
+      reportError('products.form_submit_failed', error);
     }
   };
 

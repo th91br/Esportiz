@@ -1,3 +1,4 @@
+import { reportError } from '@/lib/observability';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
@@ -104,7 +105,7 @@ export function useAttendance(options: { enabled?: boolean } = {}) {
                 .eq('completed', false);
 
             if (trainingError) {
-                console.error('Error syncing attendance with training completion:', trainingError);
+                reportError('attendance.training_sync_failed', trainingError);
             }
         },
         onSuccess: () => {

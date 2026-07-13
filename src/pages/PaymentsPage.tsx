@@ -1,3 +1,4 @@
+import { reportError } from '@/lib/observability';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { AppPage } from '@/components/layout/AppPage';
 import { PageHeader } from '@/components/layout/PageHeader';
@@ -225,7 +226,7 @@ export default function PaymentsPage() {
       });
       toast.success(`Pagamento da reserva marcado como ${newStatus === 'paid' ? 'Pago' : 'Pendente'}!`);
     } catch (err: unknown) {
-      console.error('Erro ao atualizar pagamento da reserva:', err);
+      reportError('payments.reservation_status_update_failed', err);
     }
   };
 

@@ -1,3 +1,4 @@
+import { reportWarning } from '@/lib/observability';
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/auth';
 import { useBusinessContext } from '@/hooks/useBusinessContext';
@@ -31,7 +32,7 @@ export function SidebarProvider({ children }: { children: React.ReactNode }) {
     try {
       localStorage.setItem('sidebar-collapsed', String(collapsed));
     } catch (e) {
-      console.warn('Failed to save sidebar state to localStorage', e);
+      reportWarning('sidebar.preference_write_failed', { reason: e });
     }
   };
 

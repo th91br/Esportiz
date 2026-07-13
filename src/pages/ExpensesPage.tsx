@@ -1,3 +1,4 @@
+import { reportError } from '@/lib/observability';
 import { useState, useMemo } from 'react';
 import { AppPage } from '@/components/layout/AppPage';
 import { PageHeader } from '@/components/layout/PageHeader';
@@ -183,7 +184,7 @@ export default function ExpensesPage() {
       setIsFormOpen(false);
       resetForm();
     } catch (error) {
-      console.error(error);
+      reportError('expenses.form_submit_failed', error);
     }
   };
 

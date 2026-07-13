@@ -1,3 +1,4 @@
+import { reportError } from '@/lib/observability';
 export const APP_RECOVERY_ATTEMPTED_KEY = 'esportiz_recovery_attempted';
 export const APP_RECOVERY_ATTEMPT_TTL_MS = 60_000;
 
@@ -94,7 +95,7 @@ export async function recoverAppRuntime(options: RecoverAppRuntimeOptions = {}) 
       await Promise.all(registrations.map((registration) => registration.unregister()));
     }
   } catch (error) {
-    console.error('Error during app runtime recovery:', error);
+    reportError('app.recovery_failed', error);
   }
 
   const recoveryUrl = withRecoveryCacheBust(browserWindow.location.href, () => recoveryStartedAt);

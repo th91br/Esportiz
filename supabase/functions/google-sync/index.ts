@@ -87,7 +87,7 @@ serve(async (req) => {
 
     if (!calendarResponse.ok) {
       const errorData = await calendarResponse.json() as GoogleApiErrorResponse
-      console.error('Google API Error:', errorData)
+      console.error('google-sync calendar_request_failed', { status: calendarResponse.status })
       throw new Error(`Google API returned ${calendarResponse.status}: ${errorData.error?.message || 'Unknown error'}`)
     }
 
@@ -143,7 +143,7 @@ serve(async (req) => {
       status: 200,
     })
   } catch (error) {
-    console.error('Sync Error:', error)
+    console.error('google-sync request_failed')
     return new Response(JSON.stringify({ error: getErrorMessage(error) }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 400,

@@ -1,3 +1,4 @@
+import { reportError } from '@/lib/observability';
 import { useState } from 'react';
 import { Plus, Pencil, Trash2, Tag, Check, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -53,7 +54,7 @@ export function ModalityManager() {
       setNewName('');
       setIsAdding(false);
     } catch (error) {
-      console.error('Error processing modality operation:', error);
+      reportError('modalities.operation_failed', error);
     }
   };
 
@@ -69,7 +70,7 @@ export function ModalityManager() {
       await updateModality(id, { name: editName, color: editColor });
       setEditingId(null);
     } catch (error) {
-      console.error('Error processing modality operation:', error);
+      reportError('modalities.operation_failed', error);
     }
   };
 

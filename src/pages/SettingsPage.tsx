@@ -1,3 +1,4 @@
+import { reportError } from '@/lib/observability';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { AppPage } from '@/components/layout/AppPage';
@@ -300,12 +301,12 @@ export default function SettingsPage() {
         const contactsFound = Number(syncData?.contactsFound ?? syncData?.count ?? 0);
         toast.success(`${contactsFound} contato${contactsFound !== 1 ? 's' : ''} analisado${contactsFound !== 1 ? 's' : ''}. Nenhum ${labels.studentLabelSingular.toLowerCase()} foi criado automaticamente.`);
       } catch (syncErr) {
-        console.error('Initial sync error:', syncErr);
+        reportError('settings.google_initial_sync_failed', syncErr);
       }
 
       toast.success('Google Agenda conectado com sucesso!', { id: toastId });
     } catch (error: unknown) {
-      console.error('OAuth Error:', error);
+      reportError('settings.google_oauth_failed', error);
       toast.error('Erro ao conectar com Google: ' + getErrorMessage(error), { id: toastId });
     } finally {
       clearGoogleOAuthState();
@@ -423,7 +424,7 @@ export default function SettingsPage() {
       if (input) input.value = '';
       toast.success('Logo removida com sucesso.');
     } catch (error) {
-      console.error(error);
+      reportError('settings.operation_failed', error);
       toast.error('Erro ao remover a logo.');
     } finally {
       setIsDeletingLogo(false);
@@ -458,7 +459,7 @@ export default function SettingsPage() {
         try {
           logoUrl = await uploadLogo(logoFile);
         } catch (uploadErr) {
-          console.error("Failed to upload logo inside settings:", uploadErr);
+          reportError('settings.logo_upload_failed', uploadErr);
           toast.warning("Não foi possível salvar o arquivo da logo, mas estamos atualizando os outros dados!");
         }
       }
@@ -497,7 +498,7 @@ export default function SettingsPage() {
       if (input) input.value = '';
       toast.success('Configurações salvas com sucesso!');
     } catch (error) {
-      console.error(error);
+      reportError('settings.operation_failed', error);
       toast.error('Erro ao salvar configurações.');
     }
   };
@@ -558,7 +559,7 @@ export default function SettingsPage() {
         window.location.href = '/dashboard';
       }, 1500);
     } catch (error) {
-      console.error('Erro ao alternar de segmento:', error);
+      reportError('settings.business_type_switch_failed', error);
       toast.error('Erro ao alternar de segmento.');
     } finally {
       setPendingBusinessType(null);

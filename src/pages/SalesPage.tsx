@@ -1,3 +1,4 @@
+import { reportError } from '@/lib/observability';
 import { useState, useMemo } from 'react';
 import { AppPage } from '@/components/layout/AppPage';
 import { IconCardTitle } from '@/components/layout/IconCardTitle';
@@ -185,7 +186,7 @@ export default function SalesPage() {
       });
       clearCart();
     } catch (error) {
-      console.error(error);
+      reportError('sales.checkout_failed', error);
     }
   };
 

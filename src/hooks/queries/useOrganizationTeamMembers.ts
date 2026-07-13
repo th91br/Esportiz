@@ -1,3 +1,4 @@
+import { reportError } from '@/lib/observability';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { normalizeOrganizationRole, type OrganizationRole } from '@/lib/rolePermissions';
@@ -46,7 +47,7 @@ export function useOrganizationTeamMembers({
         .order('created_at', { ascending: true });
 
       if (error) {
-        console.error('Error fetching organization team members:', error);
+        reportError('team.members_load_failed', error);
         throw error;
       }
 

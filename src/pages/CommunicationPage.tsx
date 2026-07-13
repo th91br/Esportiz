@@ -1,3 +1,4 @@
+import { reportError } from '@/lib/observability';
 import { useState, useMemo, useEffect } from 'react';
 import { AppPage } from '@/components/layout/AppPage';
 import { PageHeader } from '@/components/layout/PageHeader';
@@ -137,7 +138,7 @@ export default function CommunicationPage() {
       });
       toast.success('Modelo de mensagem salvo como padrão para este público!');
     } catch (err) {
-      console.error(err);
+      reportError('communication.template_save_failed', err);
       toast.error('Erro ao salvar o modelo de mensagem.');
     }
   };

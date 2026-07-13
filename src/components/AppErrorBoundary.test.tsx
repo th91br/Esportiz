@@ -38,6 +38,8 @@ describe('AppErrorBoundary', () => {
     });
 
     expect(screen.getByRole('button', { name: 'Corrigindo...' })).toBeDisabled();
+    expect(screen.queryByText(/Failed to fetch dynamically imported module/)).not.toBeInTheDocument();
+    expect(screen.getByText(/Código do erro:/)).toBeInTheDocument();
   });
 
   it('lets the user force a full runtime recovery after an attempted recovery', async () => {

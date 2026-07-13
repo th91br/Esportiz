@@ -22,6 +22,7 @@ describe('premium UI polish contracts', () => {
   const courtsPage = readFileSync(resolve(process.cwd(), 'src/pages/CourtsPage.tsx'), 'utf-8');
   const reportsPage = readFileSync(resolve(process.cwd(), 'src/pages/ReportsPage.tsx'), 'utf-8');
   const settingsPage = readFileSync(resolve(process.cwd(), 'src/pages/SettingsPage.tsx'), 'utf-8');
+  const teamSettingsSection = readFileSync(resolve(process.cwd(), 'src/components/settings/TeamSettingsSection.tsx'), 'utf-8');
   const studentProfilePage = readFileSync(resolve(process.cwd(), 'src/pages/StudentProfilePage.tsx'), 'utf-8');
   const studentPortalPage = readFileSync(resolve(process.cwd(), 'src/pages/StudentPortalPage.tsx'), 'utf-8');
   const studentsPage = readFileSync(resolve(process.cwd(), 'src/pages/StudentsPage.tsx'), 'utf-8');
@@ -389,9 +390,11 @@ describe('premium UI polish contracts', () => {
     expect(settingsPage).toContain('<SettingsField');
     expect(settingsPage).toContain('<SettingsGroupTitle');
     expect(settingsPage).toContain('<SettingsSection');
-    expect(settingsPage).toContain('<IconAlertDialogTitle icon={AlertCircle}>');
+    expect(teamSettingsSection).toContain('<IconAlertDialogTitle icon={AlertCircle}>');
     expect(settingsPage).toContain('<IconAlertDialogTitle icon={AlertCircle} iconClassName="text-amber-500">');
     expect(settingsPage).toContain('<StatusPill');
+    expect(settingsPage).toContain("import { TeamSettingsSection } from '@/components/settings/TeamSettingsSection';");
+    expect(settingsPage).toContain('<TeamSettingsSection businessType={selectedBusinessType} />');
     expect(settingsPage).toContain('<AlertDialog open={showNicheConfirmation}');
     expect((settingsPage.match(/<CardTitle className="flex items-center gap-2 text-lg">/g) ?? []).length).toBeLessThanOrEqual(2);
     expect(settingsPage).not.toContain("import { Header } from '@/components/Header';");
@@ -405,6 +408,13 @@ describe('premium UI polish contracts', () => {
     expect(settingsPage).not.toContain('AlertDialogTitle className="flex items-center gap-2 text-xl font-bold"');
   });
 
+  it('keeps team settings isolated and names icon-only controls', () => {
+    expect(teamSettingsSection).toContain("export function TeamSettingsSection");
+    expect(teamSettingsSection).toContain("aria-label={showInvitePassword ? 'Ocultar senha provisoria' : 'Mostrar senha provisoria'}");
+    expect(teamSettingsSection).toContain('aria-pressed={showInvitePassword}');
+    expect(teamSettingsSection).toContain('aria-label="Excluir funcionário permanentemente"');
+    expect(teamSettingsSection).toContain('<RolePermissionsPanel');
+  });
   it('keeps the students/reservants page on the shared app shell and page header pattern', () => {
     expect(studentsPage).toContain("import { AppPage } from '@/components/layout/AppPage';");
     expect(studentsPage).toContain("import { PageHeader } from '@/components/layout/PageHeader';");

@@ -5,7 +5,7 @@ import type { Training, TimeSlot } from '@/data/mockData';
 import { useAuth } from '@/contexts/auth';
 import { useProfile } from '@/hooks/queries/useProfile';
 import { syncAfterScheduleMutation } from '@/lib/querySync';
-import type { Tables, TablesInsert, TablesUpdate } from '@/integrations/supabase/types';
+import type { Tables, TablesUpdate } from '@/integrations/supabase/types';
 
 type TrainingRowWithStudents = Tables<'trainings'> & {
     training_students?: Pick<Tables<'training_students'>, 'student_id'>[] | null;
@@ -66,35 +66,22 @@ export function useTrainings(options: { enabled?: boolean } = {}) {
             if (!user) throw new Error('Usuário não autenticado');
 
             const businessType = profile?.business_type || 'sport_school';
-            const { data: training, error } = await supabase.from('trainings').insert({
-                user_id: user.id,
-                business_type: businessType,
-                date: data.date,
-                time: data.time,
-                location: data.location,
-                notes: data.notes,
-                modality_id: data.modalityId,
-                duration_minutes: data.durationMinutes ?? 60,
-                cancelled: data.cancelled ?? false,
-                cancellation_reason: data.cancellationReason ?? null,
-                cancellation_notes: data.cancellationNotes ?? null,
-                organization_id: profile?.organization_id || null,
-            }).select().single();
+            const { error } = await supabase.rpc('create_training_with_students_atomic', {
+                p_business_type: businessType,
+                p_date: data.date,
+                p_time: data.time,
+                p_location: data.location,
+                p_notes: data.notes ?? null,
+                p_modality_id: data.modalityId ?? null,
+                p_duration_minutes: data.durationMinutes ?? 60,
+                p_cancelled: data.cancelled ?? false,
+                p_cancellation_reason: data.cancellationReason ?? null,
+                p_cancellation_notes: data.cancellationNotes ?? null,
+                p_organization_id: profile?.organization_id || null,
+                p_student_ids: data.studentIds ?? [],
+            });
 
-            if (error || !training) throw error || new Error('Treino não criado');
-
-            if (data.studentIds && data.studentIds.length > 0) {
-                const trainingStudents: TablesInsert<'training_students'>[] = data.studentIds.map((sid) => ({
-                    training_id: training.id,
-                    student_id: sid,
-                    user_id: user.id,
-                    organization_id: profile?.organization_id || null,
-                }));
-                const { error: tsError } = await supabase.from('training_students').insert(
-                    trainingStudents
-                );
-                if (tsError) throw tsError;
-            }
+            if (error) throw error;
         },
         onSuccess: () => {
             syncAfterScheduleMutation(queryClient);
@@ -108,40 +95,27 @@ export function useTrainings(options: { enabled?: boolean } = {}) {
         mutationFn: async (params: { id: string; data: Partial<Training> }) => {
             if (!user) throw new Error('Usuário não autenticado');
             const { id, data } = params;
-            const updates: TablesUpdate<'trainings'> = {
-                organization_id: profile?.organization_id || null,
-            };
+            const updates: Record<string, string | number | boolean | null> = {};
 
             if (data.date !== undefined) updates.date = data.date;
             if (data.time !== undefined) updates.time = data.time;
             if (data.location !== undefined) updates.location = data.location;
-            if (data.notes !== undefined) updates.notes = data.notes;
-            if (data.modalityId !== undefined) updates.modality_id = data.modalityId;
+            if ('notes' in data) updates.notes = data.notes ?? null;
+            if ('modalityId' in data) updates.modality_id = data.modalityId ?? null;
             if (data.durationMinutes !== undefined) updates.duration_minutes = data.durationMinutes;
             if (data.cancelled !== undefined) updates.cancelled = data.cancelled;
-            if (data.cancellationReason !== undefined) updates.cancellation_reason = data.cancellationReason;
-            if (data.cancellationNotes !== undefined) updates.cancellation_notes = data.cancellationNotes;
+            if ('cancellationReason' in data) updates.cancellation_reason = data.cancellationReason ?? null;
+            if ('cancellationNotes' in data) updates.cancellation_notes = data.cancellationNotes ?? null;
 
-            if (Object.keys(updates).length > 0) {
-                const { error } = await supabase.from('trainings').update(updates).eq('id', id).eq('user_id', tenantId);
-                if (error) throw error;
-            }
+            if (Object.keys(updates).length === 0 && data.studentIds === undefined) return;
 
-            if (data.studentIds) {
-                await supabase.from('training_students').delete().eq('training_id', id).eq('user_id', tenantId);
-                if (data.studentIds.length > 0) {
-                    const trainingStudents: TablesInsert<'training_students'>[] = data.studentIds.map((sid) => ({
-                        training_id: id,
-                        student_id: sid,
-                        user_id: user.id,
-                        organization_id: profile?.organization_id || null,
-                    }));
-                    const { error: tsError } = await supabase.from('training_students').insert(
-                        trainingStudents
-                    );
-                    if (tsError) throw tsError;
-                }
-            }
+            const { error } = await supabase.rpc('update_training_with_students_atomic', {
+                p_training_id: id,
+                p_updates: updates,
+                p_student_ids: data.studentIds ?? null,
+            });
+
+            if (error) throw error;
         },
         onSuccess: () => {
             syncAfterScheduleMutation(queryClient);

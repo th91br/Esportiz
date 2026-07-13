@@ -21,9 +21,9 @@ describe('schedule typing contracts', () => {
   it('keeps cancellation fields represented and persisted on training writes', () => {
     expect(databaseTypes).toContain('cancellation_reason: string | null');
     expect(databaseTypes).toContain('cancellation_notes: string | null');
-    expect(trainingsHook).toContain('cancelled: data.cancelled ?? false');
-    expect(trainingsHook).toContain('cancellation_reason: data.cancellationReason ?? null');
-    expect(trainingsHook).toContain('updates.cancellation_reason = data.cancellationReason');
+    expect(trainingsHook).toContain('p_cancelled: data.cancelled ?? false');
+    expect(trainingsHook).toContain('p_cancellation_reason: data.cancellationReason ?? null');
+    expect(trainingsHook).toContain('updates.cancellation_reason = data.cancellationReason ?? null');
   });
 
   it('keeps justified attendance represented in database and UI contracts', () => {

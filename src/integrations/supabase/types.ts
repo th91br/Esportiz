@@ -1095,6 +1095,23 @@ export type Database = {
           total_amount?: number
         }
       }
+      create_training_with_students_atomic: {
+        Args: {
+          p_business_type: string
+          p_cancelled: boolean
+          p_cancellation_notes: string | null
+          p_cancellation_reason: string | null
+          p_date: string
+          p_duration_minutes: number
+          p_location: string
+          p_modality_id: string | null
+          p_notes: string | null
+          p_organization_id: string | null
+          p_student_ids: string[]
+          p_time: string
+        }
+        Returns: string
+      }
       cleanup_student_future_trainings: {
         Args: {
           p_student_id: string
@@ -1500,6 +1517,14 @@ export type Database = {
           p_student_id: string
         }
         Returns: void
+      }
+      update_training_with_students_atomic: {
+        Args: {
+          p_student_ids: string[] | null
+          p_training_id: string
+          p_updates: Json
+        }
+        Returns: string
       }
     }
     Enums: {

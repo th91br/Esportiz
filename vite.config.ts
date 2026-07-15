@@ -14,7 +14,8 @@ export default defineConfig(({ mode }) => ({
     },
   },
   plugins: [
-    react(),
+    // Keep SWC until plugin-react's optional Babel peer no longer conflicts with Workbox.
+    react({ disableOxcRecommendation: true }),
     VitePWA({
       injectRegister: 'auto',
       registerType: 'prompt',

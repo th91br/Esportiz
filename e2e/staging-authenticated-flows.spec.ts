@@ -11,20 +11,20 @@ test.describe('authenticated staging journeys', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/login', { waitUntil: 'domcontentloaded' });
     await page.getByLabel('E-mail').fill(stagingEmail!);
-    await page.getByLabel('Senha').fill(stagingPassword!);
-    await page.getByRole('button', { name: 'Entrar' }).click();
+    await page.getByLabel('Senha', { exact: true }).fill(stagingPassword!);
+    await page.locator('form').getByRole('button', { name: 'Entrar', exact: true }).click();
     await expect(page).toHaveURL((url) => url.pathname !== '/login');
   });
 
   test('loads protected financial data and performs a reversible comanda write', async ({ page }) => {
     await page.goto('/pagamentos', { waitUntil: 'domcontentloaded' });
-    await expect(page.getByRole('heading', { name: 'Pagamentos' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Pagamentos', level: 1, exact: true })).toBeVisible();
 
     const comandaName = `E2E ${Date.now()}`;
     const comandaCard = page.getByRole('button', { name: `Abrir comanda ${comandaName}` });
 
     await page.goto('/comandas', { waitUntil: 'domcontentloaded' });
-    await expect(page.getByRole('heading', { name: 'Controle de Comandas' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Controle de Comandas', level: 1, exact: true })).toBeVisible();
 
     try {
       await page.getByRole('button', { name: 'Abrir Nova Comanda' }).click();

@@ -1,8 +1,12 @@
+import { reportError } from '@/lib/observability';
 import { useState } from 'react';
 import { Plus, Pencil, Trash2, Tag, Check, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { EmptyState } from '@/components/ui/empty-state';
 import { Input } from '@/components/ui/input';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { LoadingState } from '@/components/ui/loading-state';
+import { IconCardTitle } from '@/components/layout/IconCardTitle';
+import { Card, CardContent, CardDescription, CardHeader } from '@/components/ui/card';
 import { useModalities, Modality } from '@/hooks/queries/useModalities';
 import { useBusinessContext } from '@/hooks/useBusinessContext';
 import { cn } from '@/lib/utils';
@@ -50,7 +54,7 @@ export function ModalityManager() {
       setNewName('');
       setIsAdding(false);
     } catch (error) {
-      console.error('Error processing modality operation:', error);
+      reportError('modalities.operation_failed', error);
     }
   };
 
@@ -66,7 +70,7 @@ export function ModalityManager() {
       await updateModality(id, { name: editName, color: editColor });
       setEditingId(null);
     } catch (error) {
-      console.error('Error processing modality operation:', error);
+      reportError('modalities.operation_failed', error);
     }
   };
 
@@ -75,10 +79,9 @@ export function ModalityManager() {
       <div className="h-1 bg-gradient-to-r from-primary/50 to-primary" />
       <CardHeader className="flex flex-row items-center justify-between pb-2">
         <div className="space-y-1">
-          <CardTitle className="flex items-center gap-2 text-lg font-display">
-            <Tag className="h-5 w-5 text-primary" />
+          <IconCardTitle icon={Tag} className="font-display">
             {labels.modalityLabel}
-          </CardTitle>
+          </IconCardTitle>
           <CardDescription>Gerencie o(s) {labels.modalityLabel.toLowerCase()} oferecido(s) pela(o) {labels.ctLabelShort}.</CardDescription>
         </div>
         {!isAdding && (
@@ -129,13 +132,19 @@ export function ModalityManager() {
 
         <div className="grid gap-2">
           {loadingModalities ? (
-            <div className="py-4 text-center text-sm text-muted-foreground">Carregando modalidades...</div>
+            <LoadingState label="Carregando modalidades" className="py-4" />
           ) : modalities.length === 0 && !isAdding ? (
-            <div className="py-8 text-center border-2 border-dashed border-muted rounded-xl">
-              <Tag className="h-8 w-8 mx-auto text-muted-foreground/30 mb-2" />
-              <p className="text-sm text-muted-foreground">Nenhum(a) {labels.modalityLabelSingular.toLowerCase()} cadastrado(a).</p>
-              <Button variant="link" size="sm" onClick={() => setIsAdding(true)}>Criar o(a) primeiro(a)</Button>
-            </div>
+            <EmptyState
+              icon={Tag}
+              title={`Nenhum(a) ${labels.modalityLabelSingular.toLowerCase()} cadastrado(a).`}
+              action={(
+                <Button variant="link" size="sm" onClick={() => setIsAdding(true)}>
+                  Criar o(a) primeiro(a)
+                </Button>
+              )}
+              variant="outlined"
+              className="py-8"
+            />
           ) : (
             modalities.map((modality) => (
               <div key={modality.id} className="group flex items-center justify-between p-2.5 rounded-xl border border-border/50 hover:bg-muted/30 transition-colors">

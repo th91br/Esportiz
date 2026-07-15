@@ -1,17 +1,22 @@
+import { reportError } from '@/lib/observability';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Header } from '@/components/Header';
+import { AppPage } from '@/components/layout/AppPage';
+import { PageHeader } from '@/components/layout/PageHeader';
+import { IconDialogTitle } from '@/components/layout/IconDialogTitle';
 import { useStudents } from '@/hooks/queries/useStudents';
 import { usePlans } from '@/hooks/queries/usePlans';
 import { usePayments } from '@/hooks/queries/usePayments';
-import { useReservations } from '@/hooks/queries/useReservations';
+import { PAYMENT_METHOD_LABELS, useReservations, type Reservation } from '@/hooks/queries/useReservations';
 import { useCourts } from '@/hooks/queries/useCourts';
 import { usePrivacyMode } from '@/hooks/usePrivacyMode';
 import { formatCurrency } from '@/lib/formatCurrency';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { EmptyState } from '@/components/ui/empty-state';
 import { Checkbox } from '@/components/ui/checkbox';
+import { ArenaPartialPaymentDialog } from '@/components/arena/ArenaPartialPaymentDialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Check, X, DollarSign, AlertTriangle, Clock, TrendingUp, Eye, EyeOff, Percent, Trash2, Download, Search, CalendarDays } from 'lucide-react';
+import { Check, X, DollarSign, AlertTriangle, Clock, TrendingUp, Eye, EyeOff, Percent, Trash2, Download, Search, CalendarDays, RotateCcw, Users } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { exportToCSV } from '@/lib/exportUtils';
 import { Input } from '@/components/ui/input';
@@ -21,22 +26,33 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import {
-  Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter
+  Dialog, DialogContent, DialogDescription, DialogHeader, DialogFooter
 } from '@/components/ui/dialog';
 import { useBusinessContext } from '@/hooks/useBusinessContext';
-import { getLocalTodayDate } from '@/lib/dateUtils';
+import { useRolePermissions } from '@/hooks/useRolePermissions';
+import { getLocalTodayDate, getMonthNamePtBr } from '@/lib/dateUtils';
+import {
+  getPaymentFinancialStatus,
+  summarizePayments,
+  summarizeReservationReceivables,
+} from '@/lib/financialContracts';
 
-const monthNames = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
+const monthOptions = Array.from({ length: 12 }, (_, index) => getMonthNamePtBr(index));
 
 export default function PaymentsPage() {
   const { students } = useStudents();
   const { plans } = usePlans();
-  const { payments, generateMonthlyPayments, markAsPaid, markAsUnpaid, markBatchAsPaid, markBatchAsUnpaid, deletePayment, loadingPayments } = usePayments();
-  const { reservations, loadingReservations, updateReservation } = useReservations();
+  const { payments, cancelledPayments, generateMonthlyPayments, markAsPaid, markAsUnpaid, markBatchAsPaid, markBatchAsUnpaid, deletePayment, restorePayment, loadingPayments } = usePayments();
+  const { reservations, setReservationPaymentStatus } = useReservations();
   const { courts } = useCourts();
   const [privacyMode, togglePrivacyMode] = usePrivacyMode();
   const [searchTerm, setSearchTerm] = useState('');
   const { labels, isArena } = useBusinessContext();
+  const rolePermissions = useRolePermissions();
+  const canExportPayments = rolePermissions.can('payments', 'export');
+  const canReceivePayments = rolePermissions.can('payments', 'receive_payment');
+  const canReopenPayments = rolePermissions.can('payments', 'reopen_payment');
+  const canDeletePayments = rolePermissions.can('payments', 'delete');
   
   const [receivingPayment, setReceivingPayment] = useState<typeof payments[0] | null>(null);
   const [receiptAmount, setReceiptAmount] = useState<string>('');
@@ -46,6 +62,10 @@ export default function PaymentsPage() {
 
   // Seleção em lote (Batch Payments)
   const [selectedPayments, setSelectedPayments] = useState<string[]>([]);
+  
+  // Arena Payment Dialog State
+  const [arenaPaymentDialogRes, setArenaPaymentDialogRes] = useState<Reservation | null>(null);
+
   useEffect(() => {
     setSelectedPayments([]);
   }, [searchTerm, activeSubTab]);
@@ -74,6 +94,10 @@ export default function PaymentsPage() {
     return payments.filter(p => p.monthRef === monthRef);
   }, [payments, monthRef]);
 
+  const monthCancelledPayments = useMemo(() => {
+    return cancelledPayments.filter(p => p.monthRef === monthRef);
+  }, [cancelledPayments, monthRef]);
+
   const filteredPayments = useMemo(() => {
     return monthPayments
       .filter(p => {
@@ -87,6 +111,21 @@ export default function PaymentsPage() {
         return nameA.localeCompare(nameB, 'pt-BR');
       });
   }, [monthPayments, students, searchTerm]);
+
+  const filteredCancelledPayments = useMemo(() => {
+    return monthCancelledPayments
+      .filter(p => {
+        const student = students.find(s => s.id === p.studentId);
+        if (!student) return false;
+        return student.name.toLowerCase().includes(searchTerm.toLowerCase());
+      })
+      .sort((a, b) => {
+        const nameA = students.find(s => s.id === a.studentId)?.name || '';
+        const nameB = students.find(s => s.id === b.studentId)?.name || '';
+        return nameA.localeCompare(nameB, 'pt-BR');
+      });
+  }, [monthCancelledPayments, students, searchTerm]);
+
 
   const handleSelectAll = () => {
     if (selectedPayments.length === filteredPayments.length) {
@@ -102,13 +141,24 @@ export default function PaymentsPage() {
     );
   };
 
-  // --- Single Reservations (Locações) filtering ---
-  const monthReservations = useMemo(() => {
+  // --- Reservations filtering split by type ---
+  const monthAllReservations = useMemo(() => {
     return reservations.filter(r => r.date.startsWith(monthRef) && r.status !== 'cancelled');
   }, [reservations, monthRef]);
 
+  // Locações Avulsas: only non-monthly reservations
+  const monthAvulsaReservations = useMemo(() => {
+    return monthAllReservations.filter(r => r.reservationType === 'avulsa');
+  }, [monthAllReservations]);
+
+  // Mensalistas da Arena: monthly court reservations
+  const monthMensalistaReservations = useMemo(() => {
+    return monthAllReservations.filter(r => r.reservationType === 'mensalista');
+  }, [monthAllReservations]);
+
+
   const filteredReservations = useMemo(() => {
-    return monthReservations
+    return monthAvulsaReservations
       .filter(r => {
         const student = students.find(s => s.id === r.reservanteIds[0]);
         const reservanteName = student?.name || r.notes || 'Reserva Avulsa';
@@ -118,61 +168,65 @@ export default function PaymentsPage() {
         if (a.date !== b.date) return a.date.localeCompare(b.date);
         return a.time.localeCompare(b.time);
       });
-  }, [monthReservations, students, searchTerm]);
+  }, [monthAvulsaReservations, students, searchTerm]);
+
+  const filteredMensalistaReservations = useMemo(() => {
+    return monthMensalistaReservations
+      .filter(r => {
+        const student = students.find(s => s.id === r.reservanteIds[0]);
+        const reservanteName = student?.name || r.notes || 'Mensalista';
+        return reservanteName.toLowerCase().includes(searchTerm.toLowerCase());
+      })
+      .sort((a, b) => {
+        if (a.date !== b.date) return a.date.localeCompare(b.date);
+        return a.time.localeCompare(b.time);
+      });
+  }, [monthMensalistaReservations, students, searchTerm]);
 
   const getStatus = useCallback((p: typeof monthPayments[0]): 'paid' | 'pending' | 'overdue' => {
-    if (p.paid) return 'paid';
-    return p.dueDate < todayStr ? 'overdue' : 'pending';
+    return getPaymentFinancialStatus(p, todayStr);
   }, [todayStr]);
 
   // --- Dynamic Stats calculation depending on active sub-tab ---
   const showReservationsTab = isArena && activeSubTab === 'reservas';
 
-  const totalAmount = useMemo(() => {
-    if (showReservationsTab) {
-      return monthReservations.reduce((sum, r) => sum + r.finalPrice, 0);
-    }
-    return monthPayments.reduce((sum, p) => sum + p.amount, 0);
-  }, [showReservationsTab, monthReservations, monthPayments]);
+  const paymentSummary = useMemo(() => summarizePayments(monthPayments, todayStr), [monthPayments, todayStr]);
+  const avulsaReservationSummary = useMemo(
+    () => summarizeReservationReceivables(monthAvulsaReservations, todayStr),
+    [monthAvulsaReservations, todayStr],
+  );
+  const mensalistaReservationSummary = useMemo(
+    () => summarizeReservationReceivables(monthMensalistaReservations, todayStr),
+    [monthMensalistaReservations, todayStr],
+  );
+  // For the pacotes tab, combine monthly plan payments + mensalista reservations
+  const combinedPacotesSummary = useMemo(() => ({
+    totalAmount: paymentSummary.totalAmount + mensalistaReservationSummary.totalAmount,
+    totalPaid: paymentSummary.totalPaid + mensalistaReservationSummary.totalPaid,
+    totalPending: paymentSummary.totalPending + mensalistaReservationSummary.totalPending,
+    overdueCount: paymentSummary.overdueCount + mensalistaReservationSummary.overdueCount,
+  }), [paymentSummary, mensalistaReservationSummary]);
+  const activeSummary = showReservationsTab ? avulsaReservationSummary : combinedPacotesSummary;
+  const totalAmount = activeSummary.totalAmount;
+  const totalPaid = activeSummary.totalPaid;
+  const totalPending = activeSummary.totalPending;
+  const overdueCount = activeSummary.overdueCount;
 
-  const totalPaid = useMemo(() => {
-    if (showReservationsTab) {
-      return monthReservations.filter(r => r.paymentStatus === 'paid').reduce((sum, r) => sum + r.finalPrice, 0);
-    }
-    return monthPayments.reduce((sum, p) => sum + (p.paidAmount || 0), 0);
-  }, [showReservationsTab, monthReservations, monthPayments]);
-
-  const totalPending = Math.max(0, totalAmount - totalPaid);
-
-  const overdueCount = useMemo(() => {
-    if (showReservationsTab) {
-      return monthReservations.filter(r => r.paymentStatus === 'pending' && r.date < todayStr).length;
-    }
-    return monthPayments.filter(p => getStatus(p) === 'overdue').length;
-  }, [showReservationsTab, monthReservations, monthPayments, todayStr, getStatus]);
+  // Computed after mensalista reservations are available
+  const hasMonthlyPaymentRecords = monthPayments.length > 0 || monthCancelledPayments.length > 0 || monthMensalistaReservations.length > 0;
+  const hasFilteredPaymentRecords = filteredPayments.length > 0 || filteredCancelledPayments.length > 0 || filteredMensalistaReservations.length > 0;
 
   const handleToggleReservationPayment = async (reservation: typeof reservations[0]) => {
     try {
       const newStatus = reservation.paymentStatus === 'paid' ? 'pending' : 'paid';
-      const meta = {
-        price: reservation.price,
-        discount: reservation.discount,
-        finalPrice: reservation.finalPrice,
-        reservationType: reservation.reservationType,
-        paymentMethod: reservation.paymentMethod,
-        paymentStatus: newStatus as 'paid' | 'pending',
-        status: reservation.status,
-      };
-      
-      await updateReservation({
+      await setReservationPaymentStatus({
         id: reservation.id,
-        input: {
-          meta,
-        }
+        paymentStatus: newStatus,
+        paymentMethod: reservation.paymentMethod,
       });
       toast.success(`Pagamento da reserva marcado como ${newStatus === 'paid' ? 'Pago' : 'Pendente'}!`);
-    } catch (err: any) {
-      toast.error('Erro ao atualizar pagamento da reserva: ' + err.message);
+    } catch (err: unknown) {
+      reportError('payments.reservation_status_update_failed', err);
     }
   };
 
@@ -180,15 +234,13 @@ export default function PaymentsPage() {
   const years = Array.from({ length: 5 }, (_, i) => now.getFullYear() - 2 + i);
 
   return (
-    <div className="min-h-screen bg-background">
-      <Header />
-      <main className="container py-6 space-y-6">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-          <div>
-            <h1 className="font-display text-2xl font-bold text-foreground">Pagamentos</h1>
-            <p className="text-sm text-muted-foreground">Controle de pagamentos mensais dos(as) {labels.studentLabel.toLowerCase()}</p>
-          </div>
+    <AppPage>
+      <PageHeader
+        title="Pagamentos"
+        description={`Controle de pagamentos mensais dos(as) ${labels.studentLabel.toLowerCase()}`}
+        actions={(
           <div className="flex items-center gap-2 w-full sm:w-auto overflow-x-auto pb-1 sm:pb-0">
+            {canExportPayments && (
             <Button
               variant="outline"
               size="sm"
@@ -209,8 +261,9 @@ export default function PaymentsPage() {
               }}
               disabled={loadingPayments || monthPayments.length === 0}
             >
-              <Download className="h-4 w-4" /> <span className="hidden xs:inline">Exportar</span>
+              <Download className="h-4 w-4" /> <span className="hidden sm:inline">Exportar</span>
             </Button>
+            )}
             <Button
               variant="ghost"
               size="icon"
@@ -223,7 +276,7 @@ export default function PaymentsPage() {
             <Select value={String(selectedMonth)} onValueChange={v => setSelectedMonth(Number(v))}>
               <SelectTrigger className="w-[120px] sm:w-[140px] shrink-0"><SelectValue /></SelectTrigger>
               <SelectContent>
-                {monthNames.map((name, i) => (
+                {monthOptions.map((name, i) => (
                   <SelectItem key={i} value={String(i + 1)}>{name}</SelectItem>
                 ))}
               </SelectContent>
@@ -237,9 +290,10 @@ export default function PaymentsPage() {
               </SelectContent>
             </Select>
           </div>
-        </div>
+        )}
+      />
 
-        {/* Search Bar */}
+      {/* Search Bar */}
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
@@ -251,7 +305,7 @@ export default function PaymentsPage() {
         </div>
 
         {/* Summary cards */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <div className="card-elevated p-4">
             <div className="flex items-center gap-2 text-muted-foreground text-sm mb-1">
               <DollarSign className="h-4 w-4" /> Total do mês
@@ -293,13 +347,13 @@ export default function PaymentsPage() {
                   : 'text-muted-foreground hover:bg-muted/40 hover:text-foreground'
               )}
             >
-              <Percent className="h-3.5 w-3.5" />
-              Pacotes Mensais (Mensalistas)
+              <Users className="h-3.5 w-3.5" />
+              Mensalistas
               <span className={cn(
                 'text-[10px] px-1.5 py-0.5 rounded-full font-bold ml-1',
                 activeSubTab === 'pacotes' ? 'bg-white/25 text-white' : 'bg-muted text-muted-foreground'
               )}>
-                {monthPayments.length}
+                {monthPayments.length + monthMensalistaReservations.length}
               </span>
             </button>
             <button
@@ -315,12 +369,12 @@ export default function PaymentsPage() {
               )}
             >
               <CalendarDays className="h-3.5 w-3.5" />
-              Locações Avulsas (Agenda)
+              Locações Avulsas
               <span className={cn(
                 'text-[10px] px-1.5 py-0.5 rounded-full font-bold ml-1',
                 activeSubTab === 'reservas' ? 'bg-white/25 text-white' : 'bg-muted text-muted-foreground'
               )}>
-                {monthReservations.length}
+                {monthAvulsaReservations.length}
               </span>
             </button>
           </div>
@@ -329,30 +383,35 @@ export default function PaymentsPage() {
         {/* Dynamic Payment / Reservation list */}
         {showReservationsTab ? (
           // --- VIEW 1: LOCAÇÕES AVULSAS (AGENDA) ---
-          monthReservations.length === 0 ? (
-            <div className="card-elevated p-12 text-center">
-              <CalendarDays className="h-12 w-12 mx-auto text-muted-foreground/30 mb-4" />
-              <h3 className="font-display font-semibold text-lg text-foreground">Nenhuma locação avulsa para {monthNames[selectedMonth - 1]}/{selectedYear}</h3>
-              <p className="text-sm text-muted-foreground mt-1">As reservas agendadas e confirmadas na agenda de quadras aparecerão aqui automaticamente.</p>
-            </div>
+          monthAvulsaReservations.length === 0 ? (
+            <EmptyState
+              icon={CalendarDays}
+              title={`Nenhuma locação avulsa para ${monthOptions[selectedMonth - 1]}/${selectedYear}`}
+              description="As reservas agendadas e confirmadas na agenda de quadras aparecerão aqui automaticamente."
+              className="card-elevated p-12"
+            />
           ) : filteredReservations.length === 0 ? (
-            <div className="card-elevated p-12 text-center">
-              <Search className="h-12 w-12 mx-auto text-muted-foreground/30 mb-4" />
-              <h3 className="font-display font-semibold text-lg text-foreground">Nenhuma locação encontrada</h3>
-              <p className="text-sm text-muted-foreground mt-1">Não encontramos nenhum resultado para "{searchTerm}".</p>
-              <Button variant="link" onClick={() => setSearchTerm('')} className="mt-2">
-                Limpar busca
-              </Button>
-            </div>
+            <EmptyState
+              icon={Search}
+              title="Nenhuma locação encontrada"
+              description={`Não encontramos nenhum resultado para "${searchTerm}".`}
+              action={(
+                <Button variant="link" onClick={() => setSearchTerm('')}>
+                  Limpar busca
+                </Button>
+              )}
+              className="card-elevated p-12"
+            />
           ) : (
             <div className="space-y-3">
               {filteredReservations.map(reservation => {
                 const firstStudent = students.find(s => s.id === reservation.reservanteIds[0]);
-                const reservanteName = firstStudent?.name || reservation.notes || 'Reserva Avulsa / Sem Nome';
+                const reservanteName = firstStudent?.name || reservation.notes || 'Sem nome';
                 const court = courts.find(c => c.id === reservation.courtId);
-                const courtName = court?.name || 'Quadra Desconhecida';
+                const courtName = court?.name || 'Quadra';
                 const status = reservation.paymentStatus;
                 const isOverdue = status === 'pending' && reservation.date < todayStr;
+                const canChangeReservationPayment = status === 'paid' ? canReopenPayments : canReceivePayments;
 
                 return (
                   <div key={reservation.id} className="card-elevated p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 hover:border-primary/20 transition-all">
@@ -360,17 +419,13 @@ export default function PaymentsPage() {
                       <div className="flex items-center gap-2 flex-wrap">
                         <span className="font-semibold text-foreground truncate">{reservanteName}</span>
                         <Badge
-                          className={cn(
-                            'text-xs font-bold',
-                            status === 'paid' && 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800',
-                            status === 'pending' && !isOverdue && 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 border-amber-200 dark:border-amber-800',
-                            isOverdue && 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400 border-red-200 dark:border-red-800',
-                          )}
+                          variant={status === 'paid' ? 'success' : isOverdue ? 'destructive' : 'warning'}
+                          className="text-xs font-bold"
                         >
-                          {status === 'paid' ? '✓ Pago' : isOverdue ? '⚠ Atrasado (Data Passada)' : '⏳ Pendente'}
+                          {status === 'paid' ? '✓ Pago' : isOverdue ? '⚠ Atrasado' : '⏳ Pendente'}
                         </Badge>
                         <Badge variant="outline" className="text-xs bg-muted/30">
-                          Reserva Avulsa
+                          Avulsa
                         </Badge>
                       </div>
                       <div className="text-sm text-muted-foreground mt-1.5 flex flex-wrap gap-x-4 gap-y-1 items-center">
@@ -384,11 +439,17 @@ export default function PaymentsPage() {
                         </span>
                         {reservation.paymentMethod && status === 'paid' && (
                           <span className="text-emerald-600 dark:text-emerald-400 font-medium">
-                            Pago via {reservation.paymentMethod.toUpperCase()}
+                            Pago via {PAYMENT_METHOD_LABELS[reservation.paymentMethod]}
+                          </span>
+                        )}
+                        {status === 'pending' && reservation.totalPaid > 0 && (
+                          <span className="text-emerald-600 dark:text-emerald-400 font-medium text-xs">
+                            Recebido: {formatCurrency(reservation.totalPaid)} · Restante: {formatCurrency(reservation.remainingBalance)}
                           </span>
                         )}
                       </div>
                     </div>
+                    {canChangeReservationPayment && (
                     <div className="flex items-center gap-2 self-stretch sm:self-auto justify-end mt-2 sm:mt-0">
                       <Button
                         size="sm"
@@ -397,11 +458,17 @@ export default function PaymentsPage() {
                           'text-xs font-bold w-full sm:w-auto',
                           status === 'paid' ? 'text-muted-foreground hover:bg-destructive/5 hover:text-destructive' : 'btn-primary-gradient'
                         )}
-                        onClick={() => handleToggleReservationPayment(reservation)}
+                        onClick={() => {
+                          if (status === 'paid') {
+                            handleToggleReservationPayment(reservation);
+                          } else {
+                            setArenaPaymentDialogRes(reservation);
+                          }
+                        }}
                       >
                         {status === 'paid' ? (
                           <>
-                            <X className="h-3.5 w-3.5 mr-1" /> Estornar / Pendente
+                            <X className="h-3.5 w-3.5 mr-1" /> Estornar
                           </>
                         ) : (
                           <>
@@ -410,6 +477,7 @@ export default function PaymentsPage() {
                         )}
                       </Button>
                     </div>
+                    )}
                   </div>
                 );
               })}
@@ -417,24 +485,29 @@ export default function PaymentsPage() {
           )
         ) : (
           // --- VIEW 2: MENSALISTAS / PACOTES (PRO-RATA / REGULARES) ---
-          monthPayments.length === 0 ? (
-            <div className="card-elevated p-12 text-center">
-              <DollarSign className="h-12 w-12 mx-auto text-muted-foreground/30 mb-4" />
-              <h3 className="font-display font-semibold text-lg text-foreground">Nenhum pagamento para {monthNames[selectedMonth - 1]}/{selectedYear}</h3>
-              <p className="text-sm text-muted-foreground mt-1">{labels.studentLabel} com {labels.planLabel.toLowerCase()} mensal e dia de vencimento definido aparecerão aqui automaticamente.</p>
-            </div>
-          ) : filteredPayments.length === 0 ? (
-            <div className="card-elevated p-12 text-center">
-              <Search className="h-12 w-12 mx-auto text-muted-foreground/30 mb-4" />
-              <h3 className="font-display font-semibold text-lg text-foreground">Nenhum(a) {labels.studentLabelSingular.toLowerCase()} encontrado(a)</h3>
-              <p className="text-sm text-muted-foreground mt-1">Não encontramos nenhum resultado para "{searchTerm}".</p>
-              <Button variant="link" onClick={() => setSearchTerm('')} className="mt-2">
-                Limpar busca
-              </Button>
-            </div>
+          !hasMonthlyPaymentRecords ? (
+            <EmptyState
+              icon={DollarSign}
+              title={`Nenhum pagamento para ${monthOptions[selectedMonth - 1]}/${selectedYear}`}
+              description={`${labels.studentLabel} com ${labels.planLabel.toLowerCase()} mensal e dia de vencimento definido aparecerão aqui automaticamente.`}
+              className="card-elevated p-12"
+            />
+          ) : !hasFilteredPaymentRecords ? (
+            <EmptyState
+              icon={Search}
+              title={`Nenhum(a) ${labels.studentLabelSingular.toLowerCase()} encontrado(a)`}
+              description={`Não encontramos nenhum resultado para "${searchTerm}".`}
+              action={(
+                <Button variant="link" onClick={() => setSearchTerm('')}>
+                  Limpar busca
+                </Button>
+              )}
+              className="card-elevated p-12"
+            />
           ) : (
             <div className="space-y-3">
               {/* Barra de Ações em Lote */}
+              {filteredPayments.length > 0 && (
               <div className="flex flex-wrap items-center justify-between gap-3 p-3 bg-muted/40 rounded-xl border border-border/50">
                 <div className="flex items-center gap-2.5">
                   <Checkbox 
@@ -451,8 +524,9 @@ export default function PaymentsPage() {
                     </Badge>
                   )}
                 </div>
-                {selectedPayments.length > 0 && (
+                {selectedPayments.length > 0 && (canReceivePayments || canReopenPayments) && (
                   <div className="flex items-center gap-2">
+                    {canReceivePayments && (
                     <Button
                       size="sm"
                       className="btn-primary-gradient text-xs font-bold"
@@ -463,6 +537,8 @@ export default function PaymentsPage() {
                     >
                       <Check className="h-3.5 w-3.5 mr-1" /> Marcar como Pagos
                     </Button>
+                    )}
+                    {canReopenPayments && (
                     <Button
                       size="sm"
                       variant="outline"
@@ -474,9 +550,11 @@ export default function PaymentsPage() {
                     >
                       <X className="h-3.5 w-3.5 mr-1" /> Desmarcar
                     </Button>
+                    )}
                   </div>
                 )}
               </div>
+              )}
 
               {filteredPayments.map(payment => {
                 const student = students.find(s => s.id === payment.studentId);
@@ -498,17 +576,13 @@ export default function PaymentsPage() {
                         <div className="flex items-center gap-2 flex-wrap">
                         <span className="font-semibold text-foreground truncate">{student.name}</span>
                         {isPartial ? (
-                          <Badge className="text-xs bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 flex items-center gap-1">
+                          <Badge variant="warning" className="flex items-center gap-1 text-xs">
                             ⏳ Parcial (Falta {formatCurrency(payment.amount - (payment.paidAmount || 0))})
                           </Badge>
                         ) : (
                           <Badge
-                            className={cn(
-                              'text-xs font-bold',
-                              status === 'paid' && 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800',
-                              status === 'pending' && 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 border-amber-200 dark:border-amber-800',
-                              status === 'overdue' && 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400 border-red-200 dark:border-red-800',
-                            )}
+                            variant={status === 'paid' ? 'success' : status === 'overdue' ? 'destructive' : 'warning'}
+                            className="text-xs font-bold"
                           >
                             {status === 'paid' ? '✓ Pago' : status === 'pending' ? '⏳ Pendente' : '⚠ Atrasado'}
                           </Badge>
@@ -546,6 +620,7 @@ export default function PaymentsPage() {
                   </div>
                   <div className="flex items-center gap-2">
                       {payment.paid ? (
+                        canReopenPayments && (
                         <Button
                           variant="outline"
                           size="sm"
@@ -554,7 +629,9 @@ export default function PaymentsPage() {
                         >
                           <X className="h-4 w-4 mr-1" /> Desmarcar
                         </Button>
+                        )
                       ) : (
+                        canReceivePayments && (
                         <Button
                           size="sm"
                           className="btn-primary-gradient text-xs"
@@ -565,7 +642,9 @@ export default function PaymentsPage() {
                         >
                           <Check className="h-4 w-4 mr-1" /> Marcar Pago
                         </Button>
+                        )
                       )}
+                      {canDeletePayments && (
                       <AlertDialog>
                         <AlertDialogTrigger asChild>
                           <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10">
@@ -574,23 +653,170 @@ export default function PaymentsPage() {
                         </AlertDialogTrigger>
                         <AlertDialogContent>
                           <AlertDialogHeader>
-                            <AlertDialogTitle>Excluir pagamento?</AlertDialogTitle>
+                            <AlertDialogTitle>Cancelar cobran&ccedil;a?</AlertDialogTitle>
                             <AlertDialogDescription>
-                              Deseja excluir o pagamento de {student.name} ({monthNames[selectedMonth - 1]}/{selectedYear})? Você pode regenerá-lo depois.
+                              Esta cobran&ccedil;a de {student.name} ({monthOptions[selectedMonth - 1]}/{selectedYear}) ser&aacute; ocultada da lista ativa. Se foi um engano, voc&ecirc; poder&aacute; restaur&aacute;-la depois.
                             </AlertDialogDescription>
                           </AlertDialogHeader>
                           <AlertDialogFooter>
                             <AlertDialogCancel>Cancelar</AlertDialogCancel>
                             <AlertDialogAction onClick={() => deletePayment(payment.id)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-                              Excluir
+                              Cancelar cobran&ccedil;a
                             </AlertDialogAction>
                           </AlertDialogFooter>
                         </AlertDialogContent>
                       </AlertDialog>
+                      )}
                     </div>
                   </div>
                 );
               })}
+
+              {/* Reservas mensais de quadra */}
+              {isArena && filteredMensalistaReservations.length > 0 && (
+                <>
+                  {filteredPayments.length > 0 && (
+                    <div className="flex items-center gap-3 mt-4 mb-1">
+                      <div className="h-px flex-1 bg-border/60" />
+                      <span className="text-xs font-semibold text-muted-foreground shrink-0">
+                        Reservas de Quadra
+                      </span>
+                      <div className="h-px flex-1 bg-border/60" />
+                    </div>
+                  )}
+
+                  {filteredMensalistaReservations.map(reservation => {
+                    const firstStudent = students.find(s => s.id === reservation.reservanteIds[0]);
+                    const reservanteName = firstStudent?.name || reservation.notes || 'Sem nome';
+                    const court = courts.find(c => c.id === reservation.courtId);
+                    const courtName = court?.name || 'Quadra';
+                    const status = reservation.paymentStatus;
+                    const isOverdue = status === 'pending' && reservation.date < todayStr;
+                    const canChangeReservationPayment = status === 'paid' ? canReopenPayments : canReceivePayments;
+
+                    return (
+                      <div key={reservation.id} className="card-elevated p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 hover:border-primary/20 transition-all">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="font-semibold text-foreground truncate">{reservanteName}</span>
+                            <Badge
+                              variant={status === 'paid' ? 'success' : isOverdue ? 'destructive' : 'warning'}
+                              className="text-xs font-bold"
+                            >
+                              {status === 'paid' ? '✓ Pago' : isOverdue ? '⚠ Atrasado' : '⏳ Pendente'}
+                            </Badge>
+                            <Badge variant="outline" className="text-xs bg-muted/30">
+                              Mensalista
+                            </Badge>
+                          </div>
+                          <div className="text-sm text-muted-foreground mt-1.5 flex flex-wrap gap-x-4 gap-y-1 items-center">
+                            <span className="flex items-center gap-1">
+                              <span className="h-2.5 w-2.5 rounded-full inline-block" style={{ backgroundColor: court?.color || '#f97316' }} />
+                              {courtName}
+                            </span>
+                            <span>{formatCurrency(reservation.finalPrice)}</span>
+                            <span>
+                              {new Date(reservation.date + 'T12:00:00').toLocaleDateString('pt-BR')} às {reservation.time} ({reservation.durationMinutes} min)
+                            </span>
+                            {reservation.paymentMethod && status === 'paid' && (
+                              <span className="text-emerald-600 dark:text-emerald-400 font-medium">
+                                Pago via {PAYMENT_METHOD_LABELS[reservation.paymentMethod]}
+                              </span>
+                            )}
+                            {status === 'pending' && reservation.totalPaid > 0 && (
+                              <span className="text-emerald-600 dark:text-emerald-400 font-medium text-xs">
+                                Recebido: {formatCurrency(reservation.totalPaid)} · Restante: {formatCurrency(reservation.remainingBalance)}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                        {canChangeReservationPayment && (
+                        <div className="flex items-center gap-2 self-stretch sm:self-auto justify-end mt-2 sm:mt-0">
+                          <Button
+                            size="sm"
+                            variant={status === 'paid' ? 'outline' : 'default'}
+                            className={cn(
+                              'text-xs font-bold w-full sm:w-auto',
+                              status === 'paid' ? 'text-muted-foreground hover:bg-destructive/5 hover:text-destructive' : 'btn-primary-gradient'
+                            )}
+                            onClick={() => {
+                              if (status === 'paid') {
+                                handleToggleReservationPayment(reservation);
+                              } else {
+                                setArenaPaymentDialogRes(reservation);
+                              }
+                            }}
+                          >
+                            {status === 'paid' ? (
+                              <>
+                                <X className="h-3.5 w-3.5 mr-1" /> Estornar
+                              </>
+                            ) : (
+                              <>
+                                <Check className="h-3.5 w-3.5 mr-1" /> Confirmar Pagamento
+                              </>
+                            )}
+                          </Button>
+                        </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </>
+              )}
+
+              {canDeletePayments && filteredCancelledPayments.length > 0 && (
+                <div className="mt-5 rounded-2xl border border-amber-200 bg-amber-50/80 p-4 dark:border-amber-900/60 dark:bg-amber-950/20">
+                  <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                    <div>
+                      <h3 className="font-display text-base font-semibold text-amber-950 dark:text-amber-100">
+                        Cobran&ccedil;as canceladas
+                      </h3>
+                      <p className="text-sm text-amber-800/80 dark:text-amber-200/80">
+                        Use apenas para recuperar cobran&ccedil;as canceladas por engano neste m&ecirc;s.
+                      </p>
+                    </div>
+                    <Badge className="w-fit bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-200">
+                      {filteredCancelledPayments.length} cancelada(s)
+                    </Badge>
+                  </div>
+
+                  <div className="mt-3 space-y-2">
+                    {filteredCancelledPayments.map(payment => {
+                      const student = students.find(s => s.id === payment.studentId);
+                      const plan = plans.find(p => p.id === payment.planId);
+                      if (!student) return null;
+
+                      return (
+                        <div
+                          key={payment.id}
+                          className="flex flex-col gap-3 rounded-xl border border-amber-200/80 bg-background/80 p-3 sm:flex-row sm:items-center sm:justify-between dark:border-amber-900/60"
+                        >
+                          <div className="min-w-0">
+                            <div className="flex flex-wrap items-center gap-2">
+                              <span className="font-semibold text-foreground">{student.name}</span>
+                              <Badge variant="outline" className="border-amber-300 text-amber-700 dark:border-amber-800 dark:text-amber-300">
+                                Cancelada
+                              </Badge>
+                            </div>
+                            <p className="mt-1 text-sm text-muted-foreground">
+                              {plan?.name || `${labels.planLabelSingular} atual`} | {monthOptions[selectedMonth - 1]}/{selectedYear}
+                            </p>
+                          </div>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="w-full border-amber-300 text-amber-800 hover:bg-amber-100 sm:w-auto dark:border-amber-800 dark:text-amber-200 dark:hover:bg-amber-900/30"
+                            onClick={() => restorePayment(payment.id)}
+                          >
+                            <RotateCcw className="mr-1 h-4 w-4" /> Restaurar cobran&ccedil;a
+                          </Button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
             </div>
           )
         )}
@@ -600,16 +826,16 @@ export default function PaymentsPage() {
           <Dialog open={!!receivingPayment} onOpenChange={(open) => !open && setReceivingPayment(null)}>
             <DialogContent className="sm:max-w-md">
               <DialogHeader>
-                <DialogTitle className="flex items-center gap-2 text-foreground font-display font-bold">
-                  <DollarSign className="h-5 w-5 text-primary" /> Confirmar Recebimento
-                </DialogTitle>
+                <IconDialogTitle icon={DollarSign}>
+                  Confirmar Recebimento
+                </IconDialogTitle>
                 <DialogDescription>
                   Registre o pagamento para o(a) aluno(a) <strong className="text-foreground font-semibold">{students.find(s => s.id === receivingPayment.studentId)?.name}</strong>.
                 </DialogDescription>
               </DialogHeader>
 
               <div className="space-y-4 py-3 text-left">
-                <div className="grid grid-cols-2 gap-4 text-sm bg-muted/40 p-3.5 rounded-xl border border-border/50 text-left">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm bg-muted/40 p-3.5 rounded-xl border border-border/50 text-left">
                   <div>
                     <span className="text-muted-foreground block text-xs font-semibold">Valor Total da Fatura</span>
                     <span className="font-bold text-foreground text-base">{formatCurrency(receivingPayment.amount)}</span>
@@ -640,13 +866,13 @@ export default function PaymentsPage() {
                 </div>
               </div>
 
-              <DialogFooter className="flex gap-2 sm:gap-0 mt-2">
-                <Button type="button" variant="outline" className="flex-1" onClick={() => setReceivingPayment(null)}>
+              <DialogFooter className="flex flex-col-reverse gap-2 sm:flex-row sm:gap-0 mt-2">
+                <Button type="button" variant="outline" className="w-full sm:flex-1" onClick={() => setReceivingPayment(null)}>
                   Cancelar
                 </Button>
                 <Button
                   type="button"
-                  className="flex-1 btn-primary-gradient"
+                  className="w-full sm:flex-1 btn-primary-gradient"
                   onClick={async () => {
                     if (!receiptAmount || isNaN(Number(receiptAmount))) return;
                     const inputAmt = Number(receiptAmount);
@@ -662,8 +888,15 @@ export default function PaymentsPage() {
             </DialogContent>
           </Dialog>
         )}
-      </main>
-    </div>
+
+      <ArenaPartialPaymentDialog
+        reservation={arenaPaymentDialogRes}
+        open={!!arenaPaymentDialogRes}
+        onOpenChange={(open) => {
+          if (!open) setArenaPaymentDialogRes(null);
+        }}
+      />
+    </AppPage>
   );
 }
 // Final de arquivo - PaymentsPage

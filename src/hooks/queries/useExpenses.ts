@@ -1,9 +1,11 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth } from '@/contexts/auth';
 import { toast } from 'sonner';
 import { useProfile } from '@/hooks/queries/useProfile';
 import { getLocalTodayDate } from '@/lib/dateUtils';
+import { syncAfterExpenseMutation } from '@/lib/querySync';
+import type { Tables, TablesUpdate } from '@/integrations/supabase/types';
 
 export interface Expense {
   id: string;
@@ -20,7 +22,7 @@ export interface Expense {
   updatedAt: string;
 }
 
-function mapExpense(row: any): Expense {
+function mapExpense(row: Tables<'expenses'>): Expense {
   return {
     id: row.id,
     userId: row.user_id,
@@ -37,26 +39,29 @@ function mapExpense(row: any): Expense {
   };
 }
 
-export function useExpenses() {
+export function useExpenses(options: { enabled?: boolean } = {}) {
   const { user } = useAuth();
   const { profile } = useProfile();
   const queryClient = useQueryClient();
+  const expensesEnabled = options.enabled ?? true;
+
+  const tenantId = profile?.owner_user_id || user?.id;
+  const businessType = profile?.business_type || 'sport_school';
 
   const expensesQuery = useQuery({
-    queryKey: ['expenses', user?.id, profile?.business_type],
+    queryKey: ['expenses', tenantId, businessType],
     queryFn: async () => {
-      if (!user?.id) return [];
-      const businessType = profile?.business_type || 'sport_school';
+      if (!tenantId) return [];
       const { data, error } = await supabase
         .from('expenses')
         .select('*')
-        .eq('user_id', user.id)
+        .eq('user_id', tenantId)
         .eq('business_type', businessType)
         .order('date', { ascending: false });
       if (error) throw error;
       return (data || []).map(mapExpense);
     },
-    enabled: !!user?.id,
+    enabled: expensesEnabled && !!tenantId,
   });
 
   const addExpenseMutation = useMutation({
@@ -69,7 +74,6 @@ export function useExpenses() {
       notes?: string;
     }) => {
       if (!user?.id) throw new Error('Not authenticated');
-      const businessType = profile?.business_type || 'sport_school';
       const { error } = await supabase.from('expenses').insert({
         user_id: user.id,
         business_type: businessType,
@@ -79,11 +83,12 @@ export function useExpenses() {
         date: expense.date || getLocalTodayDate(),
         recurrence: expense.recurrence || 'none',
         notes: expense.notes || null,
+        organization_id: profile?.organization_id || null,
       });
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['expenses', user?.id] });
+      syncAfterExpenseMutation(queryClient);
       toast.success('Despesa registrada com sucesso!');
     },
     onError: () => toast.error('Erro ao registrar despesa.'),
@@ -92,7 +97,10 @@ export function useExpenses() {
   const updateExpenseMutation = useMutation({
     mutationFn: async ({ id, ...updates }: Partial<Expense> & { id: string }) => {
       if (!user?.id) throw new Error('Not authenticated');
-      const dbUpdates: any = { updated_at: new Date().toISOString() };
+      const dbUpdates: TablesUpdate<'expenses'> = {
+        updated_at: new Date().toISOString(),
+        organization_id: profile?.organization_id || null,
+      };
       if (updates.description !== undefined) dbUpdates.description = updates.description;
       if (updates.amount !== undefined) dbUpdates.amount = updates.amount;
       if (updates.category !== undefined) dbUpdates.category = updates.category;
@@ -107,11 +115,11 @@ export function useExpenses() {
         .from('expenses')
         .update(dbUpdates)
         .eq('id', id)
-        .eq('user_id', user.id);
+        .eq('user_id', tenantId);
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['expenses', user?.id] });
+      syncAfterExpenseMutation(queryClient);
     },
     onError: () => toast.error('Erro ao atualizar despesa.'),
   });
@@ -123,11 +131,11 @@ export function useExpenses() {
         .from('expenses')
         .delete()
         .eq('id', id)
-        .eq('user_id', user.id);
+        .eq('user_id', tenantId);
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['expenses', user?.id] });
+      syncAfterExpenseMutation(queryClient);
       toast.success('Despesa removida.');
     },
     onError: () => toast.error('Erro ao remover despesa.'),

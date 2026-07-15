@@ -1,43 +1,80 @@
+import { reportError } from '@/lib/observability';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import type { Attendance } from '@/data/mockData';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth } from '@/contexts/auth';
 import { useProfile } from '@/hooks/queries/useProfile';
 import { useCallback } from 'react';
+import { syncAfterScheduleMutation } from '@/lib/querySync';
+import type { Tables, TablesUpdate } from '@/integrations/supabase/types';
 
-export function useAttendance() {
+export type AttendanceStatus = 'presente' | 'falta' | 'justificada';
+export interface SetAttendanceStatusParams {
+    trainingId: string;
+    studentId: string;
+    date: string;
+    status: AttendanceStatus;
+    justificationNotes?: string;
+}
+
+export function useAttendance(options: { enabled?: boolean } = {}) {
     const queryClient = useQueryClient();
     const { user } = useAuth();
     const { profile } = useProfile();
+    const attendanceEnabled = options.enabled ?? true;
+
+    const tenantId = profile?.owner_user_id || user?.id;
 
     const { data: attendance = [], isLoading: loadingAttendance } = useQuery({
-        queryKey: ['attendance', user?.id, profile?.business_type],
+        queryKey: ['attendance', tenantId, profile?.business_type],
         queryFn: async () => {
-            if (!user) return [];
+            if (!tenantId) return [];
             const businessType = profile?.business_type || 'sport_school';
-            const { data, error } = await supabase.from('attendance').select('*').eq('user_id', user.id).eq('business_type', businessType).order('date', { ascending: false });
+            const { data, error } = await supabase
+                .from('attendance')
+                .select('*')
+                .eq('user_id', tenantId)
+                .eq('business_type', businessType)
+                .order('date', { ascending: false });
             if (error) throw error;
-            return data.map((a: any) => ({
+            return (data || []).map((a: Tables<'attendance'>) => ({
                 id: a.id,
                 trainingId: a.training_id,
                 studentId: a.student_id,
                 present: a.present,
                 date: a.date,
+                justified: a.justified,
+                justificationNotes: a.justification_notes ?? undefined,
             })) as Attendance[];
         },
-        enabled: !!user,
+        enabled: attendanceEnabled && !!tenantId,
     });
 
     const toggleAttendanceMutation = useMutation({
-        mutationFn: async ({ trainingId, studentId, date, forcedStatus }: { trainingId: string, studentId: string, date: string, forcedStatus?: boolean }) => {
+        mutationFn: async ({ 
+            trainingId, 
+            studentId, 
+            date, 
+            status, 
+            justificationNotes 
+        }: SetAttendanceStatusParams) => {
+
             if (!user) throw new Error('Usuário não autenticado');
 
             const existing = attendance.find((a) => a.trainingId === trainingId && a.studentId === studentId);
-            const newStatus = forcedStatus !== undefined ? forcedStatus : (existing ? !existing.present : true);
+            const isPresent = status === 'presente';
+            const isJustified = status === 'justificada';
+            const notes = isJustified ? (justificationNotes || '') : null;
+
+            const payload = {
+                present: isPresent,
+                justified: isJustified,
+                justification_notes: notes,
+            };
 
             if (existing) {
-                const { error } = await supabase.from('attendance').update({ present: newStatus }).eq('id', existing.id);
+                const { error } = await supabase.from('attendance').update(payload).eq('id', existing.id);
                 if (error) throw error;
             } else {
                 const businessType = profile?.business_type || 'sport_school';
@@ -46,29 +83,33 @@ export function useAttendance() {
                     business_type: businessType,
                     training_id: trainingId,
                     student_id: studentId,
-                    present: newStatus,
+                    present: isPresent,
+                    justified: isJustified,
+                    justification_notes: notes,
                     date,
+                    organization_id: profile?.organization_id || null,
                 });
                 if (error) throw error;
             }
 
             // Sync with notifications: Mark training as completed when attendance is recorded
+            const completedUpdate: TablesUpdate<'trainings'> = {
+                completed: true,
+                completed_at: new Date().toISOString(),
+                organization_id: profile?.organization_id || null,
+            };
             const { error: trainingError } = await supabase
                 .from('trainings')
-                .update({ 
-                    completed: true, 
-                    completed_at: new Date().toISOString() 
-                } as any)
+                .update(completedUpdate)
                 .eq('id', trainingId)
                 .eq('completed', false);
 
             if (trainingError) {
-                console.error('Error syncing attendance with training completion:', trainingError);
+                reportError('attendance.training_sync_failed', trainingError);
             }
         },
         onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['attendance'] });
-            queryClient.invalidateQueries({ queryKey: ['trainings'] });
+            syncAfterScheduleMutation(queryClient);
         },
         onError: (error: Error) => {
             toast({ title: 'Erro ao atualizar presença', description: error.message, variant: 'destructive' });
@@ -82,11 +123,23 @@ export function useAttendance() {
         [attendance]
     );
 
+    const getAttendanceDetail = useCallback(
+        (trainingId: string, studentId: string): Attendance | undefined => {
+            return attendance.find((a) => a.trainingId === trainingId && a.studentId === studentId);
+        },
+        [attendance]
+    );
+
     return {
         attendance,
         loadingAttendance,
         getAttendanceStatus,
-        toggleAttendance: async (trainingId: string, studentId: string, date: string, forcedStatus?: boolean) =>
-            toggleAttendanceMutation.mutateAsync({ trainingId, studentId, date, forcedStatus }),
+        getAttendanceDetail,
+        setAttendanceStatus: async (params: SetAttendanceStatusParams) =>
+            toggleAttendanceMutation.mutateAsync(params),
+        toggleAttendance: async (trainingId: string, studentId: string, date: string, forcedStatus?: boolean) => {
+            const status = forcedStatus === true ? 'presente' : 'falta';
+            return toggleAttendanceMutation.mutateAsync({ trainingId, studentId, date, status });
+        }
     };
 }

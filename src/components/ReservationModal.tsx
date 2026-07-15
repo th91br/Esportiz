@@ -8,9 +8,17 @@ import { Textarea } from '@/components/ui/textarea';
 import { formatCurrency } from '@/lib/formatCurrency';
 import { useCourts } from '@/hooks/queries/useCourts';
 import { useStudents } from '@/hooks/queries/useStudents';
-import { useReservations, type ReservationMeta, PAYMENT_METHOD_LABELS, RESERVATION_TYPE_LABELS } from '@/hooks/queries/useReservations';
+import {
+  useReservations,
+  type PaymentMethod,
+  type ReservationMeta,
+  type ReservationType,
+  PAYMENT_METHOD_LABELS,
+  RESERVATION_PAYMENT_METHOD_OPTIONS,
+  RESERVATION_TYPE_LABELS,
+} from '@/hooks/queries/useReservations';
 import { toast } from 'sonner';
-import { CalendarDays, Clock, User, DollarSign, Search } from 'lucide-react';
+import { CalendarDays, Clock, User, DollarSign, Search, AlertTriangle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { getLocalTodayDate } from '@/lib/dateUtils';
 
@@ -42,7 +50,7 @@ export function ReservationModal({
 }: ReservationModalProps) {
   const { courts } = useCourts();
   const { students } = useStudents();
-  const { reservations, addReservation, updateReservation } = useReservations();
+  const { reservations, addReservation, updateReservation, setReservationPaymentStatus } = useReservations();
   const isEditing = !!reservationId;
   const existing = reservations.find(r => r.id === reservationId);
 
@@ -56,7 +64,7 @@ export function ReservationModal({
   const [reservanteSearch, setReservanteSearch] = useState('');
   const [reservationType, setReservationType] = useState<ReservationMeta['reservationType']>('avulsa');
   const [paymentMethod, setPaymentMethod] = useState<ReservationMeta['paymentMethod']>('pix');
-  const [paymentStatus, setPaymentStatus] = useState<'paid' | 'pending'>('pending');
+  const [paymentStatus, setPaymentStatus] = useState<ReservationMeta['paymentStatus']>('pending');
   const [discount, setDiscount] = useState(0);
   const [notes, setNotes] = useState('');
   const [saving, setSaving] = useState(false);
@@ -73,7 +81,7 @@ export function ReservationModal({
     return (hourlyPrice * duration) / 60;
   }, [selectedCourt, duration, time]);
 
-  const finalPrice = reservationType === 'experimental' ? 0 : Math.max(0, basePrice - discount);
+  const finalPrice = Math.max(0, basePrice - discount);
 
   useEffect(() => {
     if (!open) return;
@@ -115,15 +123,29 @@ export function ReservationModal({
     setSaving(true);
     try {
       const isBlocked = reservationType === 'blocked';
+      const nextPaymentMethod = isBlocked ? 'pix' : paymentMethod;
+      const nextPaymentStatus = isBlocked ? 'paid' : paymentStatus;
       const meta: ReservationMeta = {
         price: isBlocked ? 0 : basePrice,
         discount: isBlocked ? 0 : discount,
         finalPrice: isBlocked ? 0 : finalPrice,
         reservationType,
-        paymentMethod: isBlocked ? 'pix' : paymentMethod,
-        paymentStatus: isBlocked ? 'paid' : paymentStatus,
+        paymentMethod: isEditing && existing ? existing.paymentMethod : nextPaymentMethod,
+        paymentStatus: isEditing && existing ? existing.paymentStatus : nextPaymentStatus,
         status: 'confirmed',
       };
+      if (isEditing && existing?.online !== undefined) {
+        meta.online = existing.online;
+      }
+      if (isEditing && existing?.paymentUpdatedAt !== undefined) {
+        meta.paymentUpdatedAt = existing.paymentUpdatedAt;
+      }
+      if (isEditing && existing?.paymentPaidAt !== undefined) {
+        meta.paymentPaidAt = existing.paymentPaidAt;
+      }
+      if (isEditing && existing?.partialPayments !== undefined) {
+        meta.partialPayments = existing.partialPayments;
+      }
       const input = {
         date,
         time,
@@ -135,6 +157,17 @@ export function ReservationModal({
       };
       if (isEditing && reservationId) {
         await updateReservation({ id: reservationId, input });
+        if (
+          existing &&
+          !isBlocked &&
+          (existing.paymentStatus !== nextPaymentStatus || existing.paymentMethod !== nextPaymentMethod)
+        ) {
+          await setReservationPaymentStatus({
+            id: reservationId,
+            paymentStatus: nextPaymentStatus,
+            paymentMethod: nextPaymentMethod,
+          });
+        }
       } else {
         await addReservation(input);
       }
@@ -148,6 +181,9 @@ export function ReservationModal({
 
   const selectedReservante = students.find(s => s.id === reservanteId);
 
+  const todayStr = getLocalTodayDate();
+  const isRetroactive = date < todayStr || (date === todayStr && time < new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }));
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-lg max-h-[92vh] overflow-y-auto">
@@ -159,6 +195,16 @@ export function ReservationModal({
             {isEditing ? 'Atualize os dados da reserva.' : 'Preencha os dados para criar uma nova reserva.'}
           </DialogDescription>
         </DialogHeader>
+
+        {isRetroactive && (
+          <div className="bg-amber-500/10 border border-amber-500/20 text-amber-700 dark:text-amber-400 p-3 rounded-lg flex items-start gap-2.5 mt-2">
+            <AlertTriangle className="h-5 w-5 shrink-0 mt-0.5" />
+            <div className="text-sm">
+              <p className="font-bold">Aviso: Lançamento Retroativo</p>
+              <p className="opacity-90 text-xs">Você está agendando ou editando um horário no passado.</p>
+            </div>
+          </div>
+        )}
 
         <div className="space-y-5 mt-2">
           {/* Quadra */}
@@ -185,7 +231,7 @@ export function ReservationModal({
           </div>
 
           {/* Data e Hora */}
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="space-y-2">
               <Label className="flex items-center gap-2 text-sm font-semibold">
                 <CalendarDays className="h-4 w-4 text-primary" /> Data *
@@ -234,7 +280,7 @@ export function ReservationModal({
           {/* Tipo de Reserva */}
           <div className="space-y-2">
             <Label className="text-sm font-semibold">Tipo de Reserva</Label>
-            <Select value={reservationType} onValueChange={v => setReservationType(v as any)}>
+            <Select value={reservationType} onValueChange={v => setReservationType(v as ReservationType)}>
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
@@ -303,12 +349,12 @@ export function ReservationModal({
           )}
 
           {/* Financeiro */}
-          {reservationType !== 'experimental' && reservationType !== 'blocked' && (
+          {reservationType !== 'blocked' && (
             <div className="p-4 rounded-xl border border-border/60 bg-muted/20 space-y-3">
               <p className="text-sm font-semibold flex items-center gap-2">
                 <DollarSign className="h-4 w-4 text-primary" /> Financeiro
               </p>
-              <div className="grid grid-cols-3 gap-3 text-center">
+              <div className="grid grid-cols-1 gap-3 text-center min-[420px]:grid-cols-3">
                 <div>
                   <p className="text-xs text-muted-foreground mb-1">Valor Base</p>
                   <p className="font-bold text-sm">{formatCurrency(basePrice)}</p>
@@ -331,23 +377,23 @@ export function ReservationModal({
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="space-y-1.5">
                   <Label className="text-xs">Pagamento</Label>
-                  <Select value={paymentMethod} onValueChange={v => setPaymentMethod(v as any)}>
+                  <Select value={paymentMethod} onValueChange={v => setPaymentMethod(v as PaymentMethod)}>
                     <SelectTrigger className="h-9">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      {Object.entries(PAYMENT_METHOD_LABELS).map(([k, v]) => (
-                        <SelectItem key={k} value={k}>{v}</SelectItem>
+                      {RESERVATION_PAYMENT_METHOD_OPTIONS.map((method) => (
+                        <SelectItem key={method} value={method}>{PAYMENT_METHOD_LABELS[method]}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
                 </div>
                 <div className="space-y-1.5">
                   <Label className="text-xs">Status</Label>
-                  <Select value={paymentStatus} onValueChange={v => setPaymentStatus(v as any)}>
+                  <Select value={paymentStatus} onValueChange={v => setPaymentStatus(v as ReservationMeta['paymentStatus'])}>
                     <SelectTrigger className="h-9">
                       <SelectValue />
                     </SelectTrigger>
@@ -375,11 +421,11 @@ export function ReservationModal({
           </div>
 
           {/* Actions */}
-          <div className="flex gap-3 pt-2">
-            <Button variant="outline" className="flex-1" onClick={() => onOpenChange(false)}>
+          <div className="flex flex-col-reverse gap-3 pt-2 sm:flex-row">
+            <Button variant="outline" className="w-full sm:flex-1" onClick={() => onOpenChange(false)}>
               Cancelar
             </Button>
-            <Button className="flex-1 btn-primary-gradient" onClick={handleSubmit} disabled={saving}>
+            <Button className="w-full sm:flex-1 btn-primary-gradient" onClick={handleSubmit} disabled={saving}>
               {saving
                 ? <div className="h-4 w-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                 : isEditing ? 'Salvar' : 'Criar Reserva'}

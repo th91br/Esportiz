@@ -2,33 +2,50 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import type { Training, TimeSlot } from '@/data/mockData';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth } from '@/contexts/auth';
 import { useProfile } from '@/hooks/queries/useProfile';
+import { syncAfterScheduleMutation } from '@/lib/querySync';
+import type { Tables, TablesUpdate } from '@/integrations/supabase/types';
 
-export function useTrainings() {
+type TrainingRowWithStudents = Tables<'trainings'> & {
+    training_students?: Pick<Tables<'training_students'>, 'student_id'>[] | null;
+};
+
+type CancellationReason = NonNullable<Training['cancellationReason']>;
+
+function asCancellationReason(value: string | null): CancellationReason | undefined {
+    return value === 'holiday' || value === 'weather' || value === 'coach_absence' || value === 'other'
+        ? value
+        : undefined;
+}
+
+export function useTrainings(options: { enabled?: boolean } = {}) {
     const queryClient = useQueryClient();
     const { user } = useAuth();
     const { profile } = useProfile();
+    const trainingsEnabled = options.enabled ?? true;
+
+    const tenantId = profile?.owner_user_id || user?.id;
 
     const { data: trainings = [], isLoading: loadingTrainings } = useQuery({
-        queryKey: ['trainings', user?.id, profile?.business_type],
+        queryKey: ['trainings', tenantId, profile?.business_type],
         queryFn: async () => {
-            if (!user) return [];
+            if (!tenantId) return [];
             const businessType = profile?.business_type || 'sport_school';
             const { data, error } = await supabase
                 .from('trainings')
                 .select('*, training_students(student_id)')
-                .eq('user_id', user.id)
+                .eq('user_id', tenantId)
                 .eq('business_type', businessType)
                 .order('date')
                 .order('time');
 
             if (error) throw error;
-            return data.map((t: any) => ({
+            return ((data || []) as TrainingRowWithStudents[]).map((t) => ({
                 id: t.id,
                 date: t.date,
                 time: t.time as TimeSlot,
-                studentIds: (t.training_students || []).map((ts: any) => ts.student_id),
+                studentIds: (t.training_students || []).map((ts) => ts.student_id),
                 location: t.location,
                 notes: t.notes,
                 completed: t.completed ?? false,
@@ -36,9 +53,12 @@ export function useTrainings() {
                 googleEventId: t.google_event_id,
                 modalityId: t.modality_id,
                 durationMinutes: t.duration_minutes ?? 60,
+                cancelled: t.cancelled ?? false,
+                cancellationReason: asCancellationReason(t.cancellation_reason),
+                cancellationNotes: t.cancellation_notes ?? undefined,
             })) as Training[];
         },
-        enabled: !!user,
+        enabled: trainingsEnabled && !!tenantId,
     });
 
     const addTrainingMutation = useMutation({
@@ -46,32 +66,25 @@ export function useTrainings() {
             if (!user) throw new Error('Usuário não autenticado');
 
             const businessType = profile?.business_type || 'sport_school';
-            const { data: training, error } = await supabase.from('trainings').insert({
-                user_id: user.id,
-                business_type: businessType,
-                date: data.date,
-                time: data.time,
-                location: data.location,
-                notes: data.notes,
-                modality_id: data.modalityId,
-                duration_minutes: data.durationMinutes ?? 60,
-            }).select().single();
+            const { error } = await supabase.rpc('create_training_with_students_atomic', {
+                p_business_type: businessType,
+                p_date: data.date,
+                p_time: data.time,
+                p_location: data.location,
+                p_notes: data.notes ?? null,
+                p_modality_id: data.modalityId ?? null,
+                p_duration_minutes: data.durationMinutes ?? 60,
+                p_cancelled: data.cancelled ?? false,
+                p_cancellation_reason: data.cancellationReason ?? null,
+                p_cancellation_notes: data.cancellationNotes ?? null,
+                p_organization_id: profile?.organization_id || null,
+                p_student_ids: data.studentIds ?? [],
+            });
 
-            if (error || !training) throw error || new Error('Treino não criado');
-
-            if (data.studentIds && data.studentIds.length > 0) {
-                const { error: tsError } = await supabase.from('training_students').insert(
-                    data.studentIds.map((sid) => ({ 
-                        training_id: training.id, 
-                        student_id: sid,
-                        user_id: user.id 
-                    }))
-                );
-                if (tsError) throw tsError;
-            }
+            if (error) throw error;
         },
         onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['trainings'] });
+            syncAfterScheduleMutation(queryClient);
         },
         onError: (error: Error) => {
             toast({ title: 'Erro ao criar treino', description: error.message, variant: 'destructive' });
@@ -80,37 +93,32 @@ export function useTrainings() {
 
     const updateTrainingMutation = useMutation({
         mutationFn: async (params: { id: string; data: Partial<Training> }) => {
+            if (!user) throw new Error('Usuário não autenticado');
             const { id, data } = params;
-            const updates: any = {};
+            const updates: Record<string, string | number | boolean | null> = {};
 
             if (data.date !== undefined) updates.date = data.date;
             if (data.time !== undefined) updates.time = data.time;
             if (data.location !== undefined) updates.location = data.location;
-            if (data.notes !== undefined) updates.notes = data.notes;
-            if (data.modalityId !== undefined) updates.modality_id = data.modalityId;
+            if ('notes' in data) updates.notes = data.notes ?? null;
+            if ('modalityId' in data) updates.modality_id = data.modalityId ?? null;
             if (data.durationMinutes !== undefined) updates.duration_minutes = data.durationMinutes;
+            if (data.cancelled !== undefined) updates.cancelled = data.cancelled;
+            if ('cancellationReason' in data) updates.cancellation_reason = data.cancellationReason ?? null;
+            if ('cancellationNotes' in data) updates.cancellation_notes = data.cancellationNotes ?? null;
 
-            if (Object.keys(updates).length > 0) {
-                const { error } = await supabase.from('trainings').update(updates).eq('id', id);
-                if (error) throw error;
-            }
+            if (Object.keys(updates).length === 0 && data.studentIds === undefined) return;
 
-            if (data.studentIds) {
-                await supabase.from('training_students').delete().eq('training_id', id);
-                if (data.studentIds.length > 0) {
-                    const { error: tsError } = await supabase.from('training_students').insert(
-                        data.studentIds.map((sid) => ({ 
-                            training_id: id, 
-                            student_id: sid,
-                            user_id: user.id
-                        }))
-                    );
-                    if (tsError) throw tsError;
-                }
-            }
+            const { error } = await supabase.rpc('update_training_with_students_atomic', {
+                p_training_id: id,
+                p_updates: updates,
+                p_student_ids: data.studentIds ?? null,
+            });
+
+            if (error) throw error;
         },
         onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['trainings'] });
+            syncAfterScheduleMutation(queryClient);
         },
         onError: (error: Error) => {
             toast({ title: 'Erro ao atualizar treino', description: error.message, variant: 'destructive' });
@@ -119,12 +127,12 @@ export function useTrainings() {
 
     const deleteTrainingMutation = useMutation({
         mutationFn: async (id: string) => {
-            const { error } = await supabase.from('trainings').delete().eq('id', id);
+            if (!user) throw new Error('Usuário não autenticado');
+            const { error } = await supabase.from('trainings').delete().eq('id', id).eq('user_id', tenantId);
             if (error) throw error;
         },
         onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['trainings'] });
-            queryClient.invalidateQueries({ queryKey: ['attendance'] });
+            syncAfterScheduleMutation(queryClient);
         },
         onError: (error: Error) => {
             toast({ title: 'Erro ao remover treino', description: error.message, variant: 'destructive' });
@@ -133,14 +141,21 @@ export function useTrainings() {
 
     const markCompleteMutation = useMutation({
         mutationFn: async (id: string) => {
+            if (!user) throw new Error('Usuário não autenticado');
+            const completedUpdate: TablesUpdate<'trainings'> = {
+                completed: true,
+                completed_at: new Date().toISOString(),
+                organization_id: profile?.organization_id || null,
+            };
             const { error } = await supabase
                 .from('trainings')
-                .update({ completed: true, completed_at: new Date().toISOString() } as any)
-                .eq('id', id);
+                .update(completedUpdate)
+                .eq('id', id)
+                .eq('user_id', tenantId);
             if (error) throw error;
         },
         onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['trainings'] });
+            syncAfterScheduleMutation(queryClient);
         },
         onError: (error: Error) => {
             toast({ title: 'Erro ao marcar treino', description: error.message, variant: 'destructive' });
@@ -149,14 +164,21 @@ export function useTrainings() {
 
     const unmarkCompleteMutation = useMutation({
         mutationFn: async (id: string) => {
+            if (!user) throw new Error('Usuário não autenticado');
+            const completedUpdate: TablesUpdate<'trainings'> = {
+                completed: false,
+                completed_at: null,
+                organization_id: profile?.organization_id || null,
+            };
             const { error } = await supabase
                 .from('trainings')
-                .update({ completed: false, completed_at: null } as any)
-                .eq('id', id);
+                .update(completedUpdate)
+                .eq('id', id)
+                .eq('user_id', tenantId);
             if (error) throw error;
         },
         onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['trainings'] });
+            syncAfterScheduleMutation(queryClient);
         },
         onError: (error: Error) => {
             toast({ title: 'Erro ao desmarcar treino', description: error.message, variant: 'destructive' });

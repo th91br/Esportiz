@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import { ChevronLeft, ChevronRight, ClipboardCheck, Calendar as CalendarIcon, RotateCcw } from 'lucide-react';
-import { Header } from '@/components/Header';
+import { AppPage } from '@/components/layout/AppPage';
+import { PageHeader } from '@/components/layout/PageHeader';
 import { AttendanceList } from '@/components/AttendanceList';
 import { Button } from '@/components/ui/button';
-import { cn } from '@/lib/utils';
 import { getDayName, formatDate } from '@/data/mockData';
 import { format, addDays, subDays, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -40,22 +40,13 @@ export default function AttendancePage() {
   const isToday = selectedDate === today;
 
   return (
-    <div className="min-h-screen bg-background pb-10">
-      <Header />
-
-      <main className="container py-6 md:py-8 space-y-6">
-        {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div>
-            <h1 className="section-title text-2xl md:text-3xl">
-              Controle de {labels.attendanceLabel}
-            </h1>
-            <p className="text-muted-foreground mt-1">
-              Registre o(a) {labels.attendanceLabel.toLowerCase()} dos(as) {labels.studentLabel.toLowerCase()} em cada {labels.trainingLabelSingular.toLowerCase()}
-            </p>
-          </div>
-
-          <div className="flex items-center gap-2">
+    <AppPage className="pb-10">
+      <PageHeader
+        title={`Controle de ${labels.attendanceLabel}`}
+        description={`Registre o(a) ${labels.attendanceLabel.toLowerCase()} dos(as) ${labels.studentLabel.toLowerCase()} em cada ${labels.trainingLabelSingular.toLowerCase()}`}
+        icon={ClipboardCheck}
+        actions={(
+          <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
              {!isToday && (
                <Button 
                 variant="outline" 
@@ -66,17 +57,18 @@ export default function AttendancePage() {
                  <RotateCcw className="h-4 w-4" /> Voltar para Hoje
                </Button>
              )}
-             <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-muted border border-border/50 shadow-sm">
+             <div className="flex w-full items-center justify-center gap-2 rounded-xl border border-border/50 bg-muted px-4 py-2 shadow-sm sm:w-auto">
               <ClipboardCheck className="h-5 w-5 text-primary" />
               <span className="font-semibold text-foreground">
                 {getDayName(selectedDate)}, {formatDate(selectedDate)}
               </span>
             </div>
           </div>
-        </div>
+        )}
+      />
 
         {/* Improved Date Selector */}
-        <div className="card-elevated p-4 md:p-6 bg-card/50 backdrop-blur-sm">
+        <div className="card-elevated p-4 md:p-6 bg-card">
           <div className="flex items-center justify-between gap-4 max-w-lg mx-auto">
             <Button 
               variant="outline" 
@@ -86,15 +78,15 @@ export default function AttendancePage() {
             >
               <ChevronLeft className="h-5 w-5 text-primary" />
             </Button>
-            
+
             <div className="flex-1 flex flex-col items-center">
               <Popover>
                 <PopoverTrigger asChild>
                   <Button 
                     variant="ghost" 
-                    className="flex flex-col h-auto py-2 px-6 rounded-2xl hover:bg-primary/5 group"
+                    className="flex flex-col h-auto py-2 px-6 rounded-lg hover:bg-primary/5 group"
                   >
-                    <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider group-hover:text-primary transition-colors">
+                    <span className="text-xs font-semibold text-muted-foreground/80 group-hover:text-primary transition-colors">
                       Data Selecionada
                     </span>
                     <span className="text-lg font-bold text-foreground flex items-center gap-2">
@@ -124,7 +116,7 @@ export default function AttendancePage() {
               <ChevronRight className="h-5 w-5 text-primary" />
             </Button>
           </div>
-          
+
           {!isToday && (
             <div className="flex justify-center mt-4 sm:hidden">
                <Button 
@@ -143,7 +135,6 @@ export default function AttendancePage() {
         <div className="animate-fade-up">
           <AttendanceList selectedDate={selectedDate} />
         </div>
-      </main>
-    </div>
+    </AppPage>
   );
 }

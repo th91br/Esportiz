@@ -28,3 +28,10 @@ dist-ssr
 .env
 .env.*
 !.env.example
+
+# Supabase CLI local state
+supabase/.temp/
+
+# Playwright artifacts
+playwright-report/
+test-results/

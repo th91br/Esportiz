@@ -1,17 +1,23 @@
+import { reportError, reportWarning } from '@/lib/observability';
 import { useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth } from '@/contexts/auth';
 import { toast } from 'sonner';
 import type { OnboardingGoal } from '@/lib/authRouting';
 
-export type BusinessType = 'sport_school' | 'arena' | 'other';
+export type BusinessType = 'sport_school' | 'arena';
+
+function normalizeBusinessType(value?: string | null): BusinessType {
+  return value === 'arena' ? 'arena' : 'sport_school';
+}
 
 export interface NicheProfile {
   ct_name?: string | null;
   logo_url?: string | null;
   pix_key?: string | null;
   pix_receiver?: string | null;
+  whatsapp?: string | null;
   onboarding_goal?: OnboardingGoal | null;
   templates?: {
     mass_all_active?: string;
@@ -28,12 +34,17 @@ export interface NicheProfile {
 export interface Profile {
   id: string;
   user_id: string;
+  organization_id: string | null;
+  owner_user_id?: string | null;
   ct_name: string | null;
   logo_url: string | null;
   primary_color: string | null;
   secondary_color: string | null;
   business_type: BusinessType;
   onboarding_completed: boolean;
+  google_access_token?: string | null;
+  google_refresh_token?: string | null;
+  google_calendar_id?: string | null;
   sheets_spreadsheet_id?: string | null;
   sheets_webhook_active?: boolean;
   pix_key?: string | null;
@@ -41,6 +52,143 @@ export interface Profile {
   niche_settings?: Record<string, NicheProfile> | null;
   created_at: string;
   updated_at: string;
+}
+
+const PROFILE_SELECT = `
+  id,
+  user_id,
+  organization_id,
+  ct_name,
+  logo_url,
+  primary_color,
+  secondary_color,
+  business_type,
+  onboarding_completed,
+  google_access_token,
+  google_refresh_token,
+  google_calendar_id,
+  sheets_spreadsheet_id,
+  sheets_webhook_active,
+  pix_key,
+  pix_receiver,
+  niche_settings,
+  created_at,
+  updated_at,
+  organizations (
+    owner_user_id
+  )
+`;
+
+type ProfileWithOrganization = Profile & {
+  organizations?: {
+    owner_user_id?: string | null;
+  } | null;
+};
+
+function normalizeProfile(data: unknown): Profile {
+  const profile = data as ProfileWithOrganization;
+  const owner_user_id = profile?.organizations?.owner_user_id || profile?.user_id || null;
+  return {
+    ...profile,
+    owner_user_id,
+    business_type: normalizeBusinessType(profile.business_type),
+    onboarding_completed: profile.onboarding_completed === true,
+  };
+}
+
+async function buildInvitedMemberProfile(userId: string): Promise<Profile | null> {
+  const { data: membership, error: membershipError } = await supabase
+    .from('organization_members')
+    .select('organization_id')
+    .eq('user_id', userId)
+    .eq('active', true)
+    .order('created_at', { ascending: true })
+    .limit(1)
+    .maybeSingle();
+
+  if (membershipError) {
+    reportError('profile.invited_membership_load_failed', membershipError);
+    throw membershipError;
+  }
+
+  if (!membership?.organization_id) return null;
+
+  const { data: organization, error: organizationError } = await supabase
+    .from('organizations')
+    .select('id, owner_user_id, name')
+    .eq('id', membership.organization_id)
+    .maybeSingle();
+
+  if (organizationError) {
+    reportError('profile.organization_owner_load_failed', organizationError);
+    throw organizationError;
+  }
+
+  if (!organization?.owner_user_id) return null;
+
+  const { data: ownerProfile, error: ownerProfileError } = await supabase
+    .from('profiles')
+    .select(PROFILE_SELECT)
+    .eq('user_id', organization.owner_user_id)
+    .maybeSingle();
+
+  if (ownerProfileError) {
+    reportError('profile.owner_profile_load_failed', ownerProfileError);
+    throw ownerProfileError;
+  }
+
+  const now = new Date().toISOString();
+  const fallbackBusinessType = normalizeBusinessType(ownerProfile?.business_type);
+  const fallbackProfile = {
+    id: `team-${userId}`,
+    user_id: userId,
+    organization_id: membership.organization_id,
+    owner_user_id: organization.owner_user_id,
+    ct_name: ownerProfile?.ct_name || organization.name || 'Esportiz',
+    logo_url: ownerProfile?.logo_url || null,
+    primary_color: ownerProfile?.primary_color || null,
+    secondary_color: ownerProfile?.secondary_color || null,
+    business_type: fallbackBusinessType,
+    onboarding_completed: true,
+    google_access_token: null,
+    google_refresh_token: null,
+    google_calendar_id: null,
+    sheets_spreadsheet_id: null,
+    sheets_webhook_active: false,
+    pix_key: ownerProfile?.pix_key || null,
+    pix_receiver: ownerProfile?.pix_receiver || null,
+    niche_settings: ownerProfile?.niche_settings || null,
+    created_at: now,
+    updated_at: now,
+  } satisfies Profile;
+
+  const { data: syncedProfile, error: syncError } = await supabase
+    .from('profiles')
+    .upsert({
+      user_id: userId,
+      organization_id: membership.organization_id,
+      ct_name: fallbackProfile.ct_name,
+      logo_url: fallbackProfile.logo_url,
+      primary_color: fallbackProfile.primary_color,
+      secondary_color: fallbackProfile.secondary_color,
+      business_type: fallbackProfile.business_type,
+      onboarding_completed: true,
+      pix_key: fallbackProfile.pix_key,
+      pix_receiver: fallbackProfile.pix_receiver,
+      niche_settings: fallbackProfile.niche_settings,
+      updated_at: now,
+    }, {
+      onConflict: 'user_id',
+    })
+    .select(PROFILE_SELECT)
+    .single();
+
+  if (syncError) {
+    reportWarning('profile.invited_profile_sync_failed', { reason: syncError });
+    return fallbackProfile;
+  }
+
+  return normalizeProfile(syncedProfile);
 }
 
 export function useProfile() {
@@ -54,33 +202,49 @@ export function useProfile() {
 
       const { data, error } = await supabase
         .from('profiles')
-        .select(`
-          id,
-          user_id,
-          ct_name,
-          logo_url,
-          primary_color,
-          secondary_color,
-          business_type,
-          onboarding_completed,
-          google_calendar_id,
-          sheets_spreadsheet_id,
-          sheets_webhook_active,
-          pix_key,
-          pix_receiver,
-          niche_settings,
-          created_at,
-          updated_at
-        `)
+        .select(PROFILE_SELECT)
         .eq('user_id', user.id)
         .maybeSingle();
 
       if (error) {
-        console.error('Error fetching profile:', error);
+        reportError('profile.load_failed', error);
         throw error;
       }
 
-      return data as Profile;
+      if (!data) return buildInvitedMemberProfile(user.id);
+
+      const profile = normalizeProfile(data);
+
+      // Se o usuário faz parte de uma organização e não é o proprietário dela,
+      // devemos carregar as configurações do negócio (branding, niche_settings, etc.)
+      // diretamente do perfil do proprietário (owner) para garantir que estejam sempre atualizadas.
+      const ownerUserId = profile.owner_user_id;
+      if (profile.organization_id && ownerUserId && ownerUserId !== user.id) {
+        const { data: ownerData, error: ownerError } = await supabase
+          .from('profiles')
+          .select(PROFILE_SELECT)
+          .eq('user_id', ownerUserId)
+          .maybeSingle();
+
+        if (ownerError) {
+          reportError('profile.owner_settings_load_failed', ownerError);
+        } else if (ownerData) {
+          const ownerProfile = normalizeProfile(ownerData);
+          return {
+            ...profile,
+            ct_name: ownerProfile.ct_name,
+            logo_url: ownerProfile.logo_url,
+            primary_color: ownerProfile.primary_color,
+            secondary_color: ownerProfile.secondary_color,
+            business_type: ownerProfile.business_type,
+            pix_key: ownerProfile.pix_key,
+            pix_receiver: ownerProfile.pix_receiver,
+            niche_settings: ownerProfile.niche_settings,
+          };
+        }
+      }
+
+      return profile;
     },
     enabled: !!user?.id,
   });
@@ -96,7 +260,7 @@ export function useProfile() {
         .maybeSingle();
 
       if (fetchError) {
-        console.error('Error fetching existing profile:', fetchError);
+        reportError('profile.existence_check_failed', fetchError);
         throw fetchError;
       }
 
@@ -113,7 +277,7 @@ export function useProfile() {
           .single();
 
         if (error) {
-          console.error('Error updating profile:', error);
+          reportError('profile.update_failed', error);
           throw error;
         }
         result = data;
@@ -129,7 +293,7 @@ export function useProfile() {
           .single();
 
         if (error) {
-          console.error('Error inserting profile:', error);
+          reportError('profile.create_failed', error);
           throw error;
         }
         result = data;
@@ -137,7 +301,8 @@ export function useProfile() {
 
       return result as Profile;
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
+      queryClient.setQueryData(['profile', user?.id], data);
       queryClient.invalidateQueries({ queryKey: ['profile', user?.id] });
     },
     onError: () => {
@@ -158,7 +323,7 @@ export function useProfile() {
         .upload(filePath, file);
 
       if (uploadError) {
-        console.error('Error uploading logo:', uploadError);
+        reportError('profile.logo_upload_failed', uploadError);
         throw uploadError;
       }
 
@@ -177,7 +342,7 @@ export function useProfile() {
     const profile = profileQuery.data;
     if (!profile) return null;
 
-    const activeNicheType = profile.business_type || 'sport_school';
+    const activeNicheType = normalizeBusinessType(profile.business_type);
     const niche = profile.niche_settings?.[activeNicheType] || {};
 
     return {

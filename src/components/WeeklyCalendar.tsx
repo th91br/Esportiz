@@ -2,6 +2,7 @@ import { useState, useMemo } from 'react';
 import { Calendar, MapPin, Users, Sun, Sunset, Moon, Clock, ChevronLeft, ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
+import { EmptyState } from '@/components/ui/empty-state';
 import {
   getDayName,
   formatDate,
@@ -96,8 +97,14 @@ export function WeeklyCalendar() {
                     const trainingStudents = students.filter((s) => training.studentIds.includes(s.id));
 
                     return (
-                      <div key={training.id} className="flex flex-col sm:flex-row sm:items-center gap-3 p-3 rounded-lg bg-background/80 border border-border/30">
-                        <div className="flex items-center gap-3 flex-1">
+                      <div 
+                        key={training.id} 
+                        className={cn(
+                          "flex flex-col sm:flex-row sm:items-center gap-3 p-3 rounded-lg bg-background/80 border border-border/30 transition-all",
+                          training.cancelled && "opacity-60 bg-slate-50 dark:bg-slate-900 border-dashed border-slate-300 dark:border-slate-800"
+                        )}
+                      >
+                        <div className="flex flex-wrap items-center gap-3 flex-1">
                           <div className={periodStyles[timePeriod]}>
                             <PeriodIcon className="h-3 w-3 inline mr-1" />{timePeriod}
                           </div>
@@ -105,6 +112,15 @@ export function WeeklyCalendar() {
                             <Clock className="h-3.5 w-3.5 text-muted-foreground" />
                             {training.time} - {getEndTime(training.time, training.durationMinutes)}
                           </div>
+                          {training.cancelled && (
+                            <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-destructive/10 text-destructive border border-destructive/20 uppercase tracking-wider">
+                              Cancelado ({
+                                training.cancellationReason === 'holiday' ? 'Feriado' :
+                                training.cancellationReason === 'weather' ? 'Clima' :
+                                training.cancellationReason === 'coach_absence' ? 'Falta Professor' : 'Outro'
+                              })
+                            </span>
+                          )}
                         </div>
                         <div className="flex items-center gap-4 text-sm">
                           <div className="flex items-center gap-1.5 text-muted-foreground">
@@ -116,7 +132,13 @@ export function WeeklyCalendar() {
                           </div>
                           <div className="hidden sm:flex items-center gap-1">
                             {trainingStudents.slice(0, 4).map((s) => {
-                              const lc: Record<string, string> = { iniciante: 'bg-emerald-500', intermediário: 'bg-amber-500', avançado: 'bg-violet-500' };
+                              const lc: Record<string, string> = {
+                                iniciante: 'bg-emerald-500',
+                                intermediário: 'bg-amber-500',
+                                avançado: 'bg-violet-500',
+                                avançado_pro: 'bg-indigo-500',
+                                profissional: 'bg-rose-500'
+                              };
                               return <span key={s.id} className={cn('h-2 w-2 rounded-full', lc[s.level] || 'bg-muted')} title={`${s.name} - ${s.level}`} />;
                             })}
                           </div>
@@ -126,7 +148,7 @@ export function WeeklyCalendar() {
                   })}
                 </div>
               ) : (
-                <div className="p-4 text-center text-sm text-muted-foreground">Sem treinos agendados</div>
+                <EmptyState title="Sem treinos agendados" className="p-4 text-sm" />
               )}
             </div>
           );

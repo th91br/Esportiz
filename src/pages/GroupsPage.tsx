@@ -1,5 +1,6 @@
 import { useState, useMemo, useEffect } from 'react';
-import { Header } from '@/components/Header';
+import { AppPage } from '@/components/layout/AppPage';
+import { PageHeader } from '@/components/layout/PageHeader';
 import { StatCard } from '@/components/StatCard';
 import { useGroups, type Group, type GroupScheduleSlot } from '@/hooks/queries/useGroups';
 import { useStudents } from '@/hooks/queries/useStudents';
@@ -9,14 +10,17 @@ import {
   UsersRound, UserPlus, UserMinus, ChevronDown, ChevronUp, Check, X
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { EmptyState } from '@/components/ui/empty-state';
+import { LoadingState } from '@/components/ui/loading-state';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { cn } from '@/lib/utils';
 import { getEndTime } from '@/data/mockData';
 import { useBusinessContext } from '@/hooks/useBusinessContext';
+import { useRolePermissions } from '@/hooks/useRolePermissions';
 
 const DAY_NAMES = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
 const COLORS = ['#6366f1', '#f43f5e', '#f97316', '#22c55e', '#06b6d4', '#8b5cf6', '#ec4899', '#eab308'];
@@ -29,7 +33,7 @@ function GroupFormDialog({
   const { addGroup, updateGroup } = useGroups();
   const { students } = useStudents();
   const { modalities } = useModalities();
-  const { labels, isOther, isArena } = useBusinessContext();
+  const { labels, isArena } = useBusinessContext();
   const activeStudents = students.filter(s => s.active).sort((a, b) => a.name.localeCompare(b.name, 'pt-BR'));
   const isEditing = !!group;
 
@@ -62,7 +66,7 @@ function GroupFormDialog({
   // Schedule helpers
   const addSlot = () => setSchedule([...schedule, { dayOfWeek: 1, time: '18:00' }]);
   const removeSlot = (i: number) => setSchedule(schedule.filter((_, idx) => idx !== i));
-  const updateSlot = (i: number, field: keyof GroupScheduleSlot, value: any) => {
+  const updateSlot = (i: number, field: keyof GroupScheduleSlot, value: string) => {
     const updated = [...schedule];
     updated[i] = { ...updated[i], [field]: field === 'dayOfWeek' ? parseInt(value) : value };
     setSchedule(updated);
@@ -85,7 +89,7 @@ function GroupFormDialog({
         sortDay(a.dayOfWeek) - sortDay(b.dayOfWeek) || a.time.localeCompare(b.time)
       );
 
-      const data = {
+      const data: Omit<Group, 'id' | 'userId' | 'createdAt' | 'studentIds'> & { studentIds?: string[] } = {
         name: name.trim(),
         location: location.trim(),
         modalityId: modalityId !== 'none' ? modalityId : undefined,
@@ -99,7 +103,7 @@ function GroupFormDialog({
       if (isEditing) {
         await updateGroup(group.id, data);
       } else {
-        await addGroup(data as any);
+        await addGroup(data);
       }
       onOpenChange(false);
     } catch (err) {
@@ -126,7 +130,7 @@ function GroupFormDialog({
           <div className="flex gap-3">
             <div className="flex-1 space-y-2">
               <Label>Nome da {labels.groupLabelSingular} *</Label>
-              <Input placeholder={isOther ? "Ex: Turma A - Inglês Iniciante" : isArena ? "Ex: Quadra 1 - Noite" : "Ex: Sub-15 Noturno"} value={name} onChange={e => setName(e.target.value)} required />
+              <Input placeholder={isArena ? "Ex: Quadra 1 - Noite" : "Ex: Sub-15 Noturno"} value={name} onChange={e => setName(e.target.value)} required />
             </div>
             <div className="space-y-2">
               <Label>Cor</Label>
@@ -141,10 +145,10 @@ function GroupFormDialog({
           </div>
 
           {/* Local + Duração */}
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="space-y-2">
               <Label>Local</Label>
-              <Input placeholder={isOther ? "Ex: Sala 101" : isArena ? "Ex: Quadra Coberta" : "Ex: Arena Principal"} value={location} onChange={e => setLocation(e.target.value)} />
+              <Input placeholder={isArena ? "Ex: Quadra Coberta" : "Ex: Arena Principal"} value={location} onChange={e => setLocation(e.target.value)} />
             </div>
             <div className="space-y-2">
               <Label>Duração</Label>
@@ -163,7 +167,7 @@ function GroupFormDialog({
           </div>
 
           {/* Modalidade + Vagas */}
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="space-y-2">
               <Label>{labels.modalityLabelSingular}</Label>
               <Select value={modalityId} onValueChange={setModalityId}>
@@ -199,9 +203,9 @@ function GroupFormDialog({
               </p>
             )}
             {schedule.map((slot, i) => (
-              <div key={i} className="flex items-center gap-2 p-2.5 rounded-lg border bg-muted/10">
+              <div key={i} className="flex flex-col gap-2 p-2.5 rounded-lg border bg-muted/10 sm:flex-row sm:items-center">
                  <Select value={String(slot.dayOfWeek)} onValueChange={v => updateSlot(i, 'dayOfWeek', v)}>
-                  <SelectTrigger className="w-[110px] h-9"><SelectValue /></SelectTrigger>
+                  <SelectTrigger className="w-full sm:w-[110px] h-9"><SelectValue /></SelectTrigger>
                   <SelectContent>
                     {[
                       { value: 1, label: 'Segunda-feira' },
@@ -217,7 +221,7 @@ function GroupFormDialog({
                   </SelectContent>
                 </Select>
                 <Select value={slot.time} onValueChange={v => updateSlot(i, 'time', v)}>
-                  <SelectTrigger className="w-[100px] h-9"><SelectValue /></SelectTrigger>
+                  <SelectTrigger className="w-full sm:w-[100px] h-9"><SelectValue /></SelectTrigger>
                   <SelectContent className="max-h-60">
                     {Array.from({ length: 18 }, (_, h) => h + 6).map(h => {
                       const t = `${h.toString().padStart(2, '0')}:00`;
@@ -228,7 +232,7 @@ function GroupFormDialog({
                 <span className="text-xs text-muted-foreground hidden sm:inline">
                   {getEndTime(slot.time, parseInt(duration) || 60)}
                 </span>
-                <Button type="button" variant="ghost" size="icon" className="h-8 w-8 ml-auto text-destructive" onClick={() => removeSlot(i)}>
+                <Button type="button" variant="ghost" size="icon" className="h-8 w-full text-destructive sm:w-8 sm:ml-auto" onClick={() => removeSlot(i)}>
                   <X className="h-3.5 w-3.5" />
                 </Button>
               </div>
@@ -287,6 +291,10 @@ export default function GroupsPage() {
   const { students } = useStudents();
   const { modalities } = useModalities();
   const { labels } = useBusinessContext();
+  const rolePermissions = useRolePermissions();
+  const canCreateGroups = rolePermissions.can('groups', 'create');
+  const canUpdateGroups = rolePermissions.can('groups', 'update');
+  const canDeleteGroups = rolePermissions.can('groups', 'delete');
   const [formOpen, setFormOpen] = useState(false);
   const [editingGroup, setEditingGroup] = useState<Group | undefined>();
   const [expandedGroup, setExpandedGroup] = useState<string | null>(null);
@@ -339,16 +347,19 @@ export default function GroupsPage() {
   }, [groups, searchQuery]);
 
   const handleEdit = (group: Group) => {
+    if (!canUpdateGroups) return;
     setEditingGroup(group);
     setFormOpen(true);
   };
 
   const handleDelete = async (group: Group) => {
+    if (!canDeleteGroups) return;
     if (!confirm(`Remover a ${labels.groupLabelSingular.toLowerCase()} "${group.name}"? Os ${labels.studentLabel.toLowerCase()} não serão excluídos.`)) return;
     await deleteGroup(group.id);
   };
 
   const handleNewGroup = () => {
+    if (!canCreateGroups) return;
     setEditingGroup(undefined);
     setFormOpen(true);
   };
@@ -356,169 +367,176 @@ export default function GroupsPage() {
   const getModality = (id?: string | null) => modalities.find(m => m.id === id);
 
   return (
-    <div className="min-h-screen bg-background">
-      <Header />
-      <main className="container py-6 md:py-8 space-y-6">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div>
-            <h1 className="section-title text-2xl md:text-3xl">{labels.groupLabel}</h1>
-            <p className="text-muted-foreground mt-1">Organize seus {labels.studentLabel.toLowerCase()} em {labels.groupLabel.toLowerCase()} com horários fixos</p>
-          </div>
+    <AppPage>
+      <PageHeader
+        title={labels.groupLabel}
+        description={`Organize seus ${labels.studentLabel.toLowerCase()} em ${labels.groupLabel.toLowerCase()} com horários fixos`}
+        icon={UsersRound}
+        actions={canCreateGroups ? (
           <Button onClick={handleNewGroup} className="btn-primary-gradient gap-2">
             <Plus className="h-4 w-4" />Novo(a) {labels.groupLabelSingular}
           </Button>
+        ) : undefined}
+      />
+
+      {/* Stats */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 animate-fade-up">
+        <StatCard title={`Total de ${labels.groupLabel}`} value={loadingGroups ? '...' : groups.length} icon={UsersRound} />
+        <StatCard title={`${labels.groupLabel} Ativas`} value={loadingGroups ? '...' : activeGroups.length} icon={Calendar} variant="primary" />
+        <StatCard title={`${labels.studentLabel} Enturmados`} value={totalStudentsInGroups} icon={UserPlus} description={`${labels.studentLabel} únicos em ${labels.groupLabel.toLowerCase()}`} />
+        <StatCard title={`Sem ${labels.groupLabelSingular}`} value={students.filter(s => s.active).length - totalStudentsInGroups} icon={UserMinus} description={`${labels.studentLabel} ativos soltos`} />
+      </div>
+
+      {/* Search */}
+      <div className="card-elevated border border-border/50 shadow-sm p-4">
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input placeholder={`Buscar ${labels.groupLabelSingular.toLowerCase()}...`} value={searchQuery} onChange={e => setSearchQuery(e.target.value)} className="pl-10" />
         </div>
+      </div>
 
-        {/* Stats */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 animate-fade-up">
-          <StatCard title={`Total de ${labels.groupLabel}`} value={loadingGroups ? '...' : groups.length} icon={UsersRound} />
-          <StatCard title={`${labels.groupLabel} Ativas`} value={loadingGroups ? '...' : activeGroups.length} icon={Calendar} variant="primary" />
-          <StatCard title={`${labels.studentLabel} Enturmados`} value={totalStudentsInGroups} icon={UserPlus} description={`${labels.studentLabel} únicos em ${labels.groupLabel.toLowerCase()}`} />
-          <StatCard title={`Sem ${labels.groupLabelSingular}`} value={students.filter(s => s.active).length - totalStudentsInGroups} icon={UserMinus} description={`${labels.studentLabel} ativos soltos`} />
-        </div>
+      {/* Groups Grid */}
+      {loadingGroups ? (
+        <LoadingState label={`Carregando ${labels.groupLabel.toLowerCase()}`} className="py-12" />
+      ) : filteredGroups.length === 0 ? (
+        <EmptyState
+          icon={UsersRound}
+          title={searchQuery
+            ? `Nenhuma ${labels.groupLabelSingular.toLowerCase()} encontrada`
+            : `Nenhuma ${labels.groupLabelSingular.toLowerCase()} cadastrada`}
+          description={searchQuery
+            ? 'Tente outro termo de busca'
+            : `Crie sua primeira ${labels.groupLabelSingular.toLowerCase()} para organizar seus ${labels.studentLabel.toLowerCase()}`}
+          action={!searchQuery && canCreateGroups ? (
+            <Button onClick={handleNewGroup} className="btn-primary-gradient gap-2">
+              <Plus className="h-4 w-4" />Criar {labels.groupLabelSingular}
+            </Button>
+          ) : undefined}
+          className="card-elevated p-12"
+        />
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
+          {filteredGroups.map((group, index) => {
+            const mod = getModality(group.modalityId);
+            const groupStudents = students.filter(s => group.studentIds.includes(s.id));
+            const isExpanded = expandedGroup === group.id;
+            const isFull = group.maxStudents ? groupStudents.length >= group.maxStudents : false;
 
-        {/* Search */}
-        <div className="card-elevated p-4">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input placeholder={`Buscar ${labels.groupLabelSingular.toLowerCase()}...`} value={searchQuery} onChange={e => setSearchQuery(e.target.value)} className="pl-10" />
-          </div>
-        </div>
-
-        {/* Groups Grid */}
-        {loadingGroups ? (
-          <div className="text-center py-12 text-muted-foreground">Carregando {labels.groupLabel.toLowerCase()}...</div>
-        ) : filteredGroups.length === 0 ? (
-          <div className="card-elevated p-12 text-center">
-            <UsersRound className="h-12 w-12 mx-auto text-muted-foreground/50 mb-3" />
-            <p className="text-lg font-medium text-muted-foreground">
-              {searchQuery ? `Nenhuma ${labels.groupLabelSingular.toLowerCase()} encontrada` : `Nenhuma ${labels.groupLabelSingular.toLowerCase()} cadastrada`}
-            </p>
-            <p className="text-sm text-muted-foreground/70 mt-1">
-              {searchQuery ? 'Tente outro termo de busca' : `Crie sua primeira ${labels.groupLabelSingular.toLowerCase()} para organizar seus ${labels.studentLabel.toLowerCase()}`}
-            </p>
-            {!searchQuery && (
-              <Button onClick={handleNewGroup} className="mt-4 btn-primary-gradient gap-2">
-                <Plus className="h-4 w-4" />Criar {labels.groupLabelSingular}
-              </Button>
-            )}
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
-            {filteredGroups.map((group, index) => {
-              const mod = getModality(group.modalityId);
-              const groupStudents = students.filter(s => group.studentIds.includes(s.id));
-              const isExpanded = expandedGroup === group.id;
-              const isFull = group.maxStudents ? groupStudents.length >= group.maxStudents : false;
-
-              return (
-                <Card key={group.id}
-                  className={cn(
-                    "overflow-hidden transition-all animate-fade-up opacity-0 border-2",
-                    !group.active && "opacity-60",
-                    isFull ? "border-amber-500/30" : "border-transparent hover:border-primary/20"
-                  )}
-                  style={{ animationDelay: `${index * 0.05}s`, animationFillMode: 'forwards' }}>
-                  {/* Color bar */}
-                  <div className="h-1.5 w-full" style={{ backgroundColor: group.color }} />
-                  <CardContent className="p-5">
-                    {/* Header */}
-                    <div className="flex items-start justify-between gap-3 mb-4">
-                      <div className="min-w-0">
-                        <div className="flex items-center gap-2">
-                          <h3 className="font-display font-bold text-lg truncate">{group.name}</h3>
-                          {!group.active && (
-                            <span className="text-[10px] px-2 py-0.5 rounded-full bg-muted text-muted-foreground font-bold">INATIVA</span>
-                          )}
-                        </div>
-                        {mod && (
-                          <div className="flex items-center gap-1.5 mt-1">
-                            <div className="h-2 w-2 rounded-full" style={{ backgroundColor: mod.color }} />
-                            <span className="text-xs text-muted-foreground">{mod.name}</span>
-                          </div>
+            return (
+              <Card key={group.id}
+                className={cn(
+                  "overflow-hidden transition-all animate-fade-up opacity-0 border border-border/50 shadow-sm",
+                  !group.active && "opacity-60",
+                  isFull ? "border-amber-500/20 shadow-amber-500/5 bg-amber-500/[0.01]" : "hover:border-primary/20 hover:shadow-md"
+                )}
+                style={{ animationDelay: `${index * 0.05}s`, animationFillMode: 'forwards' }}>
+                {/* Color bar */}
+                <div className="h-1.5 w-full" style={{ backgroundColor: group.color }} />
+                <CardContent className="p-5">
+                  {/* Header */}
+                  <div className="flex items-start justify-between gap-3 mb-4">
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2">
+                        <h3 className="font-display font-bold text-lg truncate text-foreground">{group.name}</h3>
+                        {!group.active && (
+                          <span className="text-[10px] px-2 py-0.5 rounded-full bg-muted/65 text-muted-foreground font-bold tracking-wider border border-border/50">INATIVA</span>
                         )}
                       </div>
-                      <div className="flex gap-1 shrink-0">
-                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleEdit(group)}>
-                          <Pencil className="h-3.5 w-3.5" />
-                        </Button>
-                        <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => handleDelete(group)}>
-                          <Trash2 className="h-3.5 w-3.5" />
-                        </Button>
-                      </div>
-                    </div>
-
-                    {/* Info */}
-                    <div className="space-y-2 mb-4">
-                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                        <MapPin className="h-3.5 w-3.5 shrink-0" />
-                        <span className="truncate">{group.location || 'Sem local definido'}</span>
-                      </div>
-                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                        <Clock className="h-3.5 w-3.5 shrink-0" />
-                        <span>{group.durationMinutes} min por aula</span>
-                      </div>
-                    </div>
-
-                    {/* Schedule pills */}
-                    <div className="flex flex-wrap gap-1.5 mb-4">
-                      {[...group.schedule].sort((a, b) => {
-                        const sortDay = (day: number) => day === 0 ? 7 : day;
-                        return sortDay(a.dayOfWeek) - sortDay(b.dayOfWeek) || a.time.localeCompare(b.time);
-                      }).map((slot, i) => (
-                        <span key={`${slot.dayOfWeek}-${slot.time}-${i}`} className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-primary/10 text-primary text-[11px] font-semibold">
-                          {DAY_NAMES[slot.dayOfWeek]} {slot.time}
-                        </span>
-                      ))}
-                    </div>
-
-                    {/* Students count + capacity */}
-                    <div className="flex items-center justify-between">
-                      <button onClick={() => setExpandedGroup(isExpanded ? null : group.id)}
-                        className="flex items-center gap-2 text-sm font-medium text-foreground hover:text-primary transition-colors">
-                        <Users className="h-4 w-4" />
-                        <span>
-                          {groupStudents.length} {groupStudents.length === 1 ? labels.studentLabelSingular.toLowerCase() : labels.studentLabel.toLowerCase()}
-                          {group.maxStudents && <span className="text-muted-foreground"> / {group.maxStudents}</span>}
-                        </span>
-                        {isExpanded ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
-                      </button>
-                      {isFull && (
-                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-600 font-bold uppercase">Lotada</span>
+                      {mod && (
+                        <div className="flex items-center gap-1.5 mt-1">
+                          <div className="h-2 w-2 rounded-full" style={{ backgroundColor: mod.color }} />
+                          <span className="text-xs text-muted-foreground font-medium">{mod.name}</span>
+                        </div>
                       )}
                     </div>
-
-                    {/* Expanded students list */}
-                    {isExpanded && (
-                      <div className="mt-3 pt-3 border-t border-border/50 space-y-1.5 animate-in fade-in slide-in-from-top-2 duration-200">
-                        {groupStudents.length === 0 ? (
-                          <p className="text-xs text-muted-foreground text-center py-2">Nenhum {labels.studentLabelSingular.toLowerCase()} nesta {labels.groupLabelSingular.toLowerCase()}</p>
-                        ) : (
-                          groupStudents.map(s => (
-                            <div key={s.id} className="flex items-center gap-2.5 px-2 py-1.5 rounded-md bg-muted/30 text-sm">
-                              <div className="h-6 w-6 rounded-full bg-primary/10 text-primary flex items-center justify-center text-[10px] font-bold shrink-0 overflow-hidden">
-                                {s.photo ? (
-                                  <img src={s.photo} alt={s.name} className="h-full w-full object-cover" />
-                                ) : (
-                                  s.name.charAt(0).toUpperCase()
-                                )}
-                              </div>
-                              <span className="truncate font-medium">{s.name}</span>
-                              <span className="text-[10px] text-muted-foreground ml-auto capitalize">{s.level}</span>
-                            </div>
-                          ))
+                    {(canUpdateGroups || canDeleteGroups) && (
+                      <div className="flex gap-1 shrink-0">
+                        {canUpdateGroups && (
+                          <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-muted" onClick={() => handleEdit(group)}>
+                            <Pencil className="h-3.5 w-3.5 text-muted-foreground hover:text-foreground" />
+                          </Button>
+                        )}
+                        {canDeleteGroups && (
+                          <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:bg-destructive/10" onClick={() => handleDelete(group)}>
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </Button>
                         )}
                       </div>
                     )}
-                  </CardContent>
-                </Card>
-              );
-            })}
-          </div>
-        )}
-      </main>
+                  </div>
 
-      <GroupFormDialog open={formOpen} onOpenChange={setFormOpen} group={editingGroup} />
-    </div>
+                  {/* Info */}
+                  <div className="space-y-2 mb-4">
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground font-medium">
+                      <MapPin className="h-3.5 w-3.5 shrink-0 text-primary/70" />
+                      <span className="truncate">{group.location || 'Sem local definido'}</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground font-medium">
+                      <Clock className="h-3.5 w-3.5 shrink-0 text-primary/70" />
+                      <span>{group.durationMinutes} min por aula</span>
+                    </div>
+                  </div>
+
+                  {/* Schedule pills */}
+                  <div className="flex flex-wrap gap-1.5 mb-4">
+                    {[...group.schedule].sort((a, b) => {
+                      const sortDay = (day: number) => day === 0 ? 7 : day;
+                      return sortDay(a.dayOfWeek) - sortDay(b.dayOfWeek) || a.time.localeCompare(b.time);
+                    }).map((slot, i) => (
+                      <span key={`${slot.dayOfWeek}-${slot.time}-${i}`} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-primary/5 text-primary text-xs font-semibold border border-primary/10">
+                        {DAY_NAMES[slot.dayOfWeek]} {slot.time}
+                      </span>
+                    ))}
+                  </div>
+
+                  {/* Students count + capacity */}
+                  <div className="flex items-center justify-between">
+                    <button onClick={() => setExpandedGroup(isExpanded ? null : group.id)}
+                      className="flex items-center gap-2 text-sm font-semibold text-muted-foreground hover:text-primary transition-colors">
+                      <Users className="h-4 w-4 text-primary" />
+                      <span>
+                        {groupStudents.length} {groupStudents.length === 1 ? labels.studentLabelSingular.toLowerCase() : labels.studentLabel.toLowerCase()}
+                        {group.maxStudents && <span className="text-muted-foreground/60 font-normal"> / {group.maxStudents}</span>}
+                      </span>
+                      {isExpanded ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
+                    </button>
+                    {isFull && (
+                      <span className="text-[10px] px-2.5 py-0.5 rounded-full bg-amber-500/5 text-amber-700 font-bold uppercase tracking-wider border border-amber-500/15">Lotada</span>
+                    )}
+                  </div>
+
+                  {/* Expanded students list */}
+                  {isExpanded && (
+                    <div className="mt-3 pt-3 border-t border-border/50 space-y-1.5 animate-in fade-in slide-in-from-top-2 duration-200">
+                      {groupStudents.length === 0 ? (
+                        <p className="text-xs text-muted-foreground text-center py-2">Nenhum {labels.studentLabelSingular.toLowerCase()} nesta {labels.groupLabelSingular.toLowerCase()}</p>
+                      ) : (
+                        groupStudents.map(s => (
+                          <div key={s.id} className="flex items-center gap-2.5 px-2 py-1.5 rounded-md bg-muted/30 border border-border/10 text-sm">
+                            <div className="h-6 w-6 rounded-full bg-primary/10 text-primary flex items-center justify-center text-[10px] font-bold shrink-0 overflow-hidden">
+                              {s.photo ? (
+                                <img src={s.photo} alt={s.name} className="h-full w-full object-cover" />
+                              ) : (
+                                s.name.charAt(0).toUpperCase()
+                              )}
+                            </div>
+                            <span className="truncate font-semibold text-foreground">{s.name}</span>
+                            <span className="text-xs text-muted-foreground font-medium ml-auto capitalize">{s.level}</span>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
+      )}
+
+      {(canCreateGroups || canUpdateGroups) && (
+        <GroupFormDialog open={formOpen} onOpenChange={setFormOpen} group={editingGroup} />
+      )}
+    </AppPage>
   );
 }

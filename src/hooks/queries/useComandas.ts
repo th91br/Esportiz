@@ -1,90 +1,80 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth } from '@/contexts/auth';
 import { toast } from 'sonner';
+import { useProfile } from '@/hooks/queries/useProfile';
+import { syncAfterComandaMutation } from '@/lib/querySync';
+import {
+  buildComandaItemInsert,
+  calculateComandaItemUpdate,
+  mapComandaRow,
+  type CommerceComanda,
+  type CommerceComandaItem,
+  type CommercePaymentMethod,
+} from '@/lib/commerceContracts';
 
-export interface ComandaItem {
-  id: string;
-  comandaId: string;
-  productId?: string | null;
-  productName: string;
-  quantity: number;
-  unitPrice: number;
-  total: number;
-  createdAt: string;
-}
+export type ComandaPaymentMethod = CommercePaymentMethod;
 
-export interface Comanda {
-  id: string;
-  userId: string;
-  name: string;
-  status: 'open' | 'closed';
-  createdAt: string;
-  closedAt?: string | null;
-  items: ComandaItem[];
-  totalAmount: number;
-}
+export type ComandaItem = CommerceComandaItem;
 
-export function useComandas() {
+export type Comanda = CommerceComanda;
+
+import { getErrorMessage } from '@/lib/errorUtils';
+
+type CloseComandaResult = {
+  success?: boolean;
+  sales_count?: number;
+  total_amount?: number;
+  closed_at?: string;
+};
+
+export function useComandas(options: { enabled?: boolean } = {}) {
   const { user } = useAuth();
+  const { profile, loadingProfile } = useProfile();
   const queryClient = useQueryClient();
+  const comandasEnabled = options.enabled ?? true;
 
-  // Query to fetch all comandas for this tenant, including nested items
+  // tenantId é o owner da organização (compartilhado entre todos os membros da equipe).
+  // Aguarda o profile carregar para evitar race condition onde user?.id do funcionário
+  // seria usado antes de owner_user_id estar disponível.
+  const tenantId = profile?.owner_user_id || (loadingProfile ? null : user?.id);
+  const createdByUserId = user?.id; // Quem está criando a comanda (pode ser funcionário ou owner)
+
+  const invalidateComandaState = () => syncAfterComandaMutation(queryClient);
+
   const comandasQuery = useQuery({
-    queryKey: ['comandas', user?.id],
+    queryKey: ['comandas', tenantId],
     queryFn: async () => {
-      if (!user?.id) return [];
+      if (!tenantId) return [];
 
       const { data, error } = await supabase
         .from('comandas')
         .select('*, comanda_items(*)')
-        .eq('user_id', user.id)
-        .eq('business_type', 'arena') // Strict isolation and synchrony!
+        .eq('user_id', tenantId)
+        .eq('business_type', 'arena')
         .order('created_at', { ascending: false });
 
       if (error) throw error;
 
-      return (data || []).map((row: any) => {
-        const items = (row.comanda_items || []).map((item: any) => ({
-          id: item.id,
-          comandaId: item.comanda_id,
-          productId: item.product_id,
-          productName: item.product_name,
-          quantity: Number(item.quantity),
-          unitPrice: Number(item.unit_price),
-          total: Number(item.total),
-          createdAt: item.created_at,
-        })) as ComandaItem[];
-
-        const totalAmount = items.reduce((sum, item) => sum + item.total, 0);
-
-        return {
-          id: row.id,
-          userId: row.user_id,
-          name: row.name,
-          status: row.status,
-          createdAt: row.created_at,
-          closedAt: row.closed_at,
-          items,
-          totalAmount,
-        } as Comanda;
-      });
+      return (data || []).map(mapComandaRow);
     },
-    enabled: !!user?.id,
+    // Só executa quando o tenantId estiver resolvido (aguarda profile carregar)
+    enabled: comandasEnabled && !!tenantId && !loadingProfile,
   });
 
-  // Mutation to open a new comanda
   const openComandaMutation = useMutation({
     mutationFn: async (name: string) => {
       if (!user?.id) throw new Error('Not authenticated');
+      if (!tenantId) throw new Error('Perfil da organização não carregado. Tente novamente.');
 
       const { data, error } = await supabase
         .from('comandas')
         .insert({
-          user_id: user.id,
-          business_type: 'arena', // Definido explicitamente por segurança e isolamento!
+          user_id: tenantId,           // sempre o ID do owner (tenant da organização)
+          business_type: 'arena',
           name: name.trim(),
           status: 'open',
+          organization_id: profile?.organization_id || null,
         })
         .select()
         .single();
@@ -93,15 +83,14 @@ export function useComandas() {
       return data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['comandas'] });
+      syncAfterComandaMutation(queryClient);
       toast.success('Comanda aberta com sucesso!');
     },
-    onError: (error: any) => {
-      toast.error('Erro ao abrir comanda: ' + error.message);
+    onError: (error: unknown) => {
+      toast.error('Erro ao abrir comanda: ' + getErrorMessage(error));
     },
   });
 
-  // Mutation to add product to a comanda (increments qty if exists)
   const addComandaItemMutation = useMutation({
     mutationFn: async ({
       comandaId,
@@ -118,56 +107,64 @@ export function useComandas() {
     }) => {
       if (!user?.id) throw new Error('Not authenticated');
 
-      // Check if item already exists in this comanda
+      if (!tenantId) throw new Error('Perfil da organização não carregado. Tente novamente.');
+
       const { data: existingItems, error: fetchErr } = await supabase
         .from('comanda_items')
         .select('*')
         .eq('comanda_id', comandaId)
+        .eq('user_id', tenantId)
         .eq('product_name', productName);
 
       if (fetchErr) throw fetchErr;
 
       if (existingItems && existingItems.length > 0) {
         const existing = existingItems[0];
-        const newQty = existing.quantity + quantity;
-        const newTotal = Number((newQty * existing.unit_price).toFixed(2));
+        const nextItem = calculateComandaItemUpdate(
+          Number(existing.quantity),
+          quantity,
+          Number(existing.unit_price)
+        );
 
         const { error: updateErr } = await supabase
           .from('comanda_items')
           .update({
-            quantity: newQty,
-            total: newTotal,
+            quantity: nextItem.quantity,
+            total: nextItem.total,
           })
-          .eq('id', existing.id);
+          .eq('id', existing.id)
+          .eq('user_id', tenantId);
 
         if (updateErr) throw updateErr;
-      } else {
-        const total = Number((quantity * unitPrice).toFixed(2));
-
-        const { error: insertErr } = await supabase
-          .from('comanda_items')
-          .insert({
-            user_id: user.id,
-            comanda_id: comandaId,
-            product_id: productId,
-            product_name: productName,
-            quantity,
-            unit_price: unitPrice,
-            total,
-          });
-
-        if (insertErr) throw insertErr;
+        return;
       }
+
+      const payload = {
+        ...buildComandaItemInsert({
+          userId: tenantId,
+          comandaId,
+          productId,
+          productName,
+          quantity,
+          unitPrice,
+        }),
+        organization_id: profile?.organization_id || null,
+      };
+
+      const { error: insertErr } = await supabase
+        .from('comanda_items')
+        .insert(payload);
+
+      if (insertErr) throw insertErr;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['comandas'] });
+      syncAfterComandaMutation(queryClient);
     },
-    onError: (error: any) => {
-      toast.error('Erro ao adicionar item: ' + error.message);
+    onError: (error: unknown) => {
+      toast.error('Erro ao adicionar item: ' + getErrorMessage(error));
     },
   });
 
-  // Mutation to update quantity of an item
   const updateItemQuantityMutation = useMutation({
     mutationFn: async ({ itemId, quantity }: { itemId: string; quantity: number }) => {
       if (!user?.id) throw new Error('Not authenticated');
@@ -177,42 +174,41 @@ export function useComandas() {
           .from('comanda_items')
           .delete()
           .eq('id', itemId)
-          .eq('user_id', user.id);
+          .eq('user_id', tenantId);
 
         if (error) throw error;
-      } else {
-        const { data: item, error: fetchErr } = await supabase
-          .from('comanda_items')
-          .select('*')
-          .eq('id', itemId)
-          .eq('user_id', user.id)
-          .single();
-
-        if (fetchErr) throw fetchErr;
-
-        const total = Number((quantity * Number(item.unit_price)).toFixed(2));
-
-        const { error: updateErr } = await supabase
-          .from('comanda_items')
-          .update({
-            quantity,
-            total,
-          })
-          .eq('id', itemId)
-          .eq('user_id', user.id);
-
-        if (updateErr) throw updateErr;
+        return;
       }
+
+      const { data: item, error: fetchErr } = await supabase
+        .from('comanda_items')
+        .select('*')
+        .eq('id', itemId)
+        .eq('user_id', tenantId)
+        .single();
+
+      if (fetchErr) throw fetchErr;
+
+      const nextItem = calculateComandaItemUpdate(0, quantity, Number(item.unit_price));
+      const { error: updateErr } = await supabase
+        .from('comanda_items')
+        .update({
+          quantity: nextItem.quantity,
+          total: nextItem.total,
+        })
+        .eq('id', itemId)
+        .eq('user_id', tenantId);
+
+      if (updateErr) throw updateErr;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['comandas'] });
+      syncAfterComandaMutation(queryClient);
     },
-    onError: (error: any) => {
-      toast.error('Erro ao atualizar quantidade: ' + error.message);
+    onError: (error: unknown) => {
+      toast.error('Erro ao atualizar quantidade: ' + getErrorMessage(error));
     },
   });
 
-  // Mutation to delete a comanda item directly
   const deleteComandaItemMutation = useMutation({
     mutationFn: async (itemId: string) => {
       if (!user?.id) throw new Error('Not authenticated');
@@ -221,169 +217,88 @@ export function useComandas() {
         .from('comanda_items')
         .delete()
         .eq('id', itemId)
-        .eq('user_id', user.id);
+        .eq('user_id', tenantId);
 
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['comandas'] });
+      syncAfterComandaMutation(queryClient);
       toast.success('Item removido da comanda.');
     },
-    onError: (error: any) => {
-      toast.error('Erro ao remover item: ' + error.message);
+    onError: (error: unknown) => {
+      toast.error('Erro ao remover item: ' + getErrorMessage(error));
     },
   });
 
-  // Mutation to close comanda & trigger dynamic financial sales registration
   const closeComandaMutation = useMutation({
     mutationFn: async ({
       comandaId,
       paymentMethod,
     }: {
       comandaId: string;
-      paymentMethod: 'dinheiro' | 'pix' | 'cartao_credito' | 'cartao_debito';
+      paymentMethod: ComandaPaymentMethod;
     }) => {
       if (!user?.id) throw new Error('Not authenticated');
 
-      // 1. Fetch current items of this comanda
-      const { data: items, error: fetchErr } = await supabase
-        .from('comanda_items')
-        .select('*')
-        .eq('comanda_id', comandaId)
-        .eq('user_id', user.id);
+      const { data, error } = await supabase.rpc('close_comanda_atomic', {
+        p_user_id: tenantId,
+        p_comanda_id: comandaId,
+        p_payment_method: paymentMethod,
+      });
 
-      if (fetchErr) throw fetchErr;
+      if (error) throw error;
 
-      // 2. Insert items into 'sales' table for automatic cash flow integration
-      if (items && items.length > 0) {
-        const salesToInsert = items.map((item) => ({
-          user_id: user.id,
-          business_type: 'arena', // Sincronia perfeita com o tipo de negócio Arena!
-          product_id: item.product_id,
-          product_name: item.product_name,
-          quantity: item.quantity,
-          unit_price: item.unit_price,
-          total: item.total,
-          payment_method: paymentMethod,
-          sold_at: new Date().toISOString(),
-          comanda_id: comandaId, // Relate this sale to the comanda!
-        }));
-
-        const { error: salesErr } = await supabase
-          .from('sales')
-          .insert(salesToInsert);
-
-        if (salesErr) throw salesErr;
-
-        // 2.5. Decrement stock for tracked products
-        for (const item of items) {
-          if (item.product_id) {
-            const { data: prod, error: prodErr } = await supabase
-              .from('products')
-              .select('track_stock, stock_quantity')
-              .eq('id', item.product_id)
-              .maybeSingle();
-
-            if (!prodErr && prod && prod.track_stock) {
-              const newQty = Math.max(0, Number(prod.stock_quantity || 0) - Number(item.quantity));
-              await supabase
-                .from('products')
-                .update({ stock_quantity: newQty })
-                .eq('id', item.product_id);
-            }
-          }
-        }
+      const result = data as CloseComandaResult | null;
+      if (!result?.success) {
+        throw new Error('A comanda nao confirmou o fechamento no banco de dados.');
       }
 
-      // 3. Mark comanda as closed
-      const { error: closeErr } = await supabase
-        .from('comandas')
-        .update({
-          status: 'closed',
-          closed_at: new Date().toISOString(),
-        })
-        .eq('id', comandaId)
-        .eq('user_id', user.id);
-
-      if (closeErr) throw closeErr;
+      return result;
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['comandas'] });
-      queryClient.invalidateQueries({ queryKey: ['sales'] });
-      queryClient.invalidateQueries({ queryKey: ['products'] });
+    onSuccess: async (result, variables) => {
+      const closedAt = result.closed_at || new Date().toISOString();
+
+      queryClient.setQueryData<Comanda[]>(['comandas', tenantId], (current = []) =>
+        current.map((comanda) =>
+          comanda.id === variables.comandaId
+            ? { ...comanda, status: 'closed', closedAt }
+            : comanda
+        )
+      );
+
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['comandas'] }),
+        queryClient.invalidateQueries({ queryKey: ['sales'] }),
+        queryClient.invalidateQueries({ queryKey: ['products'] }),
+      ]);
+
       toast.success('Comanda fechada e venda registrada no caixa com sucesso!');
     },
-    onError: (error: any) => {
-      toast.error('Erro ao fechar comanda: ' + error.message);
+    onError: (error: unknown) => {
+      toast.error('Erro ao fechar comanda: ' + getErrorMessage(error));
     },
   });
 
-  // Mutation to reopen a closed comanda (cancels financial registration from sales)
   const reopenComandaMutation = useMutation({
     mutationFn: async (comandaId: string) => {
       if (!user?.id) throw new Error('Not authenticated');
 
-      // 1. Fetch sales associated with this comanda before deleting them
-      const { data: sales, error: salesFetchErr } = await supabase
-        .from('sales')
-        .select('product_id, quantity')
-        .eq('comanda_id', comandaId)
-        .eq('user_id', user.id);
+      const { error } = await supabase.rpc('reopen_comanda_atomic', {
+        p_user_id: tenantId,
+        p_comanda_id: comandaId,
+      });
 
-      if (!salesFetchErr && sales && sales.length > 0) {
-        // Restore stock for tracked products before deleting the sales records
-        for (const sale of sales) {
-          if (sale.product_id) {
-            const { data: prod, error: prodErr } = await supabase
-              .from('products')
-              .select('track_stock, stock_quantity')
-              .eq('id', sale.product_id)
-              .maybeSingle();
-
-            if (!prodErr && prod && prod.track_stock) {
-              const newQty = Number(prod.stock_quantity || 0) + Number(sale.quantity);
-              await supabase
-                .from('products')
-                .update({ stock_quantity: newQty })
-                .eq('id', sale.product_id);
-            }
-          }
-        }
-      }
-
-      // 2. Delete associated sales records so we don't double report revenue
-      const { error: salesErr } = await supabase
-        .from('sales')
-        .delete()
-        .eq('comanda_id', comandaId)
-        .eq('user_id', user.id);
-
-      if (salesErr) throw salesErr;
-
-      // 3. Update comanda status back to open and reset closed_at
-      const { error: comandaErr } = await supabase
-        .from('comandas')
-        .update({
-          status: 'open',
-          closed_at: null,
-        })
-        .eq('id', comandaId)
-        .eq('user_id', user.id);
-
-      if (comandaErr) throw comandaErr;
+      if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['comandas'] });
-      queryClient.invalidateQueries({ queryKey: ['sales'] });
-      queryClient.invalidateQueries({ queryKey: ['products'] });
+      invalidateComandaState();
       toast.success('Comanda reaberta! O faturamento anterior foi estornado com sucesso.');
     },
-    onError: (error: any) => {
-      toast.error('Erro ao reabrir comanda: ' + error.message);
+    onError: (error: unknown) => {
+      toast.error('Erro ao reabrir comanda: ' + getErrorMessage(error));
     },
   });
 
-  // Mutation to cancel/delete a comanda completely
   const deleteComandaMutation = useMutation({
     mutationFn: async (comandaId: string) => {
       if (!user?.id) throw new Error('Not authenticated');
@@ -392,16 +307,16 @@ export function useComandas() {
         .from('comandas')
         .delete()
         .eq('id', comandaId)
-        .eq('user_id', user.id);
+        .eq('user_id', tenantId);
 
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['comandas'] });
+      syncAfterComandaMutation(queryClient);
       toast.success('Comanda cancelada com sucesso.');
     },
-    onError: (error: any) => {
-      toast.error('Erro ao cancelar comanda: ' + error.message);
+    onError: (error: unknown) => {
+      toast.error('Erro ao cancelar comanda: ' + getErrorMessage(error));
     },
   });
 

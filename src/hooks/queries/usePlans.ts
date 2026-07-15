@@ -1,8 +1,9 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth } from '@/contexts/auth';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { useProfile } from '@/hooks/queries/useProfile';
+import { syncAfterPlanMutation } from '@/lib/querySync';
 
 export interface Plan {
   id: string;
@@ -12,20 +13,23 @@ export interface Plan {
   billingType: 'monthly' | 'per_session';
 }
 
-export function usePlans() {
+export function usePlans(options: { enabled?: boolean } = {}) {
   const { user } = useAuth();
   const { profile } = useProfile();
   const queryClient = useQueryClient();
+  const plansEnabled = options.enabled ?? true;
+
+  const tenantId = profile?.owner_user_id || user?.id;
 
   const { data: plans = [], isLoading: loadingPlans } = useQuery({
-    queryKey: ['plans', user?.id, profile?.business_type],
+    queryKey: ['plans', tenantId, profile?.business_type],
     queryFn: async () => {
-      if (!user) return [];
+      if (!tenantId) return [];
       const businessType = profile?.business_type || 'sport_school';
       const { data, error } = await supabase
         .from('plans')
         .select('*')
-        .eq('user_id', user.id)
+        .eq('user_id', tenantId)
         .eq('business_type', businessType)
         .order('name');
       
@@ -39,7 +43,7 @@ export function usePlans() {
         billingType: p.billing_type as 'monthly' | 'per_session',
       })) as Plan[];
     },
-    enabled: !!user
+    enabled: plansEnabled && !!tenantId
   });
 
   const addPlanMutation = useMutation({
@@ -56,6 +60,7 @@ export function usePlans() {
           price: data.price,
           sessions_per_week: data.sessionsPerWeek,
           billing_type: data.billingType,
+          organization_id: profile?.organization_id || null,
         })
         .select()
         .single();
@@ -64,9 +69,9 @@ export function usePlans() {
       return newPlan;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['plans'] });
+      syncAfterPlanMutation(queryClient);
     },
-    onError: (error: any) => {
+    onError: (error: Error) => {
       toast({ title: 'Erro ao criar plano', description: error.message, variant: 'destructive' });
     }
   });
@@ -83,27 +88,27 @@ export function usePlans() {
           price: data.price,
           sessions_per_week: data.sessionsPerWeek,
           billing_type: data.billingType,
+          organization_id: profile?.organization_id || null,
           updated_at: new Date().toISOString()
         })
         .eq('id', id)
-        .eq('user_id', user.id)
+        .eq('user_id', tenantId)
         .select()
         .single();
 
       if (error) throw error;
 
-      // Sync all unpaid payments for this plan if price changed
-      if (data.price !== undefined) {
+      // Sync open payments if plan pricing or billing model changed.
+      if (data.price !== undefined || data.billingType !== undefined) {
         await supabase.rpc('sync_all_unpaid_payments_for_plan', { p_plan_id: id });
       }
 
       return updatedPlan;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['plans'] });
-      queryClient.invalidateQueries({ queryKey: ['payments'] }); // Preços podem ter mudado
+      syncAfterPlanMutation(queryClient);
     },
-    onError: (error: any) => {
+    onError: (error: Error) => {
       toast({ title: 'Erro ao atualizar plano', description: error.message, variant: 'destructive' });
     }
   });
@@ -116,15 +121,14 @@ export function usePlans() {
         .from('plans')
         .delete()
         .eq('id', id)
-        .eq('user_id', user.id);
+        .eq('user_id', tenantId);
       
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['plans'] });
-      queryClient.invalidateQueries({ queryKey: ['students'] }); // Estudantes podem ter ficado sem plano
+      syncAfterPlanMutation(queryClient);
     },
-    onError: (error: any) => {
+    onError: (error: Error) => {
       toast({ title: 'Erro ao remover plano', description: error.message, variant: 'destructive' });
     }
   });

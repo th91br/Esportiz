@@ -1,6 +1,8 @@
 import { useState, useMemo } from 'react';
-import { Eye, EyeOff, Users, Calendar, CheckCircle, DollarSign, TrendingUp, Activity, UserMinus } from 'lucide-react';
-import { Header } from '@/components/Header';
+import { Eye, EyeOff, Users, Calendar, CheckCircle, DollarSign, TrendingUp, Activity, UserMinus, Lock } from 'lucide-react';
+import { AppPage } from '@/components/layout/AppPage';
+import { IconPanelTitle } from '@/components/layout/IconPanelTitle';
+import { PageHeader } from '@/components/layout/PageHeader';
 import { Button } from '@/components/ui/button';
 import { StatCard } from '@/components/StatCard';
 import { useStudents } from '@/hooks/queries/useStudents';
@@ -9,14 +11,17 @@ import { useTrainings } from '@/hooks/queries/useTrainings';
 import { useAttendance } from '@/hooks/queries/useAttendance';
 import { usePayments } from '@/hooks/queries/usePayments';
 import { useCourts } from '@/hooks/queries/useCourts';
-import { useReservations } from '@/hooks/queries/useReservations';
-import { useSales } from '@/hooks/queries/useSales';
+import { PAYMENT_METHOD_LABELS as RESERVATION_PAYMENT_METHOD_LABELS, useReservations, type PaymentMethod as ReservationPaymentMethod } from '@/hooks/queries/useReservations';
+import { getPaymentMethodLabel, useSales, type PaymentMethod as SalePaymentMethod } from '@/hooks/queries/useSales';
 import { useExpenses } from '@/hooks/queries/useExpenses';
 import { usePrivacyMode } from '@/hooks/usePrivacyMode';
 import { formatCurrency } from '@/lib/formatCurrency';
+import { getReservationPaidAmount, getReservationRemainingAmount } from '@/lib/financialContracts';
 import { cn } from '@/lib/utils';
 import { getActiveMonthlyStudents } from '@/lib/studentHelpers';
 import { useBusinessContext } from '@/hooks/useBusinessContext';
+import { useRolePermissions } from '@/hooks/useRolePermissions';
+import { getSensitiveDataAccess } from '@/lib/sensitiveDataAccess';
 import { getLocalTodayDate, toLocalDateString } from '@/lib/dateUtils';
 import {
   BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
@@ -24,7 +29,7 @@ import {
 } from 'recharts';
 
 const COLORS = {
-  primary: 'hsl(24, 95%, 53%)',
+  primary: 'hsl(151, 83%, 28%)',
   secondary: 'hsl(222, 47%, 20%)',
   success: 'hsl(142, 76%, 36%)',
   warning: 'hsl(38, 92%, 50%)',
@@ -33,6 +38,8 @@ const COLORS = {
   amber: 'hsl(38, 92%, 50%)',
   violet: 'hsl(263, 70%, 55%)',
   slate: 'hsl(215, 16%, 47%)',
+  indigo: 'hsl(239, 84%, 60%)',
+  rose: 'hsl(346, 84%, 60%)',
 };
 
 type FilterPeriod = 'day' | 'week' | 'month' | 'year' | 'all';
@@ -45,11 +52,54 @@ const filterLabels: Record<FilterPeriod, string> = {
   all: 'Todos',
 };
 
-function formatLocalDate(date: Date): string {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
+function truncateChartLabel(value: unknown, maxLength = 16) {
+  const label = String(value ?? '');
+  return label.length > maxLength ? `${label.slice(0, maxLength - 1)}...` : label;
+}
+
+type FinancialOriginKey = 'payments' | 'reservations' | 'direct_sales' | 'comandas';
+type ReportPaymentMethod = SalePaymentMethod | ReservationPaymentMethod;
+
+type FinancialOriginDatum = {
+  key: FinancialOriginKey;
+  name: string;
+  description: string;
+  expected: number;
+  received: number;
+  pending: number;
+  overdue: number;
+  count: number;
+  color: string;
+};
+
+type PaymentMethodDatum = {
+  method: ReportPaymentMethod;
+  label: string;
+  total: number;
+  count: number;
+  color: string;
+};
+
+const PAYMENT_METHOD_COLORS: Record<ReportPaymentMethod, string> = {
+  dinheiro: COLORS.success,
+  pix: COLORS.emerald,
+  cartao: COLORS.violet,
+  cartao_debito: COLORS.primary,
+  cartao_credito: COLORS.warning,
+  a_receber: COLORS.slate,
+};
+
+function getPercent(value: number, total: number) {
+  if (total <= 0) return 0;
+  return Math.min(100, Math.max(0, (value / total) * 100));
+}
+
+function getReportPaymentMethodLabel(method: ReportPaymentMethod) {
+  if (method === 'dinheiro' || method === 'pix' || method === 'cartao_credito' || method === 'cartao_debito') {
+    return getPaymentMethodLabel(method);
+  }
+
+  return RESERVATION_PAYMENT_METHOD_LABELS[method];
 }
 
 function getDateRange(period: FilterPeriod): { start: string; end: string } | null {
@@ -82,9 +132,9 @@ function getDateRange(period: FilterPeriod): { start: string; end: string } | nu
       break;
   }
 
-  return { 
-    start: formatLocalDate(start!), 
-    end: formatLocalDate(endD) 
+  return {
+    start: toLocalDateString(start!),
+    end: toLocalDateString(endD)
   };
 }
 
@@ -114,18 +164,25 @@ function getMonthRefsForPeriod(period: FilterPeriod): string[] | null {
 }
 
 export default function ReportsPage() {
+  const { labels, isArena, isSportSchool, businessType } = useBusinessContext();
+  const rolePermissions = useRolePermissions();
+  const { organizationRole } = rolePermissions;
+  const sensitiveDataAccess = getSensitiveDataAccess(organizationRole, businessType);
   const { students } = useStudents();
   const { plans } = usePlans();
   const { trainings } = useTrainings();
   const { attendance } = useAttendance();
-  const { payments } = usePayments();
+  const { payments } = usePayments({ enabled: sensitiveDataAccess.payments });
   const { courts } = useCourts();
   const { reservations } = useReservations();
-  const { sales } = useSales();
-  const { expenses } = useExpenses();
+  const { sales } = useSales({ enabled: sensitiveDataAccess.sales });
+  const { expenses } = useExpenses({ enabled: sensitiveDataAccess.expenses });
   const [period, setPeriod] = useState<FilterPeriod>('month');
   const [privacyMode, togglePrivacyMode] = usePrivacyMode();
-  const { labels, isArena, isOther, isSportSchool } = useBusinessContext();
+  // Somente dono, gerente e financeiro veem dados financeiros completos
+  const canViewFinancials = rolePermissions.can('reports', 'view_sensitive_financials');
+  // Instructor e Receptionist veem apenas dados operacionais
+  const isOperationalOnly = !canViewFinancials;
 
   const range = useMemo(() => getDateRange(period), [period]);
   const monthRefs = useMemo(() => getMonthRefsForPeriod(period), [period]);
@@ -198,10 +255,20 @@ export default function ReportsPage() {
       return {
         name: court.name,
         hours: courtRes.reduce((acc, r) => acc + (r.durationMinutes / 60), 0),
-        revenue: courtRes.reduce((acc, r) => acc + r.finalPrice, 0)
+        revenue: courtRes.reduce((acc, r) => acc + getReservationPaidAmount(r), 0)
       };
     }).sort((a, b) => b.hours - a.hours);
   }, [courts, filteredReservations, isArena]);
+
+  const courtRevenueData = useMemo(() => {
+    return reservationsByCourtData
+      .filter((court) => court.revenue > 0)
+      .sort((a, b) => b.revenue - a.revenue);
+  }, [reservationsByCourtData]);
+
+  const courtRevenueTotal = useMemo(() => {
+    return courtRevenueData.reduce((sum, court) => sum + court.revenue, 0);
+  }, [courtRevenueData]);
 
   const topReservantesData = useMemo(() => {
     if (!isArena) return [];
@@ -212,68 +279,211 @@ export default function ReportsPage() {
          if (s) {
            if (!map[s.id]) map[s.id] = { count: 0, revenue: 0, name: s.name };
            map[s.id].count += 1;
-           map[s.id].revenue += r.finalPrice;
+           map[s.id].revenue += getReservationPaidAmount(r);
          }
        });
     });
     return Object.values(map).sort((a, b) => b.revenue - a.revenue).slice(0, 5);
   }, [filteredReservations, students, isArena]);
 
-  let expectedRevenue = 0;
-  let receivedRevenue = 0;
-  let overdueRevenue = 0;
-  
   const todayDateStr = getLocalTodayDate();
+  const isMonthlyFinancialView = period === 'month' || period === 'year' || period === 'all';
 
-  // 1. Mensalidades / Planos (Comum a todos, se houver)
-  filteredPayments.forEach(p => {
-    const isMonthlyView = period === 'month' || period === 'year' || period === 'all';
-    
-    if (isMonthlyView) {
-      // Visão de Competência (Dashboard): Soma tudo do mês
-      expectedRevenue += p.amount;
-      receivedRevenue += (p.paidAmount || 0);
-      if (!p.paid && p.dueDate < todayDateStr) {
-        overdueRevenue += (p.amount - (p.paidAmount || 0));
+  const financialOriginData = useMemo<FinancialOriginDatum[]>(() => {
+    const createOrigin = (
+      origin: Omit<FinancialOriginDatum, 'pending'> & { pending?: number },
+    ): FinancialOriginDatum => ({
+      ...origin,
+      pending: Math.max(0, origin.pending ?? (origin.expected - origin.received - origin.overdue)),
+    });
+
+    const origins: FinancialOriginDatum[] = [];
+
+    let paymentsExpected = 0;
+    let paymentsReceived = 0;
+    let paymentsOverdue = 0;
+
+    filteredPayments.forEach((payment) => {
+      const paidAmount = Number(payment.paidAmount || 0);
+      const remainingAmount = Math.max(0, payment.amount - paidAmount);
+
+      if (isMonthlyFinancialView) {
+        paymentsExpected += payment.amount;
+        paymentsReceived += paidAmount;
+
+        if (!payment.paid && payment.dueDate < todayDateStr) {
+          paymentsOverdue += remainingAmount;
+        }
+        return;
       }
-    } else {
-      // Visão de Caixa (Dia/Semana): Separa o que vence hoje do que foi pago hoje
-      const isDueInRange = range && p.dueDate >= range.start && p.dueDate <= range.end;
-      const isPaidInRange = range && p.paidAt && p.paidAt.slice(0, 10) >= range.start && p.paidAt.slice(0, 10) <= range.end;
+
+      const isDueInRange = range && payment.dueDate >= range.start && payment.dueDate <= range.end;
+      const isPaidInRange = range && payment.paidAt && payment.paidAt.slice(0, 10) >= range.start && payment.paidAt.slice(0, 10) <= range.end;
 
       if (isDueInRange) {
-        expectedRevenue += p.amount;
-        if (!p.paid && p.dueDate < todayDateStr) {
-          overdueRevenue += (p.amount - (p.paidAmount || 0));
+        paymentsExpected += payment.amount;
+        if (!payment.paid && payment.dueDate < todayDateStr) {
+          paymentsOverdue += remainingAmount;
         }
       }
+
       if (isPaidInRange) {
-        receivedRevenue += (p.paidAmount || 0);
-      }
-    }
-  });
-
-  // 2. Vendas de Produtos (Sempre recebidas no ato da venda)
-  filteredSales.forEach(s => {
-    expectedRevenue += s.total;
-    receivedRevenue += s.total;
-  });
-
-  // 3. Reservas de Quadras (Exclusivo da Arena)
-  if (isArena) {
-    filteredReservations.forEach(r => {
-      expectedRevenue += r.finalPrice;
-      if (r.paymentStatus === 'paid') {
-        receivedRevenue += r.finalPrice;
-      } else if (r.date < todayDateStr) {
-        overdueRevenue += r.finalPrice;
+        paymentsReceived += paidAmount;
       }
     });
-  }
 
-  const pendingRevenue = expectedRevenue - receivedRevenue - overdueRevenue;
+    if (paymentsExpected > 0 || paymentsReceived > 0 || paymentsOverdue > 0) {
+      origins.push(createOrigin({
+        key: 'payments',
+        name: 'Mensalidades',
+        description: isMonthlyFinancialView ? 'Competência do período' : 'Vencimentos e recebimentos do caixa',
+        expected: paymentsExpected,
+        received: paymentsReceived,
+        overdue: paymentsOverdue,
+        count: filteredPayments.length,
+        color: COLORS.primary,
+      }));
+    }
+
+    if (isArena) {
+      let reservationsExpected = 0;
+      let reservationsReceived = 0;
+      let reservationsOverdue = 0;
+
+      filteredReservations.forEach((reservation) => {
+        const paidAmount = getReservationPaidAmount(reservation);
+        const remainingAmount = getReservationRemainingAmount(reservation);
+
+        reservationsExpected += reservation.finalPrice;
+        reservationsReceived += paidAmount;
+
+        if (reservation.paymentStatus !== 'paid' && reservation.date < todayDateStr) {
+          reservationsOverdue += remainingAmount;
+        }
+      });
+
+      if (reservationsExpected > 0 || reservationsReceived > 0 || reservationsOverdue > 0) {
+        origins.push(createOrigin({
+          key: 'reservations',
+          name: 'Reservas de Quadra',
+          description: 'Avulsas e mensalistas da Arena',
+          expected: reservationsExpected,
+          received: reservationsReceived,
+          overdue: reservationsOverdue,
+          count: filteredReservations.length,
+          color: COLORS.emerald,
+        }));
+      }
+    }
+
+    const directSales = filteredSales.filter((sale) => !sale.comandaId);
+    const directSalesTotal = directSales.reduce((sum, sale) => sum + sale.total, 0);
+    if (directSalesTotal > 0) {
+      origins.push(createOrigin({
+        key: 'direct_sales',
+        name: isArena ? 'Vendas Diretas' : 'Venda de Produtos',
+        description: isArena ? 'Produtos vendidos no balcão' : 'Uniformes, equipamentos e acessórios',
+        expected: directSalesTotal,
+        received: directSalesTotal,
+        overdue: 0,
+        count: new Set(directSales.map((sale) => sale.checkoutId || sale.id)).size,
+        color: COLORS.warning,
+      }));
+    }
+
+    const comandaSales = filteredSales.filter((sale) => Boolean(sale.comandaId));
+    const comandaSalesTotal = comandaSales.reduce((sum, sale) => sum + sale.total, 0);
+    if (comandaSalesTotal > 0) {
+      origins.push(createOrigin({
+        key: 'comandas',
+        name: 'Comandas',
+        description: 'Contas fechadas e baixadas',
+        expected: comandaSalesTotal,
+        received: comandaSalesTotal,
+        overdue: 0,
+        count: new Set(comandaSales.map((sale) => sale.comandaId || sale.checkoutId || sale.id)).size,
+        color: COLORS.violet,
+      }));
+    }
+
+    return origins;
+  }, [
+    filteredPayments,
+    filteredReservations,
+    filteredSales,
+    isArena,
+    isMonthlyFinancialView,
+    range,
+    todayDateStr,
+  ]);
+
+  const financialTotals = useMemo(() => {
+    return financialOriginData.reduce(
+      (totals, origin) => ({
+        expectedRevenue: totals.expectedRevenue + origin.expected,
+        receivedRevenue: totals.receivedRevenue + origin.received,
+        overdueRevenue: totals.overdueRevenue + origin.overdue,
+        pendingRevenue: totals.pendingRevenue + origin.pending,
+      }),
+      { expectedRevenue: 0, receivedRevenue: 0, overdueRevenue: 0, pendingRevenue: 0 },
+    );
+  }, [financialOriginData]);
+
+  const expectedRevenue = financialTotals.expectedRevenue;
+  const receivedRevenue = financialTotals.receivedRevenue;
+  const overdueRevenue = financialTotals.overdueRevenue;
+  const pendingRevenue = financialTotals.pendingRevenue;
   const revenueProgress = expectedRevenue > 0 ? (receivedRevenue / expectedRevenue) * 100 : 0;
   const netProfit = receivedRevenue - totalExpensesPaid;
+
+  const paymentMethodData = useMemo<PaymentMethodDatum[]>(() => {
+    const methodMap = new Map<ReportPaymentMethod, PaymentMethodDatum>();
+
+    const addPaymentMethod = (method: ReportPaymentMethod, amount: number) => {
+      if (amount <= 0 || method === 'a_receber') return;
+      const current = methodMap.get(method) || {
+        method,
+        label: getReportPaymentMethodLabel(method),
+        total: 0,
+        count: 0,
+        color: PAYMENT_METHOD_COLORS[method],
+      };
+
+      methodMap.set(method, {
+        ...current,
+        total: current.total + amount,
+        count: current.count + 1,
+      });
+    };
+
+    filteredSales.forEach((sale) => {
+      addPaymentMethod(sale.paymentMethod, sale.total);
+    });
+
+    if (isArena) {
+      filteredReservations.forEach((reservation) => {
+        const partialPayments = reservation.partialPayments || [];
+        if (partialPayments.length > 0) {
+          partialPayments.forEach((payment) => {
+            addPaymentMethod(payment.method, payment.amount);
+          });
+          return;
+        }
+
+        if (reservation.paymentStatus === 'paid') {
+          addPaymentMethod(reservation.paymentMethod, reservation.finalPrice);
+          return;
+        }
+
+        const paidAmount = getReservationPaidAmount(reservation);
+        if (paidAmount > 0) {
+          addPaymentMethod(reservation.paymentMethod, paidAmount);
+        }
+      });
+    }
+
+    return Array.from(methodMap.values()).sort((a, b) => b.total - a.total);
+  }, [filteredReservations, filteredSales, isArena]);
 
   // Chart Data - Dynamic Evolution for Attendance
   const evolutionAttendanceData = useMemo(() => {
@@ -322,16 +532,19 @@ export default function ReportsPage() {
   }];
 
   const levelData = [
-    { name: 'Iniciante', value: activeMonthly.filter((s) => s.level === 'iniciante').length, color: COLORS.emerald },
-    { name: 'Intermediário', value: activeMonthly.filter((s) => s.level === 'intermediário').length, color: COLORS.amber },
-    { name: 'Avançado', value: activeMonthly.filter((s) => s.level === 'avançado').length, color: COLORS.violet },
-  ];
+    { name: 'Categoria D (Iniciante)', value: activeMonthly.filter((s) => s.level === 'iniciante').length, color: COLORS.emerald },
+    { name: 'Categoria C (Intermediário)', value: activeMonthly.filter((s) => s.level === 'intermediário').length, color: COLORS.amber },
+    { name: 'Categoria B (Avançado)', value: activeMonthly.filter((s) => s.level === 'avançado').length, color: COLORS.violet },
+    { name: 'Categoria A (Avançado PRO)', value: activeMonthly.filter((s) => s.level === 'avançado_pro').length, color: COLORS.indigo },
+    { name: 'Categoria Profissional', value: activeMonthly.filter((s) => s.level === 'profissional').length, color: COLORS.rose },
+  ].filter(d => d.value > 0);
 
   const studentKey = labels.studentLabel.toLowerCase();
-  const planDistributionData = plans.filter(p => activeMonthly.some(s => s.planId === p.id)).map(plan => ({
+  type PlanDistributionDatum = { name: string } & Record<string, string | number>;
+  const planDistributionData: PlanDistributionDatum[] = plans.filter(p => activeMonthly.some(s => s.planId === p.id)).map(plan => ({
     name: plan.name,
     [studentKey]: activeMonthly.filter((s) => s.planId === plan.id).length,
-  })).sort((a: any, b: any) => b[studentKey] - a[studentKey]);
+  })).sort((a, b) => Number(b[studentKey]) - Number(a[studentKey]));
 
   // Historical Financial Data - Dynamic Evolution based on period
   const historicalFinancialData = useMemo(() => {
@@ -356,7 +569,7 @@ export default function ReportsPage() {
         if (isArena) {
           const monthReservations = reservations.filter(r => r.date.startsWith(monthRef) && r.status !== 'cancelled');
           expected += monthReservations.reduce((acc, r) => acc + r.finalPrice, 0);
-          received += monthReservations.filter(r => r.paymentStatus === 'paid').reduce((acc, r) => acc + r.finalPrice, 0);
+          received += monthReservations.reduce((acc, r) => acc + getReservationPaidAmount(r), 0);
         }
 
         // 4. Despesas Pagas (Sincronia!)
@@ -405,7 +618,7 @@ export default function ReportsPage() {
         if (isArena) {
           const dayReservations = reservations.filter(r => r.date === dateStr && r.status !== 'cancelled');
           expected += dayReservations.reduce((acc, r) => acc + r.finalPrice, 0);
-          received += dayReservations.filter(r => r.paymentStatus === 'paid').reduce((acc, r) => acc + r.finalPrice, 0);
+          received += dayReservations.reduce((acc, r) => acc + getReservationPaidAmount(r), 0);
         }
 
         // 4. Despesas Pagas (Sincronia!)
@@ -456,27 +669,23 @@ export default function ReportsPage() {
   };
 
   return (
-    <div className="min-h-screen bg-background pb-12">
-      <Header />
-      <main className="container py-6 md:py-8 space-y-6 md:space-y-8">
-        <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
-          <div>
-            <h1 className="font-display font-extrabold text-3xl md:text-4xl tracking-tight text-foreground">Relatórios Analíticos</h1>
-            <p className="text-muted-foreground mt-1.5 text-sm md:text-base">Métricas, faturamento e engajamento da sua {labels.ctLabelShort.toLowerCase()}.</p>
-          </div>
-
-          <div className="flex items-center gap-2 sm:gap-3 bg-muted/30 p-1.5 rounded-xl border border-border/50">
+    <AppPage contentClassName="pb-12 md:space-y-8">
+      <PageHeader
+        title="Relatórios Analíticos"
+        description={`Métricas, faturamento e engajamento da sua ${labels.ctLabelShort.toLowerCase()}.`}
+        actions={
+          <div className="flex w-full items-center gap-2 overflow-x-auto rounded-xl border border-border/50 bg-muted/30 p-1.5 sm:gap-3 md:w-auto">
             <Button variant="ghost" size="icon" className="rounded-lg h-9 w-9 bg-background shadow-sm border border-border/50 hover:bg-muted" onClick={togglePrivacyMode} title={privacyMode ? 'Mostrar dados' : 'Ocultar dados'}>
-              {privacyMode ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4 text-primary" />}
+              {privacyMode ? <EyeOff className="h-4 4" /> : <Eye className="h-4 w-4 text-primary" />}
             </Button>
             {/* Period Filter */}
-            <div className="flex rounded-lg overflow-hidden border border-border/50 bg-background shadow-sm">
+            <div className="flex min-w-max rounded-lg overflow-hidden border border-border/50 bg-background shadow-sm">
               {(Object.keys(filterLabels) as FilterPeriod[]).map((key) => (
                 <button
                   key={key}
                   onClick={() => setPeriod(key)}
                   className={cn(
-                    'px-3 sm:px-4 py-1.5 text-xs sm:text-sm font-semibold transition-colors',
+                    'whitespace-nowrap px-3 sm:px-4 py-1.5 text-xs sm:text-sm font-semibold transition-colors',
                     period === key
                       ? 'bg-primary text-primary-foreground'
                       : 'hover:bg-muted text-muted-foreground'
@@ -487,13 +696,29 @@ export default function ReportsPage() {
               ))}
             </div>
           </div>
-        </div>
+        }
+      />
+
+        {/* Mensagem para cargos sem acesso financeiro */}
+        {isOperationalOnly && (
+          <div className="rounded-2xl border border-amber-200 bg-amber-50 dark:bg-amber-950/20 dark:border-amber-800 p-5 flex items-start gap-4 animate-fade-in">
+            <div className="bg-amber-100 dark:bg-amber-900/40 p-2.5 rounded-xl shrink-0">
+              <Lock className="h-5 w-5 text-amber-600 dark:text-amber-400" />
+            </div>
+            <div>
+              <p className="font-bold text-amber-800 dark:text-amber-200 text-sm">
+                Acesso parcial ao relatório
+              </p>
+              <p className="text-amber-700 dark:text-amber-300 text-xs mt-0.5">
+                Seu cargo ({organizationRole === 'receptionist' ? 'Recepcionista' : 'Professor/Instrutor'}) tem acesso apenas às métricas operacionais.
+                Os dados financeiros completos estão disponíveis apenas para proprietários, gerentes e o financeiro.
+              </p>
+            </div>
+          </div>
+        )}
 
         {/* KPIs Premium */}
-        <section className={cn(
-          "grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-4 xl:gap-3 animate-fade-in",
-          isSportSchool ? "xl:grid-cols-5" : "xl:grid-cols-7"
-        )}>
+        <section className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-4 xl:gap-3 animate-fade-in xl:grid-cols-4 2xl:grid-cols-7">
           <StatCard 
             title={`${labels.studentLabel} Base`} 
             value={privacyMode ? '••••' : totalActive} 
@@ -514,20 +739,24 @@ export default function ReportsPage() {
             description={privacyMode ? '' : `Média de ${labels.attendanceLabel.toLowerCase()}`}
             progress={privacyMode ? undefined : { value: attendanceRate, label: `Taxa de ${labels.attendanceLabel}` }}
           />
-          <StatCard 
-            title="Faturamento Total" 
-            value={privacyMode ? '••••' : formatCurrency(expectedRevenue)} 
-            icon={DollarSign} 
-            description={privacyMode ? '' : 'Total bruto faturado'}
-          />
-          <StatCard 
-            title="Caixa (Recebido)" 
-            value={privacyMode ? '••••' : formatCurrency(receivedRevenue)} 
-            icon={CheckCircle} 
-            variant="primary"
-            progress={privacyMode ? undefined : { value: revenueProgress, label: "Meta vs Esperado" }}
-          />
-          {!isSportSchool && (
+          {canViewFinancials && (
+            <StatCard 
+              title="Faturamento Total" 
+              value={privacyMode ? '••••' : formatCurrency(expectedRevenue)} 
+              icon={DollarSign} 
+              description={privacyMode ? '' : 'Total bruto faturado'}
+            />
+          )}
+          {canViewFinancials && (
+            <StatCard 
+              title="Caixa (Recebido)" 
+              value={privacyMode ? '••••' : formatCurrency(receivedRevenue)} 
+              icon={CheckCircle} 
+              variant="primary"
+              progress={privacyMode ? undefined : { value: revenueProgress, label: "Meta vs Esperado" }}
+            />
+          )}
+          {canViewFinancials && (
             <StatCard 
               title="Despesas (Pagas)" 
               value={privacyMode ? '••••' : formatCurrency(totalExpensesPaid)} 
@@ -536,7 +765,7 @@ export default function ReportsPage() {
               description={privacyMode ? '' : 'Total de despesas pagas'}
             />
           )}
-          {!isSportSchool && (
+          {canViewFinancials && (
             <StatCard 
               title="Resultado Líquido" 
               value={privacyMode ? '••••' : formatCurrency(netProfit)} 
@@ -547,16 +776,15 @@ export default function ReportsPage() {
           )}
         </section>
 
-        {/* Charts Grid */}
+        {/* Gráficos — apenas para cargos com acesso financeiro */}
+        {canViewFinancials && (
         <div className="grid lg:grid-cols-2 gap-5 md:gap-6">
           
           {/* Gráfico Financeiro Real */}
-          <div className="card-interactive p-4 md:p-6 border-primary/10">
+          <div className="card-elevated p-4 md:p-6 border-primary/10">
             <div className="flex items-start justify-between mb-6">
               <div>
-                <h3 className="font-display font-bold text-lg md:text-xl text-foreground flex items-center gap-2">
-                  <TrendingUp className="h-5 w-5 text-primary" /> Balanço Financeiro
-                </h3>
+                <IconPanelTitle icon={TrendingUp}>Balanço Financeiro</IconPanelTitle>
                 <p className="text-sm text-muted-foreground mt-1">Realidade dos pagamentos no período selecionado</p>
               </div>
             </div>
@@ -572,8 +800,12 @@ export default function ReportsPage() {
                     <Bar dataKey="Recebido" stackId="a" name="Recebido" fill={COLORS.success} radius={pendingRevenue === 0 && overdueRevenue === 0 ? [4, 4, 0, 0] : [0, 0, 4, 4]} />
                     <Bar dataKey="Pendente" stackId="a" name="Pendente" fill={COLORS.slate} radius={overdueRevenue === 0 ? [4, 4, 0, 0] : [0, 0, 0, 0]} />
                     <Bar dataKey="Atrasado" stackId="a" name="Atrasado" fill={COLORS.destructive} radius={[4, 4, 0, 0]} />
-                    <Bar dataKey="Despesas" name="Despesas" fill={COLORS.amber} radius={[4, 4, 0, 0]} />
-                    <Bar dataKey="Lucro" name="Lucro Líquido" fill={COLORS.emerald} radius={[4, 4, 0, 0]} />
+                    {isArena && (
+                      <Bar dataKey="Despesas" name="Despesas" fill={COLORS.amber} radius={[4, 4, 0, 0]} />
+                    )}
+                    {isArena && (
+                      <Bar dataKey="Lucro" name="Lucro Líquido" fill={COLORS.emerald} radius={[4, 4, 0, 0]} />
+                    )}
                     <Legend wrapperStyle={{ paddingTop: '20px', fontSize: '12px' }} iconType="circle" />
                   </BarChart>
                 </ResponsiveContainer>
@@ -586,8 +818,117 @@ export default function ReportsPage() {
             </div>
           </div>
 
+          {/* Receita por Origem */}
+          <div className="card-elevated p-4 md:p-6 border-emerald/10">
+            <div className="flex items-start justify-between mb-5">
+              <div>
+                <IconPanelTitle icon={DollarSign} iconClassName="text-emerald-600">
+                  Receita por Origem
+                </IconPanelTitle>
+                <p className="text-sm text-muted-foreground mt-1">Separação do caixa por frente operacional</p>
+              </div>
+            </div>
+
+            {financialOriginData.length > 0 ? (
+              <div className="space-y-3">
+                {financialOriginData.map((origin) => (
+                  <div key={origin.key} className="rounded-xl border border-border/60 bg-muted/20 p-3">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-bold text-foreground">{origin.name}</p>
+                        <p className="text-xs text-muted-foreground">{origin.description} · {origin.count} registro(s)</p>
+                      </div>
+                      <div className="shrink-0 text-right">
+                        <p className="text-sm font-bold text-emerald-600">
+                          {privacyMode ? '••••' : formatCurrency(origin.received)}
+                        </p>
+                        <p className="text-[11px] text-muted-foreground">recebido</p>
+                      </div>
+                    </div>
+
+                    {!privacyMode && (
+                      <div className="mt-3 h-2 overflow-hidden rounded-full bg-muted">
+                        <div
+                          className="h-full rounded-full"
+                          style={{
+                            width: `${getPercent(origin.received, origin.expected)}%`,
+                            backgroundColor: origin.color,
+                          }}
+                        />
+                      </div>
+                    )}
+
+                    <div className="mt-3 grid grid-cols-3 gap-2 text-xs">
+                      <div>
+                        <p className="text-muted-foreground">Esperado</p>
+                        <p className="font-semibold text-foreground">{privacyMode ? '••••' : formatCurrency(origin.expected)}</p>
+                      </div>
+                      <div>
+                        <p className="text-muted-foreground">Pendente</p>
+                        <p className="font-semibold text-foreground">{privacyMode ? '••••' : formatCurrency(origin.pending)}</p>
+                      </div>
+                      <div>
+                        <p className="text-muted-foreground">Atrasado</p>
+                        <p className="font-semibold text-destructive">{privacyMode ? '••••' : formatCurrency(origin.overdue)}</p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="flex h-[220px] items-center justify-center rounded-xl border border-dashed border-border/60 bg-muted/10 text-sm font-medium text-muted-foreground">
+                Nenhuma receita encontrada no período.
+              </div>
+            )}
+          </div>
+
+          {/* Recebido por Forma de Pagamento */}
+          {isArena && (
+          <div className="card-elevated p-4 md:p-6 border-primary/10">
+            <div className="flex items-start justify-between mb-5">
+              <div>
+                <IconPanelTitle icon={CheckCircle}>Recebido por Forma</IconPanelTitle>
+                <p className="text-sm text-muted-foreground mt-1">Vendas, comandas e reservas baixadas</p>
+              </div>
+            </div>
+
+            {paymentMethodData.length > 0 ? (
+              <div className="space-y-4">
+                {paymentMethodData.map((method) => (
+                  <div key={method.method}>
+                    <div className="mb-1.5 flex items-center justify-between gap-3">
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-semibold text-foreground">{method.label}</p>
+                        <p className="text-xs text-muted-foreground">{method.count} lançamento(s)</p>
+                      </div>
+                      <p className="shrink-0 text-sm font-bold text-foreground">
+                        {privacyMode ? '••••' : formatCurrency(method.total)}
+                      </p>
+                    </div>
+                    {!privacyMode && (
+                      <div className="h-2 overflow-hidden rounded-full bg-muted">
+                        <div
+                          className="h-full rounded-full"
+                          style={{
+                            width: `${getPercent(method.total, receivedRevenue)}%`,
+                            backgroundColor: method.color,
+                          }}
+                        />
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="flex h-[220px] items-center justify-center rounded-xl border border-dashed border-border/60 bg-muted/10 text-sm font-medium text-muted-foreground">
+                Nenhum recebimento baixado no período.
+              </div>
+            )}
+          </div>
+          )}
+
           {/* Gráfico de Presença X Faltas */}
-          <div className="card-interactive p-4 md:p-6">
+          <div className="card-elevated p-4 md:p-6">
             <h3 className="font-display font-bold text-lg md:text-xl text-foreground mb-1">{labels.attendanceLabel} Geral</h3>
             <p className="text-sm text-muted-foreground mb-6">Controle de engajamento nos registros realizados</p>
             <div className="h-[280px] w-full">
@@ -607,9 +948,9 @@ export default function ReportsPage() {
 
           {/* Demografia: Alunos por Nível */}
           {!isArena && (
-            <div className="card-interactive p-4 md:p-6 lg:col-span-1 border-border/60">
-              <h3 className="font-display font-bold text-lg md:text-xl text-foreground mb-1">{isOther ? 'Perfil dos Alunos por Nível' : 'Perfil Técnico (Base Ativa)'}</h3>
-              <p className="text-sm text-muted-foreground mb-6">{isOther ? 'Distribuição dos alunos por nível de conhecimento' : 'Distribuição da base por nível'}</p>
+            <div className="card-elevated p-4 md:p-6 lg:col-span-1 border-border/60">
+              <h3 className="font-display font-bold text-lg md:text-xl text-foreground mb-1">Perfil Técnico (Base Ativa)</h3>
+              <p className="text-sm text-muted-foreground mb-6">Distribuição da base por nível</p>
               <div className="h-[250px] w-full mt-2">
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
@@ -627,7 +968,7 @@ export default function ReportsPage() {
 
           {/* Demografia: Planos */}
           {!isArena && (
-            <div className="card-interactive p-4 md:p-6 lg:col-span-1 border-border/60">
+            <div className="card-elevated p-4 md:p-6 lg:col-span-1 border-border/60">
               <h3 className="font-display font-bold text-lg md:text-xl text-foreground mb-1">Aderência de {labels.planLabel}</h3>
               <p className="text-sm text-muted-foreground mb-6">Preferência da base de {labels.studentLabel.toLowerCase()}</p>
               <div className="h-[250px] w-full">
@@ -638,10 +979,11 @@ export default function ReportsPage() {
                     <YAxis 
                       type="category" 
                       dataKey="name" 
+                      tickFormatter={(value) => truncateChartLabel(value)}
                       tick={{ fontSize: 12, fill: 'hsl(var(--foreground))', fontWeight: 500 }} 
                       axisLine={false} 
                       tickLine={false} 
-                      width={160}
+                      width={116}
                     />
                     <Tooltip contentStyle={customTooltipStyle} cursor={{ fill: 'hsl(var(--muted)/0.3)' }} formatter={(value: number) => [privacyMode ? '••••' : `${value} ${labels.studentLabelSingular.toLowerCase()}(s)`, 'Aderência']} />
                     <Bar dataKey={studentKey} fill={COLORS.primary} radius={[0, 4, 4, 0]} barSize={28}>
@@ -660,7 +1002,7 @@ export default function ReportsPage() {
           {isArena && (
             <>
               {/* Ocupação por Quadra (Horas) */}
-              <div className="card-interactive p-4 md:p-6 lg:col-span-1 border-border/60">
+              <div className="card-elevated p-4 md:p-6 lg:col-span-1 border-border/60">
                 <h3 className="font-display font-bold text-lg md:text-xl text-foreground mb-1">Ocupação por Quadra</h3>
                 <p className="text-sm text-muted-foreground mb-6">Horas reservadas no período</p>
                 <div className="h-[250px] w-full mt-2">
@@ -676,33 +1018,76 @@ export default function ReportsPage() {
                 </div>
               </div>
 
-              {/* Faturamento por Quadra (Pie) */}
-              <div className="card-interactive p-4 md:p-6 lg:col-span-1 border-border/60">
-                <h3 className="font-display font-bold text-lg md:text-xl text-foreground mb-1">Faturamento por Quadra</h3>
-                <p className="text-sm text-muted-foreground mb-6">Distribuição da receita gerada</p>
-                <div className="h-[250px] w-full mt-2">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                      <Pie data={reservationsByCourtData} cx="50%" cy="50%" innerRadius={65} outerRadius={100} paddingAngle={4} dataKey="revenue"
-                        label={({ name, value }) => privacyMode ? '••••' : formatCurrency(value)} labelLine={{ strokeWidth: 1, stroke: 'hsl(var(--muted-foreground))' }}>
-                        {reservationsByCourtData.map((entry, index) => (<Cell key={index} fill={Object.values(COLORS)[index % Object.values(COLORS).length]} />))}
-                      </Pie>
-                      <Tooltip contentStyle={customTooltipStyle} formatter={(value: number) => [privacyMode ? '••••' : formatCurrency(value), 'Faturamento']} />
-                      <Legend layout="horizontal" verticalAlign="bottom" align="center" wrapperStyle={{ paddingTop: '10px', fontSize: '12px' }} iconType="circle" />
-                    </PieChart>
-                  </ResponsiveContainer>
-                </div>
+              {/* Recebido por Quadra (Pie) */}
+              <div className="card-elevated p-4 md:p-6 lg:col-span-1 border-border/60">
+                <h3 className="font-display font-bold text-lg md:text-xl text-foreground mb-1">Recebido por Quadra</h3>
+                <p className="text-sm text-muted-foreground mb-6">Receita recebida em reservas, separada por quadra</p>
+                {courtRevenueData.length > 0 ? (
+                  <div className="mt-2 space-y-4">
+                    <div className="relative h-[230px] w-full">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <PieChart margin={{ top: 8, right: 16, bottom: 8, left: 16 }}>
+                          <Pie
+                            data={courtRevenueData}
+                            cx="50%"
+                            cy="50%"
+                            innerRadius={66}
+                            outerRadius={96}
+                            paddingAngle={4}
+                            dataKey="revenue"
+                            nameKey="name"
+                            label={false}
+                            labelLine={false}
+                          >
+                            {courtRevenueData.map((entry, index) => (
+                              <Cell key={entry.name} fill={Object.values(COLORS)[index % Object.values(COLORS).length]} />
+                            ))}
+                          </Pie>
+                          <Tooltip contentStyle={customTooltipStyle} formatter={(value: number) => [privacyMode ? '••••' : formatCurrency(value), 'Recebido']} />
+                        </PieChart>
+                      </ResponsiveContainer>
+                      <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center text-center">
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Total</span>
+                        <span className="text-xl font-black text-foreground">{privacyMode ? '••••' : formatCurrency(courtRevenueTotal)}</span>
+                      </div>
+                    </div>
+
+                    <div className="grid gap-2">
+                      {courtRevenueData.map((court, index) => {
+                        const color = Object.values(COLORS)[index % Object.values(COLORS).length];
+                        const percentage = getPercent(court.revenue, courtRevenueTotal);
+
+                        return (
+                          <div key={court.name} className="flex items-center justify-between gap-3 rounded-xl border border-border/50 bg-muted/20 px-3 py-2">
+                            <div className="flex min-w-0 items-center gap-2">
+                              <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ backgroundColor: color }} />
+                              <span className="truncate text-sm font-semibold text-foreground">{court.name}</span>
+                            </div>
+                            <div className="shrink-0 text-right">
+                              <span className="block text-sm font-bold text-foreground">{privacyMode ? '••••' : formatCurrency(court.revenue)}</span>
+                              <span className="text-[10px] font-semibold text-muted-foreground">{privacyMode ? '••••' : `${percentage.toFixed(0)}%`}</span>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="h-[250px] w-full mt-2 flex flex-col items-center justify-center rounded-xl border border-dashed border-border/60 bg-muted/20 text-center px-6">
+                    <DollarSign className="h-6 w-6 text-muted-foreground/60 mb-2" />
+                    <p className="text-sm font-semibold text-foreground">Nenhuma receita recebida por quadra</p>
+                    <p className="text-xs text-muted-foreground mt-1">Assim que houver reservas pagas no período, a distribuição aparecerá aqui.</p>
+                  </div>
+                )}
               </div>
             </>
           )}
 
           {/* Histórico Financeiro Mensal */}
-          <div className="card-interactive p-4 md:p-6 lg:col-span-2 mt-4 border-primary/20 bg-gradient-to-br from-background to-muted/20">
+          <div className="card-elevated p-4 md:p-6 lg:col-span-2 mt-4 border-primary/20 bg-gradient-to-br from-background to-muted/20">
             <div className="flex items-start justify-between mb-6">
               <div>
-                <h3 className="font-display font-bold text-lg md:text-xl text-foreground flex items-center gap-2">
-                  <Activity className="h-5 w-5 text-primary" /> Evolução de Faturamento
-                </h3>
+                <IconPanelTitle icon={Activity}>Evolução de Faturamento</IconPanelTitle>
                 <p className="text-sm text-muted-foreground mt-1">Comparativo de receita prevista vs realizada ({filterLabels[period]})</p>
               </div>
             </div>
@@ -730,12 +1115,12 @@ export default function ReportsPage() {
 
           {/* Métricas de Retenção e Churn */}
           {!isArena && (
-            <div className="card-interactive p-4 md:p-6 lg:col-span-2 border-destructive/10 mt-4">
+            <div className="card-elevated p-4 md:p-6 lg:col-span-2 border-destructive/10 mt-4">
               <div className="flex items-start justify-between mb-6">
                 <div>
-                  <h3 className="font-display font-bold text-lg md:text-xl text-foreground flex items-center gap-2">
-                    <UserMinus className="h-5 w-5 text-destructive" /> Retenção e Churn
-                  </h3>
+                  <IconPanelTitle icon={UserMinus} iconClassName="text-destructive">
+                    Retenção e Churn
+                  </IconPanelTitle>
                   <p className="text-sm text-muted-foreground mt-1">Visão geral do funil de retenção e perda de {labels.studentLabel.toLowerCase()} na base inteira</p>
                 </div>
                 <div className="bg-destructive/10 border border-destructive/20 px-4 py-2 rounded-lg text-center shrink-0">
@@ -766,16 +1151,16 @@ export default function ReportsPage() {
           {isArena && (
             <>
               {/* Top Reservantes */}
-              <div className="card-interactive p-4 md:p-6 lg:col-span-2 border-primary/10 mt-4">
+              <div className="card-elevated p-4 md:p-6 lg:col-span-2 border-primary/10 mt-4">
                 <h3 className="font-display font-bold text-lg md:text-xl text-foreground mb-1">Top Reservantes</h3>
-                <p className="text-sm text-muted-foreground mb-6">Clientes que geraram mais receita no período</p>
+                <p className="text-sm text-muted-foreground mb-6">Clientes que geraram mais caixa recebido no período</p>
                 <div className="h-[280px] w-full">
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={topReservantesData} layout="vertical" margin={{ top: 0, right: 30, left: 0, bottom: 0 }}>
                       <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} stroke="hsl(var(--border))" />
                       <XAxis type="number" hide />
                       <YAxis type="category" dataKey="name" tick={{ fontSize: 13, fill: 'hsl(var(--foreground))', fontWeight: 500 }} axisLine={false} tickLine={false} width={150} />
-                      <Tooltip contentStyle={customTooltipStyle} cursor={{ fill: 'hsl(var(--muted)/0.3)' }} formatter={(value: number) => [privacyMode ? '••••' : formatCurrency(value), 'Faturamento']} />
+                      <Tooltip contentStyle={customTooltipStyle} cursor={{ fill: 'hsl(var(--muted)/0.3)' }} formatter={(value: number) => [privacyMode ? '••••' : formatCurrency(value), 'Recebido']} />
                       <Bar dataKey="revenue" fill={COLORS.emerald} radius={[0, 4, 4, 0]} barSize={32} />
                     </BarChart>
                   </ResponsiveContainer>
@@ -785,7 +1170,7 @@ export default function ReportsPage() {
           )}
 
         </div>
-      </main>
-    </div>
+        )}
+    </AppPage>
   );
 }

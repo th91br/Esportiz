@@ -1,19 +1,23 @@
+import { reportError } from '@/lib/observability';
 import { useState, useMemo } from 'react';
-import { Header } from '@/components/Header';
+import { AppPage } from '@/components/layout/AppPage';
+import { PageHeader } from '@/components/layout/PageHeader';
+import { EmptyState } from '@/components/ui/empty-state';
+import { IconDialogTitle } from '@/components/layout/IconDialogTitle';
 import { Button } from '@/components/ui/button';
 import { ReservationModal } from '@/components/ReservationModal';
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { useCourts, SPORT_LABELS } from '@/hooks/queries/useCourts';
 import { useReservations, type Reservation } from '@/hooks/queries/useReservations';
 import { useStudents } from '@/hooks/queries/useStudents';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth } from '@/contexts/auth';
 import { useProfile } from '@/hooks/queries/useProfile';
 import { toast } from 'sonner';
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -23,8 +27,14 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { formatCurrency } from '@/lib/formatCurrency';
+import { getReservationPaidAmount } from '@/lib/financialContracts';
 import { getLocalTodayDate, toLocalDateString } from '@/lib/dateUtils';
 import { PAYMENT_METHOD_LABELS } from '@/hooks/queries/useReservations';
+import { ArenaPartialPaymentDialog } from '@/components/arena/ArenaPartialPaymentDialog';
+import {
+  buildCommunicationMessage,
+  buildWhatsAppAction,
+} from '@/lib/communicationContracts';
 
 const HOURS = Array.from({ length: 16 }, (_, i) => i + 7); // 7 → 22
 
@@ -46,11 +56,31 @@ function isReservationStartingInSlot(r: Reservation, hour: number): boolean {
   return parseInt(r.time.split(':')[0]) === hour;
 }
 
+function getReservationFinancialSummary(reservation: Reservation) {
+  const hasPartialPayment = reservation.totalPaid > 0 && reservation.remainingBalance > 0;
+  const isPaid = reservation.paymentStatus === 'paid' || reservation.remainingBalance <= 0;
+  const totalLabel = formatCurrency(reservation.finalPrice);
+  const paidLabel = formatCurrency(reservation.totalPaid);
+  const dueLabel = formatCurrency(reservation.remainingBalance);
+
+  return {
+    totalLabel,
+    paidLabel,
+    dueLabel,
+    isPaid,
+    hasPartialPayment,
+    hasAnyPayment: reservation.totalPaid > 0,
+    paymentStatusLabel: isPaid ? 'Pago ✅' : hasPartialPayment ? 'Parcial / Pendente ⏳' : 'Pendente ⏳',
+    cardAmountLabel: isPaid ? `PAGO · ${totalLabel}` : hasPartialPayment ? `Falta ${dueLabel}` : totalLabel,
+    chargeAmountLabel: isPaid ? totalLabel : dueLabel,
+  };
+}
+
 interface ReservationDetailPanelProps {
   reservation: Reservation;
   students: ReturnType<typeof useStudents>['students'];
   courts: ReturnType<typeof useCourts>['courts'];
-  profile: any;
+  profile: ReturnType<typeof useProfile>['profile'];
   onClose: () => void;
   onEdit: () => void;
   onDelete: () => void;
@@ -61,6 +91,7 @@ function ReservationDetailPanel({ reservation, students, courts, profile, onClos
   const reservante = students.find(s => reservation.reservanteIds.includes(s.id));
   const court = courts.find(c => c.id === reservation.courtId);
   const arenaName = profile?.ct_name || 'Esportiz Arena';
+  const financialSummary = getReservationFinancialSummary(reservation);
 
   const buildVoucherText = () => {
     const dateFormatted = new Date(reservation.date + 'T12:00:00').toLocaleDateString('pt-BR');
@@ -71,21 +102,40 @@ function ReservationDetailPanel({ reservation, students, courts, profile, onClos
                           reservation.durationMinutes === 120 ? '2h' :
                           reservation.durationMinutes === 150 ? '2h30' :
                           reservation.durationMinutes === 180 ? '3h' : `${reservation.durationMinutes} min`;
-    const priceLabel = formatCurrency(reservation.finalPrice);
     const paymentMethodLabel = PAYMENT_METHOD_LABELS[reservation.paymentMethod] || 'Pix';
-    const paymentStatusLabel = reservation.paymentStatus === 'paid' ? 'Pago ✅' : 'Pendente ⏳';
-    const pixDetails = (reservation.paymentStatus === 'pending' && profile?.pix_key) ? 
+    const pixDetails = (reservation.paymentStatus === 'pending' && reservation.remainingBalance > 0 && profile?.pix_key) ?
                        `\n🔑 *Chave Pix:* ${profile.pix_key}${profile.pix_receiver ? `\n👤 *Beneficiário:* ${profile.pix_receiver}` : ''}\n` : '';
+    const valueLines = financialSummary.hasPartialPayment
+      ? `💰 *Valor do Play:* ${financialSummary.totalLabel}
+✅ *Já pago:* ${financialSummary.paidLabel}
+⏳ *Saldo pendente:* ${financialSummary.dueLabel}`
+      : financialSummary.hasAnyPayment
+        ? `💰 *Valor do Play:* ${financialSummary.totalLabel}
+✅ *Recebido:* ${financialSummary.paidLabel}`
+        : `💰 *Valor do Play:* ${financialSummary.totalLabel}`;
 
     const customTemplate = profile?.niche_settings?.arena?.templates?.booking_confirmation;
     if (customTemplate) {
-      return customTemplate
-        .replace(/{nome}/g, clientName)
-        .replace(/{escola}/g, arenaName)
-        .replace(/{quadra}/g, courtName)
-        .replace(/{data}/g, dateFormatted)
-        .replace(/{hora}/g, `${reservation.time} (${durationLabel})`)
-        .replace(/{valor}/g, priceLabel);
+      return buildCommunicationMessage({
+        businessType: 'arena',
+        event: 'booking_confirmation',
+        customTemplate,
+        variables: {
+          nome: clientName,
+          nome_completo: clientName,
+          escola: arenaName,
+          quadra: courtName,
+          data: dateFormatted,
+          hora: `${reservation.time} (${durationLabel})`,
+          valor: financialSummary.chargeAmountLabel,
+          valor_total: financialSummary.totalLabel,
+          valor_pago: financialSummary.paidLabel,
+          saldo_pendente: financialSummary.dueLabel,
+          status_pagamento: financialSummary.paymentStatusLabel,
+          chave_pix: profile?.pix_key || '',
+          beneficiario_pix: profile?.pix_receiver || '',
+        },
+      });
     }
 
     return `━━━━━━━━━━━━━━━━━━━━━━━━
@@ -97,8 +147,8 @@ function ReservationDetailPanel({ reservation, students, courts, profile, onClos
 🏟 *Quadra:* ${courtName}
 📅 *Data:* ${dateFormatted}
 ⏰ *Horário:* ${reservation.time} (${durationLabel})
-💰 *Valor do Play:* ${priceLabel}
-💳 *Pagamento:* ${paymentMethodLabel} (${paymentStatusLabel})
+${valueLines}
+💳 *Pagamento:* ${paymentMethodLabel} (${financialSummary.paymentStatusLabel})
 ${pixDetails}
 📍 *${arenaName}*
 _Agradecemos a preferência. Bom jogo!_ 🎾🔥
@@ -113,14 +163,20 @@ _Agradecemos a preferência. Bom jogo!_ 🎾🔥
 
   const handleShareWhatsApp = () => {
     const text = buildVoucherText();
-    const cleanPhone = reservante?.phone ? reservante.phone.replace(/\D/g, '') : '';
-    const waPhone = cleanPhone.length >= 10 && !cleanPhone.startsWith('55') ? `55${cleanPhone}` : cleanPhone;
-    const url = `https://wa.me/${waPhone}?text=${encodeURIComponent(text)}`;
-    window.open(url, '_blank');
+    const action = buildWhatsAppAction({ phone: reservante?.phone, message: text });
+    if (!action.ok) {
+      toast.error('Telefone inválido para envio via WhatsApp.');
+      return;
+    }
+    window.open(action.url, '_blank');
   };
 
+  const voucherPreviewText = buildVoucherText();
+  const voucherAction = buildWhatsAppAction({ phone: reservante?.phone, message: voucherPreviewText });
+  const canShareVoucher = voucherAction.ok;
+
   return (
-    <div className="fixed inset-y-0 right-0 w-80 bg-background border-l shadow-2xl z-50 flex flex-col animate-in slide-in-from-right duration-300">
+    <div className="fixed inset-y-0 right-0 w-full max-w-md bg-background border-l shadow-2xl z-50 flex flex-col animate-in slide-in-from-right duration-300 sm:w-[400px]">
       <div className="p-5 border-b flex items-center justify-between">
         <h3 className="font-display font-bold text-lg">
           {isBlocked ? 'Detalhes do Bloqueio' : 'Detalhes da Reserva'}
@@ -146,9 +202,13 @@ _Agradecemos a preferência. Bom jogo!_ 🎾🔥
               </span>
               <span className={cn(
                 'px-2.5 py-1 rounded-full text-xs font-bold',
-                reservation.paymentStatus === 'paid' ? 'bg-emerald-100 text-emerald-700' : 'bg-orange-100 text-orange-700'
+                financialSummary.isPaid ? 'bg-emerald-100 text-emerald-700' : 'bg-orange-100 text-orange-700'
               )}>
-                {reservation.paymentStatus === 'paid' ? '💰 Pago' : '⏳ A Receber'}
+                {financialSummary.isPaid
+                  ? '💰 Pago'
+                  : financialSummary.hasPartialPayment
+                    ? '💳 Parcial'
+                    : '⏳ A Receber'}
               </span>
               {reservation.online && (
                 <span className="px-2.5 py-1 rounded-full text-xs font-bold bg-indigo-100 text-indigo-700 flex items-center gap-1 shrink-0">
@@ -185,8 +245,21 @@ _Agradecemos a preferência. Bom jogo!_ 🎾🔥
             <div className="flex items-center gap-3 p-3 rounded-xl bg-primary/5 border border-primary/10">
               <DollarSign className="h-4 w-4 text-primary shrink-0" />
               <div>
-                <p className="text-xs text-muted-foreground">Valor</p>
-                <p className="font-bold text-primary text-lg">{formatCurrency(reservation.finalPrice)}</p>
+                <p className="text-xs text-muted-foreground">
+                  {financialSummary.hasPartialPayment ? 'Saldo pendente' : 'Valor'}
+                </p>
+                <p className={cn(
+                  'font-bold text-lg',
+                  financialSummary.hasPartialPayment ? 'text-orange-600 dark:text-orange-400' : 'text-primary'
+                )}>
+                  {financialSummary.hasPartialPayment ? financialSummary.dueLabel : financialSummary.totalLabel}
+                </p>
+                {financialSummary.hasPartialPayment && (
+                  <div className="mt-1 space-y-0.5 text-xs text-muted-foreground">
+                    <p>Valor total: {financialSummary.totalLabel}</p>
+                    <p className="text-emerald-600 dark:text-emerald-400">Já pago: {financialSummary.paidLabel}</p>
+                  </div>
+                )}
                 {reservation.discount > 0 && (
                   <p className="text-xs text-muted-foreground">Desconto: {formatCurrency(reservation.discount)}</p>
                 )}
@@ -210,12 +283,21 @@ _Agradecemos a preferência. Bom jogo!_ 🎾🔥
               <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
                 <MessageCircle className="h-4 w-4 text-emerald-500 shrink-0" /> Comprovante de Reserva
               </p>
+              <pre className="max-h-36 overflow-y-auto whitespace-pre-wrap break-words rounded-lg border border-border/40 bg-background p-3 text-[11px] leading-relaxed text-muted-foreground">
+                {voucherPreviewText}
+              </pre>
+              {!canShareVoucher && (
+                <p className="text-xs font-medium text-destructive">
+                  Telefone inválido ou ausente para envio via WhatsApp.
+                </p>
+              )}
               <div className="flex gap-2">
                 <Button 
                   variant="outline" 
                   size="sm"
                   className="flex-1 text-xs gap-1.5 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 hover:text-emerald-700 border-emerald-500/20 font-bold transition-all"
                   onClick={handleShareWhatsApp}
+                  disabled={!canShareVoucher}
                 >
                   <Send className="h-3.5 w-3.5 shrink-0" /> Enviar
                 </Button>
@@ -252,7 +334,7 @@ export default function ArenaAgendaPage() {
   const { user } = useAuth();
   const { courts } = useCourts();
   const { profile } = useProfile();
-  const { reservations, deleteReservation, updateReservation, addReservation } = useReservations();
+  const { reservations, deleteReservation, addReservation, setReservationPaymentStatus } = useReservations();
   const { students } = useStudents();
 
   const [selectedDate, setSelectedDate] = useState(getLocalTodayDate());
@@ -264,6 +346,7 @@ export default function ArenaAgendaPage() {
   const [selectedReservation, setSelectedReservation] = useState<Reservation | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [pendingPaymentsOpen, setPendingPaymentsOpen] = useState(false);
+  const [paymentDialogRes, setPaymentDialogRes] = useState<Reservation | null>(null);
 
   // States for block entire day feature
   const [blockDayOpen, setBlockDayOpen] = useState(false);
@@ -308,7 +391,7 @@ export default function ArenaAgendaPage() {
       setBlockDayOpen(false);
       setBlockDayReason('');
     } catch (err) {
-      console.error(err);
+      reportError('arena.day_block_failed', err);
       toast.error('Erro ao bloquear o dia.');
     } finally {
       setBlockingDay(false);
@@ -316,7 +399,7 @@ export default function ArenaAgendaPage() {
   };
 
   const pendingReservations = useMemo(() => 
-    reservations.filter(r => r.paymentStatus === 'pending' && r.status !== 'cancelled'),
+    reservations.filter(r => r.paymentStatus === 'pending' && r.status !== 'cancelled' && r.remainingBalance > 0),
     [reservations]
   );
   const pendingCount = pendingReservations.length;
@@ -329,10 +412,16 @@ export default function ArenaAgendaPage() {
 
   const activeCourts = courts.filter(c => c.isActive);
   const displayedCourts = courtFilter === 'all' ? activeCourts : activeCourts.filter(c => c.id === courtFilter);
+  const agendaGridTemplateColumns = `80px repeat(${displayedCourts.length}, minmax(144px, 1fr))`;
 
   const todayReservations = useMemo(() =>
     reservations.filter(r => r.date === selectedDate && r.status !== 'cancelled'),
     [reservations, selectedDate]
+  );
+  const todayReceivedTotal = useMemo(() =>
+    todayReservations
+      .reduce((total, reservation) => total + getReservationPaidAmount(reservation), 0),
+    [todayReservations]
   );
 
   const reservationsBySlot = useMemo(() => {
@@ -357,7 +446,7 @@ export default function ArenaAgendaPage() {
   }, [todayReservations]);
 
   const studentMap = useMemo(() => {
-    const map = new Map<string, any>();
+    const map = new Map<string, ReturnType<typeof useStudents>['students'][number]>();
     students.forEach(s => map.set(s.id, s));
     return map;
   }, [students]);
@@ -369,6 +458,7 @@ export default function ArenaAgendaPage() {
   };
 
   const isToday = selectedDate === getLocalTodayDate();
+  const currentHour = new Date().getHours();
 
   const openNewReservation = (courtId: string, hour: number) => {
     setEditingReservationId(undefined);
@@ -385,29 +475,7 @@ export default function ArenaAgendaPage() {
   };
 
   const handleMarkAsPaid = async (r: Reservation) => {
-    try {
-      const updatedMeta = {
-        price: r.price,
-        discount: r.discount,
-        finalPrice: r.finalPrice,
-        reservationType: r.reservationType,
-        paymentMethod: r.paymentMethod,
-        paymentStatus: 'paid' as const,
-        status: r.status,
-        online: r.online
-      };
-
-      await updateReservation({
-        id: r.id,
-        input: {
-          meta: updatedMeta
-        }
-      });
-      toast.success('Recebimento confirmado com sucesso!');
-    } catch (err) {
-      console.error('Erro ao dar baixa:', err);
-      toast.error('Ocorreu um erro ao processar o pagamento.');
-    }
+    setPaymentDialogRes(r);
   };
 
   const handleChargeClient = (r: Reservation) => {
@@ -415,6 +483,7 @@ export default function ArenaAgendaPage() {
     const court = courts.find(c => c.id === r.courtId);
     const dateFormatted = new Date(r.date + 'T12:00:00').toLocaleDateString('pt-BR');
     const arenaName = profile?.ct_name || 'Esportiz Arena';
+    const financialSummary = getReservationFinancialSummary(r);
     
     const pixDetails = profile?.pix_key ? 
                        `\n🔑 *Chave Pix:* ${profile.pix_key}${profile.pix_receiver ? `\n👤 *Beneficiário:* ${profile.pix_receiver}` : ''}` : '';
@@ -423,34 +492,45 @@ export default function ArenaAgendaPage() {
     let text = '';
     
     if (customTemplate) {
-      text = customTemplate
-        .replace(/{nome}/g, reservante?.name || 'Cliente')
-        .replace(/{escola}/g, arenaName)
-        .replace(/{valor}/g, formatCurrency(r.finalPrice))
-        .replace(/{chave_pix}/g, profile?.pix_key || '')
-        .replace(/{beneficiario_pix}/g, profile?.pix_receiver || '');
+      text = buildCommunicationMessage({
+        businessType: 'arena',
+        event: 'payment_reminder',
+        customTemplate,
+        variables: {
+          nome: reservante?.name || 'Cliente',
+          nome_completo: reservante?.name || 'Cliente',
+          escola: arenaName,
+          quadra: court?.name || 'Quadra Principal',
+          data: dateFormatted,
+          hora: r.time,
+          valor: financialSummary.chargeAmountLabel,
+          valor_total: financialSummary.totalLabel,
+          valor_pago: financialSummary.paidLabel,
+          saldo_pendente: financialSummary.dueLabel,
+          chave_pix: profile?.pix_key || '',
+          beneficiario_pix: profile?.pix_receiver || '',
+        },
+      });
     } else {
-      text = `Olá, ${reservante?.name || 'Cliente'}! Tudo bem? \n\nPassando para lembrar do acerto do seu horário reservado na *${arenaName}*:\n🏟 *Quadra:* ${court?.name || 'Quadra Principal'}\n📅 *Data:* ${dateFormatted} às ${r.time}\n💰 *Valor:* ${formatCurrency(r.finalPrice)}\n${pixDetails}\n\nSe preferir, você pode efetuar o pagamento via Pix. Muito obrigado! 🎾🔥`;
+      text = `Olá, ${reservante?.name || 'Cliente'}! Tudo bem? \n\nPassando para lembrar do acerto do seu horário reservado na *${arenaName}*:\n🏟 *Quadra:* ${court?.name || 'Quadra Principal'}\n📅 *Data:* ${dateFormatted} às ${r.time}\n💰 *Valor total:* ${financialSummary.totalLabel}${financialSummary.hasAnyPayment ? `\n✅ *Já pago:* ${financialSummary.paidLabel}` : ''}\n⏳ *Saldo pendente:* ${financialSummary.dueLabel}\n${pixDetails}\n\nSe preferir, você pode efetuar o pagamento via Pix. Muito obrigado! 🎾🔥`;
     }
 
-    const cleanPhone = reservante?.phone ? reservante.phone.replace(/\D/g, '') : '';
-    const waPhone = cleanPhone.length >= 10 && !cleanPhone.startsWith('55') ? `55${cleanPhone}` : cleanPhone;
-    const url = `https://wa.me/${waPhone}?text=${encodeURIComponent(text)}`;
-    window.open(url, '_blank');
+    const action = buildWhatsAppAction({ phone: reservante?.phone, message: text });
+    if (!action.ok) {
+      toast.error('Telefone inválido para envio via WhatsApp.');
+      return;
+    }
+    window.open(action.url, '_blank');
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      <Header />
-      <main className="container py-6 md:py-8 space-y-5">
-
-        {/* Page Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div>
-            <h1 className="font-display font-extrabold text-3xl md:text-4xl tracking-tight">Agenda</h1>
-            <p className="text-muted-foreground mt-1">Visualize e gerencie as reservas por quadra</p>
-          </div>
-          <div className="flex flex-col sm:flex-row items-center gap-2 w-full sm:w-auto">
+    <AppPage contentClassName="space-y-5">
+      <PageHeader
+        title="Agenda"
+        icon={Calendar}
+        description="Visualize e gerencie as reservas por quadra"
+        actions={
+          <div className="flex flex-col sm:flex-row items-center gap-2">
             <Button
               variant="outline"
               className="gap-2 border-primary/20 text-primary bg-background hover:bg-muted w-full sm:w-auto shrink-0"
@@ -484,7 +564,8 @@ export default function ArenaAgendaPage() {
               <Plus className="h-4 w-4" /> Nova Reserva
             </Button>
           </div>
-        </div>
+        }
+      />
 
         {/* Controls */}
         <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
@@ -508,7 +589,7 @@ export default function ArenaAgendaPage() {
           </div>
 
           {/* Court filter */}
-          <div className="flex gap-1.5 flex-wrap">
+          <div className="flex w-full gap-1.5 overflow-x-auto pb-1 sm:w-auto sm:flex-wrap sm:overflow-visible sm:pb-0">
             <button
               onClick={() => setCourtFilter('all')}
               className={cn(
@@ -542,7 +623,7 @@ export default function ArenaAgendaPage() {
           </div>
           <div className="flex items-center gap-1.5 text-muted-foreground">
             <DollarSign className="h-4 w-4 text-emerald-500" />
-            <span><strong className="text-foreground">{formatCurrency(todayReservations.reduce((a, r) => a + r.finalPrice, 0))}</strong> faturado</span>
+            <span><strong className="text-foreground">{formatCurrency(todayReceivedTotal)}</strong> recebido</span>
           </div>
           <div className="flex items-center gap-1.5 text-muted-foreground">
             <Clock className="h-4 w-4 text-blue-500" />
@@ -552,17 +633,22 @@ export default function ArenaAgendaPage() {
 
         {/* Grid */}
         {displayedCourts.length === 0 ? (
-          <div className="card-elevated p-16 text-center">
-            <Calendar className="h-12 w-12 mx-auto text-muted-foreground/30 mb-4" />
-            <h3 className="font-bold text-xl">Nenhuma quadra ativa</h3>
-            <p className="text-muted-foreground mt-1">Cadastre quadras em <strong>Quadras</strong> para visualizar a agenda.</p>
-          </div>
+          <EmptyState
+            icon={Calendar}
+            title={<span className="font-bold text-xl text-foreground">Nenhuma quadra ativa</span>}
+            description={(
+              <span>
+                Cadastre quadras em <strong>Quadras</strong> para visualizar a agenda.
+              </span>
+            )}
+            className="card-elevated p-16"
+          />
         ) : (
           <div className="rounded-2xl border border-border/50 overflow-auto shadow-sm bg-background">
             {/* Header row */}
             <div
               className="grid sticky top-0 z-10 bg-muted/80 backdrop-blur-sm border-b"
-              style={{ gridTemplateColumns: `80px repeat(${displayedCourts.length}, 1fr)` }}
+              style={{ gridTemplateColumns: agendaGridTemplateColumns }}
             >
               <div className="p-3 text-xs font-bold text-muted-foreground uppercase tracking-wider border-r border-border/50">Hora</div>
               {displayedCourts.map(c => (
@@ -583,7 +669,7 @@ export default function ArenaAgendaPage() {
               <div
                 key={hour}
                 className="grid border-b border-border/30 last:border-b-0"
-                style={{ gridTemplateColumns: `80px repeat(${displayedCourts.length}, 1fr)` }}
+                style={{ gridTemplateColumns: agendaGridTemplateColumns }}
               >
                 {/* Hour label */}
                 <div className="p-3 border-r border-border/50 flex items-center">
@@ -597,17 +683,19 @@ export default function ArenaAgendaPage() {
                   const reservante = reservation && reservation.reservanteIds && reservation.reservanteIds.length > 0
                     ? studentMap.get(reservation.reservanteIds[0])
                     : null;
+                  const isPastSlot = isToday && hour < currentHour;
+                  const financialSummary = reservation ? getReservationFinancialSummary(reservation) : null;
 
                   return (
-                    <div key={court.id} className="border-r border-border/30 last:border-r-0 min-h-[56px] relative">
+                    <div key={court.id} className={cn("border-r border-border/30 last:border-r-0 min-h-[56px] relative transition-all", isPastSlot && !reservation && "bg-muted/10 opacity-60 grayscale hover:opacity-100", isPastSlot && reservation && "opacity-75 hover:opacity-100")}>
                       {reservation ? (
                         <button
                           className={cn(
                             'w-full h-full min-h-[56px] p-2 text-left transition-all hover:opacity-90 flex flex-col justify-center',
                             isStart ? 'rounded-t-lg' : '',
                             reservation.reservationType === 'blocked'
-                              ? 'bg-zinc-100 dark:bg-zinc-900/40 border-l-2 border-zinc-400/60 text-zinc-500 dark:text-zinc-400 [background-image:repeating-linear-gradient(45deg,transparent,transparent_8px,rgba(0,0,0,0.03)_8px,rgba(0,0,0,0.03)_16px)] dark:[background-image:repeating-linear-gradient(45deg,transparent,transparent_8px,rgba(255,255,255,0.015)_8px,rgba(255,255,255,0.015)_16px)]'
-                              : reservation.paymentStatus === 'paid'
+                              ? 'bg-muted/60 dark:bg-zinc-900/50 border-l-2 border-zinc-400 text-zinc-500 dark:text-zinc-400'
+                              : financialSummary?.isPaid
                                 ? 'bg-emerald-500/20 border-l-2 border-emerald-500'
                                 : 'bg-primary/20 border-l-2 border-primary'
                           )}
@@ -633,7 +721,7 @@ export default function ArenaAgendaPage() {
                                   {reservante?.name || 'Reservado'}
                                 </p>
                                 <p className="text-[10px] text-muted-foreground">
-                                  {reservation.time} · {reservation.durationMinutes / 60}h · {formatCurrency(reservation.finalPrice)}
+                                  {reservation.time} · {reservation.durationMinutes / 60}h · {financialSummary?.cardAmountLabel}
                                 </p>
                               </>
                             )
@@ -658,7 +746,6 @@ export default function ArenaAgendaPage() {
             ))}
           </div>
         )}
-      </main>
 
       {/* FAB Mobile */}
       <button
@@ -700,7 +787,9 @@ export default function ArenaAgendaPage() {
             <SheetTitle className="font-display font-extrabold text-2xl tracking-tight flex items-center gap-2 text-foreground">
               <DollarSign className="h-6 w-6 text-orange-500" /> Recebimentos Pendentes
             </SheetTitle>
-            <p className="text-xs text-muted-foreground">Controle de caixa de reservas e plays em aberto</p>
+            <SheetDescription className="text-xs text-muted-foreground">
+              Controle de caixa de reservas e plays em aberto.
+            </SheetDescription>
           </SheetHeader>
 
           {/* List Area */}
@@ -721,9 +810,10 @@ export default function ArenaAgendaPage() {
                 const durationLabel = r.durationMinutes === 60 ? '1h' :
                                       r.durationMinutes === 90 ? '1h30' :
                                       r.durationMinutes === 120 ? '2h' : `${r.durationMinutes}m`;
+                const financialSummary = getReservationFinancialSummary(r);
 
                 return (
-                  <div key={r.id} className="p-4 rounded-xl border border-border/50 bg-muted/20 hover:bg-muted/30 transition-all space-y-3 shadow-sm text-left">
+                  <div key={r.id} className="p-4 rounded-xl border border-border/50 bg-muted/20 space-y-3 text-left">
                     {/* Header Row: Client Name */}
                     <div className="flex items-start justify-between gap-2">
                       <div className="min-w-0">
@@ -756,9 +846,16 @@ export default function ArenaAgendaPage() {
 
                     {/* Bottom: Price and Actions */}
                     <div className="flex items-center justify-between gap-4 pt-1 border-t border-border/30">
-                      <p className="font-extrabold text-base text-orange-600 dark:text-orange-400">
-                        {formatCurrency(r.finalPrice)}
-                      </p>
+                      <div>
+                        <p className="font-extrabold text-base text-orange-600 dark:text-orange-400">
+                          {financialSummary.hasPartialPayment ? financialSummary.dueLabel : financialSummary.totalLabel}
+                        </p>
+                        {financialSummary.hasPartialPayment && (
+                          <p className="text-[10px] text-muted-foreground">
+                            Já pago {financialSummary.paidLabel}
+                          </p>
+                        )}
+                      </div>
                       <div className="flex gap-1.5">
                         <Button 
                           size="sm"
@@ -766,7 +863,7 @@ export default function ArenaAgendaPage() {
                           className="text-xs h-8 px-2.5 gap-1 border-emerald-500/20 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 hover:text-emerald-700 font-bold transition-all"
                           onClick={() => handleMarkAsPaid(r)}
                         >
-                          Dar Baixa
+                          Confirmar recebimento
                         </Button>
                         <Button 
                           size="sm"
@@ -811,13 +908,21 @@ export default function ArenaAgendaPage() {
         </AlertDialogContent>
       </AlertDialog>
 
+      <ArenaPartialPaymentDialog
+        reservation={paymentDialogRes}
+        open={!!paymentDialogRes}
+        onOpenChange={(open) => {
+          if (!open) setPaymentDialogRes(null);
+        }}
+      />
+
       {/* Block Day Dialog */}
       <Dialog open={blockDayOpen} onOpenChange={setBlockDayOpen}>
         <DialogContent className="sm:max-w-md bg-background border shadow-2xl p-6">
           <DialogHeader>
-            <DialogTitle className="font-display text-xl font-bold flex items-center gap-2 text-foreground">
-              <Lock className="h-5 w-5 text-zinc-500" /> Bloquear Funcionamento
-            </DialogTitle>
+            <IconDialogTitle icon={Lock} iconClassName="text-zinc-500">
+              Bloquear Funcionamento
+            </IconDialogTitle>
             <DialogDescription className="text-sm text-muted-foreground mt-1">
               Feche as quadras para feriados, manutenções ou folgas gerais neste dia.
             </DialogDescription>
@@ -869,6 +974,6 @@ export default function ArenaAgendaPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
+    </AppPage>
   );
 }

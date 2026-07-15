@@ -1,10 +1,13 @@
 import { useState, useEffect } from 'react';
-import { Header } from '@/components/Header';
+import { AppPage } from '@/components/layout/AppPage';
+import { PageHeader } from '@/components/layout/PageHeader';
 import { getLocalTodayDate, toLocalDateString } from '@/lib/dateUtils';
+import { calculateArenaOccupancy } from '@/lib/arenaOccupancy';
 import { StatCard } from '@/components/StatCard';
 import { Button } from '@/components/ui/button';
-import { useCourts, type Court, SPORT_LABELS, type CourtMetadata } from '@/hooks/queries/useCourts';
-import { useReservations } from '@/hooks/queries/useReservations';
+import { EmptyState } from '@/components/ui/empty-state';
+import { useCourts, type Court, SPORT_LABELS, type CourtMetadata, type CourtCoverage, type CourtSportType } from '@/hooks/queries/useCourts';
+import { useReservations, type Reservation } from '@/hooks/queries/useReservations';
 import { ReservationModal } from '@/components/ReservationModal';
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription,
@@ -24,6 +27,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { formatCurrency } from '@/lib/formatCurrency';
+import { useRolePermissions } from '@/hooks/useRolePermissions';
 
 const SPORT_TYPES = [
   'beach_tennis', 'futevolei', 'volei_praia', 'society',
@@ -144,10 +148,10 @@ function CourtFormDialog({ open, onOpenChange, court }: CourtFormProps) {
           </div>
 
           {/* Tipo */}
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="space-y-1.5">
               <Label>Tipo de Esporte</Label>
-              <Select value={sportType} onValueChange={v => setSportType(v as any)}>
+              <Select value={sportType} onValueChange={v => setSportType(v as CourtSportType)}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
@@ -160,7 +164,7 @@ function CourtFormDialog({ open, onOpenChange, court }: CourtFormProps) {
             </div>
             <div className="space-y-1.5">
               <Label>Cobertura</Label>
-              <Select value={coverage} onValueChange={v => setCoverage(v as any)}>
+              <Select value={coverage} onValueChange={v => setCoverage(v as CourtCoverage)}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
@@ -173,7 +177,7 @@ function CourtFormDialog({ open, onOpenChange, court }: CourtFormProps) {
           </div>
 
           {/* Capacidade e Preço */}
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="space-y-1.5">
               <Label>Capacidade (jogadores)</Label>
               <Input type="number" min={1} max={50} value={capacity} onChange={e => setCapacity(Number(e.target.value))} />
@@ -190,7 +194,7 @@ function CourtFormDialog({ open, onOpenChange, court }: CourtFormProps) {
           </div>
 
           {/* Horário de Funcionamento */}
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="space-y-1.5">
               <Label>Abre às</Label>
               <Input type="time" value={openingTime} onChange={e => setOpeningTime(e.target.value)} />
@@ -234,7 +238,7 @@ function CourtFormDialog({ open, onOpenChange, court }: CourtFormProps) {
             </div>
 
             {usePeakPricing && (
-              <div className="grid grid-cols-3 gap-3 pt-1.5 animate-in fade-in-50 slide-in-from-top-1 duration-200">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1.5 animate-in fade-in-50 slide-in-from-top-1 duration-200">
                 <div className="space-y-1.5">
                   <Label className="text-xs font-bold text-muted-foreground uppercase">Preço (R$)</Label>
                   <Input type="number" min={0} step={0.5} value={peakPrice} onChange={e => setPeakPrice(Number(e.target.value))} className="h-9 text-sm" />
@@ -271,9 +275,9 @@ function CourtFormDialog({ open, onOpenChange, court }: CourtFormProps) {
             <Switch checked={isActive} onCheckedChange={setIsActive} />
           </div>
 
-          <div className="flex gap-3 pt-2">
-            <Button variant="outline" className="flex-1" onClick={() => onOpenChange(false)}>Cancelar</Button>
-            <Button className="flex-1 btn-primary-gradient" onClick={handleSave} disabled={saving || !name.trim()}>
+          <div className="flex flex-col-reverse gap-3 pt-2 sm:flex-row">
+            <Button variant="outline" className="w-full sm:flex-1" onClick={() => onOpenChange(false)}>Cancelar</Button>
+            <Button className="w-full sm:flex-1 btn-primary-gradient" onClick={handleSave} disabled={saving || !name.trim()}>
               {saving
                 ? <div className="h-4 w-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                 : isEditing ? 'Salvar' : 'Criar Quadra'}
@@ -285,7 +289,7 @@ function CourtFormDialog({ open, onOpenChange, court }: CourtFormProps) {
   );
 }
 
-function CourtStatusBadge({ court, reservations }: { court: Court; reservations: any[] }) {
+function CourtStatusBadge({ court, reservations }: { court: Court; reservations: Reservation[] }) {
   const now = new Date();
   const todayStr = toLocalDateString(now);
   const currentTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
@@ -311,6 +315,10 @@ function CourtStatusBadge({ court, reservations }: { court: Court; reservations:
 export default function CourtsPage() {
   const { courts, loadingCourts, deleteCourt } = useCourts();
   const { reservations } = useReservations();
+  const rolePermissions = useRolePermissions();
+  const canCreateCourts = rolePermissions.can('courts', 'create');
+  const canUpdateCourts = rolePermissions.can('courts', 'update');
+  const canDeleteCourts = rolePermissions.can('courts', 'delete');
 
   const [formOpen, setFormOpen] = useState(false);
   const [editingCourt, setEditingCourt] = useState<Court | undefined>();
@@ -334,12 +342,15 @@ export default function CourtsPage() {
     });
   }).length;
 
-  const monthReservations = reservations.filter(r => r.date.startsWith(currentMonthStr) && r.status !== 'cancelled');
-  const totalHoursAvailable = activeCourts.length * 15 * new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).getDate();
-  const totalHoursBooked = monthReservations.reduce((acc, r) => acc + r.durationMinutes / 60, 0);
-  const occupancyRate = totalHoursAvailable > 0 ? Math.round((totalHoursBooked / totalHoursAvailable) * 100) : 0;
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = now.getMonth();
+  const occupancyRate = calculateArenaOccupancy({ courts, reservations, year, month }).rate;
 
   const openForm = (court?: Court) => {
+    if (court && !canUpdateCourts) return;
+    if (!court && !canCreateCourts) return;
+
     setEditingCourt(court);
     setFormOpen(true);
   };
@@ -352,20 +363,17 @@ export default function CourtsPage() {
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      <Header />
-      <main className="container py-6 md:py-8 space-y-6">
-
-        {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div>
-            <h1 className="font-display font-extrabold text-3xl md:text-4xl tracking-tight">Quadras</h1>
-            <p className="text-muted-foreground mt-1">Gerencie as quadras físicas da sua arena</p>
-          </div>
-          <Button className="btn-primary-gradient gap-2 w-full sm:w-auto" onClick={() => openForm()}>
+    <AppPage>
+      <PageHeader
+        title="Quadras"
+        icon={Layers}
+        description="Gerencie as quadras físicas da sua arena"
+        actions={canCreateCourts && (
+          <Button className="btn-primary-gradient gap-2" onClick={() => openForm()}>
             <Plus className="h-4 w-4" /> Nova Quadra
           </Button>
-        </div>
+        )}
+      />
 
         {/* Stats */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
@@ -377,26 +385,23 @@ export default function CourtsPage() {
 
         {/* Courts Grid */}
         {courts.length === 0 && !loadingCourts ? (
-          <div className="card-elevated p-16 text-center space-y-4">
-            <div className="h-20 w-20 mx-auto rounded-2xl bg-primary/10 flex items-center justify-center">
-              <Layers className="h-10 w-10 text-primary/60" />
-            </div>
-            <div>
-              <h3 className="font-display font-bold text-xl">Nenhuma quadra cadastrada</h3>
-              <p className="text-muted-foreground mt-1">Cadastre sua primeira quadra para começar a gerenciar reservas.</p>
-            </div>
-            <Button className="btn-primary-gradient gap-2" onClick={() => openForm()}>
-              <Plus className="h-4 w-4" /> Cadastrar Primeira Quadra
-            </Button>
-          </div>
+          <EmptyState
+            icon={Layers}
+            title="Nenhuma quadra cadastrada"
+            description="Cadastre sua primeira quadra para começar a gerenciar reservas."
+            action={canCreateCourts ? (
+              <Button className="btn-primary-gradient gap-2" onClick={() => openForm()}>
+                <Plus className="h-4 w-4" /> Cadastrar Primeira Quadra
+              </Button>
+            ) : undefined}
+            className="card-elevated p-16"
+          />
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 md:gap-5">
             {courts.map(court => {
               const nextRes = getNextReservation(court.id);
               return (
-                <div key={court.id} className="card-interactive p-0 overflow-hidden flex flex-col">
-                  {/* Top color bar */}
-                  <div className="h-1.5" style={{ backgroundColor: court.color }} />
+                <div key={court.id} className="card-elevated border border-border/50 p-0 overflow-hidden flex flex-col">
 
                   <div className="p-5 flex-1 flex flex-col gap-4">
                     {/* Header */}
@@ -414,7 +419,7 @@ export default function CourtsPage() {
                     </div>
 
                     {/* Info grid */}
-                    <div className="grid grid-cols-2 gap-3">
+                    <div className="grid grid-cols-1 min-[420px]:grid-cols-2 gap-3">
                       <div className="bg-muted/30 rounded-lg p-2.5 text-center flex flex-col justify-center">
                         <div className="flex items-center justify-center gap-1 mb-0.5">
                           {court.coverage === 'covered' ? <Umbrella className="h-3 w-3 text-blue-500" /> : <Sun className="h-3 w-3 text-yellow-500" />}
@@ -476,22 +481,26 @@ export default function CourtsPage() {
                       >
                         <Calendar className="h-3.5 w-3.5" /> Ver Agenda
                       </Button>
-                      <Button
-                        variant="outline"
-                        size="icon"
-                        className="h-8 w-8"
-                        onClick={() => openForm(court)}
-                      >
-                        <Pencil className="h-3.5 w-3.5" />
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="icon"
-                        className="h-8 w-8 text-destructive hover:text-destructive"
-                        onClick={() => setDeleteId(court.id)}
-                      >
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </Button>
+                      {canUpdateCourts && (
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          className="h-8 w-8"
+                          onClick={() => openForm(court)}
+                        >
+                          <Pencil className="h-3.5 w-3.5" />
+                        </Button>
+                      )}
+                      {canDeleteCourts && (
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          className="h-8 w-8 text-destructive hover:text-destructive"
+                          onClick={() => setDeleteId(court.id)}
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -499,17 +508,20 @@ export default function CourtsPage() {
             })}
           </div>
         )}
-      </main>
 
       {/* FAB Mobile */}
-      <button
-        className="fixed bottom-6 right-6 md:hidden h-14 w-14 rounded-full btn-primary-gradient shadow-xl flex items-center justify-center z-50"
-        onClick={() => openForm()}
-      >
-        <Plus className="h-6 w-6 text-white" />
-      </button>
+      {canCreateCourts && (
+        <button
+          className="fixed bottom-6 right-6 md:hidden h-14 w-14 rounded-full btn-primary-gradient shadow-xl flex items-center justify-center z-50"
+          onClick={() => openForm()}
+        >
+          <Plus className="h-6 w-6 text-white" />
+        </button>
+      )}
 
-      <CourtFormDialog open={formOpen} onOpenChange={setFormOpen} court={editingCourt} />
+      {(canCreateCourts || canUpdateCourts) && (
+        <CourtFormDialog open={formOpen} onOpenChange={setFormOpen} court={editingCourt} />
+      )}
 
       <ReservationModal
         open={reservationModalOpen}
@@ -536,6 +548,6 @@ export default function CourtsPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </div>
+    </AppPage>
   );
 }

@@ -1,3 +1,4 @@
+import { reportWarning } from '@/lib/observability';
 import { useLocation, Link } from "react-router-dom";
 import { useEffect } from "react";
 import { Home, ArrowLeft, Search } from "lucide-react";
@@ -7,7 +8,7 @@ const NotFound = () => {
   const location = useLocation();
 
   useEffect(() => {
-    console.warn("404: Rota não encontrada:", location.pathname);
+    reportWarning('routing.not_found');
   }, [location.pathname]);
 
   return (

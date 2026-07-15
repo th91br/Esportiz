@@ -10,8 +10,13 @@
     "lint": "eslint .",
     "lint:json": "eslint . -f json -o lint.json",
     "preview": "vite preview",
+    "typecheck": "tsc -p tsconfig.app.json --noEmit",
+    "check:regression": "npm run lint && npm run typecheck && npm test && npm run build",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "test:e2e": "playwright test",
+    "test:e2e:desktop": "playwright test --project=desktop-chrome",
+    "test:e2e:staging": "playwright test e2e/staging-authenticated-flows.spec.ts --project=desktop-chrome"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",
@@ -44,6 +49,7 @@
     "@radix-ui/react-tooltip": "^1.2.7",
     "@supabase/supabase-js": "^2.97.0",
     "@tanstack/react-query": "^5.83.0",
+    "@vercel/analytics": "^2.0.1",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "cmdk": "^1.1.1",
@@ -52,6 +58,7 @@
     "input-otp": "^1.4.2",
     "lucide-react": "^0.462.0",
     "next-themes": "^0.3.0",
+    "qrcode": "^1.5.4",
     "react": "^18.3.1",
     "react-day-picker": "^8.10.1",
     "react-dom": "^18.3.1",
@@ -67,10 +74,12 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.32.0",
+    "@playwright/test": "^1.61.1",
     "@tailwindcss/typography": "^0.5.16",
     "@testing-library/jest-dom": "^6.6.0",
     "@testing-library/react": "^16.0.0",
     "@types/node": "^22.16.5",
+    "@types/qrcode": "^1.5.6",
     "@types/react": "^18.3.23",
     "@types/react-dom": "^18.3.7",
     "@vite-pwa/assets-generator": "^1.0.2",

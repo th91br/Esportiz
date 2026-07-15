@@ -1,4 +1,5 @@
-import { Header } from '@/components/Header';
+import { AppPage } from '@/components/layout/AppPage';
+import { PageHeader } from '@/components/layout/PageHeader';
 import { StatCard } from '@/components/StatCard';
 import { ModalityManager } from '@/components/ModalityManager';
 import { useModalities } from '@/hooks/queries/useModalities';
@@ -6,6 +7,7 @@ import { useStudents } from '@/hooks/queries/useStudents';
 import { useTrainings } from '@/hooks/queries/useTrainings';
 import { Tag, Users, Calendar, Award } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
+import { EmptyState } from '@/components/ui/empty-state';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
@@ -31,19 +33,14 @@ export default function ModalitiesPage() {
   const topModality = [...modalityStats].sort((a, b) => b.studentCount - a.studentCount)[0];
 
   return (
-    <div className="min-h-screen bg-background">
-      <Header />
-      <main className="container py-6 md:py-8 space-y-6">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div>
-            <h1 className="section-title text-2xl md:text-3xl">{labels.modalityLabel}</h1>
-            <p className="text-muted-foreground mt-1">
-              Gerencie o cadastro de {labels.modalityLabel.toLowerCase()} do seu {labels.ctLabel}
-            </p>
-          </div>
-        </div>
+    <AppPage>
+      <PageHeader
+        title={labels.modalityLabel}
+        description={`Gerencie o cadastro de ${labels.modalityLabel.toLowerCase()} do seu ${labels.ctLabel}`}
+        icon={Tag}
+      />
 
-        {/* Summary Stats */}
+      {/* Summary Stats */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 animate-fade-up">
           <StatCard 
             title={`Total de ${labels.modalityLabel}`} 
@@ -72,8 +69,7 @@ export default function ModalitiesPage() {
           </div>
           
           <div className="lg:col-span-2">
-            <Card className="h-full border-primary/10 shadow-sm overflow-hidden flex flex-col">
-              <div className="h-1 bg-gradient-to-r from-primary/50 to-primary" />
+            <Card className="h-full border border-border/50 shadow-sm overflow-hidden flex flex-col">
               <div className="p-6 pb-4">
                 <div className="space-y-1">
                   <h2 className="flex items-center gap-2 text-lg font-display font-semibold">
@@ -100,20 +96,20 @@ export default function ModalitiesPage() {
                           </div>
                         </div>
                         
-                        <div className="grid grid-cols-2 gap-4 mb-6">
+                        <div className="grid grid-cols-1 min-[420px]:grid-cols-2 gap-4 mb-6">
                           <div className="space-y-1">
                             <p className="text-2xl font-display font-bold">{mod.studentCount}</p>
-                            <p className="text-[10px] uppercase font-bold tracking-wider text-muted-foreground">{labels.studentLabel}</p>
+                            <p className="text-xs font-semibold text-muted-foreground">{labels.studentLabel}</p>
                           </div>
                           <div className="space-y-1">
                             <p className="text-2xl font-display font-bold">{mod.trainingCount}</p>
-                            <p className="text-[10px] uppercase font-bold tracking-wider text-muted-foreground">{labels.trainingLabel}</p>
+                            <p className="text-xs font-semibold text-muted-foreground">{labels.trainingLabel}</p>
                           </div>
                         </div>
                         
                         <Button 
                           variant="outline" 
-                          className="w-full text-xs font-bold uppercase tracking-wider group-hover:bg-primary group-hover:text-white transition-all"
+                          className="w-full text-xs font-semibold group-hover:bg-primary group-hover:text-white transition-colors duration-200"
                           onClick={() => navigate('/alunos')}
                         >
                           Gerenciar {labels.studentLabel}
@@ -123,16 +119,17 @@ export default function ModalitiesPage() {
                   ))}
                   
                   {modalities.length === 0 && (
-                    <div className="col-span-full py-12 text-center border-2 border-dashed rounded-xl bg-muted/30">
-                      <p className="text-sm text-muted-foreground">Cadastre sua primeira {labels.modalityLabelSingular.toLowerCase()} para ver as estatísticas.</p>
-                    </div>
+                    <EmptyState
+                      title={`Cadastre sua primeira ${labels.modalityLabelSingular.toLowerCase()} para ver as estatísticas.`}
+                      variant="outlined"
+                      className="col-span-full py-12"
+                    />
                   )}
                 </div>
               </CardContent>
             </Card>
           </div>
         </div>
-      </main>
-    </div>
+    </AppPage>
   );
 }

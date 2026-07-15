@@ -1,5 +1,7 @@
 import { useMemo } from 'react';
 import { useProfile, type BusinessType } from '@/hooks/queries/useProfile';
+import { useOrganizationMembership } from '@/hooks/queries/useOrganizationMembership';
+import { canAccessPath } from '@/lib/rolePermissions';
 
 export interface BusinessLabels {
   studentLabel: string;
@@ -36,8 +38,8 @@ const LABELS: Record<BusinessType, BusinessLabels> = {
     groupLabel: 'Turmas',
     groupLabelSingular: 'Turma',
     locationLabel: 'Local',
-    ctLabel: 'Centro de Treinamento',
-    ctLabelShort: 'CT',
+    ctLabel: 'Escola Esportiva',
+    ctLabelShort: 'Escola',
     attendanceLabel: 'Presença',
   },
   arena: {
@@ -55,22 +57,6 @@ const LABELS: Record<BusinessType, BusinessLabels> = {
     ctLabel: 'Arena',
     ctLabelShort: 'Arena',
     attendanceLabel: 'Ocupação',
-  },
-  other: {
-    studentLabel: 'Alunos',
-    studentLabelSingular: 'Aluno',
-    trainingLabel: 'Aulas',
-    trainingLabelSingular: 'Aula',
-    planLabel: 'Cursos',
-    planLabelSingular: 'Curso',
-    modalityLabel: 'Disciplinas',
-    modalityLabelSingular: 'Disciplina',
-    groupLabel: 'Turmas',
-    groupLabelSingular: 'Turma',
-    locationLabel: 'Sala / Local',
-    ctLabel: 'Escola / Curso',
-    ctLabelShort: 'Escola',
-    attendanceLabel: 'Presença',
   },
 };
 
@@ -98,10 +84,12 @@ function buildNavModules(type: BusinessType, labels: BusinessLabels): NavModule[
         { label: labels.attendanceLabel, path: '/presenca' },
         { label: labels.planLabel, path: '/planos' },
         shared.pagamentos,
+        shared.despesas,
+        shared.produtos,
+        shared.vendas,
         { label: 'Aniversários', path: '/aniversariantes' },
         shared.relatorios,
         shared.comunicacao,
-        // Ocultos: Despesas, Produtos, Vendas
       ];
 
     case 'arena':
@@ -118,39 +106,59 @@ function buildNavModules(type: BusinessType, labels: BusinessLabels): NavModule[
         shared.relatorios,
       ];
 
-    case 'other':
-      return [
-        shared.dashboard,
-        shared.calendario,
-        { label: labels.studentLabel, path: '/alunos' },
-        { label: labels.modalityLabel, path: '/modalidades' },
-        { label: labels.groupLabel, path: '/turmas' },
-        { label: labels.attendanceLabel, path: '/presenca' },
-        { label: labels.planLabel, path: '/planos' },
-        shared.pagamentos,
-        shared.despesas,
-        shared.relatorios,
-        shared.comunicacao,
-      ];
   }
 }
 
 export function useBusinessContext() {
   const { profile } = useProfile();
+  const {
+    effectiveRole,
+    organizationId,
+    hasActiveOrganizationAccess,
+    isOrganizationOwner,
+    loadingMembership,
+    isErrorMembership,
+    isRoleKnown,
+  } = useOrganizationMembership();
 
   const rawBusinessType = profile?.business_type;
-  const businessType: BusinessType = (rawBusinessType === 'arena' || rawBusinessType === 'other') 
-    ? rawBusinessType 
-    : 'sport_school';
+  const businessType: BusinessType = rawBusinessType === 'arena' ? 'arena' : 'sport_school';
   const labels = useMemo(() => LABELS[businessType], [businessType]);
-  const navModules = useMemo(() => buildNavModules(businessType, labels), [businessType, labels]);
+  const baseNavModules = useMemo(() => buildNavModules(businessType, labels), [businessType, labels]);
+  const shouldApplyRolePermissions = true;
+  const navModules = useMemo(() => {
+    if (!shouldApplyRolePermissions) return baseNavModules;
+
+    return baseNavModules.filter((module) => (
+      canAccessPath({
+        role: effectiveRole,
+        businessType,
+        pathname: module.path,
+      })
+    ));
+  }, [baseNavModules, businessType, effectiveRole, shouldApplyRolePermissions]);
+  const canViewSettings = useMemo(() => (
+    !shouldApplyRolePermissions
+    || canAccessPath({
+      role: effectiveRole,
+      businessType,
+      pathname: '/configuracoes',
+    })
+  ), [businessType, effectiveRole, shouldApplyRolePermissions]);
 
   return {
     businessType,
     labels,
     navModules,
+    canViewSettings,
+    organizationRole: effectiveRole,
+    organizationId,
+    hasActiveOrganizationAccess,
+    isOrganizationOwner,
+    isLoadingOrganizationRole: loadingMembership,
+    isRolePermissionFilterActive: shouldApplyRolePermissions,
+    isRoleKnown,
     isSportSchool: businessType === 'sport_school',
     isArena: businessType === 'arena',
-    isOther: businessType === 'other',
   };
 }

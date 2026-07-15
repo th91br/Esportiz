@@ -1,7 +1,9 @@
 import { useState, useMemo } from 'react';
 import { ChevronLeft, ChevronRight, Plus, Sun, Sunset, Moon, MapPin, Users, Clock, Pencil, Trash2, CalendarDays, CalendarRange, Repeat } from 'lucide-react';
-import { Header } from '@/components/Header';
+import { AppPage } from '@/components/layout/AppPage';
+import { PageHeader } from '@/components/layout/PageHeader';
 import { Button } from '@/components/ui/button';
+import { EmptyState } from '@/components/ui/empty-state';
 import { cn } from '@/lib/utils';
 import {
   getDayName, formatDate, getWeekDatesArray, getEndTime, getTimePeriod, timeSlots, getMonthName, getWeekNumber, getWeekOffsetForDate,
@@ -23,6 +25,7 @@ import {
   Tooltip, TooltipContent, TooltipProvider, TooltipTrigger,
 } from '@/components/ui/tooltip';
 import { useBusinessContext } from '@/hooks/useBusinessContext';
+import { useRolePermissions } from '@/hooks/useRolePermissions';
 
 import { toast } from '@/hooks/use-toast';
 import { getLocalTodayDate, toLocalDateString } from '@/lib/dateUtils';
@@ -32,6 +35,11 @@ import { useModalities } from '@/hooks/queries/useModalities';
 
 const periodIcons = { manhã: Sun, tarde: Sunset, noite: Moon };
 const periodStyles = { manhã: 'bg-amber-500', tarde: 'bg-orange-500', noite: 'bg-indigo-500' };
+type RecurrenceMode = 'none' | 'month' | 'quarter';
+type CancellationReason = NonNullable<Training['cancellationReason']>;
+
+const isCancellationReason = (value: string): value is CancellationReason =>
+  value === 'holiday' || value === 'weather' || value === 'coach_absence' || value === 'other';
 
 function TrainingFormDialog({
   open, onOpenChange, training, selectedDate, onSaved,
@@ -48,11 +56,14 @@ function TrainingFormDialog({
   const [formLocation, setFormLocation] = useState(training?.location || '');
   const [formModalityId, setFormModalityId] = useState(training?.modalityId || 'none');
   const [formStudentIds, setFormStudentIds] = useState<string[]>(training?.studentIds || []);
-  const [recurrence, setRecurrence] = useState<'none' | 'month' | 'quarter'>('none');
+  const [recurrence, setRecurrence] = useState<RecurrenceMode>('none');
   const [formDuration, setFormDuration] = useState(training?.durationMinutes?.toString() || '60');
   const { modalities } = useModalities();
   const [studentSearch, setStudentSearch] = useState('');
-  const { labels, isOther } = useBusinessContext();
+  const { labels } = useBusinessContext();
+  const [cancelled, setCancelled] = useState(training?.cancelled || false);
+  const [cancellationReason, setCancellationReason] = useState<CancellationReason>(training?.cancellationReason || 'holiday');
+  const [cancellationNotes, setCancellationNotes] = useState(training?.cancellationNotes || '');
 
   const filteredStudents = activeStudents.filter((s) =>
     s.name.toLowerCase().includes(studentSearch.toLowerCase())
@@ -67,10 +78,10 @@ function TrainingFormDialog({
     const dayOfWeek = date.getDay();
     const startYear = date.getFullYear();
     const startMonth = date.getMonth();
-    
-    const endDate = new Date(startYear, startMonth + monthsAhead + 1, 0); 
+
+    const endDate = new Date(startYear, startMonth + monthsAhead + 1, 0);
     const dates: string[] = [];
-    
+
     const currentIterDate = new Date(startYear, startMonth, 1);
     while (currentIterDate <= endDate) {
       if (currentIterDate.getDay() === dayOfWeek) {
@@ -78,7 +89,7 @@ function TrainingFormDialog({
       }
       currentIterDate.setDate(currentIterDate.getDate() + 1);
     }
-    
+
     return dates.filter((d) => d >= dateStr);
   };
 
@@ -90,14 +101,17 @@ function TrainingFormDialog({
     }
     setSaving(true);
     try {
-      const baseData = { 
-        time: formTime as TimeSlot, 
-        studentIds: formStudentIds, 
+      const baseData = {
+        time: formTime as TimeSlot,
+        studentIds: formStudentIds,
         location: formLocation,
         modalityId: formModalityId && formModalityId !== 'none' ? formModalityId : undefined,
         durationMinutes: parseInt(formDuration) || 60,
+        cancelled,
+        cancellationReason: cancelled ? cancellationReason : null,
+        cancellationNotes: cancelled ? cancellationNotes : null,
       };
-      
+
       let datesToSchedule: string[] = [formDate];
       if (recurrence === 'month') {
         datesToSchedule = getFutureDatesForDayOfWeek(formDate, 0);
@@ -109,7 +123,7 @@ function TrainingFormDialog({
         // Atualiza a data atual do modal
         await updateTraining(training.id, { ...baseData, date: formDate });
         const extraDates = datesToSchedule.filter((d) => d !== formDate && d > formDate);
-        
+
         for (const date of extraDates) {
           // Anti-Ghosting: Busca colisões na agenda para sobrescrever em vez de duplicar
           const existing = trainings.find((t) => t.date === date && t.time === formTime);
@@ -119,7 +133,7 @@ function TrainingFormDialog({
             await addTraining({ ...baseData, date });
           }
         }
-        
+
         if (extraDates.length > 0) {
           toast({ title: `${labels.trainingLabelSingular} atualizado(a) e replicado(a)!`, description: `${extraDates.length + 1} ${labels.trainingLabel.toLowerCase()} ajustados na agenda.` });
         } else {
@@ -135,7 +149,7 @@ function TrainingFormDialog({
             await addTraining({ ...baseData, date });
           }
         }
-        
+
         if (datesToSchedule.length > 1) {
           toast({ title: `${datesToSchedule.length} ${labels.trainingLabel.toLowerCase()} processados!`, description: `Pauta atualizada usando a proteção de agenda.` });
         } else {
@@ -164,7 +178,7 @@ function TrainingFormDialog({
 
           <div className="space-y-2">
             <Label>Recorrência de {labels.trainingLabelSingular}</Label>
-            <Select value={recurrence} onValueChange={(value: any) => setRecurrence(value)}>
+            <Select value={recurrence} onValueChange={(value) => setRecurrence(value as RecurrenceMode)}>
               <SelectTrigger className="bg-muted/50 border-border/50">
                 <div className="flex items-center gap-2">
                   <Repeat className="h-4 w-4 text-primary" />
@@ -192,7 +206,7 @@ function TrainingFormDialog({
           </div>
           <div className="space-y-2">
             <Label>Local</Label>
-            <Input placeholder={isOther ? "Ex: Sala 101, Laboratório" : "Ex: Quadra 1, Arena Principal"} value={formLocation} onChange={(e) => setFormLocation(e.target.value)} />
+            <Input placeholder="Ex: Quadra 1, Arena Principal" value={formLocation} onChange={(e) => setFormLocation(e.target.value)} />
           </div>
 
           <div className="space-y-2">
@@ -210,6 +224,66 @@ function TrainingFormDialog({
               </SelectContent>
             </Select>
           </div>
+
+          {isEditing && (
+            <div className="space-y-4 p-4 rounded-xl border border-border bg-muted/20">
+              <div className="flex items-center justify-between">
+                <Label className="font-semibold text-sm">Status da Aula</Label>
+                <div className="flex gap-2">
+                  <Button
+                    type="button"
+                    variant={!cancelled ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setCancelled(false)}
+                    className={cn(!cancelled && "btn-primary-gradient")}
+                  >
+                    Confirmada
+                  </Button>
+                  <Button
+                    type="button"
+                    variant={cancelled ? "destructive" : "outline"}
+                    size="sm"
+                    onClick={() => setCancelled(true)}
+                  >
+                    Cancelada
+                  </Button>
+                </div>
+              </div>
+
+              {cancelled && (
+                <div className="space-y-3 pt-2 border-t border-border/50 animate-fade-down">
+                  <div className="space-y-2">
+                    <Label className="text-xs">Motivo do Cancelamento</Label>
+                    <Select
+                      value={cancellationReason}
+                      onValueChange={(value) => {
+                        if (isCancellationReason(value)) setCancellationReason(value);
+                      }}
+                    >
+                      <SelectTrigger className="h-9">
+                        <SelectValue placeholder="Selecione o motivo" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="holiday">Feriado</SelectItem>
+                        <SelectItem value="weather">Chuva / Condições Climáticas</SelectItem>
+                        <SelectItem value="coach_absence">Falta do Professor</SelectItem>
+                        <SelectItem value="other">Outro Motivo</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-xs">Observações do Cancelamento (Alunos visualizam)</Label>
+                    <Input
+                      placeholder="Ex: Aula compensada no dia 20/06"
+                      value={cancellationNotes}
+                      onChange={(e) => setCancellationNotes(e.target.value)}
+                      className="h-9"
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
 
           <div className="space-y-2">
             <Label>Modalidade</Label>
@@ -259,8 +333,8 @@ function TrainingFormDialog({
           <div className="flex gap-3 pt-4">
             <Button type="button" variant="outline" className="flex-1" onClick={() => onOpenChange(false)}>Cancelar</Button>
             <Button type="submit" className="flex-1 btn-primary-gradient" disabled={saving}>
-              {saving ? <div className="h-4 w-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : 
-               isEditing ? 'Salvar' : 
+              {saving ? <div className="h-4 w-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> :
+               isEditing ? 'Salvar' :
                recurrence !== 'none' ? 'Agendar em Lote' : 'Agendar'}
             </Button>
           </div>
@@ -271,7 +345,7 @@ function TrainingFormDialog({
 }
 
 // Annual calendar mini-view with hover tooltips
-function AnnualCalendar({ year, trainings, students, onDayClick }: { year: number; trainings: Training[]; students: { id: string; name: string }[]; onDayClick?: (dateStr: string) => void }) {
+function AnnualCalendar({ year, trainings, students, onDayClick, canSchedule = false }: { year: number; trainings: Training[]; students: { id: string; name: string }[]; onDayClick?: (dateStr: string) => void; canSchedule?: boolean }) {
   const { labels } = useBusinessContext();
   const months = Array.from({ length: 12 }, (_, i) => i);
   const studentMap = useMemo(() => {
@@ -316,7 +390,8 @@ function AnnualCalendar({ year, trainings, students, onDayClick }: { year: numbe
                           <span
                             onClick={() => onDayClick?.(dateStr)}
                             className={cn(
-                              'text-[11px] leading-5 rounded-sm cursor-pointer hover:ring-2 hover:ring-primary/40 transition-all',
+                              'text-[11px] leading-5 rounded-sm transition-all',
+                              canSchedule && 'cursor-pointer hover:ring-2 hover:ring-primary/40',
                               isToday && 'bg-primary text-primary-foreground font-bold',
                               hasTraining && !isToday && 'bg-primary/20 text-primary font-semibold',
                             )}>
@@ -330,7 +405,7 @@ function AnnualCalendar({ year, trainings, students, onDayClick }: { year: numbe
                               <p key={name} className="text-xs text-muted-foreground">• {name.split(' ')[0]}</p>
                             ))}
                           </div>
-                          <p className="text-xs text-primary mt-1 font-medium">Clique para agendar</p>
+                          {canSchedule && <p className="text-xs text-primary mt-1 font-medium">Clique para agendar</p>}
                         </TooltipContent>
                       </Tooltip>
                     );
@@ -340,7 +415,8 @@ function AnnualCalendar({ year, trainings, students, onDayClick }: { year: numbe
                     <span key={day}
                       onClick={() => onDayClick?.(dateStr)}
                       className={cn(
-                        'text-[11px] leading-5 rounded-sm cursor-pointer hover:ring-2 hover:ring-primary/40 transition-all',
+                        'text-[11px] leading-5 rounded-sm transition-all',
+                        canSchedule && 'cursor-pointer hover:ring-2 hover:ring-primary/40',
                         isToday && 'bg-primary text-primary-foreground font-bold',
                       )}>
                       {day}
@@ -372,6 +448,10 @@ export default function CalendarPage() {
   const [modalityFilter, setModalityFilter] = useState('all');
   const { modalities } = useModalities();
   const { labels } = useBusinessContext();
+  const rolePermissions = useRolePermissions();
+  const canCreateTraining = rolePermissions.can('calendar', 'create');
+  const canUpdateTraining = rolePermissions.can('calendar', 'update');
+  const canDeleteTraining = rolePermissions.can('calendar', 'delete');
 
   const weekDates = useMemo(() => getWeekDatesArray(weekOffset), [weekOffset]);
   const weekStart = weekDates[0];
@@ -383,7 +463,7 @@ export default function CalendarPage() {
   const filteredTrainings = trainings.filter(t => {
     if (modalityFilter === 'all') return true;
     if (t.modalityId === modalityFilter) return true;
-    
+
     // Fallback inteligente: se o agendamento não tem essa modalidade explicitamente,
     // verificamos se algum dos clientes agendados neste treino pertence à modalidade filtrada.
     // Isso garante que alterações feitas nos clientes reflitam imediatamente no calendário.
@@ -399,6 +479,7 @@ export default function CalendarPage() {
   };
 
   const handleDeleteTraining = async (training: Training) => {
+    if (!canDeleteTraining) return;
     await deleteTraining(training.id);
     toast({ title: `${labels.trainingLabelSingular} removido(a)` });
   };
@@ -415,19 +496,18 @@ export default function CalendarPage() {
     setWeekOffset(offset);
     setSelectedDate(dateStr);
     setViewMode('week');
-    setNewTrainingOpen(true);
+    if (canCreateTraining) {
+      setNewTrainingOpen(true);
+    }
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      <Header />
-      <main className="container py-6 md:py-8 space-y-6">
-        {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div>
-            <h1 className="section-title text-2xl md:text-3xl">Calendário de {labels.trainingLabel}</h1>
-            <p className="text-muted-foreground mt-1">Gerencie a agenda de {labels.trainingLabel.toLowerCase()}</p>
-          </div>
+    <AppPage>
+      <PageHeader
+        title={`Calendário de ${labels.trainingLabel}`}
+        description={`Gerencie a agenda de ${labels.trainingLabel.toLowerCase()}`}
+        icon={CalendarDays}
+        actions={(
           <div className="flex flex-wrap items-center gap-2">
             <div className="flex rounded-lg border border-border overflow-hidden shrink-0">
               <button onClick={() => setViewMode('week')}
@@ -448,170 +528,209 @@ export default function CalendarPage() {
                 ))}
               </SelectContent>
             </Select>
-            <Button className="btn-primary-gradient shrink-0" onClick={() => setNewTrainingOpen(true)}>
-              <Plus className="h-4 w-4 sm:mr-2" /><span className="hidden sm:inline">Novo(a) {labels.trainingLabelSingular}</span>
-            </Button>
+            {canCreateTraining && (
+              <Button className="btn-primary-gradient shrink-0" onClick={() => setNewTrainingOpen(true)}>
+                <Plus className="h-4 w-4 sm:mr-2" /><span className="hidden sm:inline">Novo(a) {labels.trainingLabelSingular}</span>
+              </Button>
+            )}
           </div>
-        </div>
+        )}
+      />
 
+      {canCreateTraining && (
         <TrainingFormDialog open={newTrainingOpen} onOpenChange={setNewTrainingOpen} selectedDate={selectedDate} onSaved={handleTrainingSaved} />
+      )}
+      {canUpdateTraining && (
         <TrainingFormDialog key={editingTraining?.id || 'new-edit'} open={editOpen} onOpenChange={(o) => { setEditOpen(o); if (!o) setEditingTraining(undefined); }} training={editingTraining} selectedDate={selectedDate} onSaved={handleTrainingSaved} />
+      )}
 
-        {viewMode === 'year' ? (
-          /* Annual View */
-          <div className="card-elevated p-4 md:p-6">
-            <div className="flex items-center justify-between mb-6">
-              <Button variant="ghost" size="icon" onClick={() => setYearView((y) => y - 1)}><ChevronLeft className="h-5 w-5" /></Button>
-              <h2 className="font-display font-bold text-xl">{yearView}</h2>
-              <Button variant="ghost" size="icon" onClick={() => setYearView((y) => y + 1)}><ChevronRight className="h-5 w-5" /></Button>
-            </div>
-            <AnnualCalendar year={yearView} trainings={trainings} students={students} onDayClick={handleAnnualDayClick} />
+      {viewMode === 'year' ? (
+        /* Annual View */
+        <div className="card-elevated p-4 md:p-6">
+          <div className="flex items-center justify-between mb-6">
+            <Button variant="ghost" size="icon" onClick={() => setYearView((y) => y - 1)}><ChevronLeft className="h-5 w-5" /></Button>
+            <h2 className="font-display font-bold text-xl">{yearView}</h2>
+            <Button variant="ghost" size="icon" onClick={() => setYearView((y) => y + 1)}><ChevronRight className="h-5 w-5" /></Button>
           </div>
-        ) : (
-          <>
-            {/* Week Navigation */}
-            <div className="card-elevated p-4">
-              <div className="flex items-center justify-between mb-1">
-                <Button variant="ghost" size="icon" onClick={() => setWeekOffset((w) => w - 1)}><ChevronLeft className="h-5 w-5" /></Button>
-                <div className="text-center">
-                  <h2 className="font-display font-bold text-lg">{weekLabel}</h2>
-                  <p className="text-xs text-muted-foreground">
-                    Semana {weekNum} · {formatDate(weekStart)} — {formatDate(weekEnd)}
-                  </p>
-                </div>
-                <Button variant="ghost" size="icon" onClick={() => setWeekOffset((w) => w + 1)}><ChevronRight className="h-5 w-5" /></Button>
+          <AnnualCalendar year={yearView} trainings={trainings} students={students} onDayClick={handleAnnualDayClick} canSchedule={canCreateTraining} />
+        </div>
+      ) : (
+        <>
+          {/* Week Navigation */}
+          <div className="card-elevated p-4">
+            <div className="flex items-center justify-between mb-1">
+              <Button variant="ghost" size="icon" onClick={() => setWeekOffset((w) => w - 1)}><ChevronLeft className="h-5 w-5" /></Button>
+              <div className="text-center">
+                <h2 className="font-display font-bold text-lg">{weekLabel}</h2>
+                <p className="text-xs text-muted-foreground">
+                  Semana {weekNum} · {formatDate(weekStart)} — {formatDate(weekEnd)}
+                </p>
               </div>
-              {weekOffset !== 0 && (
-                <div className="text-center mb-2">
-                  <button onClick={goToToday} className="text-xs text-primary font-medium hover:underline">Voltar para hoje</button>
-                </div>
-              )}
-              <div className="grid grid-cols-7 gap-1 md:gap-2">
-                {weekDates.map((date) => {
-                  const dayTrainings = trainings.filter((t) => t.date === date);
-                  const isToday = date === todayStr;
-                  const isSelected = date === selectedDate;
+              <Button variant="ghost" size="icon" onClick={() => setWeekOffset((w) => w + 1)}><ChevronRight className="h-5 w-5" /></Button>
+            </div>
+            {weekOffset !== 0 && (
+              <div className="text-center mb-2">
+                <button onClick={goToToday} className="text-xs text-primary font-medium hover:underline">Voltar para hoje</button>
+              </div>
+            )}
+            <div className="grid grid-cols-7 gap-1 md:gap-2">
+              {weekDates.map((date) => {
+                const dayTrainings = trainings.filter((t) => t.date === date);
+                const isToday = date === todayStr;
+                const isSelected = date === selectedDate;
+                return (
+                  <button key={date} onClick={() => setSelectedDate(date)}
+                    className={cn('p-2 md:p-3 rounded-xl text-center transition-all',
+                      isSelected ? 'bg-primary text-primary-foreground' : isToday ? 'bg-primary/10 text-primary' : 'hover:bg-muted')}>
+                    <p className="text-xs font-medium opacity-70">{getDayName(date).slice(0, 3)}</p>
+                    <p className="font-display font-bold text-lg md:text-xl">{formatDate(date).split('/')[0]}</p>
+                    {dayTrainings.length > 0 && (
+                      <div className="flex justify-center gap-0.5 mt-1">
+                        {dayTrainings.slice(0, 3).map((t) => {
+                          const period = getTimePeriod(t.time);
+                          return <div key={t.id} className={cn('h-1.5 w-1.5 rounded-full', isSelected ? 'bg-white/70' : periodStyles[period])} />;
+                        })}
+                      </div>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Selected Day */}
+          <div className="card-elevated p-4 md:p-6">
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h3 className="font-display font-bold text-lg">{getDayName(selectedDate)}</h3>
+                <p className="text-sm text-muted-foreground">{formatDate(selectedDate)}</p>
+              </div>
+              <span className="px-3 py-1 rounded-full bg-muted text-sm font-medium">
+                {selectedTrainings.length} {selectedTrainings.length !== 1 ? labels.trainingLabel.toLowerCase() : labels.trainingLabelSingular.toLowerCase()}
+              </span>
+            </div>
+
+            {selectedTrainings.length > 0 ? (
+              <div className="space-y-3">
+                {selectedTrainings.map((training) => {
+                  const timePeriod = getTimePeriod(training.time);
+                  const PeriodIcon = periodIcons[timePeriod];
+                  const trainingStudents = students.filter((s) => training.studentIds.includes(s.id));
                   return (
-                    <button key={date} onClick={() => setSelectedDate(date)}
-                      className={cn('p-2 md:p-3 rounded-xl text-center transition-all',
-                        isSelected ? 'bg-primary text-primary-foreground' : isToday ? 'bg-primary/10 text-primary' : 'hover:bg-muted')}>
-                      <p className="text-xs font-medium opacity-70">{getDayName(date).slice(0, 3)}</p>
-                      <p className="font-display font-bold text-lg md:text-xl">{formatDate(date).split('/')[0]}</p>
-                      {dayTrainings.length > 0 && (
-                        <div className="flex justify-center gap-0.5 mt-1">
-                          {dayTrainings.slice(0, 3).map((t) => {
-                            const period = getTimePeriod(t.time);
-                            return <div key={t.id} className={cn('h-1.5 w-1.5 rounded-full', isSelected ? 'bg-white/70' : periodStyles[period])} />;
+                    <div
+                      key={training.id}
+                      className={cn(
+                        "p-4 rounded-xl bg-muted/50 border border-border/50 transition-all",
+                        training.cancelled && "opacity-60 bg-slate-50 dark:bg-slate-900 border-dashed border-slate-300 dark:border-slate-800"
+                      )}
+                    >
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                        <div className="flex items-center gap-3">
+                          <div className={cn('p-2 rounded-lg', periodStyles[timePeriod], 'text-white')}>
+                            <PeriodIcon className="h-5 w-5" />
+                          </div>
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <Clock className="h-4 w-4 text-muted-foreground" />
+                              <p className="font-semibold">{training.time} - {getEndTime(training.time, training.durationMinutes)}</p>
+                            </div>
+                            <p className="text-sm text-muted-foreground capitalize">{timePeriod}</p>
+                          </div>
+                        </div>
+                        <div className="flex-1 flex flex-wrap items-center justify-center sm:justify-start gap-1.5 px-4">
+                          {training.cancelled && (
+                            <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-destructive/10 border border-destructive/20 text-destructive text-[10px] font-bold uppercase tracking-wider">
+                              <span>Cancelado ({
+                                training.cancellationReason === 'holiday' ? 'Feriado' :
+                                training.cancellationReason === 'weather' ? 'Clima' :
+                                training.cancellationReason === 'coach_absence' ? 'Falta Professor' : 'Outro'
+                              })</span>
+                            </div>
+                          )}
+                          {training.modalityId && (
+                            <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-primary/5 border border-primary/10 w-fit">
+                              <div className="h-2 w-2 rounded-full" style={{ backgroundColor: modalities.find(m => m.id === training.modalityId)?.color }} />
+                              <span className="text-[10px] font-bold uppercase tracking-wider text-primary">
+                                {modalities.find(m => m.id === training.modalityId)?.name}
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <div className="flex flex-col sm:items-end gap-1 text-sm mr-2">
+                            <div className="flex items-center gap-1.5 text-muted-foreground"><MapPin className="h-3.5 w-3.5" />{training.location}</div>
+                            <div className="flex items-center gap-1.5 text-muted-foreground"><Users className="h-3.5 w-3.5" />{trainingStudents.length} {trainingStudents.length !== 1 ? labels.studentLabel.toLowerCase() : labels.studentLabelSingular.toLowerCase()}</div>
+                          </div>
+                          {canUpdateTraining && (
+                            <Button variant="ghost" size="icon" className="h-8 w-8"
+                            onClick={() => { setEditingTraining(training); setEditOpen(true); }}>
+                            <Pencil className="h-4 w-4" />
+                            </Button>
+                          )}
+                          {canDeleteTraining && (
+                            <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive"><Trash2 className="h-4 w-4" /></Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Remover {labels.trainingLabelSingular.toLowerCase()}?</AlertDialogTitle>
+                                <AlertDialogDescription>Tem certeza? Essa ação não pode ser desfeita.</AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                <AlertDialogAction onClick={() => handleDeleteTraining(training)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Remover</AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                            </AlertDialog>
+                          )}
+                        </div>
+                      </div>
+                      <div className="mt-3 pt-3 border-t border-border/50">
+                        <div className="flex flex-wrap gap-2">
+                          {trainingStudents.map((student) => {
+                            const levelColors: Record<string, string> = {
+                              iniciante: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400',
+                              intermediário: 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-400',
+                              avançado: 'bg-violet-100 text-violet-700 dark:bg-violet-900/40 dark:text-violet-400',
+                              avançado_pro: 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-400',
+                              profissional: 'bg-rose-100 text-rose-700 dark:bg-rose-900/40 dark:text-rose-400',
+                            };
+                            const levelLabels: Record<string, string> = {
+                              iniciante: 'Iniciante',
+                              intermediário: 'Intermediário',
+                              avançado: 'Avançado',
+                              avançado_pro: 'Avançado PRO',
+                              profissional: 'Profissional',
+                            };
+                            return (
+                              <span key={student.id} className={cn('px-2.5 py-1 rounded-full text-xs font-medium', levelColors[student.level] || 'bg-background')}>
+                                {student.name.split(' ')[0]} · <span>{levelLabels[student.level] || student.level}</span>
+                              </span>
+                            );
                           })}
                         </div>
-                      )}
-                    </button>
+                      </div>
+                    </div>
                   );
                 })}
               </div>
-            </div>
-
-            {/* Selected Day */}
-            <div className="card-elevated p-4 md:p-6">
-              <div className="flex items-center justify-between mb-4">
-                <div>
-                  <h3 className="font-display font-bold text-lg">{getDayName(selectedDate)}</h3>
-                  <p className="text-sm text-muted-foreground">{formatDate(selectedDate)}</p>
-                </div>
-                <span className="px-3 py-1 rounded-full bg-muted text-sm font-medium">
-                  {selectedTrainings.length} {selectedTrainings.length !== 1 ? labels.trainingLabel.toLowerCase() : labels.trainingLabelSingular.toLowerCase()}
-                </span>
-              </div>
-
-              {selectedTrainings.length > 0 ? (
-                <div className="space-y-3">
-                  {selectedTrainings.map((training) => {
-                    const timePeriod = getTimePeriod(training.time);
-                    const PeriodIcon = periodIcons[timePeriod];
-                    const trainingStudents = students.filter((s) => training.studentIds.includes(s.id));
-                    return (
-                      <div key={training.id} className="p-4 rounded-xl bg-muted/50 border border-border/50">
-                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                          <div className="flex items-center gap-3">
-                            <div className={cn('p-2 rounded-lg', periodStyles[timePeriod], 'text-white')}>
-                              <PeriodIcon className="h-5 w-5" />
-                            </div>
-                            <div>
-                              <div className="flex items-center gap-2">
-                                <Clock className="h-4 w-4 text-muted-foreground" />
-                                <p className="font-semibold">{training.time} - {getEndTime(training.time, training.durationMinutes)}</p>
-                              </div>
-                              <p className="text-sm text-muted-foreground capitalize">{timePeriod}</p>
-                            </div>
-                          </div>
-                          <div className="flex-1 flex flex-col items-center sm:items-start px-4">
-                            {training.modalityId && (
-                              <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-primary/5 border border-primary/10 w-fit">
-                                <div className="h-2 w-2 rounded-full" style={{ backgroundColor: modalities.find(m => m.id === training.modalityId)?.color }} />
-                                <span className="text-[10px] font-bold uppercase tracking-wider text-primary">
-                                  {modalities.find(m => m.id === training.modalityId)?.name}
-                                </span>
-                              </div>
-                            )}
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <div className="flex flex-col sm:items-end gap-1 text-sm mr-2">
-                              <div className="flex items-center gap-1.5 text-muted-foreground"><MapPin className="h-3.5 w-3.5" />{training.location}</div>
-                              <div className="flex items-center gap-1.5 text-muted-foreground"><Users className="h-3.5 w-3.5" />{trainingStudents.length} {trainingStudents.length !== 1 ? labels.studentLabel.toLowerCase() : labels.studentLabelSingular.toLowerCase()}</div>
-                            </div>
-                            <Button variant="ghost" size="icon" className="h-8 w-8"
-                              onClick={() => { setEditingTraining(training); setEditOpen(true); }}>
-                              <Pencil className="h-4 w-4" />
-                            </Button>
-                            <AlertDialog>
-                              <AlertDialogTrigger asChild>
-                                <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive"><Trash2 className="h-4 w-4" /></Button>
-                              </AlertDialogTrigger>
-                              <AlertDialogContent>
-                                <AlertDialogHeader>
-                                  <AlertDialogTitle>Remover {labels.trainingLabelSingular.toLowerCase()}?</AlertDialogTitle>
-                                  <AlertDialogDescription>Tem certeza? Essa ação não pode ser desfeita.</AlertDialogDescription>
-                                </AlertDialogHeader>
-                                <AlertDialogFooter>
-                                  <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                                  <AlertDialogAction onClick={() => handleDeleteTraining(training)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Remover</AlertDialogAction>
-                                </AlertDialogFooter>
-                              </AlertDialogContent>
-                            </AlertDialog>
-                          </div>
-                        </div>
-                        <div className="mt-3 pt-3 border-t border-border/50">
-                          <div className="flex flex-wrap gap-2">
-                            {trainingStudents.map((student) => {
-                              const levelColors: Record<string, string> = {
-                                iniciante: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400',
-                                intermediário: 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-400',
-                                avançado: 'bg-violet-100 text-violet-700 dark:bg-violet-900/40 dark:text-violet-400',
-                              };
-                              return (
-                                <span key={student.id} className={cn('px-2.5 py-1 rounded-full text-xs font-medium', levelColors[student.level] || 'bg-background')}>
-                                  {student.name.split(' ')[0]} · <span className="capitalize">{student.level}</span>
-                                </span>
-                              );
-                            })}
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              ) : (
-                <div className="text-center py-8">
-                  <p className="text-muted-foreground">Nenhum(a) {labels.trainingLabelSingular.toLowerCase()} agendado(a) para este dia</p>
-                  <Button className="mt-4" variant="outline" onClick={() => setNewTrainingOpen(true)}>
-                    <Plus className="h-4 w-4 mr-2" />Agendar {labels.trainingLabelSingular.toLowerCase()}
+            ) : (
+              <EmptyState
+                icon={CalendarDays}
+                title={`Nenhum(a) ${labels.trainingLabelSingular.toLowerCase()} agendado(a) para este dia`}
+                action={canCreateTraining ? (
+                  <Button variant="outline" onClick={() => setNewTrainingOpen(true)}>
+                    <Plus className="mr-2 h-4 w-4" />
+                    Agendar {labels.trainingLabelSingular.toLowerCase()}
                   </Button>
-                </div>
-              )}
-            </div>
-          </>
-        )}
-      </main>
-    </div>
+                ) : undefined}
+                className="py-8"
+              />
+            )}
+          </div>
+        </>
+      )}
+    </AppPage>
   );
 }

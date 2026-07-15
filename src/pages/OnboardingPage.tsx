@@ -1,3 +1,4 @@
+import { reportError } from '@/lib/observability';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useProfile, type BusinessType } from '@/hooks/queries/useProfile';
@@ -95,7 +96,7 @@ export default function OnboardingPage() {
         try {
           logoUrl = await uploadLogo(logoFile);
         } catch (uploadError) {
-          console.error("Failed to upload logo, proceeding without it:", uploadError);
+          reportError('onboarding.logo_upload_failed', uploadError);
           toast.warning("Não foi possível salvar a sua logo temporariamente, mas estamos concluindo o perfil!");
         }
       }
@@ -120,7 +121,7 @@ export default function OnboardingPage() {
       toast.success('Configuração concluída com sucesso!');
       navigate(getOnboardingGoalPath(businessType, onboardingGoal));
     } catch (error) {
-      console.error(error);
+      reportError('onboarding.completion_failed', error);
       toast.error('Ocorreu um erro ao finalizar a configuração.');
     }
   };

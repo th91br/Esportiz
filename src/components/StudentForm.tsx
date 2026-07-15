@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { UserPlus, UploadCloud, MapPin, FileText, Beaker, UsersRound, Check, Tag, Percent } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -17,16 +18,18 @@ import { useStudents } from '@/hooks/queries/useStudents';
 import { usePlans } from '@/hooks/queries/usePlans';
 import { usePayments } from '@/hooks/queries/usePayments';
 import { useModalities } from '@/hooks/queries/useModalities';
-import { useGroups } from '@/hooks/queries/useGroups';
+import { useGroups, type Group } from '@/hooks/queries/useGroups';
 import type { Student } from '@/data/mockData';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import * as z from 'zod';
 import { useTrainings } from '@/hooks/queries/useTrainings';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth } from '@/contexts/auth';
 import { getDayName } from '@/data/mockData';
 import { useBusinessContext } from '@/hooks/useBusinessContext';
 import { getLocalTodayDate, toLocalDateString } from '@/lib/dateUtils';
+import { syncAfterScheduleMutation } from '@/lib/querySync';
+import { formatCpfInputValue } from '@/lib/cpfInput';
 
 const studentSchema = z.object({
   name: z.string().min(3, "Nome deve ter no mínimo 3 caracteres"),
@@ -51,12 +54,17 @@ const studentSchema = z.object({
 
 type StudentFormValues = z.infer<typeof studentSchema>;
 
+function getErrorMessage(error: unknown) {
+  return error instanceof Error ? error.message : 'Erro inesperado';
+}
+
 interface StudentFormProps {
   student?: Student;
   trigger?: React.ReactNode;
 }
 
 export function StudentForm({ student, trigger }: StudentFormProps) {
+  const queryClient = useQueryClient();
   const { addStudent, updateStudent } = useStudents();
   const { plans } = usePlans();
   const { modalities } = useModalities();
@@ -72,7 +80,7 @@ export function StudentForm({ student, trigger }: StudentFormProps) {
   const [billingStartMonth, setBillingStartMonth] = useState(getLocalTodayDate().slice(0, 7));
   const { groups } = useGroups();
   const [selectedGroups, setSelectedGroups] = useState<string[]>(student?.groupIds || []);
-  const { labels, isOther, isArena } = useBusinessContext();
+  const { labels, isArena } = useBusinessContext();
 
   // Freq adjustment state
   const [schedulePromptOpen, setSchedulePromptOpen] = useState(false);
@@ -91,7 +99,7 @@ export function StudentForm({ student, trigger }: StudentFormProps) {
       paymentDueDay: student?.paymentDueDay ? String(student.paymentDueDay) : '',
       birthDate: student?.birthDate || '',
       modalityId: student?.modalityId || 'none',
-      cpf: student?.cpf || '',
+      cpf: student?.cpf ? formatCpfInputValue(student.cpf) : '',
       rg: student?.rg || '',
       address: student?.address || '',
       city: student?.city || '',
@@ -116,7 +124,7 @@ export function StudentForm({ student, trigger }: StudentFormProps) {
           paymentDueDay: student.paymentDueDay ? String(student.paymentDueDay) : '',
           birthDate: student.birthDate || '',
           modalityId: student.modalityId || 'none',
-          cpf: student.cpf || '',
+          cpf: student.cpf ? formatCpfInputValue(student.cpf) : '',
           rg: student.rg || '',
           address: student.address || '',
           city: student.city || '',
@@ -170,25 +178,25 @@ export function StudentForm({ student, trigger }: StudentFormProps) {
         photoUrl = urlData.publicUrl;
       }
 
-      const discType = formData.discountType && formData.discountType !== 'none' ? formData.discountType : null;
+      const discType: Student['discountType'] =
+        formData.discountType === 'percentage' || formData.discountType === 'fixed'
+          ? formData.discountType
+          : null;
       const discVal = discType ? Number(formData.discountValue || 0) : 0;
       const discDuration = formData.discountDurationMonths && formData.discountDurationMonths !== 'none' ? Number(formData.discountDurationMonths) : null;
       const discStart = discType ? formData.discountStartMonth : null;
 
-      const data = {
+      const data: Partial<Student> = {
         name: formData.name,
         phone: formData.phone,
         email: formData.email || null,
-        level: (isArena ? 'iniciante' : (
-          formData.level === 'fluente' || formData.level === 'avançado' ? 'avançado' :
-          formData.level === 'pré-intermediário' || formData.level === 'intermediário' || formData.level === 'intermediário avançado' ? 'intermediário' : 'iniciante'
-        )) as Student['level'],
+        level: (isArena ? 'iniciante' : formData.level) as Student['level'],
         planId: formData.planId && formData.planId !== 'none' && formData.planId !== 'no_plan' ? formData.planId : null,
         paymentDueDay: derivedDueDay || null,
         birthDate: formData.birthDate || null,
         modalityId: formData.modalityId && formData.modalityId !== 'none' ? formData.modalityId : null,
         photo: photoUrl || null,
-        cpf: formData.cpf || null,
+        cpf: formData.cpf ? formatCpfInputValue(formData.cpf) : null,
         rg: formData.rg || null,
         address: formData.address || null,
         city: formData.city || null,
@@ -209,22 +217,32 @@ export function StudentForm({ student, trigger }: StudentFormProps) {
         const updatedStudentId = student.id;
         toast({ title: `${labels.studentLabelSingular} atualizado(a)!`, description: `${formData.name} foi atualizado(a) com sucesso.` });
 
-        // Sync payments if it's or was a monthly plan
+        // Sync payments if it's or was a monthly plan AND billing-relevant fields changed
         const oldPlan = plans.find(p => p.id === student.planId);
         const newPlan = plans.find(p => p.id === data.planId);
         const wasMonthly = oldPlan?.billingType === 'monthly';
         const isMonthlyNow = newPlan?.billingType === 'monthly';
 
-        if (wasMonthly || isMonthlyNow) {
-          // 1. If it's monthly now, ensure the record for the start month exists
-          if (isMonthlyNow) {
+        const planChanged = (student.planId || null) !== (data.planId || null);
+        const dueDayChanged = (student.paymentDueDay || null) !== (data.paymentDueDay || null);
+        const discountChanged =
+          (student.discountType || null) !== (data.discountType || null) ||
+          Number(student.discountValue || 0) !== Number(data.discountValue || 0) ||
+          (student.discountDurationMonths || null) !== (data.discountDurationMonths || null) ||
+          (student.discountStartMonth || null) !== (data.discountStartMonth || null);
+
+        const needsSync = planChanged || dueDayChanged || discountChanged;
+
+        if ((wasMonthly || isMonthlyNow) && needsSync) {
+          // 1. If it's monthly now AND plan changed (or transitioned to monthly), ensure the record for the start month exists
+          if (isMonthlyNow && (planChanged || !wasMonthly)) {
             await generateMonthlyPayments(billingStartMonth);
           }
           
           // 2. Sync (update or delete unpaid)
           await syncStudentPayments({
             studentId: updatedStudentId,
-            planChanged: student.planId !== data.planId,
+            planChanged: planChanged,
             newPlanId: data.planId,
             newDueDay: data.paymentDueDay
           });
@@ -252,8 +270,8 @@ export function StudentForm({ student, trigger }: StudentFormProps) {
       }
       form.reset();
       setOpen(false);
-    } catch (err: any) {
-      toast({ title: 'Erro', description: err.message, variant: 'destructive' });
+    } catch (err: unknown) {
+      toast({ title: 'Erro', description: getErrorMessage(err), variant: 'destructive' });
     } finally {
       setSaving(false);
     }
@@ -273,19 +291,24 @@ export function StudentForm({ student, trigger }: StudentFormProps) {
       await supabase.rpc('cleanup_student_future_trainings', { p_student_id: schedulePromptData.studentId });
 
       // 2. Generate future dates for the next 3 months via backend
+      const studentGroup = groups.find(g => selectedGroups.includes(g.id));
+      const groupDuration = studentGroup ? studentGroup.durationMinutes : 60;
+
       const { error } = await supabase.rpc('generate_student_schedule', {
         p_user_id: user?.id,
         p_student_id: schedulePromptData.studentId,
         p_schedules: selectedSchedules,
-        p_months_ahead: 3
+        p_months_ahead: 3,
+        p_duration_minutes: groupDuration
       });
 
       if (error) throw error;
 
+      syncAfterScheduleMutation(queryClient);
       toast({ title: 'Agenda configurada!', description: `${labels.trainingLabel} gerados para os próximos 3 meses.` });
       setSchedulePromptOpen(false);
-    } catch (err: any) {
-      toast({ title: 'Erro ao configurar agenda', description: err.message, variant: 'destructive' });
+    } catch (err: unknown) {
+      toast({ title: 'Erro ao configurar agenda', description: getErrorMessage(err), variant: 'destructive' });
     } finally {
       setSavingSchedule(false);
     }
@@ -433,11 +456,22 @@ export function StudentForm({ student, trigger }: StudentFormProps) {
                 <FileText className="h-4 w-4 text-primary" />
                 <span className="text-sm font-semibold text-foreground">Documentos</span>
               </div>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <FormField control={form.control} name="cpf" render={({ field }) => (
                   <FormItem>
                     <FormLabel>CPF</FormLabel>
-                    <FormControl><Input placeholder="000.000.000-00" {...field} /></FormControl>
+                    <FormControl>
+                      <Input
+                        placeholder="000.000.000-00"
+                        inputMode="numeric"
+                        autoComplete="off"
+                        value={field.value || ''}
+                        onChange={(event) => field.onChange(formatCpfInputValue(event.target.value))}
+                        onBlur={field.onBlur}
+                        name={field.name}
+                        ref={field.ref}
+                      />
+                    </FormControl>
                     <FormMessage />
                   </FormItem>
                 )} />
@@ -465,7 +499,7 @@ export function StudentForm({ student, trigger }: StudentFormProps) {
                     <FormMessage />
                   </FormItem>
                 )} />
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <FormField control={form.control} name="city" render={({ field }) => (
                     <FormItem>
                       <FormLabel>Cidade</FormLabel>
@@ -504,24 +538,11 @@ export function StudentForm({ student, trigger }: StudentFormProps) {
                           <SelectTrigger><SelectValue placeholder="Selecione o nível" /></SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          {isOther ? (
-                            <>
-                              <SelectItem value="sem_nível">Sem nível definido</SelectItem>
-                              <SelectItem value="básico 1">Básico 1</SelectItem>
-                              <SelectItem value="básico 2">Básico 2</SelectItem>
-                              <SelectItem value="pré-intermediário">Pré-Intermediário</SelectItem>
-                              <SelectItem value="intermediário">Intermediário</SelectItem>
-                              <SelectItem value="intermediário avançado">Intermediário Avançado</SelectItem>
-                              <SelectItem value="avançado">Avançado</SelectItem>
-                              <SelectItem value="fluente">Fluente / Concluinte</SelectItem>
-                            </>
-                          ) : (
-                            <>
-                              <SelectItem value="iniciante">Iniciante</SelectItem>
-                              <SelectItem value="intermediário">Intermediário</SelectItem>
-                              <SelectItem value="avançado">Avançado</SelectItem>
-                            </>
-                          )}
+                          <SelectItem value="iniciante">Iniciante</SelectItem>
+                          <SelectItem value="intermediário">Intermediário</SelectItem>
+                          <SelectItem value="avançado">Avançado</SelectItem>
+                          <SelectItem value="avançado_pro">Avançado PRO</SelectItem>
+                          <SelectItem value="profissional">Profissional</SelectItem>
                         </SelectContent>
                       </Select>
                       <FormMessage />
@@ -540,14 +561,8 @@ export function StudentForm({ student, trigger }: StudentFormProps) {
                           <SelectTrigger><SelectValue placeholder={`Selecione o(a) ${labels.planLabelSingular.toLowerCase()}`} /></SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          {!isOther ? (
-                            <>
-                              <SelectItem value="none">🧪 {labels.trainingLabelSingular} Experimental</SelectItem>
-                              <SelectItem value="no_plan">📋 Sem {labels.planLabelSingular} (Avulso eventual)</SelectItem>
-                            </>
-                          ) : (
-                            <SelectItem value="none">Selecione o(a) {labels.planLabelSingular.toLowerCase()}</SelectItem>
-                          )}
+                          <SelectItem value="none">🧪 {labels.trainingLabelSingular} Experimental</SelectItem>
+                          <SelectItem value="no_plan">📋 Sem {labels.planLabelSingular} (Avulso eventual)</SelectItem>
                           {plans.map((plan) => (
                             <SelectItem key={plan.id} value={plan.id}>
                               {plan.name} - R$ {plan.price.toFixed(2)}{plan.billingType === 'per_session' ? `/${labels.trainingLabelSingular.toLowerCase()}` : '/mês'}
@@ -613,7 +628,7 @@ export function StudentForm({ student, trigger }: StudentFormProps) {
 
                         if (prioA !== prioB) return prioA - prioB;
 
-                        const getFirstSlotTime = (g: any) => {
+                        const getFirstSlotTime = (g: Group) => {
                           if (!g.schedule || g.schedule.length === 0) return '24:00';
                           const sortedSlots = [...g.schedule].sort((sa, sb) => sa.time.localeCompare(sb.time));
                           return sortedSlots[0].time;
@@ -666,7 +681,7 @@ export function StudentForm({ student, trigger }: StudentFormProps) {
             )}
 
             {isMonthly && (
-              <div className="grid grid-cols-2 gap-3 pt-2">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
                 <FormField
                   control={form.control}
                   name="paymentDueDay"
@@ -713,7 +728,7 @@ export function StudentForm({ student, trigger }: StudentFormProps) {
                   <Tag className="h-3.5 w-3.5 text-primary" /> Bolsas & Descontos Promocionais
                 </h4>
                 
-                <div className="grid grid-cols-2 gap-3 text-left">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-left">
                   <FormField
                     control={form.control}
                     name="discountType"
@@ -761,7 +776,7 @@ export function StudentForm({ student, trigger }: StudentFormProps) {
                 </div>
 
                 {discountTypeWatch && discountTypeWatch !== 'none' && (
-                  <div className="grid grid-cols-2 gap-3 text-left">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-left">
                     <FormField
                       control={form.control}
                       name="discountDurationMonths"

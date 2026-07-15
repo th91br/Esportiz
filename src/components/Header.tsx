@@ -1,23 +1,28 @@
-import { Menu, X, LogOut, Moon, Sun, UserCircle } from 'lucide-react';
+import { Menu, X, LogOut, Moon, Sun } from 'lucide-react';
 import { NotificationBell } from '@/components/NotificationBell';
 import { InstallPWAButton } from '@/components/InstallPWAButton';
 import { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth } from '@/contexts/auth';
 import { useProfile } from '@/hooks/queries/useProfile';
 import { useBusinessContext } from '@/hooks/useBusinessContext';
 import { Logo } from '@/components/Logo';
 import { Settings } from 'lucide-react';
+import { useSidebar } from '@/contexts/sidebar';
 
 export function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isDark, setIsDark] = useState(() => document.documentElement.classList.contains('dark'));
   const location = useLocation();
-  const { signOut, user } = useAuth();
+  const { signOut } = useAuth();
   const { profile } = useProfile();
-  const { navModules } = useBusinessContext();
+  const { navModules, canViewSettings, isArena } = useBusinessContext();
+  const { isActive } = useSidebar();
+  const mobileMenuLabel = isMenuOpen ? 'Fechar menu principal' : 'Abrir menu principal';
+  const themeToggleLabel = isDark ? 'Alternar para modo claro' : 'Alternar para modo escuro';
+  const isCurrentPath = (path: string) => location.pathname === path || (path !== '/' && location.pathname.startsWith(path + '/'));
 
   useEffect(() => {
     if (isDark) {
@@ -34,80 +39,111 @@ export function Header() {
     setIsMenuOpen(false);
   }, [location.pathname]);
 
+  // Derive dynamic page title from active route
+  const currentModule = navModules.find((item) => (
+    location.pathname === item.path || (item.path !== '/' && location.pathname.startsWith(item.path + '/'))
+  ));
+  const pageTitle = currentModule ? currentModule.label : 'Dashboard';
+
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="container flex h-16 items-center justify-between gap-2">
-        {/* Logo */}
-        <Link to="/dashboard" className="flex items-center gap-2 shrink-0 transition-transform hover:scale-105 active:scale-95">
+    <header className="sticky top-0 z-40 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+      <div className="container flex h-14 items-center">
+        {/* Logo — sempre à esquerda (escondido no desktop se a sidebar estiver ativa) */}
+        <Link
+          to="/dashboard"
+          className={cn(
+            "flex items-center gap-1.5 shrink-0 transition-transform hover:scale-105 active:scale-95 mr-2",
+            isActive && "md:hidden"
+          )}
+          title={profile?.ct_name || 'Dashboard'}
+        >
           {profile?.logo_url ? (
             <img
               src={profile.logo_url}
               alt={profile.ct_name || 'Logo'}
-              className="h-8 w-8 object-contain rounded-md shrink-0"
+              className="h-7 w-7 object-contain rounded-md shrink-0"
             />
           ) : (
             <Logo size="sm" />
           )}
           {profile?.ct_name && (
-            <span className="font-display font-bold text-sm lg:text-base hidden sm:inline-block truncate max-w-[120px] lg:max-w-[220px] whitespace-nowrap">
+            <span className="font-display font-bold text-xs lg:text-sm hidden lg:inline-block truncate max-w-[120px] xl:max-w-[180px]">
               {profile.ct_name}
             </span>
           )}
         </Link>
 
-        {/* Desktop Navigation — driven by navModules (business-type aware) */}
-        <nav className="hidden md:flex items-center justify-center gap-0.5 lg:gap-1 flex-1 mx-2 min-w-0 flex-nowrap overflow-x-auto no-scrollbar">
-          {navModules.map((item) => (
-            <Link
-              key={item.path}
-              to={item.path}
-              className={cn(
-                'px-2 py-1 lg:px-2.5 lg:py-1.5 rounded-lg text-xs lg:text-[13px] font-medium transition-colors whitespace-nowrap shrink-0',
-                location.pathname === item.path
-                  ? 'text-primary bg-primary/10 font-semibold'
-                  : 'text-muted-foreground hover:text-foreground hover:bg-muted'
-              )}
-            >
-              {item.label}
-            </Link>
-          ))}
-        </nav>
+        {/* Dynamic Page Title (mostrado apenas no desktop se a sidebar estiver ativa) */}
+        {isActive && (
+          <h2 className="hidden md:block font-display font-bold text-xs lg:text-sm text-foreground tracking-tight ml-2 border-l border-border/80 pl-4 animate-fade-in">
+            {pageTitle}
+          </h2>
+        )}
 
-        {/* Actions */}
-        <div className="flex items-center gap-1 shrink-0">
+        {/* Desktop Navigation — flex-1 ocupa espaco central (escondido se a sidebar estiver ativa) */}
+        {!isActive && (
+          <div className="hidden md:block flex-1 min-w-0 mx-4 relative">
+            {/* Fade indicators */}
+            <div className="pointer-events-none absolute left-0 top-0 bottom-0 w-4 bg-gradient-to-r from-background/95 to-transparent z-10" />
+            <div className="pointer-events-none absolute right-0 top-0 bottom-0 w-4 bg-gradient-to-l from-background/95 to-transparent z-10" />
+            <nav aria-label="Navegação principal" className="flex items-center justify-start gap-1 overflow-x-auto no-scrollbar px-3">
+              <div className={cn("flex items-center gap-1 min-w-max", isArena && "mx-auto")}>
+                {navModules.map((item) => (
+                  <Link
+                    key={item.path}
+                    to={item.path}
+                    className={cn(
+                      'px-2 py-1 lg:px-2.5 lg:py-1.5 rounded-lg text-[11px] lg:text-xs font-medium transition-colors whitespace-nowrap shrink-0',
+                      isCurrentPath(item.path)
+                        ? 'text-primary bg-primary/10 font-semibold'
+                        : 'text-muted-foreground hover:text-foreground hover:bg-muted'
+                    )}
+                    aria-current={isCurrentPath(item.path) ? 'page' : undefined}
+                  >
+                    {item.label}
+                  </Link>
+                ))}
+              </div>
+            </nav>
+          </div>
+        )}
+
+        {/* Actions — sempre à direita (ml-auto no mobile) */}
+        <div className="flex items-center gap-0.5 shrink-0 ml-auto">
           <NotificationBell />
-          <div className="hidden md:flex items-center gap-1">
+          <div className="hidden md:flex items-center gap-0.5">
+            {canViewSettings && (
+              <Link to="/configuracoes">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="rounded-full h-8 w-8"
+                  title="Configurações"
+                  aria-label="Abrir configurações"
+                >
+                  <Settings className="h-3.5 w-3.5" />
+                </Button>
+              </Link>
+            )}
             <Button
               variant="ghost"
               size="icon"
-              className="rounded-full"
-              title={`Logado como: ${user?.email}`}
-            >
-              <UserCircle className="h-4 w-4 text-muted-foreground" />
-            </Button>
-            <InstallPWAButton />
-            <Link to="/configuracoes">
-              <Button variant="ghost" size="icon" className="rounded-full" title="Configurações">
-                <Settings className="h-4 w-4" />
-              </Button>
-            </Link>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="rounded-full"
+              className="rounded-full h-8 w-8"
               onClick={() => setIsDark(!isDark)}
               title={isDark ? 'Modo claro' : 'Modo escuro'}
+              aria-label={themeToggleLabel}
             >
-              {isDark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+              {isDark ? <Sun className="h-3.5 w-3.5" /> : <Moon className="h-3.5 w-3.5" />}
             </Button>
             <Button
               variant="ghost"
               size="icon"
-              className="rounded-full"
+              className="rounded-full h-8 w-8"
               onClick={signOut}
               title="Sair"
+              aria-label="Sair do sistema"
             >
-              <LogOut className="h-4 w-4" />
+              <LogOut className="h-3.5 w-3.5" />
             </Button>
           </div>
 
@@ -116,7 +152,9 @@ export function Header() {
             size="icon"
             className="md:hidden"
             onClick={() => setIsMenuOpen(!isMenuOpen)}
-            aria-label="Menu"
+            aria-controls="mobile-navigation"
+            aria-expanded={isMenuOpen}
+            aria-label={mobileMenuLabel}
           >
             {isMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
           </Button>
@@ -125,39 +163,50 @@ export function Header() {
 
       {/* Mobile Navigation — same navModules list */}
       {isMenuOpen && (
-        <nav className="md:hidden border-t border-border bg-background animate-fade-in">
-          <div className="container py-4 space-y-1">
+        <nav id="mobile-navigation" aria-label="Menu principal mobile" className="md:hidden border-t border-border bg-background animate-fade-in">
+          <div className="container py-4 space-y-2">
+            <div className="mb-3 rounded-xl border border-border/60 bg-card px-4 py-3 shadow-sm">
+              <p className="text-xs font-medium text-muted-foreground">Menu da unidade</p>
+              <p className="mt-0.5 truncate text-sm font-semibold text-foreground">
+                {profile?.ct_name || 'Esportiz'}
+              </p>
+            </div>
+
             {navModules.map((item) => (
               <Link
                 key={item.path}
                 to={item.path}
                 className={cn(
                   'flex items-center px-4 py-3 rounded-lg text-sm font-medium transition-colors',
-                  location.pathname === item.path
-                    ? 'text-primary bg-primary/10 font-semibold'
-                    : 'text-muted-foreground hover:text-foreground hover:bg-muted'
+                  isCurrentPath(item.path)
+                    ? 'text-primary bg-primary/10 font-semibold ring-1 ring-primary/15'
+                    : 'text-muted-foreground hover:text-foreground hover:bg-muted/80'
                 )}
+                aria-current={isCurrentPath(item.path) ? 'page' : undefined}
               >
                 {item.label}
               </Link>
             ))}
 
-            {/* Settings always visible */}
-            <Link
-              to="/configuracoes"
-              className={cn(
-                'flex items-center px-4 py-3 rounded-lg text-sm font-medium transition-colors',
-                location.pathname === '/configuracoes'
-                  ? 'text-primary bg-primary/10 font-semibold'
-                  : 'text-muted-foreground hover:text-foreground hover:bg-muted'
-              )}
-            >
-              Configurações
-            </Link>
+            {canViewSettings && (
+              <Link
+                to="/configuracoes"
+                className={cn(
+                  'flex items-center px-4 py-3 rounded-lg text-sm font-medium transition-colors',
+                  isCurrentPath('/configuracoes')
+                    ? 'text-primary bg-primary/10 font-semibold ring-1 ring-primary/15'
+                    : 'text-muted-foreground hover:text-foreground hover:bg-muted/80'
+                )}
+                aria-current={isCurrentPath('/configuracoes') ? 'page' : undefined}
+              >
+                Configurações
+              </Link>
+            )}
 
             <div className="pt-2 border-t border-border mt-2 space-y-1">
               <button
                 onClick={() => setIsDark(!isDark)}
+                aria-label={themeToggleLabel}
                 className="w-full flex items-center gap-2 px-4 py-3 rounded-lg text-sm font-medium text-muted-foreground hover:bg-muted transition-colors"
               >
                 {isDark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
@@ -165,6 +214,7 @@ export function Header() {
               </button>
               <button
                 onClick={signOut}
+                aria-label="Sair do sistema"
                 className="w-full flex items-center gap-2 px-4 py-3 rounded-lg text-sm font-medium text-destructive hover:bg-muted transition-colors"
               >
                 <LogOut className="h-4 w-4" />

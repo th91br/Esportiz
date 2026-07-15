@@ -1,120 +1,55 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth } from '@/contexts/auth';
 import { toast } from 'sonner';
+import type { Json, TablesUpdate } from '@/integrations/supabase/types';
+import { syncAfterReservationMutation } from '@/lib/querySync';
+import { toReservation } from '@/lib/reservationContracts';
+import type { AddReservationInput, PaymentMethod, ReservationPaymentStatus } from '@/lib/reservationContracts';
 
-export type ReservationType = 'avulsa' | 'mensalista' | 'experimental' | 'blocked';
-export type PaymentMethod = 'pix' | 'cartao' | 'dinheiro' | 'a_receber';
-export type ReservationStatus = 'confirmed' | 'pending' | 'cancelled';
+export {
+  PAYMENT_METHOD_LABELS,
+  RECEIVED_RESERVATION_PAYMENT_METHODS,
+  RESERVATION_PAYMENT_METHOD_OPTIONS,
+  RESERVATION_TYPE_LABELS,
+} from '@/lib/reservationContracts';
+export type {
+  AddReservationInput,
+  PaymentMethod,
+  Reservation,
+  ReservationMeta,
+  ReservationPaymentStatus,
+  ReservationStatus,
+  ReservationType,
+} from '@/lib/reservationContracts';
 
-export const PAYMENT_METHOD_LABELS: Record<PaymentMethod, string> = {
-  pix: 'Pix',
-  cartao: 'Cartão',
-  dinheiro: 'Dinheiro',
-  a_receber: 'A Receber',
-};
+import { getErrorMessage } from '@/lib/errorUtils';
 
-export const RESERVATION_TYPE_LABELS: Record<ReservationType, string> = {
-  avulsa: 'Avulsa',
-  mensalista: 'Mensalista',
-  experimental: 'Experimental (Grátis)',
-  blocked: '🔒 Bloquear Horário / Fechar Quadra',
-};
+import { useProfile } from '@/hooks/queries/useProfile';
 
-export interface ReservationMeta {
-  price: number;
-  discount: number;
-  finalPrice: number;
-  reservationType: ReservationType;
-  paymentMethod: PaymentMethod;
-  paymentStatus: 'paid' | 'pending';
-  status: ReservationStatus;
-  online?: boolean;
-}
-
-export interface Reservation {
-  id: string;
-  date: string;
-  time: string;
-  courtId: string;
-  reservanteIds: string[];
-  durationMinutes: number;
-  notes: string;
-  completed: boolean;
-  price: number;
-  discount: number;
-  finalPrice: number;
-  reservationType: ReservationType;
-  paymentMethod: PaymentMethod;
-  paymentStatus: 'paid' | 'pending';
-  status: ReservationStatus;
-  online?: boolean;
-}
-
-const DEFAULT_META: ReservationMeta = {
-  price: 0,
-  discount: 0,
-  finalPrice: 0,
-  reservationType: 'avulsa',
-  paymentMethod: 'pix',
-  paymentStatus: 'pending',
-  status: 'confirmed',
-};
-
-function parseMeta(raw: any): ReservationMeta {
-  if (!raw) return { ...DEFAULT_META };
-  try {
-    const parsed = typeof raw === 'string' ? JSON.parse(raw) : raw;
-    return { ...DEFAULT_META, ...parsed };
-  } catch {
-    return { ...DEFAULT_META };
-  }
-}
-
-function toReservation(row: any): Reservation {
-  const meta = parseMeta((row as any).metadata);
-  return {
-    id: row.id,
-    date: row.date,
-    time: row.time,
-    courtId: row.modality_id || '',
-    reservanteIds: (row.training_students || []).map((ts: any) => ts.student_id),
-    durationMinutes: row.duration_minutes || 60,
-    notes: row.notes || '',
-    completed: row.completed || false,
-    ...meta,
-  };
-}
-
-export interface AddReservationInput {
-  date: string;
-  time: string;
-  courtId: string;
-  reservanteIds: string[];
-  durationMinutes: number;
-  notes: string;
-  meta: ReservationMeta;
-}
-
-export function useReservations() {
+export function useReservations(options: { enabled?: boolean } = {}) {
   const { user } = useAuth();
+  const { profile } = useProfile();
   const queryClient = useQueryClient();
+  const reservationsEnabled = options.enabled ?? true;
+
+  const tenantId = profile?.owner_user_id || user?.id;
 
   const { data: reservations = [], isLoading: loadingReservations } = useQuery({
-    queryKey: ['reservations', user?.id],
+    queryKey: ['reservations', tenantId],
     queryFn: async () => {
-      if (!user) return [];
+      if (!tenantId) return [];
       const { data, error } = await supabase
         .from('trainings')
         .select('*, training_students(student_id)')
-        .eq('user_id', user.id)
+        .eq('user_id', tenantId)
         .eq('business_type', 'arena')
         .order('date')
         .order('time');
       if (error) throw error;
       return (data || []).map(toReservation);
     },
-    enabled: !!user,
+    enabled: reservationsEnabled && !!tenantId,
   });
 
   const addReservation = useMutation({
@@ -131,70 +66,136 @@ export function useReservations() {
           duration_minutes: input.durationMinutes,
           notes: input.notes,
           location: '',
-          ...({ metadata: JSON.stringify(input.meta) } as any),
-        } as any)
+          metadata: input.meta as unknown as Json,
+          organization_id: profile?.organization_id || null,
+        })
         .select()
         .single();
       if (error) throw error;
       if (input.reservanteIds.length > 0) {
-        await supabase.from('training_students').insert(
-          input.reservanteIds.map(sid => ({
-            training_id: training.id,
-            student_id: sid,
-            user_id: user.id,
-          }))
-        );
+        const tsInsert = input.reservanteIds.map(sid => ({
+          training_id: training.id,
+          student_id: sid,
+          user_id: user.id,
+          organization_id: profile?.organization_id || null,
+        }));
+        const { error: insertError } = await supabase.from('training_students').insert(tsInsert);
+        if (insertError) throw insertError;
       }
       return training;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['reservations'] });
+      syncAfterReservationMutation(queryClient);
       toast.success('Reserva criada com sucesso!');
     },
-    onError: (e: any) => toast.error('Erro ao criar reserva: ' + e.message),
+    onError: (error: unknown) => toast.error('Erro ao criar reserva: ' + getErrorMessage(error)),
   });
 
   const updateReservation = useMutation({
     mutationFn: async (params: { id: string; input: Partial<AddReservationInput> }) => {
       if (!user) throw new Error('Não autenticado');
       const { id, input } = params;
-      const updates: any = {};
+      const updates: TablesUpdate<'trainings'> = {};
       if (input.date !== undefined) updates.date = input.date;
       if (input.time !== undefined) updates.time = input.time;
       if (input.courtId !== undefined) updates.modality_id = input.courtId;
       if (input.durationMinutes !== undefined) updates.duration_minutes = input.durationMinutes;
       if (input.notes !== undefined) updates.notes = input.notes;
-      if (input.meta !== undefined) updates.metadata = JSON.stringify(input.meta);
+      if (input.meta !== undefined) updates.metadata = input.meta as unknown as Json;
+      updates.organization_id = profile?.organization_id || null;
       if (Object.keys(updates).length > 0) {
-        const { error } = await supabase.from('trainings').update(updates).eq('id', id);
+        const { error } = await supabase
+          .from('trainings')
+          .update(updates)
+          .eq('id', id)
+          .eq('user_id', tenantId)
+          .eq('business_type', 'arena');
         if (error) throw error;
       }
       if (input.reservanteIds !== undefined) {
-        await supabase.from('training_students').delete().eq('training_id', id);
+        const { error: deleteError } = await supabase
+          .from('training_students')
+          .delete()
+          .eq('training_id', id)
+          .eq('user_id', tenantId);
+        if (deleteError) throw deleteError;
+
         if (input.reservanteIds.length > 0) {
-          await supabase.from('training_students').insert(
-            input.reservanteIds.map(sid => ({ training_id: id, student_id: sid, user_id: user.id }))
-          );
+          const tsInsert = input.reservanteIds.map(sid => ({
+            training_id: id,
+            student_id: sid,
+            user_id: user.id,
+            organization_id: profile?.organization_id || null,
+          }));
+          const { error: insertError } = await supabase.from('training_students').insert(tsInsert);
+          if (insertError) throw insertError;
         }
       }
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['reservations'] });
+      syncAfterReservationMutation(queryClient);
       toast.success('Reserva atualizada!');
     },
-    onError: (e: any) => toast.error('Erro ao atualizar reserva: ' + e.message),
+    onError: (error: unknown) => toast.error('Erro ao atualizar reserva: ' + getErrorMessage(error)),
   });
 
   const deleteReservation = useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase.from('trainings').delete().eq('id', id);
+      if (!user) throw new Error('Não autenticado');
+      const { error } = await supabase
+        .from('trainings')
+        .delete()
+        .eq('id', id)
+        .eq('user_id', tenantId)
+        .eq('business_type', 'arena');
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['reservations'] });
+      syncAfterReservationMutation(queryClient);
       toast.success('Reserva removida!');
     },
-    onError: (e: any) => toast.error('Erro ao remover reserva: ' + e.message),
+    onError: (error: unknown) => toast.error('Erro ao remover reserva: ' + getErrorMessage(error)),
+  });
+
+  const setReservationPaymentStatus = useMutation({
+    mutationFn: async (params: {
+      id: string;
+      paymentStatus: ReservationPaymentStatus;
+      paymentMethod?: PaymentMethod | null;
+    }) => {
+      if (!user) throw new Error('Não autenticado');
+      const { error } = await supabase.rpc('set_arena_reservation_payment_status_atomic', {
+        p_reservation_id: params.id,
+        p_payment_status: params.paymentStatus,
+        p_payment_method: params.paymentMethod ?? null,
+      });
+      if (error) throw new Error(getErrorMessage(error));
+    },
+    onSuccess: () => {
+      syncAfterReservationMutation(queryClient);
+    },
+    onError: (error: unknown) => toast.error('Erro ao atualizar pagamento da reserva: ' + getErrorMessage(error)),
+  });
+
+  const addPartialPayment = useMutation({
+    mutationFn: async (params: {
+      id: string;
+      amount: number;
+      method: PaymentMethod;
+    }) => {
+      if (!user) throw new Error('Não autenticado');
+      const { error } = await supabase.rpc('add_arena_partial_payment_atomic', {
+        p_reservation_id: params.id,
+        p_amount: params.amount,
+        p_method: params.method,
+      });
+      if (error) throw new Error(getErrorMessage(error));
+    },
+    onSuccess: () => {
+      syncAfterReservationMutation(queryClient);
+      toast.success('Pagamento parcial registrado com sucesso!');
+    },
+    onError: (error: unknown) => toast.error('Erro ao registrar pagamento: ' + getErrorMessage(error)),
   });
 
   return {
@@ -203,5 +204,7 @@ export function useReservations() {
     addReservation: addReservation.mutateAsync,
     updateReservation: updateReservation.mutateAsync,
     deleteReservation: deleteReservation.mutateAsync,
+    setReservationPaymentStatus: setReservationPaymentStatus.mutateAsync,
+    addPartialPayment: addPartialPayment.mutateAsync,
   };
 }

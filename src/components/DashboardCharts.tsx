@@ -1,8 +1,12 @@
 import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip, Area, AreaChart, CartesianGrid } from 'recharts';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { EmptyState } from '@/components/ui/empty-state';
 import type { Payment, Attendance } from '@/data/mockData';
+import type { Reservation } from '@/hooks/queries/useReservations';
+import type { Sale } from '@/hooks/queries/useSales';
 import { useTheme } from 'next-themes';
 import { formatCurrency } from '@/lib/formatCurrency';
+import { getReservationPaidAmount } from '@/lib/financialContracts';
 import { toLocalDateString } from '@/lib/dateUtils';
 
 interface DashboardChartsProps {
@@ -10,8 +14,13 @@ interface DashboardChartsProps {
     attendance: Attendance[];
     privacyMode: boolean;
     isArena?: boolean;
-    reservations?: any[];
-    sales?: any[];
+    reservations?: Reservation[];
+    sales?: Sale[];
+    financialOnly?: boolean;
+}
+
+function ChartEmptyState() {
+    return <EmptyState title="Sem dados" variant="outlined" className="h-full p-4 text-sm" />;
 }
 
 export function DashboardCharts({ 
@@ -20,7 +29,8 @@ export function DashboardCharts({
     privacyMode, 
     isArena = false, 
     reservations = [], 
-    sales = [] 
+    sales = [],
+    financialOnly = false,
 }: DashboardChartsProps) {
     const { theme } = useTheme();
 
@@ -34,9 +44,7 @@ export function DashboardCharts({
                 const month = r.date.slice(0, 7);
                 if (!revenueMap[month]) revenueMap[month] = { expected: 0, paid: 0 };
                 revenueMap[month].expected += r.finalPrice;
-                if (r.paymentStatus === 'paid') {
-                    revenueMap[month].paid += r.finalPrice;
-                }
+                revenueMap[month].paid += getReservationPaidAmount(r);
             }
         });
 
@@ -55,20 +63,13 @@ export function DashboardCharts({
             revenueMap[month].paid += s.total;
         });
     } else {
-        // Escola / Curso: Mensalidades + Vendas (Sincronia com Dashboard KPIs)
+        // Escola Esportiva: mensalidades dos alunos em sincronia com os KPIs.
         payments.forEach(payment => {
             const month = payment.monthRef;
             if (!revenueMap[month]) revenueMap[month] = { expected: 0, paid: 0 };
             revenueMap[month].expected += payment.amount;
             // Usa paidAmount para incluir pagamentos parciais (antes usava boolean paid)
             revenueMap[month].paid += payment.paidAmount || 0;
-        });
-
-        sales.forEach(s => {
-            const month = s.soldAt.slice(0, 7);
-            if (!revenueMap[month]) revenueMap[month] = { expected: 0, paid: 0 };
-            revenueMap[month].expected += s.total;
-            revenueMap[month].paid += s.total;
         });
     }
 
@@ -113,19 +114,20 @@ export function DashboardCharts({
         return [formatCurrency(value), ''];
     };
 
+
     const attendanceTooltipFormatter = (value: number) => {
         if (privacyMode) return ['••••', ''];
         return [value, ''];
     };
 
-    const chartColorPrimary = theme === 'dark' ? '#10b981' : '#059669'; // Tailwind Emerald
-    const chartColorSecondary = theme === 'dark' ? '#334155' : '#cbd5e1'; // Tailwind Slate
+    const chartColorPrimary = 'hsl(var(--primary))';
+    const chartColorSecondary = 'hsl(var(--muted-foreground))';
 
     const maxRevenue = Math.max(0, ...revenueData.map(d => d['Faturamento Total']));
     const maxSecondValue = Math.max(0, ...secondChartData.map(d => isArena ? (d.Total || 0) : ((d.Presenças || 0) + (d.Ausências || 0))));
 
     return (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className={financialOnly ? 'grid grid-cols-1 gap-4' : 'grid grid-cols-1 md:grid-cols-2 gap-4'}>
             <Card>
                 <CardHeader>
                     <CardTitle>Receita Mensal</CardTitle>
@@ -138,9 +140,7 @@ export function DashboardCharts({
                 <CardContent>
                     <div className="h-[300px] w-full mt-4">
                         {maxRevenue === 0 ? (
-                            <div className="w-full h-full flex items-center justify-center bg-muted/10 rounded-xl border border-dashed border-border/50">
-                                <p className="text-muted-foreground font-medium text-sm">Sem dados</p>
-                            </div>
+                            <ChartEmptyState />
                         ) : (
                             <ResponsiveContainer width="100%" height="100%">
                                 <BarChart data={revenueData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
@@ -166,7 +166,7 @@ export function DashboardCharts({
                 </CardContent>
             </Card>
 
-            <Card>
+            {!financialOnly && <Card>
                 <CardHeader>
                     <CardTitle>{isArena ? 'Volume de Locações' : 'Frequência (Últimos 7 dias)'}</CardTitle>
                     <CardDescription>
@@ -178,9 +178,7 @@ export function DashboardCharts({
                 <CardContent>
                     <div className="h-[300px] w-full mt-4">
                         {maxSecondValue === 0 ? (
-                            <div className="w-full h-full flex items-center justify-center bg-muted/10 rounded-xl border border-dashed border-border/50">
-                                <p className="text-muted-foreground font-medium text-sm">Sem dados</p>
-                            </div>
+                            <ChartEmptyState />
                         ) : (
                             <ResponsiveContainer width="100%" height="100%">
                                 <AreaChart data={secondChartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
@@ -216,7 +214,7 @@ export function DashboardCharts({
                         )}
                     </div>
                 </CardContent>
-            </Card>
+            </Card>}
         </div>
     );
 }

@@ -10,6 +10,7 @@ import { usePlans } from '@/hooks/queries/usePlans';
 import { useTrainings } from '@/hooks/queries/useTrainings';
 import { useGroups } from '@/hooks/queries/useGroups';
 import { useBusinessContext } from '@/hooks/useBusinessContext';
+import { useRolePermissions } from '@/hooks/useRolePermissions';
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
@@ -20,6 +21,9 @@ import { formatCurrency } from '@/lib/formatCurrency';
 import { supabase } from '@/integrations/supabase/client';
 import { useModalities } from '@/hooks/queries/useModalities';
 import { getLocalTodayDate } from '@/lib/dateUtils';
+import { syncAfterStudentMutation } from '@/lib/querySync';
+import { useProfile } from '@/hooks/queries/useProfile';
+import { buildStudentPortalUrl } from '@/lib/publicAccessContracts';
 
 interface StudentCardProps {
   student: Student;
@@ -27,15 +31,19 @@ interface StudentCardProps {
 }
 
 const levelStyles = {
-  iniciante: 'bg-emerald-100 text-emerald-700 border-emerald-200',
-  intermediário: 'bg-amber-100 text-amber-700 border-amber-200',
-  avançado: 'bg-violet-100 text-violet-700 border-violet-200',
+  iniciante: 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/20 dark:text-emerald-400 border-emerald-200/50',
+  intermediário: 'bg-amber-50 text-amber-700 dark:bg-amber-950/20 dark:text-amber-400 border-amber-200/50',
+  avançado: 'bg-violet-50 text-violet-700 dark:bg-violet-950/20 dark:text-violet-400 border-violet-200/50',
+  avançado_pro: 'bg-indigo-50 text-indigo-700 dark:bg-indigo-950/20 dark:text-indigo-400 border-indigo-200/50',
+  profissional: 'bg-rose-50 text-rose-700 dark:bg-rose-950/20 dark:text-rose-400 border-rose-200/50',
 };
 
 const levelLabels = {
   iniciante: 'Iniciante',
   intermediário: 'Intermediário',
   avançado: 'Avançado',
+  avançado_pro: 'Avançado PRO',
+  profissional: 'Profissional',
 };
 
 export function StudentCard({ student, onClick }: StudentCardProps) {
@@ -45,6 +53,11 @@ export function StudentCard({ student, onClick }: StudentCardProps) {
   const { trainings } = useTrainings();
   const { groups } = useGroups();
   const { labels, isArena } = useBusinessContext();
+  const rolePermissions = useRolePermissions();
+  const studentModule = isArena ? 'reservants' : 'students';
+  const canUpdateStudent = rolePermissions.can(studentModule, 'update');
+  const canDeleteStudent = rolePermissions.can(studentModule, 'delete');
+  const { profile } = useProfile();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const modality = student.modalityId ? modalities.find(m => m.id === student.modalityId) : undefined;
@@ -109,14 +122,12 @@ export function StudentCard({ student, onClick }: StudentCardProps) {
     // 1. Limpa treinos futuros do calendário (RPC existente)
     await supabase.rpc('cleanup_student_future_trainings', { p_student_id: student.id });
 
-    // 2. [NOVO] Soft-delete de todos os pagamentos PENDENTES do aluno.
-    //    Usa o mesmo mecanismo seguro já existente (full_price = -1).
-    //    Pagamentos já pagos são preservados intactos no histórico.
-    await supabase
-      .from('payments')
-      .update({ amount: 0, paid_amount: 0, paid: true, full_price: -1 })
-      .eq('student_id', student.id)
-      .eq('paid', false);
+    // 2. Cancela cobrancas abertas em transacao no banco.
+    //    Recebimentos parciais sao preservados como receita realizada.
+    const { data: cancelledPayments, error: paymentsError } = await supabase.rpc('cancel_student_open_payments_atomic', {
+      p_student_id: student.id,
+    });
+    if (paymentsError) throw paymentsError;
 
     // 3. [NOVO] Remove o aluno de todas as Turmas (group_students)
     await supabase
@@ -128,9 +139,7 @@ export function StudentCard({ student, onClick }: StudentCardProps) {
     await updateStudent(student.id, { active: false });
 
     // 5. Invalida os caches para atualizar a UI imediatamente
-    queryClient.invalidateQueries({ queryKey: ['payments'] });
-    queryClient.invalidateQueries({ queryKey: ['groups'] });
-    queryClient.invalidateQueries({ queryKey: ['students'] });
+    syncAfterStudentMutation(queryClient);
 
     // 6. Toast informativo completo
     const descParts: string[] = [];
@@ -138,7 +147,12 @@ export function StudentCard({ student, onClick }: StudentCardProps) {
       descParts.push(`${futureTrainingsCount} treino${futureTrainingsCount !== 1 ? 's' : ''} futuro${futureTrainingsCount !== 1 ? 's' : ''} removido${futureTrainingsCount !== 1 ? 's' : ''}`);
     if (studentGroups.length > 0)
       descParts.push(`removido de ${studentGroups.length} turma${studentGroups.length !== 1 ? 's' : ''}`);
-    descParts.push('cobranças em aberto canceladas');
+    const cancelledCount = Number(cancelledPayments || 0);
+    descParts.push(
+      cancelledCount > 0
+        ? `${cancelledCount} cobrança${cancelledCount !== 1 ? 's' : ''} em aberto cancelada${cancelledCount !== 1 ? 's' : ''}`
+        : 'sem cobranças em aberto'
+    );
 
     toast({
       title: `${student.name} desativado`,
@@ -153,19 +167,23 @@ export function StudentCard({ student, onClick }: StudentCardProps) {
 
   const copyPortalLink = (e: React.MouseEvent) => {
     e.stopPropagation();
-    const url = `${window.location.origin}/portal-aluno?token=${student.id}`;
+    const url = buildStudentPortalUrl(window.location.origin, profile?.owner_user_id);
+
+    if (!url) {
+      toast({
+        title: 'Portal do Aluno indisponível',
+        description: 'Não foi possível identificar a escola responsável. Atualize a página e tente novamente.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
     navigator.clipboard.writeText(url);
     toast({
       title: 'Portal do Aluno',
-      description: 'Link mágico de acesso copiado com sucesso!',
+      description: 'Link do portal copiado com sucesso.',
     });
   };
-
-  const levelBorderColor = {
-    iniciante: 'bg-emerald-500',
-    intermediário: 'bg-amber-500',
-    avançado: 'bg-violet-500',
-  }[student.level] || 'bg-primary';
 
   const handleCardClick = () => {
     navigate(`/alunos/${student.id}`);
@@ -177,10 +195,7 @@ export function StudentCard({ student, onClick }: StudentCardProps) {
       className={cn('card-interactive relative overflow-hidden flex flex-col group h-full cursor-pointer', !student.active && 'opacity-60')}
       onClick={handleCardClick}
     >
-      {/* Side color bar indicator for level */}
-      <div className={cn('absolute left-0 top-0 bottom-0 w-1.5 transition-opacity', levelBorderColor, student.active ? 'opacity-100' : 'opacity-40')} />
-      
-      <div className="flex-1 p-4 pl-5">
+      <div className="flex-1 p-4">
         <div className="flex items-start gap-3.5">
           <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-hero text-white font-display font-bold text-lg shrink-0 shadow-sm mt-0.5 overflow-hidden">
             {student.photo ? (
@@ -190,33 +205,31 @@ export function StudentCard({ student, onClick }: StudentCardProps) {
             )}
           </div>
           <div className="flex-1 min-w-0">
-            <div className="flex items-start justify-between gap-2 mb-1.5">
-              <div className="flex-1 min-w-0 pr-2">
-                <h3 className="font-display font-semibold text-foreground truncate block w-full">{student.name}</h3>
+            <div className="flex flex-col gap-1.5 mb-2.5">
+              <div className="min-w-0">
+                <h3 className="font-display font-semibold text-foreground text-base sm:text-lg truncate block w-full">{student.name}</h3>
               </div>
-              <div className="flex flex-col items-end shrink-0 gap-1.5">
-                <div className="flex gap-1.5">
-                  {!isArena && (
-                    <span className={cn('px-2 py-0.5 rounded-full text-[10px] uppercase font-bold tracking-wider border shrink-0', levelStyles[student.level])}>
-                      {levelLabels[student.level]}
-                    </span>
-                  )}
-                  {modality && (
-                    <span 
-                      className="px-2 py-0.5 rounded-full text-[10px] uppercase font-bold tracking-wider border border-primary/20 bg-primary/5 text-primary flex items-center gap-1.5 shrink-0"
-                    >
-                      <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: modality.color }} />
-                      {modality.name}
-                    </span>
-                  )}
-                </div>
+              <div className="flex flex-wrap items-center gap-1.5">
+                {!isArena && (
+                  <span className={cn('px-2 py-0.5 rounded-full text-[10px] uppercase font-bold tracking-wider border shrink-0', levelStyles[student.level])}>
+                    {levelLabels[student.level]}
+                  </span>
+                )}
+                {modality && (
+                  <span 
+                    className="px-2 py-0.5 rounded-full text-[10px] uppercase font-bold tracking-wider border border-primary/20 bg-primary/5 text-primary flex items-center gap-1.5 shrink-0"
+                  >
+                    <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: modality.color }} />
+                    {modality.name}
+                  </span>
+                )}
                 {!student.active && <span className="px-2 py-0.5 rounded-full text-[10px] uppercase font-bold tracking-wider bg-destructive/10 text-destructive border border-destructive/20">Inativo</span>}
-                {student.isTrial && (
+                {!isArena && student.isTrial && (
                   <span className="px-2 py-0.5 rounded-full text-[10px] uppercase font-bold tracking-wider bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 flex items-center gap-1">
                     <Beaker className="h-2.5 w-2.5" />Experimental
                   </span>
                 )}
-                {student.discountType && student.discountType !== 'none' && (
+                {student.discountType && (
                   <span className="px-2 py-0.5 rounded-full text-[10px] uppercase font-bold tracking-wider bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20 flex items-center gap-1 shrink-0">
                     <Percent className="h-2.5 w-2.5" /> Bolsa {student.discountType === 'percentage' ? `${student.discountValue}%` : `R$ ${student.discountValue}`}
                   </span>
@@ -306,7 +319,7 @@ export function StudentCard({ student, onClick }: StudentCardProps) {
       
       {/* Actions Footer */}
       <div className="bg-muted/30 border-t border-border/50 px-4 py-2.5 flex items-center justify-between gap-4" onClick={e => e.stopPropagation()}>
-        {student.active ? (
+        {canUpdateStudent && student.active ? (
           /* Desativar — with confirmation dialog */
           <AlertDialog>
             <AlertDialogTrigger asChild>
@@ -339,11 +352,13 @@ export function StudentCard({ student, onClick }: StudentCardProps) {
               </AlertDialogFooter>
             </AlertDialogContent>
           </AlertDialog>
-        ) : (
+        ) : canUpdateStudent ? (
           /* Ativar — simple button, no side effects */
           <Button variant="ghost" size="sm" className="h-7 text-[11px] font-semibold text-primary hover:bg-primary/10 transition-colors px-2" onClick={(e) => { e.stopPropagation(); handleReactivate(); }}>
             Ativar {labels.studentLabelSingular}
           </Button>
+        ) : (
+          <span className="text-[11px] font-medium text-muted-foreground">Somente leitura</span>
         )}
         
         <div className="flex items-center gap-0.5">
@@ -356,15 +371,18 @@ export function StudentCard({ student, onClick }: StudentCardProps) {
           >
             <ExternalLink className="h-3.5 w-3.5" />
           </Button>
-          <StudentForm
-            student={student}
-            trigger={
-              <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors" onClick={(e) => e.stopPropagation()}>
-                <Pencil className="h-3.5 w-3.5" />
-              </Button>
-            }
-          />
-          <AlertDialog>
+          {canUpdateStudent && (
+            <StudentForm
+              student={student}
+              trigger={
+                <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors" onClick={(e) => e.stopPropagation()}>
+                  <Pencil className="h-3.5 w-3.5" />
+                </Button>
+              }
+            />
+          )}
+          {canDeleteStudent && (
+            <AlertDialog>
             <AlertDialogTrigger asChild>
               <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors" onClick={(e) => e.stopPropagation()}>
                 <Trash2 className="h-3.5 w-3.5" />
@@ -384,7 +402,8 @@ export function StudentCard({ student, onClick }: StudentCardProps) {
                 <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Remover</AlertDialogAction>
               </AlertDialogFooter>
             </AlertDialogContent>
-          </AlertDialog>
+            </AlertDialog>
+          )}
         </div>
       </div>
     </div>

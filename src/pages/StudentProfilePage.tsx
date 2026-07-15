@@ -1,6 +1,7 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Header } from '@/components/Header';
+import { AppPage } from '@/components/layout/AppPage';
+import { IconCardTitle } from '@/components/layout/IconCardTitle';
 import { useStudents } from '@/hooks/queries/useStudents';
 import { usePlans } from '@/hooks/queries/usePlans';
 import { useTrainings } from '@/hooks/queries/useTrainings';
@@ -11,17 +12,31 @@ import { useProfile } from '@/hooks/queries/useProfile';
 import { useAttendance } from '@/hooks/queries/useAttendance';
 import { StudentForm } from '@/components/StudentForm';
 import { Button } from '@/components/ui/button';
+import { LoadingState } from '@/components/ui/loading-state';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { 
   ArrowLeft, Edit, MapPin, Phone, Mail, FileText, CalendarDays, 
   DollarSign, CheckCircle, XCircle, FileSignature, Activity, TrendingUp, User
 } from 'lucide-react';
 import { formatCurrency } from '@/lib/formatCurrency';
 import { cn } from '@/lib/utils';
-import { getDayName } from '@/data/mockData';
+import { formatDateOnlyBr, getLocalTodayDate } from '@/lib/dateUtils';
 import { useBusinessContext } from '@/hooks/useBusinessContext';
-import { getLocalTodayDate } from '@/lib/dateUtils';
+import { useRolePermissions } from '@/hooks/useRolePermissions';
+
+const levelLabels: Record<string, string> = {
+  iniciante: 'Categoria D (Iniciante)',
+  intermediário: 'Categoria C (Intermediário)',
+  avançado: 'Categoria B (Avançado)',
+  avançado_pro: 'Categoria A (Avançado PRO)',
+  profissional: 'Categoria Profissional',
+};
+
+const DEFAULT_CONTRACT_CITY = 'Balneario Camboriu';
+const WEEKDAY_NAMES = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sab'];
+
+const getWeekdayLabel = (dayOfWeek: number) => WEEKDAY_NAMES[dayOfWeek] || 'Dia';
 
 export default function StudentProfilePage() {
   const { id } = useParams();
@@ -31,12 +46,17 @@ export default function StudentProfilePage() {
   const { students, loadingStudents } = useStudents();
   const { plans } = usePlans();
   const { trainings } = useTrainings();
-  const { payments } = usePayments();
   const { modalities } = useModalities();
   const { groups } = useGroups();
   const { profile } = useProfile();
   const { attendance } = useAttendance();
   const { labels, isArena } = useBusinessContext();
+  const rolePermissions = useRolePermissions();
+  const studentModule = isArena ? 'reservants' : 'students';
+  const canUpdateStudent = rolePermissions.can(studentModule, 'update');
+  const canViewStudentFinance = rolePermissions.can('payments', 'view');
+  const canViewContracts = rolePermissions.can('contracts', 'view');
+  const { payments } = usePayments({ enabled: canViewStudentFinance });
 
   const [activeTab, setActiveTab] = useState('overview');
 
@@ -45,14 +65,23 @@ export default function StudentProfilePage() {
   const [clauseObject, setClauseObject] = useState('O objeto do presente contrato é a prestação de serviços esportivos, visando o desenvolvimento técnico, tático e físico do aluno nas instalações do CT.');
   const [clauseRules, setClauseRules] = useState('É dever do CONTRATANTE zelar pelas instalações, equipamentos e respeitar rigorosamente os horários preestabelecidos para os treinos. Em caso de falta injustificada, não haverá direito a reposição de aula.');
   const [clauseTerms, setClauseTerms] = useState('O CONTRATANTE autoriza, a título gratuito, o uso da imagem e voz do aluno em campanhas publicitárias, redes sociais e materiais de divulgação do Centro de Treinamento.');
-  const [contractCity, setContractCity] = useState(profile?.city || 'Balneário Camboriú');
+  const [contractCity, setContractCity] = useState(DEFAULT_CONTRACT_CITY);
+
+  useEffect(() => {
+    if (activeTab === 'finance' && !canViewStudentFinance) {
+      setActiveTab('overview');
+    }
+    if (activeTab === 'documents' && !canViewContracts) {
+      setActiveTab('overview');
+    }
+  }, [activeTab, canViewStudentFinance, canViewContracts]);
 
   const handleResetContract = () => {
     setContractTitle('CONTRATO DE PRESTAÇÃO DE SERVIÇOS ESPORTIVOS');
     setClauseObject('O objeto do presente contrato é a prestação de serviços esportivos, visando o desenvolvimento técnico, tático e físico do aluno nas instalações do CT.');
     setClauseRules('É dever do CONTRATANTE zelar pelas instalações, equipamentos e respeitar rigorosamente os horários preestabelecidos para os treinos. Em caso de falta injustificada, não haverá direito a reposição de aula.');
     setClauseTerms('O CONTRATANTE autoriza, a título gratuito, o uso da imagem e voz do aluno em campanhas publicitárias, redes sociais e materiais de divulgação do Centro de Treinamento.');
-    setContractCity(profile?.city || 'Balneário Camboriú');
+    setContractCity(DEFAULT_CONTRACT_CITY);
   };
 
   const student = students.find(s => s.id === id);
@@ -83,22 +112,18 @@ export default function StudentProfilePage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-background">
-        <Header />
-        <div className="container py-8 text-center text-muted-foreground">Carregando perfil...</div>
-      </div>
+      <AppPage contentClassName="py-8">
+        <LoadingState label="Carregando perfil" className="py-8" />
+      </AppPage>
     );
   }
 
   if (!student) {
     return (
-      <div className="min-h-screen bg-background">
-        <Header />
-        <div className="container py-8 text-center">
-          <h2 className="text-xl font-bold mb-4">{labels.studentLabelSingular} não encontrado(a)</h2>
-          <Button onClick={() => navigate('/alunos')} variant="outline">Voltar para {labels.studentLabel}</Button>
-        </div>
-      </div>
+      <AppPage contentClassName="py-8 text-center">
+        <h2 className="text-xl font-bold mb-4">{labels.studentLabelSingular} não encontrado(a)</h2>
+        <Button onClick={() => navigate('/alunos')} variant="outline">Voltar para {labels.studentLabel}</Button>
+      </AppPage>
     );
   }
 
@@ -109,23 +134,21 @@ export default function StudentProfilePage() {
   };
 
   return (
-    <div className="min-h-screen bg-background pb-12 print:bg-white print:pb-0">
-      <div className="print:hidden">
-        <Header />
-      </div>
-
-      <main className="container py-6 md:py-8 space-y-6">
+    <>
+      <AppPage className="pb-12 print:hidden">
         {/* Back navigation */}
         <div className="flex items-center justify-between print:hidden">
           <Button variant="ghost" onClick={() => navigate('/alunos')} className="gap-2 -ml-3 text-muted-foreground hover:text-foreground">
             <ArrowLeft className="h-4 w-4" />
             Voltar para lista
           </Button>
-          <StudentForm student={student} trigger={
-            <Button variant="outline" className="gap-2">
-              <Edit className="h-4 w-4" /> Editar {labels.studentLabelSingular}
-            </Button>
-          } />
+          {canUpdateStudent && (
+            <StudentForm student={student} trigger={
+              <Button variant="outline" className="gap-2">
+                <Edit className="h-4 w-4" /> Editar {labels.studentLabelSingular}
+              </Button>
+            } />
+          )}
         </div>
 
         {/* Header Profile Card */}
@@ -153,7 +176,7 @@ export default function StudentProfilePage() {
             {!isArena && (
               <div className="flex flex-wrap gap-2 pt-1">
                 <span className="px-3 py-1 rounded-md text-xs font-semibold bg-muted border">
-                  Nível: <span className="capitalize text-foreground">{student.level}</span>
+                  Nível: <span className="text-foreground">{levelLabels[student.level] || student.level}</span>
                 </span>
                 {modality && (
                   <span className="px-3 py-1 rounded-md text-xs font-semibold border flex items-center gap-1.5 bg-background">
@@ -175,9 +198,9 @@ export default function StudentProfilePage() {
         <Tabs value={activeTab} onValueChange={setActiveTab} className="print:hidden">
           <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 md:w-auto md:inline-flex h-auto p-1 bg-muted/50 gap-1 sm:gap-0">
             <TabsTrigger value="overview" className="gap-2 py-2.5"><User className="h-4 w-4 hidden sm:block" />Visão Geral</TabsTrigger>
-            <TabsTrigger value="finance" className="gap-2 py-2.5"><DollarSign className="h-4 w-4 hidden sm:block" />Financeiro</TabsTrigger>
+            {canViewStudentFinance && <TabsTrigger value="finance" className="gap-2 py-2.5"><DollarSign className="h-4 w-4 hidden sm:block" />Financeiro</TabsTrigger>}
             {!isArena && <TabsTrigger value="attendance" className="gap-2 py-2.5"><Activity className="h-4 w-4 hidden sm:block" />Frequência</TabsTrigger>}
-            <TabsTrigger value="documents" className="gap-2 py-2.5"><FileSignature className="h-4 w-4 hidden sm:block" />Contratos</TabsTrigger>
+            {canViewContracts && <TabsTrigger value="documents" className="gap-2 py-2.5"><FileSignature className="h-4 w-4 hidden sm:block" />Contratos</TabsTrigger>}
           </TabsList>
 
           {/* OVERVIEW TAB */}
@@ -185,7 +208,7 @@ export default function StudentProfilePage() {
             <div className={cn("grid gap-6", isArena ? "grid-cols-1" : "md:grid-cols-2")}>
               <Card>
                 <CardHeader>
-                  <CardTitle className="text-lg flex items-center gap-2"><FileText className="h-5 w-5 text-primary" /> Dados Pessoais</CardTitle>
+                  <IconCardTitle icon={FileText}>Dados Pessoais</IconCardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -199,11 +222,11 @@ export default function StudentProfilePage() {
                     </div>
                     <div>
                       <p className="text-sm font-medium text-muted-foreground mb-1">Data de Nascimento</p>
-                      <p className="text-sm font-semibold">{student.birthDate ? new Date(student.birthDate).toLocaleDateString('pt-BR') : 'Não informado'}</p>
+                      <p className="text-sm font-semibold">{student.birthDate ? formatDateOnlyBr(student.birthDate) || 'Não informado' : 'Não informado'}</p>
                     </div>
                     <div>
                       <p className="text-sm font-medium text-muted-foreground mb-1">Entrada no {labels.ctLabel}</p>
-                      <p className="text-sm font-semibold">{new Date(student.joinDate).toLocaleDateString('pt-BR')}</p>
+                      <p className="text-sm font-semibold">{formatDateOnlyBr(student.joinDate)}</p>
                     </div>
                   </div>
                   <div className="pt-2 border-t">
@@ -218,7 +241,7 @@ export default function StudentProfilePage() {
               {!isArena && (
                 <Card>
                   <CardHeader>
-                    <CardTitle className="text-lg flex items-center gap-2"><CalendarDays className="h-5 w-5 text-primary" /> {labels.groupLabel}</CardTitle>
+                    <IconCardTitle icon={CalendarDays}>{labels.groupLabel}</IconCardTitle>
                   </CardHeader>
                   <CardContent>
                     {studentGroups.length === 0 ? (
@@ -234,7 +257,7 @@ export default function StudentProfilePage() {
                             <div className="flex flex-wrap gap-1.5">
                               {group.schedule.map((slot, i: number) => (
                                 <span key={i} className="text-xs bg-background border px-2 py-1 rounded-md text-muted-foreground">
-                                  {getDayName(slot.dayOfWeek)} - {slot.time}
+                                  {getWeekdayLabel(slot.dayOfWeek)} - {slot.time}
                                 </span>
                               ))}
                             </div>
@@ -249,10 +272,11 @@ export default function StudentProfilePage() {
           </TabsContent>
 
           {/* FINANCE TAB */}
+          {canViewStudentFinance && (
           <TabsContent value="finance" className="mt-6 space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
              <Card>
                 <CardHeader>
-                  <CardTitle className="text-lg flex items-center gap-2"><DollarSign className="h-5 w-5 text-primary" /> Histórico Financeiro</CardTitle>
+                  <IconCardTitle icon={DollarSign}>Histórico Financeiro</IconCardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="mb-6 grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -302,7 +326,7 @@ export default function StudentProfilePage() {
                                   )}
                                 </td>
                                 <td className="px-4 py-3 text-muted-foreground">
-                                  {payment.paymentDate ? new Date(payment.paymentDate).toLocaleDateString('pt-BR') : '-'}
+                                  {payment.paidAt ? new Date(payment.paidAt).toLocaleDateString('pt-BR') : '-'}
                                 </td>
                               </tr>
                             );
@@ -314,13 +338,14 @@ export default function StudentProfilePage() {
                 </CardContent>
              </Card>
           </TabsContent>
+          )}
 
           {/* ATTENDANCE TAB */}
           {!isArena && (
             <TabsContent value="attendance" className="mt-6 space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
                <Card>
                   <CardHeader>
-                    <CardTitle className="text-lg flex items-center gap-2"><TrendingUp className="h-5 w-5 text-primary" /> Visão de Frequência</CardTitle>
+                    <IconCardTitle icon={TrendingUp}>Visão de Frequência</IconCardTitle>
                   </CardHeader>
                   <CardContent>
                     <div className="mb-6 grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -346,14 +371,19 @@ export default function StudentProfilePage() {
                         <div className="space-y-3">
                           {studentTrainings.slice(0, 10).map(training => {
                             const record = studentAttendance.find(a => a.trainingId === training.id);
-                            const trainingGroup = groups.find(g => g.id === training.groupId);
+                            const trainingDay = new Date(`${training.date}T12:00:00`).getDay();
+                            const trainingGroup = studentGroups.find((group) =>
+                              group.schedule.some((slot) => slot.dayOfWeek === trainingDay && slot.time === training.time)
+                            );
+                            const trainingModality = training.modalityId ? modalities.find((m) => m.id === training.modalityId) : undefined;
+                            const trainingTitle = trainingGroup?.name || trainingModality?.name || training.location || labels.trainingLabelSingular;
                             
                             return (
                               <div key={training.id} className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-3 rounded-lg border bg-muted/10">
                                 <div className="flex flex-col">
-                                  <span className="font-semibold text-sm">{trainingGroup?.name || labels.trainingLabelSingular}</span>
+                                  <span className="font-semibold text-sm">{trainingTitle}</span>
                                   <span className="text-xs text-muted-foreground">
-                                    {new Date(training.date).toLocaleDateString('pt-BR')} às {training.time}
+                                    {formatDateOnlyBr(training.date)} às {training.time}
                                   </span>
                                 </div>
                                 <div className="shrink-0">
@@ -377,6 +407,7 @@ export default function StudentProfilePage() {
           )}
 
           {/* DOCUMENTS/CONTRACTS TAB (Exclusivo para sport_school) */}
+          {canViewContracts && (
           <TabsContent value="documents" className="mt-6 space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
               
@@ -385,9 +416,9 @@ export default function StudentProfilePage() {
                 <Card className="border-border/60 shadow-sm">
                   <CardHeader className="pb-4 border-b bg-muted/20">
                     <div className="flex items-center justify-between">
-                      <CardTitle className="text-base font-bold flex items-center gap-2 text-foreground">
-                        <Edit className="h-4 w-4 text-primary" /> Editor de Cláusulas
-                      </CardTitle>
+                      <IconCardTitle icon={Edit} size="base" iconClassName="h-4 w-4" className="text-foreground">
+                        Editor de Cláusulas
+                      </IconCardTitle>
                       <Button variant="ghost" size="sm" onClick={handleResetContract} className="text-xs text-muted-foreground hover:text-primary">
                         Restaurar Padrão
                       </Button>
@@ -395,7 +426,7 @@ export default function StudentProfilePage() {
                   </CardHeader>
                   <CardContent className="p-5 space-y-5">
                     <div className="space-y-1.5">
-                      <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Título do Documento</label>
+                      <label className="text-xs font-semibold text-muted-foreground/80">Título do Documento</label>
                       <input 
                         type="text" 
                         value={contractTitle} 
@@ -405,7 +436,7 @@ export default function StudentProfilePage() {
                     </div>
 
                     <div className="space-y-1.5">
-                      <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Cláusula 1ª - Do Objeto</label>
+                      <label className="text-xs font-semibold text-muted-foreground/80">Cláusula 1ª - Do Objeto</label>
                       <textarea 
                         rows={3} 
                         value={clauseObject} 
@@ -415,7 +446,7 @@ export default function StudentProfilePage() {
                     </div>
 
                     <div className="space-y-1.5">
-                      <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Cláusula 3ª - Das Regras Gerais</label>
+                      <label className="text-xs font-semibold text-muted-foreground/80">Cláusula 3ª - Das Regras Gerais</label>
                       <textarea 
                         rows={3} 
                         value={clauseRules} 
@@ -425,7 +456,7 @@ export default function StudentProfilePage() {
                     </div>
 
                     <div className="space-y-1.5">
-                      <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Cláusula 4ª - Direito de Imagem e Termos</label>
+                      <label className="text-xs font-semibold text-muted-foreground/80">Cláusula 4ª - Direito de Imagem e Termos</label>
                       <textarea 
                         rows={3} 
                         value={clauseTerms} 
@@ -435,7 +466,7 @@ export default function StudentProfilePage() {
                     </div>
 
                     <div className="space-y-1.5">
-                      <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Local / Cidade de Emissão</label>
+                      <label className="text-xs font-semibold text-muted-foreground/80">Local / Cidade de Emissão</label>
                       <input 
                         type="text" 
                         value={contractCity} 
@@ -478,7 +509,7 @@ export default function StudentProfilePage() {
 
                     <h3 className="font-bold text-base mt-6 mb-2">CLÁUSULA 1ª - DO OBJETO E MODALIDADE</h3>
                     <p className="mb-6 text-justify">
-                      A prestação de serviços abrange a modalidade de <strong>{modality?.name || '__________'}</strong> no nível <em>{student.level}</em>. {clauseObject}
+                      A prestação de serviços abrange a modalidade de <strong>{modality?.name || '__________'}</strong> no nível <em>{levelLabels[student.level] || student.level}</em>. {clauseObject}
                     </p>
 
                     <h3 className="font-bold text-base mt-6 mb-2">CLÁUSULA 2ª - DOS VALORES E {labels.planLabelSingular.toUpperCase()}</h3>
@@ -520,11 +551,13 @@ export default function StudentProfilePage() {
 
             </div>
           </TabsContent>
+          )}
         </Tabs>
 
-      </main>
+      </AppPage>
 
       {/* Print-only layout for the contract */}
+      {canViewContracts && (
       <div className="hidden print:block font-serif text-black p-8 bg-white">
         <div className="flex flex-col items-center justify-center mb-10 border-b-2 border-black pb-8">
           {profile?.logo_url && (
@@ -542,7 +575,7 @@ export default function StudentProfilePage() {
 
         <h3 className="font-bold text-lg mt-8 mb-3">CLÁUSULA 1ª - DO OBJETO E MODALIDADE</h3>
         <p className="mb-6 text-justify text-base leading-relaxed">
-          A prestação de serviços abrange a modalidade de <strong>{modality?.name || '__________'}</strong> no nível <em>{student.level}</em>. {clauseObject}
+          A prestação de serviços abrange a modalidade de <strong>{modality?.name || '__________'}</strong> no nível <em>{levelLabels[student.level] || student.level}</em>. {clauseObject}
         </p>
 
         <h3 className="font-bold text-lg mt-8 mb-3">CLÁUSULA 2ª - DOS VALORES E {labels.planLabelSingular.toUpperCase()}</h3>
@@ -579,7 +612,8 @@ export default function StudentProfilePage() {
           {contractCity}, {new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' })}
         </p>
       </div>
+      )}
 
-    </div>
+    </>
   );
 }

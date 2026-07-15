@@ -1,38 +1,47 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth } from '@/contexts/auth';
 import { toast } from 'sonner';
 import { useProfile } from '@/hooks/queries/useProfile';
+import { syncAfterModalityMutation } from '@/lib/querySync';
 
 export interface Modality {
   id: string;
   user_id: string;
   name: string;
   color: string;
+  metadata?: unknown;
   created_at: string;
 }
 
-export function useModalities() {
+function getErrorMessage(error: unknown) {
+  return error instanceof Error ? error.message : 'Erro inesperado';
+}
+
+export function useModalities(options: { enabled?: boolean } = {}) {
   const { user } = useAuth();
   const { profile } = useProfile();
   const queryClient = useQueryClient();
+  const modalitiesEnabled = options.enabled ?? true;
+
+  const tenantId = profile?.owner_user_id || user?.id;
 
   const { data: modalities = [], isLoading: loadingModalities } = useQuery({
-    queryKey: ['modalities', user?.id, profile?.business_type],
+    queryKey: ['modalities', tenantId, profile?.business_type],
     queryFn: async () => {
-      if (!user) return [];
+      if (!tenantId) return [];
       const businessType = profile?.business_type || 'sport_school';
       const { data, error } = await supabase
         .from('modalities')
         .select('*')
-        .eq('user_id', user.id)
+        .eq('user_id', tenantId)
         .eq('business_type', businessType)
         .order('name');
       
       if (error) throw error;
       return data as Modality[];
     },
-    enabled: !!user
+    enabled: modalitiesEnabled && !!tenantId
   });
 
   const addModality = useMutation({
@@ -46,7 +55,8 @@ export function useModalities() {
           user_id: user.id,
           business_type: businessType,
           name: data.name,
-          color: data.color || '#4285F4'
+          color: data.color || '#4285F4',
+          organization_id: profile?.organization_id || null,
         })
         .select()
         .single();
@@ -55,11 +65,11 @@ export function useModalities() {
       return newModality;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['modalities'] });
+      syncAfterModalityMutation(queryClient);
       toast.success('Modalidade criada com sucesso');
     },
-    onError: (error: any) => {
-      toast.error('Erro ao criar modalidade: ' + error.message);
+    onError: (error: unknown) => {
+      toast.error('Erro ao criar modalidade: ' + getErrorMessage(error));
     }
   });
 
@@ -73,10 +83,11 @@ export function useModalities() {
         .update({
           name: data.name,
           color: data.color,
+          organization_id: profile?.organization_id || null,
           updated_at: new Date().toISOString()
         })
         .eq('id', id)
-        .eq('user_id', user.id)
+        .eq('user_id', tenantId)
         .select()
         .single();
 
@@ -84,11 +95,11 @@ export function useModalities() {
       return updated;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['modalities'] });
+      syncAfterModalityMutation(queryClient);
       toast.success('Modalidade atualizada');
     },
-    onError: (error: any) => {
-      toast.error('Erro ao atualizar modalidade: ' + error.message);
+    onError: (error: unknown) => {
+      toast.error('Erro ao atualizar modalidade: ' + getErrorMessage(error));
     }
   });
 
@@ -115,16 +126,16 @@ export function useModalities() {
         .from('modalities')
         .delete()
         .eq('id', id)
-        .eq('user_id', user.id);
+        .eq('user_id', tenantId);
       
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['modalities'] });
+      syncAfterModalityMutation(queryClient);
       toast.success('Modalidade removida');
     },
-    onError: (error: any) => {
-      toast.error(error.message);
+    onError: (error: unknown) => {
+      toast.error(getErrorMessage(error));
     }
   });
 

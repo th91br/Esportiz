@@ -1,70 +1,65 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth } from '@/contexts/auth';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useProfile } from '@/hooks/queries/useProfile';
 import { getLocalTodayDate } from '@/lib/dateUtils';
+import { syncAfterStudentMutation } from '@/lib/querySync';
+import { buildStudentGroupLinks, getGroupIdsFromStudentLinks } from '@/lib/studentGroupContracts';
+import type { Tables } from '@/integrations/supabase/types';
+import type { Student } from '@/data/mockData';
 
-export interface Student {
-  id: string;
-  name: string;
-  phone: string;
-  level: string;
-  joinDate: string;
-  active: boolean;
-  planId?: string | null;
-  paymentDueDay?: number | null;
-  photo?: string | null;
-  birthDate?: string | null;
-  email?: string | null;
-  modalityId?: string | null;
-  cpf?: string | null;
-  rg?: string | null;
-  address?: string | null;
-  city?: string | null;
-  state?: string | null;
-  zipCode?: string | null;
-  isTrial?: boolean;
-  trialStartedAt?: string | null;
-  trialConvertedAt?: string | null;
-  groupIds?: string[];
-  discountType?: 'percentage' | 'fixed' | null;
-  discountValue?: number;
-  discountDurationMonths?: number | null;
-  discountStartMonth?: string | null;
+type StudentRowWithGroups = Tables<'students'> & {
+  group_students?: Pick<Tables<'group_students'>, 'group_id'>[] | null;
+};
+
+function asDiscountType(value: string | null): Student['discountType'] {
+  return value === 'percentage' || value === 'fixed' ? value : null;
 }
 
-export function useStudents() {
+function asStudentLevel(value: string | null): Student['level'] {
+  return value === 'intermediário' || value === 'avançado' || value === 'avançado_pro' || value === 'profissional' ? value : 'iniciante';
+}
+
+function getErrorMessage(error: unknown) {
+  return error instanceof Error ? error.message : 'Erro inesperado';
+}
+
+export function useStudents(options: { enabled?: boolean } = {}) {
   const { user } = useAuth();
   const { profile } = useProfile();
   const queryClient = useQueryClient();
+  const studentsEnabled = options.enabled ?? true;
+
+  const tenantId = profile?.owner_user_id || user?.id;
 
   const { data: students = [], isLoading: loadingStudents } = useQuery({
-    queryKey: ['students', user?.id, profile?.business_type],
+    queryKey: ['students', tenantId, profile?.business_type],
     queryFn: async () => {
-      if (!user) return [];
+      if (!tenantId) return [];
       const businessType = profile?.business_type || 'sport_school';
       const { data, error } = await supabase
         .from('students')
         .select('*, group_students(group_id)')
-        .eq('user_id', user.id)
+        .eq('user_id', tenantId)
         .eq('business_type', businessType)
         .order('name');
       
       if (error) throw error;
       
-      return data.map(s => ({
+      return ((data || []) as StudentRowWithGroups[]).map(s => ({
         id: s.id,
         name: s.name,
         phone: s.phone || '',
-        level: s.level || 'iniciante',
+        level: asStudentLevel(s.level),
         joinDate: s.join_date,
         active: s.active,
         planId: s.plan_id,
         paymentDueDay: s.payment_due_day,
+        paymentStartDate: s.payment_start_date,
         photo: s.photo,
         birthDate: s.birth_date,
-        email: s.email,
+        email: s.email || '',
         modalityId: s.modality_id,
         cpf: s.cpf,
         rg: s.rg,
@@ -75,14 +70,14 @@ export function useStudents() {
         isTrial: s.is_trial ?? false,
         trialStartedAt: s.trial_started_at,
         trialConvertedAt: s.trial_converted_at,
-        groupIds: (s.group_students || []).map((gs: any) => gs.group_id),
-        discountType: s.discount_type,
+        groupIds: getGroupIdsFromStudentLinks(s.group_students),
+        discountType: asDiscountType(s.discount_type),
         discountValue: Number(s.discount_value || 0),
         discountDurationMonths: s.discount_duration_months,
         discountStartMonth: s.discount_start_month,
       })) as Student[];
     },
-    enabled: !!user
+    enabled: studentsEnabled && !!tenantId
   });
 
   const addStudent = useMutation({
@@ -119,6 +114,7 @@ export function useStudents() {
           discount_value: data.discountValue || 0,
           discount_duration_months: data.discountDurationMonths || null,
           discount_start_month: data.discountStartMonth || null,
+          organization_id: profile?.organization_id || null,
         })
         .select()
         .single();
@@ -126,21 +122,25 @@ export function useStudents() {
       if (error) throw error;
 
       if (data.groupIds && data.groupIds.length > 0) {
+        const gsInsert = buildStudentGroupLinks({
+          studentId: newStudent.id,
+          groupIds: data.groupIds,
+          userId: user.id,
+        }).map(link => ({
+          ...link,
+          organization_id: profile?.organization_id || null,
+        }));
+
         const { error: gsError } = await supabase
           .from('group_students')
-          .insert(data.groupIds.map(gid => ({
-            student_id: newStudent.id,
-            group_id: gid,
-            user_id: user.id
-          })));
+          .insert(gsInsert);
         if (gsError) throw gsError;
       }
 
       return newStudent;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['students'] });
-      queryClient.invalidateQueries({ queryKey: ['payments'] });
+      syncAfterStudentMutation(queryClient);
     }
   });
 
@@ -175,10 +175,11 @@ export function useStudents() {
           discount_value: data.discountValue === undefined ? undefined : data.discountValue,
           discount_duration_months: data.discountDurationMonths === undefined ? undefined : data.discountDurationMonths,
           discount_start_month: data.discountStartMonth === undefined ? undefined : data.discountStartMonth,
+          organization_id: profile?.organization_id || null,
           updated_at: new Date().toISOString()
         })
         .eq('id', id)
-        .eq('user_id', user.id)
+        .eq('user_id', tenantId)
         .select()
         .single();
 
@@ -187,13 +188,18 @@ export function useStudents() {
       if (data.groupIds !== undefined) {
         await supabase.from('group_students').delete().eq('student_id', id);
         if (data.groupIds.length > 0) {
+          const gsInsert = buildStudentGroupLinks({
+            studentId: id,
+            groupIds: data.groupIds,
+            userId: user.id,
+          }).map(link => ({
+            ...link,
+            organization_id: profile?.organization_id || null,
+          }));
+
           const { error: gsError } = await supabase
             .from('group_students')
-            .insert(data.groupIds.map(gid => ({
-              student_id: id,
-              group_id: gid,
-              user_id: user.id
-            })));
+            .insert(gsInsert);
           if (gsError) throw gsError;
         }
       }
@@ -201,8 +207,7 @@ export function useStudents() {
       return updatedStudent;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['students'] });
-      queryClient.invalidateQueries({ queryKey: ['payments'] });
+      syncAfterStudentMutation(queryClient);
     }
   });
 
@@ -213,16 +218,16 @@ export function useStudents() {
         .from('students')
         .delete()
         .eq('id', id)
-        .eq('user_id', user.id); // Garante que só deleta se for o dono
+        .eq('user_id', tenantId);
       
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['students'] });
+      syncAfterStudentMutation(queryClient);
       toast.success('Aluno removido com sucesso');
     },
-    onError: (error: any) => {
-      toast.error('Erro ao remover aluno: ' + error.message);
+    onError: (error: unknown) => {
+      toast.error('Erro ao remover aluno: ' + getErrorMessage(error));
     }
   });
 

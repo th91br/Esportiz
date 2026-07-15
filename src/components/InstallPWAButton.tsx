@@ -3,9 +3,24 @@ import { Button } from "@/components/ui/button";
 import { EsportizIcon } from "@/components/Logo";
 import { toast } from "sonner";
 
+type BeforeInstallPromptOutcome = "accepted" | "dismissed";
+
+interface BeforeInstallPromptEvent extends Event {
+  prompt: () => Promise<void>;
+  userChoice: Promise<{ outcome: BeforeInstallPromptOutcome; platform: string }>;
+}
+
+interface NavigatorWithStandalone extends Navigator {
+  standalone?: boolean;
+}
+
+function isRunningStandalone() {
+  const navigatorWithStandalone = window.navigator as NavigatorWithStandalone;
+  return window.matchMedia('(display-mode: standalone)').matches || navigatorWithStandalone.standalone === true;
+}
+
 export function InstallPWAButton() {
-  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
-  const [isInstallable, setIsInstallable] = useState(false);
+  const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [isIos, setIsIos] = useState(false);
 
   useEffect(() => {
@@ -14,27 +29,23 @@ export function InstallPWAButton() {
     const isIosDevice = /iphone|ipad|ipod/.test(userAgent);
     
     // Check if already installed (standalone mode)
-    const isStandalone = window.matchMedia('(display-mode: standalone)').matches || 
-                        ('standalone' in window.navigator && (window.navigator as any).standalone);
+    const isStandalone = isRunningStandalone();
 
     if (isIosDevice && !isStandalone) {
       setIsIos(true);
-      setIsInstallable(true);
     }
 
     const handleBeforeInstallPrompt = (e: Event) => {
       // Prevent the mini-infobar from appearing on mobile
       e.preventDefault();
       // Stash the event so it can be triggered later.
-      setDeferredPrompt(e);
-      setIsInstallable(true);
+      setDeferredPrompt(e as BeforeInstallPromptEvent);
     };
 
     window.addEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
 
     // Optionally check if already installed
     window.addEventListener("appinstalled", () => {
-      setIsInstallable(false);
       setDeferredPrompt(null);
     });
 
@@ -72,7 +83,7 @@ export function InstallPWAButton() {
     const { outcome } = await deferredPrompt.userChoice;
     
     if (outcome === "accepted") {
-      setIsInstallable(false);
+      setDeferredPrompt(null);
     }
     
     // We've used the prompt, and can't use it again, throw it away
@@ -81,8 +92,7 @@ export function InstallPWAButton() {
 
   // If we are not standalone AND we don't have a deferred prompt, it's likely already installed or not supported
   // So we hide it to save space on the header.
-  const isStandalone = window.matchMedia('(display-mode: standalone)').matches || 
-                       ('standalone' in window.navigator && (window.navigator as any).standalone);
+  const isStandalone = isRunningStandalone();
   if (isStandalone || !deferredPrompt) return null;
 
   return (

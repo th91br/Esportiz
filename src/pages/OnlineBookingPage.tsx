@@ -1,53 +1,62 @@
+import { reportError } from '@/lib/observability';
 import { useState, useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
+import { IconCardTitle } from '@/components/layout/IconCardTitle';
 import { toast } from 'sonner';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { EsportizIcon } from '@/components/Logo';
 import { 
   Check, User, Mail, FileText, Phone, Calendar as CalendarIcon, 
-  ArrowRight, ShieldCheck, Landmark, Clock, RefreshCw, Sparkles
+  ArrowRight, ShieldCheck, Landmark, Clock, RefreshCw, Sparkles, MessageSquare
 } from 'lucide-react';
 import { formatCurrency } from '@/lib/formatCurrency';
+import { resolvePublicOwnerScope } from '@/lib/publicAccessContracts';
+import {
+  getPublicCourtPriceForTime,
+  isPublicReservationSlotBusy,
+  mapPublicCourtRecord,
+  parseTimeToMinutes,
+  type PublicCourt,
+  type PublicCourtRecord,
+  type PublicReservation,
+} from '@/lib/publicBookingContracts';
+import {
+  formatBrazilPhone,
+  formatCpf,
+  isTodayOrFutureDate,
+  isValidBrazilPhone,
+  isValidCpf,
+  isValidPublicEmail,
+  normalizePublicEmail,
+  normalizePublicName,
+} from '@/lib/publicPortalSecurity';
+import { getLocalTodayDate } from '@/lib/dateUtils';
 
-interface Court {
-  id: string;
-  name: string;
-  color: string;
-  sportType: string;
-  coverage: string;
-  pricePerHour: number;
-  openingTime: string;
-  closingTime: string;
-  daysOfWeek: number[];
-  usePeakPricing?: boolean;
-  peakPrice?: number;
-  peakStart?: string;
-  peakEnd?: string;
-}
-
-interface DBReservation {
-  id: string;
+interface BookingSuccessData {
+  courtName?: string;
   date: string;
   time: string;
-  courtId: string;
-  durationMinutes: number;
-  status: string;
+  price: number;
 }
 
 export default function OnlineBookingPage() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const ownerId = searchParams.get('ct');
+  const { hasInvalidOwnerId, scopedOwnerId } = resolvePublicOwnerScope(ownerId);
 
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [arenaName, setArenaName] = useState('Esportiz Arena');
-  const [courts, setCourts] = useState<Court[]>([]);
-  const [reservations, setReservations] = useState<DBReservation[]>([]);
-  const [successData, setSuccessData] = useState<any | null>(null);
+  const [logoUrl, setLogoUrl] = useState<string | null>(null);
+  const [whatsapp, setWhatsapp] = useState<string | null>(null);
+  const [courts, setCourts] = useState<PublicCourt[]>([]);
+  const [reservations, setReservations] = useState<PublicReservation[]>([]);
+  const [successData, setSuccessData] = useState<BookingSuccessData | null>(null);
 
   // Booking Flow Steps: 1 = Court & Time Selection, 2 = Customer Registration
   const [step, setStep] = useState(1);
@@ -73,7 +82,7 @@ export default function OnlineBookingPage() {
 
   // Fetch Arena data publicly using RPC
   useEffect(() => {
-    if (!ownerId) {
+    if (!scopedOwnerId) {
       setLoading(false);
       return;
     }
@@ -81,64 +90,30 @@ export default function OnlineBookingPage() {
     async function loadData() {
       try {
         const { data, error } = await supabase.rpc('get_public_arena_data', {
-          p_user_id: ownerId
+          p_user_id: scopedOwnerId
         });
 
         if (error) throw error;
 
         if (data) {
-          setArenaName(data.arena_name || 'Esportiz Arena');
+          const result = data as { arena_name?: string; logo_url?: string | null; whatsapp?: string | null; courts?: unknown[]; reservations?: unknown[] };
+          setArenaName(result.arena_name || 'Esportiz Arena');
+          setLogoUrl(result.logo_url || null);
+          setWhatsapp(result.whatsapp || null);
           
           // Map DB Modalities into Court objects
-          const mappedCourts = (data.courts || []).map((c: Record<string, any>) => {
-            let meta = {
-              sportType: 'futevolei',
-              coverage: 'open',
-              pricePerHour: 80,
-              openingTime: '07:00',
-              closingTime: '23:00',
-              daysOfWeek: [0, 1, 2, 3, 4, 5, 6],
-              usePeakPricing: false,
-              peakPrice: 0,
-              peakStart: '18:00',
-              peakEnd: '22:00'
-            };
-            try {
-              if (c.metadata) {
-                const parsed = typeof c.metadata === 'string' ? JSON.parse(c.metadata) : c.metadata;
-                meta = { ...meta, ...parsed };
-              }
-            } catch (e) {
-              console.error('Error parsing court metadata:', e);
-            }
-
-            return {
-              id: c.id,
-              name: c.name,
-              color: c.color,
-              sportType: meta.sportType,
-              coverage: meta.coverage,
-              pricePerHour: Number(meta.pricePerHour || 80),
-              openingTime: meta.openingTime || '07:00',
-              closingTime: meta.closingTime || '23:00',
-              daysOfWeek: meta.daysOfWeek || [0, 1, 2, 3, 4, 5, 6],
-              usePeakPricing: meta.usePeakPricing || false,
-              peakPrice: Number(meta.peakPrice || 0),
-              peakStart: meta.peakStart || '18:00',
-              peakEnd: meta.peakEnd || '22:00'
-            };
-          });
+          const mappedCourts = ((result.courts as PublicCourtRecord[]) || []).map((court: PublicCourtRecord) => mapPublicCourtRecord(court));
 
           setCourts(mappedCourts);
           if (mappedCourts.length > 0) {
             setSelectedCourtId(mappedCourts[0].id);
           }
 
-          setReservations(data.reservations || []);
+          setReservations((result.reservations as PublicReservation[]) || []);
         }
       } catch (err: unknown) {
         const error = err as Error;
-        console.error('Erro ao buscar dados da arena:', error);
+        reportError('public_booking.tenant_load_failed', error);
         toast.error('Erro ao carregar dados do CT.');
       } finally {
         setLoading(false);
@@ -146,49 +121,20 @@ export default function OnlineBookingPage() {
     }
 
     loadData();
-  }, [ownerId]);
+  }, [scopedOwnerId]);
 
   // Mask CPF (999.999.999-99)
   const handleCpfChange = (val: string) => {
-    const clean = val.replace(/\D/g, '');
-    let formatted = clean;
-    if (clean.length > 3) formatted = clean.substring(0, 3) + '.' + clean.substring(3);
-    if (clean.length > 6) formatted = formatted.substring(0, 7) + '.' + clean.substring(6);
-    if (clean.length > 9) formatted = formatted.substring(0, 11) + '-' + clean.substring(9, 11);
-    setCpf(formatted.substring(0, 14));
+    setCpf(formatCpf(val));
   };
 
   // Mask Phone ((99) 99999-9999)
   const handlePhoneChange = (val: string) => {
-    const clean = val.replace(/\D/g, '');
-    let formatted = clean;
-    if (clean.length > 0) formatted = '(' + clean;
-    if (clean.length > 2) formatted = '(' + clean.substring(0, 2) + ') ' + clean.substring(2);
-    if (clean.length > 7) formatted = formatted.substring(0, 10) + '-' + clean.substring(7, 11);
-    setPhone(formatted.substring(0, 15));
-  };
-
-  // Helper: check time intervals overlaps
-  const parseTimeToMinutes = (t: string) => {
-    const [h, m] = t.split(':').map(Number);
-    return h * 60 + (m || 0);
+    setPhone(formatBrazilPhone(val));
   };
 
   const isSlotBusy = (courtId: string, date: string, slotTime: string, duration: number) => {
-    const slotStart = parseTimeToMinutes(slotTime);
-    const slotEnd = slotStart + duration;
-
-    return reservations.some((res) => {
-      if (res.courtId !== courtId) return false;
-      if (res.date !== date) return false;
-      if (res.status === 'cancelled') return false;
-
-      const resStart = parseTimeToMinutes(res.time);
-      const resEnd = resStart + (res.durationMinutes || 60);
-
-      // Overlap formula: (start1 < end2) AND (end1 > start2)
-      return resStart < slotEnd && resEnd > slotStart;
-    });
+    return isPublicReservationSlotBusy(reservations, courtId, date, slotTime, duration);
   };
 
   // Generate dynamic hourly slots for the selected court
@@ -206,7 +152,15 @@ export default function OnlineBookingPage() {
       const min = m % 60;
       const slotTimeStr = `${String(h).padStart(2, '0')}:${String(min).padStart(2, '0')}`;
       
-      const busy = isSlotBusy(selectedCourtId, selectedDate, slotTimeStr, selectedDuration);
+      let busy = isSlotBusy(selectedCourtId, selectedDate, slotTimeStr, selectedDuration);
+
+      // Strict Block for past hours if the selected date is today
+      if (!busy && selectedDate === getLocalTodayDate()) {
+        const currentHour = new Date().getHours();
+        if (h <= currentHour) {
+          busy = true;
+        }
+      }
 
       slots.push({
         time: slotTimeStr,
@@ -219,21 +173,25 @@ export default function OnlineBookingPage() {
 
   const selectedCourt = courts.find((c) => c.id === selectedCourtId);
 
-  const getCalculatedPrice = (court: Court | undefined, timeSlot: string) => {
-    if (!court) return 80;
-    let price = court.pricePerHour;
-    if (court.usePeakPricing && court.peakPrice && court.peakStart && court.peakEnd) {
-      if (timeSlot >= court.peakStart && timeSlot < court.peakEnd) {
-        price = court.peakPrice;
-      }
-    }
-    return price;
-  };
+  const getCalculatedPrice = (court: PublicCourt | undefined, timeSlot: string) => (
+    getPublicCourtPriceForTime(court, timeSlot)
+  );
 
   const handleNextStep = (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedCourtId || !selectedDate || !selectedTimeSlot) {
       toast.error('Por favor, escolha uma quadra, data e horário livre.');
+      return;
+    }
+
+    if (!isTodayOrFutureDate(selectedDate)) {
+      toast.error('Escolha uma data valida para a reserva.');
+      return;
+    }
+
+    if (isSlotBusy(selectedCourtId, selectedDate, selectedTimeSlot, selectedDuration)) {
+      toast.error('Este horario acabou de ficar indisponivel. Escolha outro horario.');
+      setSelectedTimeSlot('');
       return;
     }
     setStep(2);
@@ -242,13 +200,38 @@ export default function OnlineBookingPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!ownerId) {
+    if (!scopedOwnerId) {
       toast.error('Link de agendamento incompleto ou inválido.');
       return;
     }
 
-    if (!name || !cpf || !email || !phone) {
+    const safeName = normalizePublicName(name);
+    const safeCpf = formatCpf(cpf);
+    const safeEmail = normalizePublicEmail(email);
+    const safePhone = formatBrazilPhone(phone);
+
+    if (!safeName || !safeCpf || !safeEmail || !safePhone) {
       toast.error('Por favor, preencha todos os campos obrigatórios.');
+      return;
+    }
+
+    if (!isTodayOrFutureDate(selectedDate)) {
+      toast.error('Escolha uma data válida para a reserva.');
+      return;
+    }
+
+    if (!isValidCpf(safeCpf)) {
+      toast.error('CPF inválido. Confira os números digitados.');
+      return;
+    }
+
+    if (!isValidPublicEmail(safeEmail)) {
+      toast.error('E-mail inválido.');
+      return;
+    }
+
+    if (!isValidBrazilPhone(safePhone)) {
+      toast.error('Celular inválido.');
       return;
     }
 
@@ -256,20 +239,24 @@ export default function OnlineBookingPage() {
 
     try {
       const { data, error } = await supabase.rpc('submit_public_reservation', {
-        p_user_id: ownerId,
+        p_user_id: scopedOwnerId,
         p_court_id: selectedCourtId,
         p_date: selectedDate,
         p_time: selectedTimeSlot,
         p_duration_minutes: selectedDuration,
-        p_client_name: name,
-        p_client_phone: phone,
-        p_client_email: email,
-        p_client_cpf: cpf,
+        p_client_name: safeName,
+        p_client_phone: safePhone,
+        p_client_email: safeEmail,
+        p_client_cpf: safeCpf,
       });
 
       if (error) throw error;
 
       if (data && !data.success) {
+        if (data.conflict) {
+          setSelectedTimeSlot('');
+          setStep(1);
+        }
         toast.error(data.error || 'Erro ao realizar agendamento.');
         return;
       }
@@ -281,8 +268,8 @@ export default function OnlineBookingPage() {
         time: selectedTimeSlot,
         price: (getCalculatedPrice(selectedCourt, selectedTimeSlot) * selectedDuration) / 60,
       });
-    } catch (err: any) {
-      console.error('Erro ao submeter agendamento:', err);
+    } catch (err: unknown) {
+      reportError('public_booking.submission_failed', err);
       toast.error('Ocorreu um erro ao processar sua reserva.');
     } finally {
       setSubmitting(false);
@@ -298,7 +285,7 @@ export default function OnlineBookingPage() {
     );
   }
 
-  if (!ownerId) {
+  if (!ownerId || hasInvalidOwnerId) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background p-6">
         <Card className="max-w-md w-full border-border/80 card-elevated">
@@ -329,9 +316,18 @@ export default function OnlineBookingPage() {
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-primary/5 via-background to-background p-4 sm:p-6">
         <Card className="max-w-lg w-full border-border/60 card-elevated shadow-xl overflow-hidden">
           <div className="h-2 bg-gradient-to-r from-emerald-500 to-teal-500" />
-          <CardHeader className="text-center pb-4 space-y-3">
-            <div className="mx-auto w-16 h-16 bg-emerald-500/10 text-emerald-500 rounded-full flex items-center justify-center scale-110 shadow-inner">
-              <Check className="h-8 w-8 stroke-[3px]" />
+          <CardHeader className="text-center pb-4 space-y-3 flex flex-col items-center">
+            <div className="relative">
+              <div className="mx-auto w-16 h-16 bg-emerald-500/10 text-emerald-500 rounded-full flex items-center justify-center scale-110 shadow-inner">
+                <Check className="h-8 w-8 stroke-[3px]" />
+              </div>
+              <div className="absolute -bottom-2 -right-2 w-10 h-10 rounded-xl bg-card border border-border/80 shadow-md flex items-center justify-center p-1 overflow-hidden animate-in fade-in zoom-in duration-300">
+                {logoUrl ? (
+                  <img src={logoUrl} alt={`Logo ${arenaName}`} className="w-full h-full object-contain rounded-lg" />
+                ) : (
+                  <EsportizIcon size={30} />
+                )}
+              </div>
             </div>
             <CardTitle className="text-2xl font-bold font-display text-foreground mt-4">Agendamento Confirmado!</CardTitle>
             <CardDescription className="text-sm text-muted-foreground max-w-sm mx-auto">
@@ -369,6 +365,20 @@ export default function OnlineBookingPage() {
               <p className="text-xs text-indigo-600 dark:text-indigo-400 font-medium leading-relaxed">
                 Pagamentos de taxa ou Pix de reserva devem ser tratados diretamente com a administração da Arena no local ou via WhatsApp de atendimento.
               </p>
+              {whatsapp && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    const digits = whatsapp.replace(/\D/g, '');
+                    const messageText = `Olá! Acabei de reservar um horário no CT ${arenaName} (${successData.courtName || 'Quadra'} em ${successData.date} às ${successData.time}) e gostaria de enviar o comprovante de pagamento Pix.`;
+                    window.open(`https://wa.me/55${digits}?text=${encodeURIComponent(messageText)}`, '_blank');
+                  }}
+                  className="w-full mt-2 border-green-500/30 text-green-600 dark:text-green-400 hover:bg-green-500/10 font-bold flex items-center justify-center gap-1.5 py-4 text-xs transition-colors"
+                >
+                  <MessageSquare className="h-4 w-4 text-green-500" /> Enviar Comprovante via WhatsApp
+                </Button>
+              )}
             </div>
           </CardContent>
 
@@ -393,11 +403,23 @@ export default function OnlineBookingPage() {
   return (
     <div className="min-h-screen bg-gradient-to-b from-primary/5 via-background to-background py-8 px-4 sm:px-6">
       <div className="max-w-2xl mx-auto space-y-6">
-        <div className="text-center space-y-2">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-primary/10 border border-primary/20 text-primary text-xs font-bold font-display uppercase tracking-wider mb-2">
+        <div className="text-center space-y-3 flex flex-col items-center animate-in fade-in slide-in-from-top-4 duration-500">
+          <div className="w-20 h-20 rounded-3xl bg-background border border-primary/15 shadow-sm flex items-center justify-center overflow-hidden transition-all duration-300 hover:scale-105 mb-1 animate-in fade-in zoom-in duration-300">
+            {logoUrl ? (
+              <img
+                src={logoUrl}
+                alt={`Logo ${arenaName}`}
+                className="w-full h-full object-contain p-2"
+                onError={() => setLogoUrl(null)}
+              />
+            ) : (
+              <EsportizIcon size={56} />
+            )}
+          </div>
+          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-primary/10 border border-primary/20 text-primary text-xs font-bold font-display uppercase tracking-wider">
             <Landmark className="h-3.5 w-3.5 animate-pulse" /> Agendamento de Quadras Online
           </div>
-          <h1 className="text-2xl sm:text-3xl font-black font-display text-foreground tracking-tight">{arenaName}</h1>
+          <h1 className="max-w-xl text-2xl sm:text-3xl font-black font-display text-foreground tracking-tight leading-tight break-words">{arenaName}</h1>
           <p className="text-muted-foreground text-sm max-w-md mx-auto">
             Reserve o seu horário e garanta o seu play em tempo real com toda a comodidade.
           </p>
@@ -409,9 +431,7 @@ export default function OnlineBookingPage() {
           {step === 1 ? (
             <form onSubmit={handleNextStep}>
               <CardHeader className="pb-4">
-                <CardTitle className="text-lg font-bold flex items-center gap-2">
-                  <Clock className="h-5 w-5 text-primary" /> 1. Escolha Data, Quadra & Horário
-                </CardTitle>
+                <IconCardTitle icon={Clock}>1. Escolha Data, Quadra & Horário</IconCardTitle>
                 <CardDescription>Selecione onde e quando deseja jogar.</CardDescription>
               </CardHeader>
 
@@ -440,14 +460,14 @@ export default function OnlineBookingPage() {
                     {courts.map((court) => {
                       const isSelected = selectedCourtId === court.id;
                       return (
-                        <div
+                        <button
                           key={court.id}
                           type="button"
                           onClick={() => {
                             setSelectedCourtId(court.id);
                             setSelectedTimeSlot('');
                           }}
-                          className={`p-4 rounded-xl border transition-all cursor-pointer flex flex-col justify-between ${
+                          className={`p-4 rounded-xl border transition-all cursor-pointer text-left flex flex-col justify-between ${
                             isSelected 
                               ? 'border-primary bg-primary/5 shadow-md ring-2 ring-primary/20' 
                               : 'border-border/60 bg-background/50 hover:border-border hover:bg-muted/10'
@@ -467,7 +487,7 @@ export default function OnlineBookingPage() {
                               }
                             </span>
                           </div>
-                        </div>
+                        </button>
                       );
                     })}
                   </div>
@@ -543,9 +563,7 @@ export default function OnlineBookingPage() {
             <form onSubmit={handleSubmit}>
               <CardHeader className="pb-4">
                 <div className="flex items-center justify-between">
-                  <CardTitle className="text-lg font-bold flex items-center gap-2">
-                    <ShieldCheck className="h-5 w-5 text-primary" /> 2. Ficha do Jogador
-                  </CardTitle>
+                  <IconCardTitle icon={ShieldCheck}>2. Ficha do Jogador</IconCardTitle>
                   <Button 
                     type="button" 
                     variant="ghost" 
@@ -560,16 +578,16 @@ export default function OnlineBookingPage() {
 
               <CardContent className="space-y-4">
                 {/* Resumo */}
-                <div className="bg-primary/5 p-4 rounded-xl border border-primary/10 text-xs grid grid-cols-3 gap-2 items-center mb-4">
+                <div className="bg-primary/5 p-4 rounded-xl border border-primary/10 text-xs grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-2 items-start sm:items-center mb-4">
                   <div>
                     <span className="text-muted-foreground uppercase block font-semibold text-[9px] tracking-wider">Quadra</span>
                     <span className="font-bold text-foreground text-sm">{selectedCourt?.name}</span>
                   </div>
-                  <div className="text-center">
+                  <div className="sm:text-center">
                     <span className="text-muted-foreground uppercase block font-semibold text-[9px] tracking-wider">Data & Horário</span>
                     <span className="font-bold text-foreground text-sm">{selectedDate.split('-').reverse().join('/')} às {selectedTimeSlot} ({selectedDuration}m)</span>
                   </div>
-                  <div className="text-right">
+                  <div className="sm:text-right">
                     <span className="text-muted-foreground uppercase block font-semibold text-[9px] tracking-wider">Valor do Play</span>
                     <span className="font-bold text-emerald-600 dark:text-emerald-400 text-sm">
                       {formatCurrency((getCalculatedPrice(selectedCourt, selectedTimeSlot) * selectedDuration) / 60)}

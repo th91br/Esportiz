@@ -1,9 +1,23 @@
-import { useState, useMemo, useEffect } from 'react';
-import { Header } from '@/components/Header';
+import { useState, useMemo, useEffect, type KeyboardEvent } from 'react';
+import { AppPage } from '@/components/layout/AppPage';
+import { PageHeader } from '@/components/layout/PageHeader';
+import { EmptyState } from '@/components/ui/empty-state';
+import { LoadingState } from '@/components/ui/loading-state';
+import { IconDialogTitle } from '@/components/layout/IconDialogTitle';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useComandas, Comanda, ComandaItem } from '@/hooks/queries/useComandas';
 import { useProducts, Product } from '@/hooks/queries/useProducts';
@@ -15,11 +29,19 @@ import {
   ChevronRight, ArrowRight, User, Hash, Utensils, Beer, RefreshCw, Lock
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useRolePermissions } from '@/hooks/useRolePermissions';
 
 export default function ComandasPage() {
+  const rolePermissions = useRolePermissions();
+  const canViewProducts = rolePermissions.can('products', 'view');
   const { comandas, loadingComandas, openComanda, addComandaItem, updateItemQuantity, deleteComandaItem, closeComanda, reopenComanda, deleteComanda } = useComandas();
-  const { activeProducts, loadingProducts } = useProducts();
+  const { activeProducts, loadingProducts } = useProducts({ enabled: canViewProducts });
   const [privacyMode] = usePrivacyMode();
+  const canCreateComandas = rolePermissions.can('comandas', 'create');
+  const canUpdateComandas = rolePermissions.can('comandas', 'update');
+  const canDeleteComandas = rolePermissions.can('comandas', 'delete');
+  const canCloseComandas = rolePermissions.can('comandas', 'close_comanda');
+  const canReopenComandas = rolePermissions.can('comandas', 'reopen_payment');
 
   // Navigation and UI states
   const [activeTab, setActiveTab] = useState<'open' | 'closed'>('open');
@@ -36,6 +58,9 @@ export default function ComandasPage() {
   
   // Closing/Payment states
   const [closingComanda, setClosingComanda] = useState<Comanda | null>(null);
+  const [comandaToCancel, setComandaToCancel] = useState<Comanda | null>(null);
+  const [comandaToReopen, setComandaToReopen] = useState<Comanda | null>(null);
+  const [itemToRemove, setItemToRemove] = useState<ComandaItem | null>(null);
   const [paymentMethod, setPaymentMethod] = useState<'dinheiro' | 'pix' | 'cartao_credito' | 'cartao_debito'>('pix');
   const [isClosingSubmitting, setIsClosingSubmitting] = useState(false);
 
@@ -84,6 +109,10 @@ export default function ComandasPage() {
 
   const handleOpenComanda = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!canCreateComandas) {
+      toast.error('Seu cargo nao permite abrir comandas.');
+      return;
+    }
     if (!newComandaName.trim()) {
       toast.warning('Digite um nome ou número para a comanda.');
       return;
@@ -103,6 +132,10 @@ export default function ComandasPage() {
 
   const handleAddProduct = async (product: Product) => {
     if (!selectedComanda) return;
+    if (!canUpdateComandas) {
+      toast.error('Seu cargo nao permite alterar comandas.');
+      return;
+    }
     try {
       await addComandaItem({
         comandaId: selectedComanda.id,
@@ -118,6 +151,10 @@ export default function ComandasPage() {
   };
 
   const handleQuantityChange = async (item: ComandaItem, delta: number) => {
+    if (!canUpdateComandas) {
+      toast.error('Seu cargo nao permite alterar comandas.');
+      return;
+    }
     const newQty = item.quantity + delta;
     try {
       await updateItemQuantity({
@@ -130,7 +167,11 @@ export default function ComandasPage() {
   };
 
   const handleCloseComandaSubmit = async () => {
-    if (!closingComanda) return;
+    if (!closingComanda || isClosingSubmitting) return;
+    if (!canCloseComandas) {
+      toast.error('Seu cargo nao permite fechar comandas.');
+      return;
+    }
     setIsClosingSubmitting(true);
     try {
       await closeComanda({
@@ -164,30 +205,30 @@ export default function ComandasPage() {
 
   const pv = (val: string | number) => (privacyMode ? '••••' : val);
 
-  return (
-    <div className="min-h-screen bg-background">
-      <Header />
+  const handleComandaCardKeyDown = (event: KeyboardEvent<HTMLDivElement>, comanda: Comanda) => {
+    if (event.target !== event.currentTarget) return;
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      setSelectedComanda(comanda);
+    }
+  };
 
-      <main className="container py-6 md:py-8 space-y-6">
-        {/* Page Title */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 animate-fade-up">
-          <div>
-            <h1 className="section-title text-2xl md:text-3xl flex items-center gap-2">
-              <ShoppingBag className="h-7 w-7 text-primary" />
-              Controle de Comandas
-            </h1>
-            <p className="text-muted-foreground mt-1">
-              Gerencie o consumo de mesas e clientes no bar ou cantina da Arena.
-            </p>
-          </div>
+  return (
+    <AppPage>
+      <PageHeader
+        title="Controle de Comandas"
+        icon={ShoppingBag}
+        description="Gerencie o consumo de mesas e clientes no bar ou cantina da Arena."
+        actions={canCreateComandas && (
           <Button 
             onClick={() => setOpenModalOpen(true)} 
-            className="btn-primary-gradient w-full sm:w-auto shrink-0 shadow-lg shadow-primary/20"
+            className="btn-primary-gradient"
           >
             <Plus className="h-5 w-5 mr-1" />
             Abrir Nova Comanda
           </Button>
-        </div>
+        )}
+      />
 
         {/* Filters and Search Bar */}
         <div className="flex flex-col md:flex-row items-center gap-4 bg-muted/25 p-3 rounded-2xl border border-border/40 animate-fade-up" style={{ animationDelay: '0.05s' }}>
@@ -198,7 +239,7 @@ export default function ComandasPage() {
               className={cn(
                 'flex-1 md:flex-none px-5 py-2 text-sm font-semibold rounded-lg transition-all flex items-center justify-center gap-2',
                 activeTab === 'open' 
-                  ? 'bg-primary text-primary-foreground shadow-md shadow-primary/10' 
+                  ? 'bg-success text-success-foreground shadow-md shadow-success/10'
                   : 'text-muted-foreground hover:bg-muted hover:text-foreground'
               )}
             >
@@ -216,7 +257,7 @@ export default function ComandasPage() {
               className={cn(
                 'flex-1 md:flex-none px-5 py-2 text-sm font-semibold rounded-lg transition-all flex items-center justify-center gap-2',
                 activeTab === 'closed' 
-                  ? 'bg-primary text-primary-foreground shadow-md shadow-primary/10' 
+                  ? 'bg-secondary text-secondary-foreground shadow-md shadow-secondary/10'
                   : 'text-muted-foreground hover:bg-muted hover:text-foreground'
               )}
             >
@@ -246,45 +287,44 @@ export default function ComandasPage() {
 
         {/* Main Grid List */}
         {loadingComandas ? (
-          <div className="flex flex-col items-center justify-center py-24 gap-4 animate-pulse">
-            <RefreshCw className="h-10 w-10 text-primary animate-spin" />
-            <p className="text-muted-foreground font-semibold">Buscando comandas no banco...</p>
-          </div>
+          <LoadingState label="Buscando comandas no banco" className="py-24" />
         ) : filteredComandas.length === 0 ? (
-          <Card className="border-dashed border-2 py-16 text-center shadow-none animate-fade-up">
-            <CardHeader className="flex items-center justify-center">
-              <div className="bg-primary/5 p-4 rounded-full">
-                <ShoppingBag className="h-12 w-12 text-primary" />
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-2">
-              <h3 className="font-display font-bold text-lg text-foreground">
-                Nenhuma comanda encontrada
-              </h3>
-              <p className="text-muted-foreground text-sm max-w-sm mx-auto">
-                {searchQuery 
+          <EmptyState
+            icon={ShoppingBag}
+            variant="outlined"
+            title={<span className="font-display font-bold text-lg text-foreground">Nenhuma comanda encontrada</span>}
+            description={(
+              <span className="block max-w-sm">
+                {searchQuery
                   ? 'Nenhum resultado corresponde à sua pesquisa de filtro.'
-                  : activeTab === 'open' 
+                  : activeTab === 'open'
                   ? 'Não há comandas abertas no momento. Abra uma para começar o consumo.'
                   : 'Histórico de comandas fechadas está vazio.'}
-              </p>
-              {!searchQuery && activeTab === 'open' && (
-                <Button onClick={() => setOpenModalOpen(true)} className="mt-4 btn-primary-gradient shadow-md">
-                  <Plus className="h-4 w-4 mr-1" />
-                  Abrir Primeira Comanda
-                </Button>
-              )}
-            </CardContent>
-          </Card>
+              </span>
+            )}
+            action={!searchQuery && activeTab === 'open' && canCreateComandas ? (
+              <Button onClick={() => setOpenModalOpen(true)} className="btn-primary-gradient shadow-md">
+                <Plus className="h-4 w-4 mr-1" />
+                Abrir Primeira Comanda
+              </Button>
+            ) : undefined}
+            className="py-16 animate-fade-up"
+          />
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 animate-fade-up">
             {filteredComandas.map((comanda) => (
               <div
                 key={comanda.id}
                 onClick={() => setSelectedComanda(comanda)}
+                onKeyDown={(event) => handleComandaCardKeyDown(event, comanda)}
+                role="button"
+                tabIndex={0}
+                aria-label={`Abrir comanda ${comanda.name}`}
                 className={cn(
-                  'card-interactive p-5 flex flex-col justify-between border-primary/5 hover:border-primary/20 transition-all cursor-pointer bg-card',
-                  comanda.status === 'open' ? 'border-l-4 border-l-primary' : 'border-l-4 border-l-success'
+                  'card-interactive p-5 flex flex-col justify-between border transition-all cursor-pointer bg-card focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40 focus-visible:ring-offset-2 focus-visible:ring-offset-background',
+                  comanda.status === 'open'
+                    ? 'border-success/25 bg-success/[0.03] hover:border-success/40'
+                    : 'border-secondary/10 hover:border-secondary/25 dark:border-primary/20 dark:hover:border-primary/35'
                 )}
               >
                 <div className="space-y-3">
@@ -298,12 +338,12 @@ export default function ComandasPage() {
                       </h3>
                     </div>
                     {comanda.status === 'open' ? (
-                      <span className="text-[10px] bg-primary/10 text-primary px-2.5 py-1 rounded-full font-extrabold uppercase tracking-wider flex items-center gap-1">
-                        <span className="h-1.5 w-1.5 rounded-full bg-primary animate-ping" />
+                      <span className="text-[10px] bg-success/10 text-success border border-success/20 px-2.5 py-1 rounded-full font-extrabold uppercase tracking-wider flex items-center gap-1">
+                        <span className="h-1.5 w-1.5 rounded-full bg-success" />
                         Ativa
                       </span>
                     ) : (
-                      <span className="text-[10px] bg-success/15 text-success px-2.5 py-1 rounded-full font-extrabold uppercase tracking-wider flex items-center gap-1">
+                      <span className="text-[10px] bg-secondary/10 text-secondary border border-secondary/10 dark:bg-primary/10 dark:text-primary dark:border-primary/20 px-2.5 py-1 rounded-full font-extrabold uppercase tracking-wider flex items-center gap-1">
                         Pago
                       </span>
                     )}
@@ -330,7 +370,7 @@ export default function ComandasPage() {
                       {pv(formatCurrency(comanda.totalAmount))}
                     </span>
                   </div>
-                  {comanda.status === 'open' && comanda.items.length > 0 && (
+                  {comanda.status === 'open' && comanda.items.length > 0 && canCloseComandas && (
                     <Button
                       size="sm"
                       onClick={(e) => {
@@ -348,7 +388,6 @@ export default function ComandasPage() {
             ))}
           </div>
         )}
-      </main>
 
       {/* dialog to open comanda */}
       <Dialog open={openModalOpen} onOpenChange={setOpenModalOpen}>
@@ -395,24 +434,24 @@ export default function ComandasPage() {
 
       {/* POS/PDV Details Modal */}
       <Dialog open={!!selectedComanda} onOpenChange={(open) => { if (!open) setSelectedComanda(null); }}>
-        <DialogContent className="max-w-5xl w-[95vw] h-[85vh] md:h-[80vh] flex flex-col p-0 overflow-hidden rounded-2xl">
+        <DialogContent className="max-w-5xl w-[calc(100vw-1rem)] sm:w-[95vw] h-[92dvh] max-h-[92dvh] md:h-[80vh] flex flex-col p-0 overflow-hidden rounded-xl sm:rounded-2xl">
           {selectedComanda && (
             <>
               {/* Header */}
-              <div className="bg-primary/5 p-4 md:p-6 border-b border-border/50 flex items-center justify-between flex-shrink-0">
-                <div className="flex items-center gap-3">
+              <div className="bg-primary/5 p-4 md:p-6 border-b border-border/50 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between flex-shrink-0">
+                <div className="flex min-w-0 items-center gap-3">
                   <div className="bg-primary text-primary-foreground p-2.5 rounded-xl">
                     <ShoppingBag className="h-5 w-5" />
                   </div>
-                  <div>
-                    <h2 className="font-display font-bold text-lg md:text-xl text-foreground flex items-center gap-2">
-                      {selectedComanda.name}
+                  <div className="min-w-0">
+                    <h2 className="font-display font-bold text-lg md:text-xl text-foreground flex flex-wrap items-center gap-2">
+                      <span className="min-w-0 truncate">{selectedComanda.name}</span>
                       {selectedComanda.status === 'open' ? (
-                        <span className="text-[10px] bg-primary/10 text-primary px-2.5 py-1 rounded-full font-extrabold uppercase tracking-wider">
+                        <span className="text-[10px] bg-success/10 text-success border border-success/20 px-2.5 py-1 rounded-full font-extrabold uppercase tracking-wider">
                           Aberta
                         </span>
                       ) : (
-                        <span className="text-[10px] bg-success/20 text-success px-2.5 py-1 rounded-full font-extrabold uppercase tracking-wider">
+                        <span className="text-[10px] bg-secondary/10 text-secondary border border-secondary/10 dark:bg-primary/10 dark:text-primary dark:border-primary/20 px-2.5 py-1 rounded-full font-extrabold uppercase tracking-wider">
                           Fechada
                         </span>
                       )}
@@ -425,32 +464,22 @@ export default function ComandasPage() {
                 </div>
                 
                 {/* Cancel Comanda (Only if open and empty) */}
-                {selectedComanda.status === 'open' && selectedComanda.items.length === 0 && (
+                {selectedComanda.status === 'open' && selectedComanda.items.length === 0 && canDeleteComandas && (
                   <Button 
                     variant="ghost" 
-                    onClick={async () => {
-                      if (confirm("Tem certeza que deseja cancelar essa comanda?")) {
-                        await deleteComanda(selectedComanda.id);
-                        setSelectedComanda(null);
-                      }
-                    }}
-                    className="text-destructive hover:text-destructive hover:bg-destructive/5 text-xs font-semibold gap-1.5"
+                    onClick={() => setComandaToCancel(selectedComanda)}
+                    className="w-full sm:w-auto text-destructive hover:text-destructive hover:bg-destructive/5 text-xs font-semibold gap-1.5"
                   >
                     <Trash2 className="h-4 w-4" /> Cancelar Comanda
                   </Button>
                 )}
 
                 {/* Reopen Comanda (Only if closed) */}
-                {selectedComanda.status === 'closed' && (
+                {selectedComanda.status === 'closed' && canReopenComandas && (
                   <Button 
                     variant="outline" 
-                    onClick={async () => {
-                      if (confirm("Você quer reabrir esta comanda? O faturamento anterior registrado no caixa será estornado automaticamente.")) {
-                        await reopenComanda(selectedComanda.id);
-                        setSelectedComanda(null);
-                      }
-                    }}
-                    className="text-primary border-primary/20 hover:bg-primary/5 text-xs font-bold gap-1.5"
+                    onClick={() => setComandaToReopen(selectedComanda)}
+                    className="w-full sm:w-auto text-primary border-primary/20 hover:bg-primary/5 text-xs font-bold gap-1.5"
                   >
                     <RefreshCw className="h-4 w-4" /> Reabrir Comanda
                   </Button>
@@ -513,7 +542,7 @@ export default function ComandasPage() {
                   ) : (
                     <div className="flex-1 space-y-2.5 overflow-y-auto pr-1">
                       {selectedComanda.items.map((item) => (
-                        <div key={item.id} className="flex items-center justify-between p-3.5 rounded-xl bg-muted/30 border border-border/40 hover:bg-muted/40 transition-colors">
+                        <div key={item.id} className="flex flex-col gap-3 p-3.5 rounded-xl bg-muted/30 border border-border/40 hover:bg-muted/40 transition-colors sm:flex-row sm:items-center sm:justify-between">
                           <div className="min-w-0 flex-1 pr-3">
                             <p className="font-bold text-sm truncate text-foreground">{item.productName}</p>
                             <p className="text-xs text-muted-foreground font-semibold mt-0.5">
@@ -522,8 +551,8 @@ export default function ComandasPage() {
                           </div>
                           
                           {/* Item Quantity Modifier (Only if comanda is open) */}
-                          <div className="flex items-center gap-3">
-                            {selectedComanda.status === 'open' ? (
+                          <div className="flex w-full items-center justify-between gap-3 sm:w-auto sm:justify-end">
+                            {selectedComanda.status === 'open' && canUpdateComandas ? (
                               <div className="flex items-center rounded-lg border border-border/80 bg-background overflow-hidden shrink-0 shadow-sm">
                                 <button 
                                   onClick={() => handleQuantityChange(item, -1)}
@@ -552,13 +581,9 @@ export default function ComandasPage() {
                             </span>
 
                             {/* Direct delete button */}
-                            {selectedComanda.status === 'open' && (
+                            {selectedComanda.status === 'open' && canUpdateComandas && (
                               <button 
-                                onClick={async () => {
-                                  if (confirm(`Remover ${item.productName} da comanda?`)) {
-                                    await deleteComandaItem(item.id);
-                                  }
-                                }}
+                                onClick={() => setItemToRemove(item)}
                                 className="text-muted-foreground/60 hover:text-destructive p-1 rounded hover:bg-destructive/5 transition-colors"
                               >
                                 <Trash2 className="h-4 w-4" />
@@ -579,7 +604,7 @@ export default function ComandasPage() {
                       </span>
                     </div>
 
-                    {selectedComanda.status === 'open' && (
+                    {selectedComanda.status === 'open' && canCloseComandas && (
                       <Button
                         onClick={() => setClosingComanda(selectedComanda)}
                         disabled={selectedComanda.items.length === 0}
@@ -594,7 +619,7 @@ export default function ComandasPage() {
                 </div>
 
                 {/* RIGHT COLUMN: Product Catalog (Disabled if closed) */}
-                {selectedComanda.status === 'open' ? (
+                {selectedComanda.status === 'open' && canUpdateComandas ? (
                   <div className={cn(
                     "w-full md:w-[45%] flex flex-col p-4 md:p-5 bg-muted/15 overflow-y-auto min-h-0",
                     modalTab !== 'catalog' && 'hidden md:flex'
@@ -683,20 +708,19 @@ export default function ComandasPage() {
                     <Lock className="h-10 w-10 text-muted-foreground/30 mb-2" />
                     <p className="font-bold text-sm text-muted-foreground">Consumo Bloqueado</p>
                     <p className="text-xs text-muted-foreground/70 max-w-xs mt-0.5 mb-4">
-                      Esta comanda já foi fechada e paga. Não é possível adicionar novos itens.
+                      {selectedComanda.status === 'closed'
+                        ? 'Esta comanda ja foi fechada e paga. Nao e possivel adicionar novos itens.'
+                        : 'Seu cargo permite visualizar a comanda, mas nao alterar o consumo.'}
                     </p>
+                    {selectedComanda.status === 'closed' && canReopenComandas && (
                     <Button 
                       variant="outline" 
-                      onClick={async () => {
-                        if (confirm("Você quer reabrir esta comanda? O faturamento anterior registrado no caixa será estornado automaticamente.")) {
-                          await reopenComanda(selectedComanda.id);
-                          setSelectedComanda(null);
-                        }
-                      }}
+                      onClick={() => setComandaToReopen(selectedComanda)}
                       className="text-primary border-primary/20 hover:bg-primary/5 text-xs font-bold gap-1.5"
                     >
                       <RefreshCw className="h-4 w-4" /> Reabrir Comanda
                     </Button>
+                    )}
                   </div>
                 )}
 
@@ -710,10 +734,9 @@ export default function ComandasPage() {
       <Dialog open={!!closingComanda} onOpenChange={(open) => { if (!open) setClosingComanda(null); }}>
         <DialogContent className="max-w-md rounded-2xl p-6">
           <DialogHeader>
-            <DialogTitle className="font-display text-xl font-bold flex items-center gap-2">
-              <CreditCard className="h-5 w-5 text-primary" />
+            <IconDialogTitle icon={CreditCard}>
               Fechamento de Conta
-            </DialogTitle>
+            </IconDialogTitle>
             <DialogDescription>
               Selecione o método de pagamento recebido para finalizar a comanda de R$ {closingComanda && pv(closingComanda.totalAmount.toFixed(2))}.
             </DialogDescription>
@@ -800,20 +823,20 @@ export default function ComandasPage() {
               </div>
 
               {/* Action Buttons */}
-              <div className="flex gap-3 pt-3">
+              <div className="flex flex-col-reverse gap-3 pt-3 sm:flex-row">
                 <Button 
                   type="button" 
                   variant="outline" 
                   onClick={() => setClosingComanda(null)} 
-                  className="flex-1 h-11"
+                  className="w-full sm:flex-1 h-11"
                 >
                   Voltar
                 </Button>
                 <Button 
                   type="button" 
                   onClick={handleCloseComandaSubmit}
-                  disabled={isClosingSubmitting}
-                  className="flex-1 h-11 bg-success text-success-foreground hover:bg-success/95 font-bold shadow-md shadow-success/10 flex items-center justify-center gap-1.5"
+                  disabled={isClosingSubmitting || !canCloseComandas}
+                  className="w-full sm:flex-1 h-11 bg-success text-success-foreground hover:bg-success/95 font-bold shadow-md shadow-success/10 flex items-center justify-center gap-1.5"
                 >
                   {isClosingSubmitting ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
                   Confirmar e Baixar
@@ -823,6 +846,82 @@ export default function ComandasPage() {
           )}
         </DialogContent>
       </Dialog>
-    </div>
+
+      <AlertDialog open={!!comandaToCancel} onOpenChange={(open) => { if (!open) setComandaToCancel(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Cancelar comanda?</AlertDialogTitle>
+            <AlertDialogDescription>
+              A comanda "{comandaToCancel?.name}" será removida. Use esta ação somente para comandas abertas e sem consumo.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Manter</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={async () => {
+                if (!comandaToCancel) return;
+                if (!canDeleteComandas) return;
+                await deleteComanda(comandaToCancel.id);
+                setSelectedComanda(null);
+                setComandaToCancel(null);
+              }}
+            >
+              Cancelar Comanda
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={!!itemToRemove} onOpenChange={(open) => { if (!open) setItemToRemove(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remover item?</AlertDialogTitle>
+            <AlertDialogDescription>
+              O item "{itemToRemove?.productName}" será removido da comanda aberta.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Manter</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={async () => {
+                if (!itemToRemove) return;
+                if (!canUpdateComandas) return;
+                await deleteComandaItem(itemToRemove.id);
+                setItemToRemove(null);
+              }}
+            >
+              Remover Item
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={!!comandaToReopen} onOpenChange={(open) => { if (!open) setComandaToReopen(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Reabrir comanda?</AlertDialogTitle>
+            <AlertDialogDescription>
+              O faturamento anterior registrado no caixa será estornado automaticamente e a comanda voltará para aberta.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Manter fechada</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={async () => {
+                if (!comandaToReopen) return;
+                if (!canReopenComandas) return;
+                await reopenComanda(comandaToReopen.id);
+                setSelectedComanda(null);
+                setComandaToReopen(null);
+              }}
+            >
+              Reabrir Comanda
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </AppPage>
   );
 }

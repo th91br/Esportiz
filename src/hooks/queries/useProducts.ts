@@ -1,57 +1,41 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth } from '@/contexts/auth';
 import { toast } from 'sonner';
 import { useProfile } from '@/hooks/queries/useProfile';
+import { syncAfterProductMutation } from '@/lib/querySync';
+import {
+  buildProductInsertPayload,
+  buildProductUpdatePayload,
+  mapProductRow,
+  type CommerceProduct,
+} from '@/lib/commerceContracts';
 
-export interface Product {
-  id: string;
-  userId: string;
-  name: string;
-  price: number;
-  category: string;
-  active: boolean;
-  createdAt: string;
-  trackStock: boolean;
-  stockQuantity: number;
-  minStock: number;
-}
+export type Product = CommerceProduct;
 
-function mapProduct(row: Record<string, unknown>): Product {
-  return {
-    id: String(row.id),
-    userId: String(row.user_id),
-    name: String(row.name),
-    price: Number(row.price),
-    category: String(row.category || 'geral'),
-    active: !!row.active,
-    createdAt: String(row.created_at),
-    trackStock: !!row.track_stock,
-    stockQuantity: Number(row.stock_quantity || 0),
-    minStock: Number(row.min_stock || 0),
-  };
-}
-
-export function useProducts() {
+export function useProducts(options: { enabled?: boolean } = {}) {
   const { user } = useAuth();
   const { profile } = useProfile();
   const queryClient = useQueryClient();
+  const productsEnabled = options.enabled ?? true;
+
+  const tenantId = profile?.owner_user_id || user?.id;
 
   const productsQuery = useQuery({
-    queryKey: ['products', user?.id, profile?.business_type],
+    queryKey: ['products', tenantId, profile?.business_type],
     queryFn: async () => {
-      if (!user?.id) return [];
+      if (!tenantId) return [];
       const businessType = profile?.business_type || 'sport_school';
       const { data, error } = await supabase
         .from('products')
         .select('*')
-        .eq('user_id', user.id)
+        .eq('user_id', tenantId)
         .eq('business_type', businessType)
         .order('name');
       if (error) throw error;
-      return (data || []).map(mapProduct);
+      return (data || []).map(mapProductRow);
     },
-    enabled: !!user?.id,
+    enabled: productsEnabled && !!tenantId,
   });
 
   const addProductMutation = useMutation({
@@ -65,20 +49,17 @@ export function useProducts() {
     }) => {
       if (!user?.id) throw new Error('Not authenticated');
       const businessType = profile?.business_type || 'sport_school';
-      const { error } = await supabase.from('products').insert({
-        user_id: user.id,
-        business_type: businessType,
-        name: product.name,
-        price: product.price,
-        category: product.category || 'geral',
-        track_stock: product.trackStock ?? false,
-        stock_quantity: product.stockQuantity ?? 0,
-        min_stock: product.minStock ?? 0,
-      });
+      const payload = {
+        ...buildProductInsertPayload(product, tenantId, businessType),
+        organization_id: profile?.organization_id || null,
+      };
+      const { error } = await supabase
+        .from('products')
+        .insert(payload);
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['products', user?.id] });
+      syncAfterProductMutation(queryClient);
       toast.success('Produto cadastrado com sucesso!');
     },
     onError: () => toast.error('Erro ao cadastrar produto.'),
@@ -87,24 +68,20 @@ export function useProducts() {
   const updateProductMutation = useMutation({
     mutationFn: async ({ id, ...updates }: Partial<Product> & { id: string }) => {
       if (!user?.id) throw new Error('Not authenticated');
-      const dbUpdates: Record<string, unknown> = {};
-      if (updates.name !== undefined) dbUpdates.name = updates.name;
-      if (updates.price !== undefined) dbUpdates.price = updates.price;
-      if (updates.category !== undefined) dbUpdates.category = updates.category;
-      if (updates.active !== undefined) dbUpdates.active = updates.active;
-      if (updates.trackStock !== undefined) dbUpdates.track_stock = updates.trackStock;
-      if (updates.stockQuantity !== undefined) dbUpdates.stock_quantity = updates.stockQuantity;
-      if (updates.minStock !== undefined) dbUpdates.min_stock = updates.minStock;
+      const dbUpdates = {
+        ...buildProductUpdatePayload(updates),
+        organization_id: profile?.organization_id || null,
+      };
       
       const { error } = await supabase
         .from('products')
         .update(dbUpdates)
         .eq('id', id)
-        .eq('user_id', user.id);
+        .eq('user_id', tenantId);
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['products', user?.id] });
+      syncAfterProductMutation(queryClient);
       toast.success('Produto atualizado!');
     },
     onError: () => toast.error('Erro ao atualizar produto.'),
@@ -118,11 +95,11 @@ export function useProducts() {
         .from('products')
         .update({ active: false })
         .eq('id', id)
-        .eq('user_id', user.id);
+        .eq('user_id', tenantId);
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['products', user?.id] });
+      syncAfterProductMutation(queryClient);
       toast.success('Produto desativado.');
     },
     onError: () => toast.error('Erro ao desativar produto.'),

@@ -1,12 +1,17 @@
+import { reportError } from '@/lib/observability';
 import { useState, useMemo } from 'react';
-import { Header } from '@/components/Header';
+import { AppPage } from '@/components/layout/AppPage';
+import { PageHeader } from '@/components/layout/PageHeader';
 import { StatCard } from '@/components/StatCard';
 import { Switch } from '@/components/ui/switch';
 import { useProducts } from '@/hooks/queries/useProducts';
 import { useBusinessContext } from '@/hooks/useBusinessContext';
 import { Button } from '@/components/ui/button';
+import { EmptyState } from '@/components/ui/empty-state';
+import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { LoadingState } from '@/components/ui/loading-state';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Dialog,
@@ -29,12 +34,24 @@ import { toast } from 'sonner';
 import { formatCurrency } from '@/lib/formatCurrency';
 import { Plus, Package, Pencil, Power, PowerOff, TrendingUp, AlertTriangle, Coins, PlusCircle, MinusCircle, Search, RefreshCw, BarChart4 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-
-const PRODUCT_CATEGORIES = ['Bebidas', 'Alimentação', 'Material Esportivo', 'Acessórios', 'Geral'];
+import { useRolePermissions } from '@/hooks/useRolePermissions';
 
 export default function ProductsPage() {
   const { products, loadingProducts, addProduct, updateProduct, deleteProduct, isAddingProduct } = useProducts();
   const { isArena } = useBusinessContext();
+
+  const categories = useMemo(() => {
+    if (isArena) {
+      return ['Bebidas', 'Alimentação', 'Material Esportivo', 'Acessórios', 'Geral'];
+    }
+    // sport_school
+    return ['Uniformes', 'Equipamentos', 'Acessórios', 'Geral'];
+  }, [isArena]);
+  const rolePermissions = useRolePermissions();
+  const canCreateProducts = rolePermissions.can('products', 'create');
+  const canUpdateProducts = rolePermissions.can('products', 'update');
+  const canDeleteProducts = rolePermissions.can('products', 'delete');
+  const canManageStock = rolePermissions.can('products', 'manage_stock');
   const [activeTab, setActiveTab] = useState<'catalog' | 'inventory'>('catalog');
   const [stockSearchQuery, setStockSearchQuery] = useState('');
   const [onlyAlertsFilter, setOnlyAlertsFilter] = useState(false);
@@ -90,6 +107,7 @@ export default function ProductsPage() {
   };
 
   const openEdit = (p: typeof products[0]) => {
+    if (!canUpdateProducts) return;
     setEditingId(p.id);
     setFormName(p.name);
     setFormPrice(String(p.price));
@@ -101,6 +119,9 @@ export default function ProductsPage() {
   };
 
   const handleSubmit = async () => {
+    if (editingId && !canUpdateProducts) return;
+    if (!editingId && !canCreateProducts) return;
+
     if (!formName.trim()) { toast.error('Informe o nome do produto.'); return; }
     const price = parseFloat(formPrice);
     if (isNaN(price) || price <= 0) { toast.error('Informe um preço válido.'); return; }
@@ -131,45 +152,54 @@ export default function ProductsPage() {
       setIsFormOpen(false);
       resetForm();
     } catch (error) {
-      console.error(error);
+      reportError('products.form_submit_failed', error);
     }
   };
 
   const displayProducts = showInactive ? products : products.filter(p => p.active);
 
   return (
-    <div className="min-h-screen bg-background">
-      <Header />
-      <main className="container py-6 md:py-8 space-y-6 max-w-4xl">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-          <div>
-            <h1 className="text-3xl font-display font-bold flex items-center gap-2">
-              <Package className="h-7 w-7 text-primary" />
-              Produtos
-            </h1>
-            <p className="text-muted-foreground mt-1">Cadastre os itens disponíveis para venda no seu negócio.</p>
-          </div>
-
+    <AppPage contentClassName="max-w-4xl">
+      <PageHeader
+        title="Produtos"
+        icon={Package}
+        description={
+          isArena
+            ? 'Cadastre os itens disponíveis para venda na arena (bebidas, alimentos, etc).'
+            : 'Cadastre os uniformes, materiais e artigos esportivos disponíveis para os alunos.'
+        }
+        actions={(canCreateProducts || isFormOpen) && (
           <Dialog open={isFormOpen} onOpenChange={(open) => { setIsFormOpen(open); if (!open) resetForm(); }}>
-            <DialogTrigger asChild>
-              <Button className="btn-primary-gradient w-full sm:w-auto">
-                <Plus className="mr-2 h-4 w-4" />
-                Novo Produto
-              </Button>
-            </DialogTrigger>
+            {canCreateProducts && (
+              <DialogTrigger asChild>
+                <Button className="btn-primary-gradient w-full sm:w-auto">
+                  <Plus className="mr-2 h-4 w-4" />
+                  Novo Produto
+                </Button>
+              </DialogTrigger>
+            )}
             <DialogContent className="sm:max-w-md">
               <DialogHeader>
                 <DialogTitle>{editingId ? 'Editar Produto' : 'Novo Produto'}</DialogTitle>
                 <DialogDescription>
-                  {editingId ? 'Atualize as informações do produto.' : 'Cadastre um novo item para venda.'}
+                  {editingId
+                    ? 'Atualize as informações do produto.'
+                    : isArena
+                      ? 'Cadastre um novo item para venda (cantina/bar/comanda).'
+                      : 'Cadastre um novo item ou uniforme da escola.'}
                 </DialogDescription>
               </DialogHeader>
               <div className="space-y-4 py-4">
                 <div className="space-y-2">
                   <Label>Nome *</Label>
-                  <Input placeholder="Ex: Água Mineral 500ml" value={formName} onChange={e => setFormName(e.target.value)} autoFocus />
+                  <Input
+                    placeholder={isArena ? "Ex: Água Mineral 500ml" : "Ex: Uniforme Oficial, Squeeze, Caneleira..."}
+                    value={formName}
+                    onChange={e => setFormName(e.target.value)}
+                    autoFocus
+                  />
                 </div>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label>Preço (R$) *</Label>
                     <Input type="number" step="0.01" min="0" placeholder="0,00" value={formPrice} onChange={e => setFormPrice(e.target.value)} />
@@ -179,7 +209,7 @@ export default function ProductsPage() {
                     <Select value={formCategory} onValueChange={setFormCategory}>
                       <SelectTrigger><SelectValue /></SelectTrigger>
                       <SelectContent>
-                        {PRODUCT_CATEGORIES.map(cat => <SelectItem key={cat} value={cat}>{cat}</SelectItem>)}
+                        {categories.map(cat => <SelectItem key={cat} value={cat}>{cat}</SelectItem>)}
                       </SelectContent>
                     </Select>
                   </div>
@@ -207,7 +237,7 @@ export default function ProductsPage() {
                   </div>
 
                   {formTrackStock && (
-                    <div className="grid grid-cols-2 gap-4 animate-fade-in">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 animate-fade-in">
                       <div className="space-y-2">
                         <Label>Estoque Atual *</Label>
                         <Input
@@ -240,7 +270,8 @@ export default function ProductsPage() {
               </DialogFooter>
             </DialogContent>
           </Dialog>
-        </div>
+        )}
+      />
 
         {/* Tab Switcher - Exclusivo Arena */}
         {isArena && (
@@ -288,21 +319,22 @@ export default function ProductsPage() {
 
             {/* Products Grid */}
             {loadingProducts ? (
-              <div className="flex justify-center py-12">
-                <div className="h-8 w-8 border-4 border-primary/30 border-t-primary rounded-full animate-spin" />
-              </div>
+              <LoadingState label="Carregando produtos" className="py-12" />
             ) : displayProducts.length === 0 ? (
               <Card>
-                <CardContent className="text-center py-12 text-muted-foreground">
-                  <Package className="h-12 w-12 mx-auto mb-3 opacity-30" />
-                  <p className="font-medium">Nenhum produto cadastrado</p>
-                  <p className="text-sm mt-1">Clique em "Novo Produto" para começar.</p>
+                <CardContent>
+                  <EmptyState
+                    icon={Package}
+                    title="Nenhum produto cadastrado"
+                    description={canCreateProducts ? 'Clique em "Novo Produto" para começar.' : undefined}
+                    className="py-12"
+                  />
                 </CardContent>
               </Card>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 {displayProducts.map(product => (
-                  <Card key={product.id} className={cn('transition-all hover:shadow-md', !product.active && 'opacity-50')}>
+                  <Card key={product.id} className={cn('border border-border/50', !product.active && 'opacity-50')}>
                     <CardContent className="pt-6">
                       <div className="flex items-start justify-between">
                         <div className="min-w-0">
@@ -311,15 +343,15 @@ export default function ProductsPage() {
                           {product.trackStock && (
                             <div className="mt-2">
                               {product.stockQuantity === 0 ? (
-                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-destructive/10 text-destructive border border-destructive/20 uppercase tracking-wide">
+                                <Badge variant="destructive" className="gap-1 px-2 text-[10px] font-extrabold uppercase tracking-wide">
                                   <span className="h-1.5 w-1.5 rounded-full bg-destructive" />
                                   Sem Estoque
-                                </span>
+                                </Badge>
                               ) : product.stockQuantity <= product.minStock ? (
-                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-amber-500/10 text-amber-600 border border-amber-500/20 uppercase tracking-wide">
-                                  <span className="h-1.5 w-1.5 rounded-full bg-amber-500 animate-pulse" />
+                                <Badge variant="warning" className="gap-1 px-2 text-[10px] font-extrabold uppercase tracking-wide">
+                                  <span className="h-1.5 w-1.5 rounded-full bg-warning animate-pulse" />
                                   Estoque Baixo ({product.stockQuantity})
-                                </span>
+                                </Badge>
                               ) : (
                                 <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-success/15 text-success border border-success/20 uppercase tracking-wide">
                                   <span className="h-1.5 w-1.5 rounded-full bg-success" />
@@ -333,20 +365,28 @@ export default function ProductsPage() {
                           {formatCurrency(product.price)}
                         </span>
                       </div>
-                      <div className="flex items-center gap-1 mt-4 pt-3 border-t">
-                        <Button variant="ghost" size="icon" className="h-7 w-7 rounded-full" onClick={() => openEdit(product)}>
-                          <Pencil className="h-3 w-3" />
-                        </Button>
-                        {product.active ? (
-                          <Button variant="ghost" size="icon" className="h-7 w-7 rounded-full text-destructive hover:text-destructive" onClick={() => deleteProduct(product.id)} title="Desativar">
-                            <PowerOff className="h-3 w-3" />
-                          </Button>
-                        ) : (
-                          <Button variant="ghost" size="icon" className="h-7 w-7 rounded-full text-green-600 hover:text-green-600" onClick={() => updateProduct({ id: product.id, active: true })} title="Reativar">
-                            <Power className="h-3 w-3" />
-                          </Button>
-                        )}
-                      </div>
+                      {(canUpdateProducts || canDeleteProducts) && (
+                        <div className="flex items-center gap-1 mt-4 pt-3 border-t">
+                          {canUpdateProducts && (
+                            <Button variant="ghost" size="icon" className="h-7 w-7 rounded-full" onClick={() => openEdit(product)}>
+                              <Pencil className="h-3 w-3" />
+                            </Button>
+                          )}
+                          {product.active ? (
+                            canDeleteProducts && (
+                              <Button variant="ghost" size="icon" className="h-7 w-7 rounded-full text-destructive hover:text-destructive" onClick={() => deleteProduct(product.id)} title="Desativar">
+                                <PowerOff className="h-3 w-3" />
+                              </Button>
+                            )
+                          ) : (
+                            canUpdateProducts && (
+                              <Button variant="ghost" size="icon" className="h-7 w-7 rounded-full text-green-600 hover:text-green-600" onClick={() => updateProduct({ id: product.id, active: true })} title="Reativar">
+                                <Power className="h-3 w-3" />
+                              </Button>
+                            )
+                          )}
+                        </div>
+                      )}
                     </CardContent>
                   </Card>
                 ))}
@@ -421,15 +461,16 @@ export default function ProductsPage() {
 
             {/* 3. High Density Stock Table */}
             {loadingProducts ? (
-              <div className="flex justify-center py-12">
-                <div className="h-8 w-8 border-4 border-primary/30 border-t-primary rounded-full animate-spin" />
-              </div>
+              <LoadingState label="Carregando estoque" className="py-12" />
             ) : filteredStockProducts.length === 0 ? (
               <Card className="border-border/50">
-                <CardContent className="text-center py-12 text-muted-foreground">
-                  <Package className="h-12 w-12 mx-auto mb-3 opacity-30" />
-                  <p className="font-bold text-sm">Nenhum produto em estoque encontrado</p>
-                  <p className="text-xs mt-1">Certifique-se de cadastrar produtos com "Controlar Estoque" ativo.</p>
+                <CardContent>
+                  <EmptyState
+                    icon={Package}
+                    title="Nenhum produto em estoque encontrado"
+                    description='Certifique-se de cadastrar produtos com "Controlar Estoque" ativo.'
+                    className="py-12"
+                  />
                 </CardContent>
               </Card>
             ) : (
@@ -445,7 +486,7 @@ export default function ProductsPage() {
                         <th className="p-4 text-right">Valor Unitário</th>
                         <th className="p-4 text-right">Total Estocado</th>
                         <th className="p-4 text-center">Status</th>
-                        <th className="p-4 text-center">Ajuste Rápido</th>
+                        {canManageStock && <th className="p-4 text-center">Ajuste Rápido</th>}
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-border/40">
@@ -464,50 +505,54 @@ export default function ProductsPage() {
                             <td className="p-4 text-right font-bold text-foreground">{formatCurrency(stockValue)}</td>
                             <td className="p-4 text-center">
                               {isZero ? (
-                                <span className="inline-flex px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-destructive/10 text-destructive border border-destructive/20 uppercase">
+                                <Badge variant="destructive" className="text-[10px] font-extrabold uppercase">
                                   Zerarado
-                                </span>
+                                </Badge>
                               ) : isLow ? (
-                                <span className="inline-flex px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-amber-500/10 text-amber-600 border border-amber-500/20 uppercase animate-pulse">
+                                <Badge variant="warning" className="text-[10px] font-extrabold uppercase animate-pulse">
                                   Baixo
-                                </span>
+                                </Badge>
                               ) : (
                                 <span className="inline-flex px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-success/15 text-success border border-success/20 uppercase">
                                   Ok
                                 </span>
                               )}
                             </td>
-                            <td className="p-4">
-                              <div className="flex items-center justify-center gap-1.5">
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  onClick={() => updateProduct({ id: p.id, stockQuantity: Math.max(0, p.stockQuantity - 1) })}
-                                  className="h-7 w-7 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-lg"
-                                  title="Subtrair 1"
-                                >
-                                  <MinusCircle className="h-4 w-4" />
-                                </Button>
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  onClick={() => updateProduct({ id: p.id, stockQuantity: p.stockQuantity + 1 })}
-                                  className="h-7 w-7 text-muted-foreground hover:text-success hover:bg-success/10 rounded-lg"
-                                  title="Adicionar 1"
-                                >
-                                  <PlusCircle className="h-4 w-4" />
-                                </Button>
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  onClick={() => openEdit(p)}
-                                  className="h-7 w-7 text-muted-foreground hover:text-foreground rounded-lg"
-                                  title="Editar Produto"
-                                >
-                                  <Pencil className="h-3.5 w-3.5" />
-                                </Button>
-                              </div>
-                            </td>
+                            {canManageStock && (
+                              <td className="p-4">
+                                <div className="flex items-center justify-center gap-1.5">
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={() => updateProduct({ id: p.id, stockQuantity: Math.max(0, p.stockQuantity - 1) })}
+                                    className="h-7 w-7 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-lg"
+                                    title="Subtrair 1"
+                                  >
+                                    <MinusCircle className="h-4 w-4" />
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={() => updateProduct({ id: p.id, stockQuantity: p.stockQuantity + 1 })}
+                                    className="h-7 w-7 text-muted-foreground hover:text-success hover:bg-success/10 rounded-lg"
+                                    title="Adicionar 1"
+                                  >
+                                    <PlusCircle className="h-4 w-4" />
+                                  </Button>
+                                  {canUpdateProducts && (
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      onClick={() => openEdit(p)}
+                                      className="h-7 w-7 text-muted-foreground hover:text-foreground rounded-lg"
+                                      title="Editar Produto"
+                                    >
+                                      <Pencil className="h-3.5 w-3.5" />
+                                    </Button>
+                                  )}
+                                </div>
+                              </td>
+                            )}
                           </tr>
                         );
                       })}
@@ -518,7 +563,6 @@ export default function ProductsPage() {
             )}
           </div>
         )}
-      </main>
-    </div>
+    </AppPage>
   );
 }

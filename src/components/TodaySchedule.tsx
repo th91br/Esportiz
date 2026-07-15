@@ -1,10 +1,14 @@
 import { MapPin, Users, Clock, Sun, Sunset, Moon, ArrowRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
+import { EmptyState } from '@/components/ui/empty-state';
+import { LoadingState } from '@/components/ui/loading-state';
 import { useTrainings } from '@/hooks/queries/useTrainings';
 import { useStudents } from '@/hooks/queries/useStudents';
 import { getDayName, formatDate, getEndTime, getTimePeriod } from '@/data/mockData';
 import { useBusinessContext } from '@/hooks/useBusinessContext';
+import { Link } from 'react-router-dom';
+import { getLocalTodayDate } from '@/lib/dateUtils';
 
 const periodIcons = { manhã: Sun, tarde: Sunset, noite: Moon };
 
@@ -13,23 +17,29 @@ export function TodaySchedule() {
   const { students } = useStudents();
   const { labels } = useBusinessContext();
   
-  const now = new Date();
-  const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+  const today = getLocalTodayDate();
   const todayTrainings = trainings.filter(t => t.date === today).sort((a, b) => a.time.localeCompare(b.time));
 
-  if (loadingTrainings) return <div className="card-elevated p-6 animate-pulse bg-muted/20 h-[300px] rounded-2xl"></div>;
+  if (loadingTrainings) {
+    return (
+      <LoadingState
+        label="Carregando agenda de hoje"
+        className="card-elevated h-[300px] items-center rounded-2xl bg-muted/20 p-6"
+      />
+    );
+  }
 
   return (
-    <div className="card-elevated p-5 md:p-6 flex flex-col h-full bg-card/50 backdrop-blur-sm border-primary/10">
+    <div className="card-elevated p-5 md:p-6 flex flex-col h-full bg-card border border-border/50">
       <div className="flex items-center justify-between mb-6">
         <div>
           <h2 className="section-title text-xl mb-1">Agenda de Hoje</h2>
           <p className="text-sm text-muted-foreground capitalize">{getDayName(today)}, {formatDate(today)}</p>
         </div>
         <Button variant="outline" size="sm" asChild className="hidden sm:flex group bg-background">
-          <a href="/calendario">
+          <Link to="/calendario">
             Semana Completa <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
-          </a>
+          </Link>
         </Button>
       </div>
 
@@ -40,17 +50,17 @@ export function TodaySchedule() {
             const PeriodIcon = periodIcons[timePeriod];
             const trainingStudents = students.filter(s => training.studentIds.includes(s.id));
 
-            return (
-              <div key={training.id} className="relative overflow-hidden rounded-xl bg-background border border-border/50 hover:border-primary/40 shadow-sm transition-all group p-4 md:p-5">
-                {/* Decorative left accent */}
-                <div className={cn(
-                  "absolute left-0 top-0 bottom-0 w-1", 
-                  timePeriod === 'manhã' ? 'bg-amber-400' : timePeriod === 'tarde' ? 'bg-orange-500' : 'bg-indigo-500'
-                )} />
-                
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pl-2">
+             return (
+              <div 
+                key={training.id} 
+                className={cn(
+                  "relative overflow-hidden rounded-xl bg-background border border-border/50 hover:border-primary/40 shadow-sm transition-all group p-4 md:p-5",
+                  training.cancelled && "opacity-60 bg-slate-50 dark:bg-slate-900 border-dashed border-slate-300 dark:border-slate-800"
+                )}
+              >
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                   <div className="space-y-2.5">
-                    <div className="flex items-center gap-2.5">
+                    <div className="flex flex-wrap items-center gap-2.5">
                       <div className={cn("text-[11px] px-2 py-0.5 rounded-md flex items-center gap-1 font-bold uppercase tracking-wider", 
                         timePeriod === 'manhã' ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300' : 
                         timePeriod === 'tarde' ? 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300' : 
@@ -62,6 +72,15 @@ export function TodaySchedule() {
                         <Clock className="h-4 w-4 text-primary" />
                         {training.time} - {getEndTime(training.time, training.durationMinutes)}
                       </div>
+                      {training.cancelled && (
+                        <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-destructive/10 text-destructive border border-destructive/20 uppercase tracking-wider">
+                          Cancelado ({
+                            training.cancellationReason === 'holiday' ? 'Feriado' :
+                            training.cancellationReason === 'weather' ? 'Clima' :
+                            training.cancellationReason === 'coach_absence' ? 'Falta Professor' : 'Outro'
+                          })
+                        </span>
+                      )}
                     </div>
                     <div className="flex items-center gap-3 text-sm text-muted-foreground">
                       <div className="flex items-center gap-1.5">
@@ -76,7 +95,13 @@ export function TodaySchedule() {
                     </div>
                     <div className="flex items-center -space-x-1.5 pl-3 border-l border-border/50">
                       {trainingStudents.slice(0, 4).map(s => {
-                        const lc: Record<string, string> = { iniciante: 'bg-emerald-500', intermediário: 'bg-amber-500', avançado: 'bg-violet-500' };
+                        const lc: Record<string, string> = {
+                          iniciante: 'bg-emerald-500',
+                          intermediário: 'bg-amber-500',
+                          avançado: 'bg-violet-500',
+                          avançado_pro: 'bg-indigo-500',
+                          profissional: 'bg-rose-500'
+                        };
                         return <div key={s.id} className={cn('h-7 w-7 rounded-full border-2 border-background flex items-center justify-center text-[10px] font-bold text-white shadow-sm', lc[s.level] || 'bg-slate-500')} title={`${s.name} - ${s.level}`}>
                           {s.name.charAt(0).toUpperCase()}
                         </div>
@@ -93,18 +118,26 @@ export function TodaySchedule() {
             );
           })
         ) : (
-          <div className="flex flex-col items-center justify-center h-full min-h-[200px] text-center p-6 border-2 border-dashed border-border/50 rounded-2xl bg-muted/10">
-            <div className="bg-primary/10 p-4 rounded-full mb-4">
-              <Sun className="h-8 w-8 text-primary opacity-80" />
-            </div>
-            <p className="text-foreground font-semibold text-lg">Nenhum(a) {labels.trainingLabelSingular.toLowerCase()} hoje</p>
-            <p className="text-sm text-muted-foreground mt-1 max-w-[200px]">Aproveite o dia livre ou crie um(a) novo(a) {labels.trainingLabelSingular.toLowerCase()} no calendário.</p>
-          </div>
+          <EmptyState
+            icon={Sun}
+            title={(
+              <span className="text-lg font-semibold text-foreground">
+                Nenhum(a) {labels.trainingLabelSingular.toLowerCase()} hoje
+              </span>
+            )}
+            description={(
+              <span className="inline-block max-w-[200px]">
+                Aproveite o dia livre ou crie um(a) novo(a) {labels.trainingLabelSingular.toLowerCase()} no calendário.
+              </span>
+            )}
+            variant="outlined"
+            className="flex h-full min-h-[200px] flex-col items-center justify-center p-6"
+          />
         )}
       </div>
       
       <Button variant="outline" className="w-full mt-6 sm:hidden bg-background" asChild>
-        <a href="/calendario">Ver agenda completa</a>
+        <Link to="/calendario">Ver agenda completa</Link>
       </Button>
     </div>
   );

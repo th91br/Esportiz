@@ -1,16 +1,25 @@
+import { reportError } from '@/lib/observability';
 import { useState, useMemo, useEffect, useCallback } from 'react';
-import { Bell, Clock, Users, MapPin, AlertTriangle, X, Check, Trash2, CheckCheck, Calendar, Cake, CreditCard, Undo2 } from 'lucide-react';
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger, SheetClose } from '@/components/ui/sheet';
+import { Bell, Clock, Users, MapPin, AlertTriangle, X, Check, Trash2, CheckCheck, Calendar, Cake, CreditCard, Undo2, ClipboardList } from 'lucide-react';
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger, SheetClose } from '@/components/ui/sheet';
 import { cn } from '@/lib/utils';
 import { useQueryClient } from '@tanstack/react-query';
 import { useStudents } from '@/hooks/queries/useStudents';
 import { useTrainings } from '@/hooks/queries/useTrainings';
 import { usePayments } from '@/hooks/queries/usePayments';
 import { useAttendance } from '@/hooks/queries/useAttendance';
+import { useReservations } from '@/hooks/queries/useReservations';
+import { useCourts } from '@/hooks/queries/useCourts';
+import { useStudentTrainingRequests } from '@/hooks/queries/useStudentTrainingRequests';
 import { getEndTime } from '@/data/mockData';
+import { useBusinessContext } from '@/hooks/useBusinessContext';
+import { useRolePermissions } from '@/hooks/useRolePermissions';
 import { Link } from 'react-router-dom';
 import { toast } from '@/hooks/use-toast';
 import { getLocalTodayDate, toLocalDateString } from '@/lib/dateUtils';
+import { syncAfterScheduleMutation } from '@/lib/querySync';
+import { getRemainingPaymentAmount } from '@/lib/financialContracts';
+import { formatCurrency } from '@/lib/formatCurrency';
 
 // ── localStorage dismiss (only for manual "X" dismiss, NOT for completed status) ──
 type DismissedNotifications = {
@@ -34,7 +43,7 @@ function getDismissed(): DismissedNotifications {
       return { ...parsed, dismissDate: today };
     }
   } catch (err) {
-    console.error('Error reading dismissed notifications:', err);
+    reportError('notifications.preferences_read_failed', err);
   }
   return { trainings: [], overduePayments: false, dismissDate: getLocalTodayDate() };
 }
@@ -46,12 +55,18 @@ function saveDismissed(d: DismissedNotifications) {
 export function NotificationBell() {
   const queryClient = useQueryClient();
   const { students } = useStudents();
+  const { isArena } = useBusinessContext();
+  const rolePermissions = useRolePermissions();
+  const canViewPayments = rolePermissions.can('payments', 'view');
   const { trainings, deleteTraining, markTrainingComplete, unmarkTrainingComplete } = useTrainings();
-  const { payments } = usePayments();
+  const { payments } = usePayments({ enabled: canViewPayments });
   const { attendance } = useAttendance();
+  const { reservations } = useReservations();
+  const { courts } = useCourts();
+  const { requests: studentTrainingRequests, resolveRequest } = useStudentTrainingRequests();
 
-  const refreshData = useCallback(async () => {
-    await queryClient.invalidateQueries();
+  const refreshScheduleData = useCallback(() => {
+    syncAfterScheduleMutation(queryClient);
   }, [queryClient]);
   const [open, setOpen] = useState(false);
   const [dismissed, setDismissed] = useState<DismissedNotifications>(getDismissed);
@@ -79,10 +94,21 @@ export function NotificationBell() {
   );
 
   // ── Overdue payments ──
-  const overduePayments = useMemo(
-    () => payments.filter((p) => !p.paid && p.dueDate < today),
-    [payments, today]
-  );
+  const overduePayments = useMemo(() => {
+    if (isArena) {
+      return reservations
+        .filter((r) => r.paymentStatus === 'pending' && r.date < today && r.remainingBalance > 0)
+        .map(r => ({
+          id: r.id,
+          amount: r.remainingBalance,
+          studentId: r.reservanteIds[0] || '',
+          dueDate: r.date,
+          paid: false,
+          paidAmount: 0,
+        }));
+    }
+    return payments.filter((p) => !p.paid && p.dueDate < today);
+  }, [isArena, reservations, payments, today]);
 
   const overdueStudentIds = useMemo(
     () => new Set(overduePayments.map((p) => p.studentId)),
@@ -96,10 +122,20 @@ export function NotificationBell() {
     return toLocalDateString(d);
   }, []);
 
-  const upcomingPayments = useMemo(
-    () => payments.filter((p) => !p.paid && (p.dueDate === today || p.dueDate === tomorrow)),
-    [payments, today, tomorrow]
-  );
+  const upcomingPayments = useMemo(() => {
+    if (isArena) {
+      return reservations
+        .filter((r) => r.paymentStatus === 'pending' && (r.date === today || r.date === tomorrow) && r.remainingBalance > 0)
+        .map(r => ({
+          id: r.id,
+          amount: r.remainingBalance,
+          studentId: r.reservanteIds[0] || '',
+          dueDate: r.date,
+          paid: false,
+        }));
+    }
+    return payments.filter((p) => !p.paid && (p.dueDate === today || p.dueDate === tomorrow));
+  }, [isArena, reservations, payments, today, tomorrow]);
 
   // ── Birthdays today ──
   const todayBirthdays = useMemo(() => {
@@ -107,14 +143,15 @@ export function NotificationBell() {
     return students.filter(s => s.active && s.birthDate && s.birthDate.slice(5) === monthDay);
   }, [students, today]);
 
-  const showOverdue = overduePayments.length > 0 && !dismissed.overduePayments;
-  const showUpcoming = upcomingPayments.length > 0;
+  const showOverdue = canViewPayments && overduePayments.length > 0 && !dismissed.overduePayments;
+  const showUpcoming = canViewPayments && upcomingPayments.length > 0;
 
   // Count only truly actionable items for the badge
   const totalActive = pendingTrainings.length
+    + (isArena ? 0 : studentTrainingRequests.length)
     + (showOverdue ? 1 : 0)
     + (showUpcoming ? 1 : 0)
-    + todayBirthdays.length;
+    + (isArena ? 0 : todayBirthdays.length);
 
   // ── Reset dismissals when the day changes (via dismissDate field) ──
   useEffect(() => {
@@ -126,6 +163,11 @@ export function NotificationBell() {
     }
   }, [todayTrainings, dismissed.dismissDate]);
 
+  useEffect(() => {
+    if (!canViewPayments && tab === 'payments') {
+      setTab('all');
+    }
+  }, [canViewPayments, tab]);
 
 
   const dismissTraining = useCallback((id: string) => {
@@ -159,25 +201,33 @@ export function NotificationBell() {
     
     // Persist completed status in the DATABASE (not localStorage!)
     await markTrainingComplete(trainingId);
-    await refreshData();
+    refreshScheduleData();
     toast({ 
-      title: '✅ Treino concluído', 
-      description: 'O treino foi marcado como executado. A presença dos alunos deve ser conferida manualmente na lista.' 
+      title: isArena ? '✅ Horário concluído' : '✅ Treino concluído', 
+      description: isArena 
+        ? 'O horário foi marcado como executado.' 
+        : 'O treino foi marcado como executado. A presença dos alunos deve ser conferida manualmente na lista.' 
     });
-  }, [trainings, markTrainingComplete, refreshData]);
+  }, [trainings, markTrainingComplete, refreshScheduleData, isArena]);
 
   const handleUndoComplete = useCallback(async (trainingId: string) => {
     await unmarkTrainingComplete(trainingId);
-    await refreshData();
-    toast({ title: '↩️ Treino reaberto', description: 'O treino voltou para pendente.' });
-  }, [unmarkTrainingComplete, refreshData]);
+    refreshScheduleData();
+    toast({ 
+      title: isArena ? '↩️ Horário reaberto' : '↩️ Treino reaberto', 
+      description: isArena ? 'O horário voltou para pendente.' : 'O treino voltou para pendente.' 
+    });
+  }, [unmarkTrainingComplete, refreshScheduleData, isArena]);
 
   const handleDeleteTraining = useCallback(async (trainingId: string) => {
     await deleteTraining(trainingId);
     dismissTraining(trainingId);
-    await refreshData();
-    toast({ title: '🗑️ Treino excluído', description: 'O treino foi removido com sucesso.' });
-  }, [deleteTraining, dismissTraining, refreshData]);
+    refreshScheduleData();
+    toast({ 
+      title: isArena ? '🗑️ Horário excluído' : '🗑️ Treino excluído', 
+      description: isArena ? 'O horário foi removido com sucesso.' : 'O treino foi removido com sucesso.' 
+    });
+  }, [deleteTraining, dismissTraining, refreshScheduleData, isArena]);
 
   const getTrainingStatus = (time: string, durationMinutes: number = 60): 'upcoming' | 'now' | 'past' => {
     const hour = parseInt(time.split(':')[0]);
@@ -190,16 +240,23 @@ export function NotificationBell() {
 
   // Filter by tab
   const showTrainings = tab === 'all' || tab === 'trainings';
-  const showPayments = tab === 'all' || tab === 'payments';
+  const showPayments = canViewPayments && (tab === 'all' || tab === 'payments');
   const showBirthdays = tab === 'all' || tab === 'birthdays';
+  const showStudentRequests = !isArena && showTrainings;
 
   // Tab counts
   const tabCounts = {
     all: totalActive,
-    trainings: pendingTrainings.length,
-    payments: (showOverdue ? 1 : 0) + (showUpcoming ? 1 : 0),
+    trainings: pendingTrainings.length + (isArena ? 0 : studentTrainingRequests.length),
+    payments: canViewPayments ? (showOverdue ? 1 : 0) + (showUpcoming ? 1 : 0) : 0,
     birthdays: todayBirthdays.length,
   };
+  const notificationTabs: Array<'all' | 'trainings' | 'payments' | 'birthdays'> = isArena
+    ? (canViewPayments ? ['all', 'trainings', 'payments'] : ['all', 'trainings'])
+    : (canViewPayments ? ['all', 'trainings', 'payments', 'birthdays'] : ['all', 'trainings', 'birthdays']);
+  const notificationTriggerLabel = totalActive > 0
+    ? `Notificações (${totalActive} ativas)`
+    : 'Notificações';
 
   return (
     <Sheet open={open} onOpenChange={setOpen}>
@@ -211,6 +268,7 @@ export function NotificationBell() {
             open && 'bg-primary/10 text-primary border-primary/20 shadow-inner'
           )}
           title="Notificações"
+          aria-label={notificationTriggerLabel}
         >
           <Bell className={cn("h-5 w-5 transition-transform", totalActive > 0 && "animate-[wiggle_1s_ease-in-out]")} />
           {totalActive > 0 && (
@@ -234,7 +292,9 @@ export function NotificationBell() {
               </div>
               <div>
                 <SheetTitle className="font-display font-bold text-base text-foreground leading-none">Notificações</SheetTitle>
-                <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-[0.1em] mt-1.5 opacity-80">Painel de Atividades</p>
+                <SheetDescription className="text-[10px] text-muted-foreground font-bold uppercase tracking-[0.1em] mt-1.5 opacity-80">
+                  Painel de atividades, treinos, pagamentos e aniversários.
+                </SheetDescription>
               </div>
             </div>
             <div className="flex items-center gap-2">
@@ -243,13 +303,17 @@ export function NotificationBell() {
                   onClick={dismissAll}
                   className="flex items-center gap-1.5 text-[10px] font-black text-primary hover:bg-primary/10 px-3 py-2 rounded-lg transition-all active:scale-95 border border-primary/10 uppercase tracking-wider"
                   title="Limpar todas as notificações"
+                  aria-label="Limpar todas as notificações"
                 >
                   <CheckCheck className="h-3.5 w-3.5" />
                   <span>Limpar</span>
                 </button>
               )}
               <SheetClose asChild>
-                <button className="text-muted-foreground hover:text-foreground p-2 rounded-lg hover:bg-muted transition-all active:scale-90">
+                <button
+                  className="text-muted-foreground hover:text-foreground p-2 rounded-lg hover:bg-muted transition-all active:scale-90"
+                  aria-label="Fechar notificações"
+                >
                   <X className="h-5 w-5" />
                 </button>
               </SheetClose>
@@ -259,13 +323,16 @@ export function NotificationBell() {
 
         {/* Premium Tab System (Sticky) */}
         <div className="flex p-1.5 gap-1.5 bg-muted/30 border-b border-border/50 shrink-0">
-          {(['all', 'trainings', 'payments', 'birthdays'] as const).map((t) => {
-            const labels = { all: 'Todas', trainings: 'Treinos', payments: 'Pagos', birthdays: '🎂' };
+          {notificationTabs.map((t) => {
+            const labels = { all: 'Todas', trainings: isArena ? 'Horários' : 'Treinos', payments: 'Pagamentos', birthdays: 'Anivers.' };
+            const ariaLabels = { all: 'Todas as notificações', trainings: isArena ? 'Notificações de horários' : 'Notificações de treinos', payments: 'Notificações de pagamentos', birthdays: 'Notificações de aniversariantes' };
             const isActive = tab === t;
             return (
               <button
                 key={t}
                 onClick={() => setTab(t)}
+                aria-label={ariaLabels[t]}
+                aria-pressed={isActive}
                 className={cn(
                   'flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-xs font-bold transition-all duration-300',
                   isActive
@@ -304,9 +371,9 @@ export function NotificationBell() {
           )}
 
           {/* Birthday Section */}
-          {showBirthdays && todayBirthdays.length > 0 && (
+          {!isArena && showBirthdays && todayBirthdays.length > 0 && (
             <div className="p-4 border-b border-border/30">
-              <div className="rounded-2xl bg-card border-l-4 border-pink-500 p-4 shadow-sm relative overflow-hidden">
+              <div className="rounded-2xl bg-pink-500/[0.04] border border-pink-500/20 p-4 shadow-sm ring-1 ring-pink-500/10 relative overflow-hidden">
                 <div className="absolute top-0 right-0 p-4 opacity-5 pointer-events-none">
                   <Cake className="h-24 w-24" />
                 </div>
@@ -334,7 +401,7 @@ export function NotificationBell() {
           {/* Upcoming Payments Section */}
           {showPayments && showUpcoming && (
             <div className="p-4 border-b border-border/30">
-              <div className="rounded-2xl bg-card border-l-4 border-amber-500 p-4 shadow-sm">
+              <div className="rounded-2xl bg-warning/5 border border-warning/25 p-4 shadow-sm ring-1 ring-warning/10">
                 <div className="flex items-start gap-3">
                   <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400">
                     <CreditCard className="h-5 w-5" />
@@ -371,7 +438,7 @@ export function NotificationBell() {
           {/* Overdue Payments Section */}
           {showPayments && showOverdue && (
             <div className="p-4 border-b border-border/30">
-              <div className="rounded-2xl bg-card border-l-4 border-destructive p-4 shadow-sm ring-1 ring-destructive/10">
+              <div className="rounded-2xl bg-destructive/5 border border-destructive/25 p-4 shadow-sm ring-1 ring-destructive/10">
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex items-start gap-3 flex-1 min-w-0">
                     <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-destructive/10 text-destructive">
@@ -382,14 +449,17 @@ export function NotificationBell() {
                         Pagamentos Atrasados
                       </p>
                       <p className="text-[12px] font-medium text-destructive/80 mt-1">
-                        Total pendente: <span className="font-black">R$ {overduePayments.reduce((s, p) => s + p.amount, 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+                        Total pendente: <span className="font-black">{formatCurrency(overduePayments.reduce((s, p) => s + getRemainingPaymentAmount(p), 0))}</span>
                       </p>
                       <div className="flex flex-wrap gap-2 mt-3">
                         {Array.from(overdueStudentIds).slice(0, 3).map((sid) => {
                           const student = students.find((s) => s.id === sid);
+                          const studentPayments = overduePayments.filter(p => p.studentId === sid);
+                          const studentRemaining = studentPayments.reduce((s, p) => s + getRemainingPaymentAmount(p), 0);
+                          const hasPartial = studentPayments.some(p => (p.paidAmount || 0) > 0);
                           return student ? (
-                            <span key={sid} className="px-2 py-1 rounded-md bg-destructive/10 text-destructive text-[11px] font-bold">
-                              {student.name.split(' ')[0]}
+                            <span key={sid} className={`px-2 py-1 rounded-md text-[11px] font-bold ${hasPartial ? 'bg-amber-500/10 text-amber-700 dark:text-amber-400' : 'bg-destructive/10 text-destructive'}`}>
+                              {student.name.split(' ')[0]} • Falta {formatCurrency(studentRemaining)}
                             </span>
                           ) : null;
                         })}
@@ -412,10 +482,79 @@ export function NotificationBell() {
                     onClick={dismissOverdue}
                     className="p-1.5 rounded-lg text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-all shrink-0"
                     title="Dispensar"
+                    aria-label="Dispensar pagamentos atrasados"
                   >
                     <X className="h-4 w-4" />
                   </button>
                 </div>
+              </div>
+            </div>
+          )}
+
+          {/* Student Portal Requests Section */}
+          {showStudentRequests && studentTrainingRequests.length > 0 && (
+            <div className="p-4 border-b border-border/30">
+              <div className="flex items-center justify-between px-1 mb-3">
+                <div className="flex items-center gap-2">
+                  <div className="w-1.5 h-3.5 rounded-full bg-primary/40" />
+                  <span className="text-[11px] font-bold uppercase tracking-widest text-foreground/70">
+                    Solicitações do Portal ({studentTrainingRequests.length})
+                  </span>
+                </div>
+              </div>
+
+              <div className="space-y-3">
+                {studentTrainingRequests.map((request) => (
+                  <div key={request.id} className="rounded-2xl bg-card border border-primary/15 p-4 shadow-sm">
+                    <div className="flex items-start gap-3">
+                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                        <ClipboardList className="h-5 w-5" />
+                      </div>
+
+                      <div className="flex-1 min-w-0">
+                        <p className="text-[13px] font-black text-primary uppercase tracking-tight">
+                          {request.requestType === 'makeup' ? 'Reposição solicitada' : 'Treino solicitado'}
+                        </p>
+                        <p className="text-sm font-bold text-foreground mt-1 truncate">{request.studentName}</p>
+                        <div className="flex flex-wrap gap-2 mt-2 text-[11px] text-muted-foreground font-medium">
+                          {request.preferredDate && (
+                            <span className="px-2 py-1 rounded-md bg-muted">
+                              {new Date(request.preferredDate + 'T12:00:00').toLocaleDateString('pt-BR')}
+                            </span>
+                          )}
+                          {request.preferredTime && (
+                            <span className="px-2 py-1 rounded-md bg-muted">{request.preferredTime}</span>
+                          )}
+                          {request.studentPhone && (
+                            <span className="px-2 py-1 rounded-md bg-muted">{request.studentPhone}</span>
+                          )}
+                        </div>
+                        {request.message && (
+                          <p className="text-xs text-muted-foreground mt-3 leading-relaxed line-clamp-3">
+                            {request.message}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2 mt-4">
+                      <button
+                        onClick={() => void resolveRequest(request.id, 'approved')}
+                        className="h-9 rounded-lg bg-primary/10 text-primary hover:bg-primary hover:text-primary-foreground text-xs font-black uppercase tracking-wider transition-all"
+                        aria-label={`Marcar solicitação de ${request.studentName} como atendida`}
+                      >
+                        Atendida
+                      </button>
+                      <button
+                        onClick={() => void resolveRequest(request.id, 'rejected')}
+                        className="h-9 rounded-lg bg-muted text-muted-foreground hover:bg-destructive/10 hover:text-destructive text-xs font-black uppercase tracking-wider transition-all"
+                        aria-label={`Recusar solicitação de ${request.studentName}`}
+                      >
+                        Recusar
+                      </button>
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
           )}
@@ -435,6 +574,13 @@ export function NotificationBell() {
                 {pendingTrainings.map((t) => {
                   const trainingStudents = students.filter((s) => t.studentIds.includes(s.id));
                   const status = getTrainingStatus(t.time, t.durationMinutes);
+                  const court = isArena ? courts.find((c) => c.id === t.modalityId) : undefined;
+                  const locationText = isArena
+                    ? court?.name || t.location || 'Quadra não definida'
+                    : t.location || 'Sem local';
+                  const statusLabel = isArena
+                    ? status === 'now' ? 'EM HORÁRIO' : status === 'upcoming' ? 'PRÓXIMO HORÁRIO' : 'PENDENTE'
+                    : status === 'now' ? 'EM AULA' : status === 'upcoming' ? 'PRÓXIMO' : 'PENDENTE';
                   
                   return (
                     <div
@@ -458,12 +604,12 @@ export function NotificationBell() {
                             "text-[10px] font-black uppercase tracking-widest",
                             status === 'now' ? "text-primary" : "text-foreground"
                           )}>
-                            {status === 'now' ? 'EM AULA' : status === 'upcoming' ? 'PRÓXIMO' : 'PENDENTE'}
+                            {statusLabel}
                           </span>
                         </div>
                         <div className="flex items-center gap-3 mt-1 text-[11px] text-muted-foreground font-medium">
                           <span className="flex items-center gap-1 truncate">
-                            <MapPin className="h-3 w-3" />{t.location || 'Sem local'}
+                            <MapPin className="h-3 w-3" />{locationText}
                           </span>
                           <span className="flex items-center gap-1 shrink-0">
                             <Users className="h-3 w-3" />{trainingStudents.length}
@@ -475,8 +621,9 @@ export function NotificationBell() {
                       <div className="flex items-center gap-1.5 shrink-0 pl-2 border-l border-border/50">
                         <button
                           onClick={() => handleMarkComplete(t.id)}
-                          className="h-9 w-9 flex items-center justify-center rounded-lg bg-primary/10 text-primary hover:bg-primary hover:text-white transition-all"
-                          title="Marcar como concluído"
+                          className="h-9 w-9 flex items-center justify-center rounded-lg bg-primary/10 text-primary hover:bg-primary hover:text-primary-foreground transition-all"
+                          title={isArena ? 'Marcar horario como concluido' : 'Marcar como concluido'}
+                          aria-label={isArena ? `Marcar horário das ${t.time} como concluído` : `Marcar treino das ${t.time} como concluído`}
                         >
                           <Check className="h-4 w-4 stroke-[3]" />
                         </button>
@@ -484,6 +631,7 @@ export function NotificationBell() {
                           onClick={() => dismissTraining(t.id)}
                           className="h-9 w-9 flex items-center justify-center rounded-lg text-muted-foreground hover:bg-muted transition-all"
                           title="Dispensar aviso"
+                          aria-label={isArena ? `Dispensar aviso do horário das ${t.time}` : `Dispensar aviso do treino das ${t.time}`}
                         >
                           <X className="h-4 w-4" />
                         </button>
@@ -497,11 +645,11 @@ export function NotificationBell() {
 
           {/* Today's Trainings — Completed Section */}
           {showTrainings && completedTrainings.length > 0 && (
-            <div className="p-4 border-t border-border/30 bg-emerald-500/[0.02]">
+            <div className="p-4 border-t border-border/30 bg-success/5">
               <div className="flex items-center justify-between px-1 mb-4">
                 <div className="flex items-center gap-2">
-                  <div className="w-1.5 h-3.5 rounded-full bg-emerald-500/40" />
-                  <span className="text-[11px] font-bold uppercase tracking-widest text-emerald-600 dark:text-emerald-400">
+                  <div className="w-1.5 h-3.5 rounded-full bg-success/40" />
+                  <span className="text-[11px] font-bold uppercase tracking-widest text-success">
                     Executados ({completedTrainings.length})
                   </span>
                 </div>
@@ -511,16 +659,16 @@ export function NotificationBell() {
                   return (
                     <div
                       key={t.id}
-                      className="flex items-center gap-3 rounded-xl border border-emerald-500/20 bg-card p-3 shadow-sm opacity-80 hover:opacity-100 transition-opacity"
+                      className="flex items-center gap-3 rounded-xl border border-success/20 bg-card p-3 shadow-sm opacity-80 hover:opacity-100 transition-opacity"
                     >
-                      <div className="flex flex-col items-center justify-center rounded-lg px-3 py-2 min-w-[64px] shrink-0 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+                      <div className="flex flex-col items-center justify-center rounded-lg px-3 py-2 min-w-[64px] shrink-0 bg-success/10 text-success">
                         <span className="text-sm font-black">{t.time}</span>
                       </div>
 
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-1.5">
-                          <Check className="h-3 w-3 text-emerald-500 stroke-[4]" />
-                          <span className="text-[10px] font-black uppercase tracking-widest text-emerald-600 dark:text-emerald-400">Concluído</span>
+                          <Check className="h-3 w-3 text-success stroke-[4]" />
+                          <span className="text-[10px] font-black uppercase tracking-widest text-success">Concluído</span>
                         </div>
                         {t.completedAt && (
                           <span className="text-[10px] font-medium text-muted-foreground mt-1 block">
@@ -531,8 +679,9 @@ export function NotificationBell() {
 
                       <button
                         onClick={() => handleUndoComplete(t.id)}
-                        className="h-8 w-8 flex items-center justify-center rounded-lg text-muted-foreground hover:bg-emerald-500 hover:text-white transition-all shrink-0"
-                        title="Reabrir treino"
+                        className="h-8 w-8 flex items-center justify-center rounded-lg text-muted-foreground hover:bg-success hover:text-success-foreground transition-all shrink-0"
+                        title={isArena ? 'Reabrir horario' : 'Reabrir treino'}
+                        aria-label={isArena ? `Reabrir horário das ${t.time}` : `Reabrir treino das ${t.time}`}
                       >
                         <Undo2 className="h-4 w-4" />
                       </button>
@@ -547,7 +696,7 @@ export function NotificationBell() {
           {showTrainings && (pendingTrainings.length > 0 || completedTrainings.length > 0) && (
             <div className="p-6">
               <Link
-                to="/calendario"
+                to={isArena ? '/agenda' : '/calendario'}
                 onClick={() => setOpen(false)}
                 className="flex items-center justify-center gap-2.5 py-3.5 rounded-xl bg-muted hover:bg-primary/10 text-[11px] font-black uppercase tracking-widest text-foreground hover:text-primary transition-all group"
               >

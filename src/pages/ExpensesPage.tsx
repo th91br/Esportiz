@@ -1,9 +1,13 @@
+import { reportError } from '@/lib/observability';
 import { useState, useMemo } from 'react';
-import { Header } from '@/components/Header';
+import { AppPage } from '@/components/layout/AppPage';
+import { PageHeader } from '@/components/layout/PageHeader';
 import { useExpenses } from '@/hooks/queries/useExpenses';
 import { Button } from '@/components/ui/button';
+import { EmptyState } from '@/components/ui/empty-state';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { LoadingState } from '@/components/ui/loading-state';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Dialog,
@@ -49,28 +53,16 @@ import {
   Repeat,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { getLocalTodayDate } from '@/lib/dateUtils';
+import { getLocalTodayDate, getMonthNamePtBr } from '@/lib/dateUtils';
 import { useBusinessContext } from '@/hooks/useBusinessContext';
-
-const DEFAULT_EXPENSE_CATEGORIES = [
-  'Aluguel',
-  'Energia/Água',
-  'Salários',
-  'Material Esportivo',
-  'Marketing',
-  'Manutenção',
-  'Alimentação',
-  'Transporte',
-  'Geral',
-];
-
-const getMonthName = (month: number): string => {
-  const months = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
-  return months[month];
-};
+import { useRolePermissions } from '@/hooks/useRolePermissions';
 
 export default function ExpensesPage() {
-  const { isOther, isArena } = useBusinessContext();
+  const { isArena } = useBusinessContext();
+  const rolePermissions = useRolePermissions();
+  const canCreateExpenses = rolePermissions.can('expenses', 'create');
+  const canUpdateExpenses = rolePermissions.can('expenses', 'update');
+  const canDeleteExpenses = rolePermissions.can('expenses', 'delete');
   const { expenses, loadingExpenses, addExpense, updateExpense, deleteExpense, markExpensePaid, markExpenseUnpaid, isAddingExpense } = useExpenses();
   const [monthOffset, setMonthOffset] = useState(0);
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -90,18 +82,6 @@ export default function ExpensesPage() {
         'Geral',
       ];
     }
-    if (isOther) {
-      return [
-        'Aluguel',
-        'Energia/Água',
-        'Salários de Professores',
-        'Material Didático',
-        'Marketing',
-        'Manutenção',
-        'Alimentação',
-        'Geral',
-      ];
-    }
     // sport_school
     return [
       'Aluguel',
@@ -113,7 +93,7 @@ export default function ExpensesPage() {
       'Alimentação',
       'Geral',
     ];
-  }, [isOther, isArena]);
+  }, [isArena]);
 
   // Form state
   const [formDescription, setFormDescription] = useState('');
@@ -161,6 +141,14 @@ export default function ExpensesPage() {
   };
 
   const handleSubmit = async () => {
+    if (editingExpense && !canUpdateExpenses) {
+      toast.error('Seu cargo nao permite editar despesas.');
+      return;
+    }
+    if (!editingExpense && !canCreateExpenses) {
+      toast.error('Seu cargo nao permite registrar despesas.');
+      return;
+    }
     if (!formDescription.trim()) {
       toast.error('Informe a descrição da despesa.');
       return;
@@ -179,7 +167,7 @@ export default function ExpensesPage() {
           amount,
           category: formCategory,
           date: formDate,
-          recurrence: formRecurrence as any,
+          recurrence: formRecurrence,
           notes: formNotes || undefined,
         });
         toast.success('Despesa atualizada!');
@@ -196,37 +184,35 @@ export default function ExpensesPage() {
       setIsFormOpen(false);
       resetForm();
     } catch (error) {
-      console.error(error);
+      reportError('expenses.form_submit_failed', error);
     }
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      <Header />
-
-      <main className="container py-6 md:py-8 space-y-6 max-w-5xl">
-        {/* Page Title */}
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-          <div>
-            <h1 className="text-3xl font-display font-bold flex items-center gap-2">
-              <Receipt className="h-7 w-7 text-primary" />
-              Despesas
-            </h1>
-            <p className="text-muted-foreground mt-1">Controle de custos e despesas do seu negócio.</p>
-          </div>
-
+    <AppPage contentClassName="max-w-5xl">
+      <PageHeader
+        title="Despesas"
+        icon={Receipt}
+        description={isArena ? 'Controle de custos, manutenção de quadras e despesas gerais da arena.' : 'Controle de custos, salários de professores e despesas da escola.'}
+        actions={(canCreateExpenses || isFormOpen) && (
           <Dialog open={isFormOpen} onOpenChange={(open) => { setIsFormOpen(open); if (!open) resetForm(); }}>
-            <DialogTrigger asChild>
-              <Button className="btn-primary-gradient w-full sm:w-auto">
-                <Plus className="mr-2 h-4 w-4" />
-                Nova Despesa
-              </Button>
-            </DialogTrigger>
+            {canCreateExpenses && (
+              <DialogTrigger asChild>
+                <Button className="btn-primary-gradient w-full sm:w-auto">
+                  <Plus className="mr-2 h-4 w-4" />
+                  Nova Despesa
+                </Button>
+              </DialogTrigger>
+            )}
             <DialogContent className="sm:max-w-md">
               <DialogHeader>
                 <DialogTitle>{editingExpense ? 'Editar Despesa' : 'Nova Despesa'}</DialogTitle>
                 <DialogDescription>
-                  {editingExpense ? 'Atualize as informações da despesa.' : 'Registre uma nova despesa do seu negócio.'}
+                  {editingExpense
+                    ? 'Atualize as informações da despesa.'
+                    : isArena
+                      ? 'Registre uma nova despesa da sua arena.'
+                      : 'Registre uma nova despesa da sua escola esportiva.'}
                 </DialogDescription>
               </DialogHeader>
               <div className="space-y-4 py-4">
@@ -234,13 +220,13 @@ export default function ExpensesPage() {
                   <Label htmlFor="exp-description">Descrição *</Label>
                   <Input
                     id="exp-description"
-                    placeholder={isOther ? "Ex: Aluguel da sala, Energia, Livros..." : "Ex: Aluguel da quadra, Energia..."}
+                    placeholder={isArena ? "Ex: Aluguel da quadra, Energia..." : "Ex: Salários de Professores, Material de Treino..."}
                     value={formDescription}
                     onChange={(e) => setFormDescription(e.target.value)}
                     autoFocus
                   />
                 </div>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="exp-amount">Valor (R$) *</Label>
                     <Input
@@ -263,7 +249,7 @@ export default function ExpensesPage() {
                     />
                   </div>
                 </div>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label>Categoria</Label>
                     <Select value={formCategory} onValueChange={setFormCategory}>
@@ -311,7 +297,8 @@ export default function ExpensesPage() {
               </DialogFooter>
             </DialogContent>
           </Dialog>
-        </div>
+        )}
+      />
 
         {/* Month Navigator */}
         <div className="flex items-center justify-center gap-4">
@@ -319,7 +306,7 @@ export default function ExpensesPage() {
             <ChevronLeft className="h-5 w-5" />
           </Button>
           <h2 className="text-lg font-display font-bold min-w-[180px] text-center">
-            {getMonthName(currentDate.getMonth())} {currentDate.getFullYear()}
+            {getMonthNamePtBr(currentDate.getMonth())} {currentDate.getFullYear()}
           </h2>
           <Button variant="ghost" size="icon" onClick={() => setMonthOffset(monthOffset + 1)}>
             <ChevronRight className="h-5 w-5" />
@@ -372,26 +359,25 @@ export default function ExpensesPage() {
         {/* Expenses List */}
         <Card>
           <CardHeader>
-            <CardTitle className="text-lg">Lançamentos do Mês</CardTitle>
+            <CardTitle className="text-lg font-display">Lançamentos do Mês</CardTitle>
           </CardHeader>
           <CardContent>
             {loadingExpenses ? (
-              <div className="flex justify-center py-12">
-                <div className="h-8 w-8 border-4 border-primary/30 border-t-primary rounded-full animate-spin" />
-              </div>
+              <LoadingState label="Carregando despesas" className="py-12" />
             ) : filteredExpenses.length === 0 ? (
-              <div className="text-center py-12 text-muted-foreground">
-                <Receipt className="h-12 w-12 mx-auto mb-3 opacity-30" />
-                <p className="font-medium">Nenhuma despesa neste mês</p>
-                <p className="text-sm mt-1">Clique em "Nova Despesa" para começar.</p>
-              </div>
+              <EmptyState
+                icon={Receipt}
+                title="Nenhuma despesa neste mês"
+                description='Clique em "Nova Despesa" para começar.'
+                className="py-12"
+              />
             ) : (
               <div className="space-y-2">
                 {filteredExpenses.map((expense) => (
                   <div
                     key={expense.id}
                     className={cn(
-                      'flex items-center gap-3 p-3 rounded-xl border transition-all hover:shadow-sm',
+                      'flex items-center gap-3 p-3 rounded-xl border',
                       expense.paid
                         ? 'bg-green-50/50 border-green-200/50 dark:bg-green-950/20 dark:border-green-900/30'
                         : 'bg-background border-border/50'
@@ -400,8 +386,10 @@ export default function ExpensesPage() {
                     {/* Status Toggle */}
                     <button
                       onClick={() => expense.paid ? markExpenseUnpaid(expense.id) : markExpensePaid(expense.id)}
+                      disabled={!canUpdateExpenses}
                       className={cn(
                         'h-8 w-8 rounded-full border-2 flex items-center justify-center shrink-0 transition-all',
+                        !canUpdateExpenses && 'cursor-not-allowed opacity-60',
                         expense.paid
                           ? 'bg-green-500 border-green-500 text-white'
                           : 'border-muted-foreground/30 hover:border-primary'
@@ -438,9 +426,12 @@ export default function ExpensesPage() {
 
                     {/* Actions */}
                     <div className="flex items-center gap-1 shrink-0">
+                      {canUpdateExpenses && (
                       <Button variant="ghost" size="icon" className="h-7 w-7 rounded-full" onClick={() => openEditForm(expense)}>
                         <Pencil className="h-3 w-3" />
                       </Button>
+                      )}
+                      {canDeleteExpenses && (
                       <AlertDialog>
                         <AlertDialogTrigger asChild>
                           <Button variant="ghost" size="icon" className="h-7 w-7 rounded-full text-destructive hover:text-destructive">
@@ -465,6 +456,7 @@ export default function ExpensesPage() {
                           </AlertDialogFooter>
                         </AlertDialogContent>
                       </AlertDialog>
+                      )}
                     </div>
                   </div>
                 ))}
@@ -472,7 +464,6 @@ export default function ExpensesPage() {
             )}
           </CardContent>
         </Card>
-      </main>
-    </div>
+    </AppPage>
   );
 }

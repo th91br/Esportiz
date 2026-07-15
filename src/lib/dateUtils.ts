@@ -16,3 +16,124 @@ export function toLocalDateString(d: Date): string {
   const day = String(d.getDate()).padStart(2, '0');
   return `${year}-${month}-${day}`;
 }
+
+const MONTH_NAMES_PT_BR = [
+  'Janeiro',
+  'Fevereiro',
+  'Março',
+  'Abril',
+  'Maio',
+  'Junho',
+  'Julho',
+  'Agosto',
+  'Setembro',
+  'Outubro',
+  'Novembro',
+  'Dezembro',
+] as const;
+
+const SHORT_MONTH_NAMES_PT_BR = [
+  'Jan',
+  'Fev',
+  'Mar',
+  'Abr',
+  'Mai',
+  'Jun',
+  'Jul',
+  'Ago',
+  'Set',
+  'Out',
+  'Nov',
+  'Dez',
+] as const;
+
+export function getMonthNamePtBr(monthIndex: number): string {
+  return MONTH_NAMES_PT_BR[monthIndex] ?? '';
+}
+
+export function getShortMonthNamePtBr(monthIndex: number): string {
+  return SHORT_MONTH_NAMES_PT_BR[monthIndex] ?? '';
+}
+
+function isValidCalendarDate(year: number, month: number, day: number): boolean {
+  const date = new Date(Date.UTC(year, month - 1, day));
+  return (
+    date.getUTCFullYear() === year
+    && date.getUTCMonth() === month - 1
+    && date.getUTCDate() === day
+  );
+}
+
+/**
+ * Formats a PostgreSQL DATE value without converting it through a timezone.
+ */
+export function formatDateOnlyBr(value: string): string {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
+  if (!match) return '';
+
+  const [, year, month, day] = match;
+  if (!isValidCalendarDate(Number(year), Number(month), Number(day))) return '';
+
+  return `${day}/${month}/${year}`;
+}
+
+/**
+ * Converts a Brazilian civil date to the ISO format expected by PostgreSQL DATE.
+ */
+export function parseBrazilianDateToIso(value: string): string | null {
+  const digits = value.replace(/\D/g, '');
+  if (digits.length !== 8) return null;
+
+  const day = Number(digits.slice(0, 2));
+  const month = Number(digits.slice(2, 4));
+  const year = Number(digits.slice(4, 8));
+  if (!isValidCalendarDate(year, month, day)) return null;
+
+  return `${String(year).padStart(4, '0')}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+}
+
+export interface CourtAvailabilityInput {
+  openingTime?: string | null;
+  closingTime?: string | null;
+  daysOfWeek?: number[] | null;
+}
+
+export function getCourtDailyHours(court: CourtAvailabilityInput): number {
+  if (!court.openingTime || !court.closingTime) return 15;
+  const [openH, openM] = court.openingTime.split(':').map(Number);
+  const [closeH, closeM] = court.closingTime.split(':').map(Number);
+  
+  if (isNaN(openH) || isNaN(closeH)) return 15;
+  
+  const openMinutes = openH * 60 + (openM || 0);
+  const closeMinutes = closeH * 60 + (closeM || 0);
+  
+  let diffMinutes = closeMinutes - openMinutes;
+  if (diffMinutes < 0) {
+    diffMinutes += 24 * 60;
+  }
+  
+  return diffMinutes / 60;
+}
+
+export function getCourtAvailableHoursInMonth(
+  court: CourtAvailabilityInput,
+  year: number,
+  month: number
+): number {
+  const dailyHours = getCourtDailyHours(court);
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  let activeDaysCount = 0;
+  
+  const activeDaysSet = new Set(court.daysOfWeek ?? [1, 2, 3, 4, 5, 6, 0]);
+  
+  for (let day = 1; day <= daysInMonth; day++) {
+    const dateObj = new Date(year, month, day);
+    const dayOfWeek = dateObj.getDay();
+    if (activeDaysSet.has(dayOfWeek)) {
+      activeDaysCount++;
+    }
+  }
+  
+  return activeDaysCount * dailyHours;
+}

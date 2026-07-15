@@ -1,5 +1,5 @@
 // Types only - no more mock data
-import { toLocalDateString } from '@/lib/dateUtils';
+import { getMonthNamePtBr, toLocalDateString } from '@/lib/dateUtils';
 
 export interface Plan {
   id: string;
@@ -9,33 +9,37 @@ export interface Plan {
   billingType: 'monthly' | 'per_session';
 }
 
+export type StudentLevel = 'iniciante' | 'intermediário' | 'avançado' | 'avançado_pro' | 'profissional';
+export type StudentDiscountType = 'percentage' | 'fixed';
+
 export interface Student {
   id: string;
   name: string;
   phone: string;
-  email: string;
-  level: 'iniciante' | 'intermediário' | 'avançado';
+  email?: string | null;
+  level: StudentLevel;
   joinDate: string;
-  photo?: string;
+  photo?: string | null;
   active: boolean;
-  planId?: string;
-  paymentDueDay?: number;
-  paymentStartDate?: string;
-  birthDate?: string;
-  modalityId?: string;
-  cpf?: string;
-  rg?: string;
-  address?: string;
-  city?: string;
-  state?: string;
-  zipCode?: string;
+  planId?: string | null;
+  paymentDueDay?: number | null;
+  paymentStartDate?: string | null;
+  birthDate?: string | null;
+  modalityId?: string | null;
+  cpf?: string | null;
+  rg?: string | null;
+  address?: string | null;
+  city?: string | null;
+  state?: string | null;
+  zipCode?: string | null;
   isTrial?: boolean;
-  trialStartedAt?: string;
-  trialConvertedAt?: string;
-  discountType?: 'percentage' | 'fixed';
+  trialStartedAt?: string | null;
+  trialConvertedAt?: string | null;
+  groupIds?: string[];
+  discountType?: StudentDiscountType | null;
   discountValue?: number;
-  discountDurationMonths?: number;
-  discountStartMonth?: string;
+  discountDurationMonths?: number | null;
+  discountStartMonth?: string | null;
 }
 
 export interface Payment {
@@ -54,15 +58,17 @@ export interface Payment {
   paidAmount: number;
 }
 
-export type TimeSlot = '06:00' | '07:00' | '08:00' | '09:00' | '10:00' | '11:00' | '12:00' | '13:00' | '14:00' | '15:00' | '16:00' | '17:00' | '18:00' | '19:00' | '20:00' | '21:00' | '22:00' | '23:00' | '00:00';
+export type TimeSlot = string;
 
 export const timeSlots: TimeSlot[] = [
-  '06:00', '07:00', '08:00', '09:00', '10:00', '11:00', '12:00',
-  '13:00', '14:00', '15:00', '16:00', '17:00', '18:00', '19:00',
-  '20:00', '21:00', '22:00', '23:00', '00:00'
+  '06:00', '06:30', '07:00', '07:30', '08:00', '08:30', '09:00', '09:30',
+  '10:00', '10:30', '11:00', '11:30', '12:00', '12:30', '13:00', '13:30',
+  '14:00', '14:30', '15:00', '15:30', '16:00', '16:30', '17:00', '17:30',
+  '18:00', '18:30', '19:00', '19:30', '20:00', '20:30', '21:00', '21:30',
+  '22:00', '22:30', '23:00', '23:30', '00:00'
 ];
 
-export const getTimePeriod = (time: TimeSlot): 'manhã' | 'tarde' | 'noite' => {
+export const getTimePeriod = (time: TimeSlot | string): 'manhã' | 'tarde' | 'noite' => {
   const hour = parseInt(time.split(':')[0]);
   if (hour >= 6 && hour < 12) return 'manhã';
   if (hour >= 12 && hour < 18) return 'tarde';
@@ -81,6 +87,9 @@ export interface Training {
   googleEventId?: string;
   modalityId?: string;
   durationMinutes: number;
+  cancelled?: boolean;
+  cancellationReason?: 'holiday' | 'weather' | 'coach_absence' | 'other';
+  cancellationNotes?: string;
 }
 
 export interface Attendance {
@@ -89,6 +98,8 @@ export interface Attendance {
   studentId: string;
   present: boolean;
   date: string;
+  justified?: boolean;
+  justificationNotes?: string;
 }
 
 export const getDayName = (dateString: string): string => {
@@ -125,8 +136,7 @@ export const getWeekDatesArray = (weekOffset = 0) => {
 };
 
 export const getMonthName = (month: number): string => {
-  const months = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
-  return months[month];
+  return getMonthNamePtBr(month);
 };
 
 export const getWeekNumber = (dateString: string): number => {

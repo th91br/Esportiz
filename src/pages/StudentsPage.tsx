@@ -1,7 +1,9 @@
-import { useState } from 'react';
-import { Search, Users, UserCheck, UserMinus, UserX, Download, Link as LinkIcon } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { Search, Users, UserCheck, UserMinus, UserX, Download } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Header } from '@/components/Header';
+import { EmptyState } from '@/components/ui/empty-state';
+import { AppPage } from '@/components/layout/AppPage';
+import { PageHeader } from '@/components/layout/PageHeader';
 import { StatCard } from '@/components/StatCard';
 import { StudentCard } from '@/components/StudentCard';
 import { StudentForm } from '@/components/StudentForm';
@@ -13,8 +15,6 @@ import { useStudents } from '@/hooks/queries/useStudents';
 import { usePlans } from '@/hooks/queries/usePlans';
 import { useModalities } from '@/hooks/queries/useModalities';
 import { useGroups } from '@/hooks/queries/useGroups';
-import { useAuth } from '@/contexts/AuthContext';
-import { toast } from 'sonner';
 import { exportToCSV } from '@/lib/exportUtils';
 import { 
   getActiveMonthlyStudents, 
@@ -23,24 +23,30 @@ import {
   getStudentsWithoutPlan 
 } from '@/lib/studentHelpers';
 import { useBusinessContext } from '@/hooks/useBusinessContext';
+import { useRolePermissions } from '@/hooks/useRolePermissions';
+import { cn } from '@/lib/utils';
+
+const levelLabels: Record<string, string> = {
+  iniciante: 'Iniciante',
+  intermediário: 'Intermediário',
+  avançado: 'Avançado',
+  avançado_pro: 'Avançado PRO',
+  profissional: 'Profissional',
+};
 
 export default function StudentsPage() {
   const { students, loadingStudents } = useStudents();
   const { plans, loadingPlans } = usePlans();
   const { modalities } = useModalities();
   const { groups } = useGroups();
-  const { labels, isOther, isArena } = useBusinessContext();
-  const { user } = useAuth();
+  const { labels, isArena } = useBusinessContext();
+  const rolePermissions = useRolePermissions();
+  const canCreateStudents = rolePermissions.can(isArena ? 'reservants' : 'students', 'create');
+  const canUpdateStudents = rolePermissions.can(isArena ? 'reservants' : 'students', 'update');
+  const canExportStudents = canCreateStudents || canUpdateStudents;
   
   const loading = loadingStudents || loadingPlans;
 
-  const copyEnrollmentLink = () => {
-    if (!user) return;
-    const url = `${window.location.origin}/matricula?ct=${user.id}`;
-    navigator.clipboard.writeText(url);
-    toast.success("Link de Matrícula Online copiado!");
-  };
-  
   const totalStudents = getTotalStudents(students);
   const activeMonthlyCount = getActiveMonthlyStudents(students, plans).length;
   const inactiveCount = getInactiveStudents(students).length;
@@ -50,31 +56,34 @@ export default function StudentsPage() {
   const [statusFilter, setStatusFilter] = useState('all');
   const [modalityFilter, setModalityFilter] = useState('all');
 
+  useEffect(() => {
+    if (!isArena) return;
+
+    setLevelFilter('all');
+    setStatusFilter((current) => current === 'trial' ? 'all' : current);
+  }, [isArena]);
+
   const filteredStudents = students.filter((student) => {
     const matchesSearch = student.name.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesLevel = levelFilter === 'all' || student.level === levelFilter;
+    const matchesLevel = isArena || levelFilter === 'all' || student.level === levelFilter;
     const matchesStatus = statusFilter === 'all' || 
       (statusFilter === 'active' && student.active) || 
       (statusFilter === 'inactive' && !student.active) ||
-      (statusFilter === 'trial' && student.isTrial);
+      (!isArena && statusFilter === 'trial' && student.isTrial);
     const matchesModality = modalityFilter === 'all' || student.modalityId === modalityFilter;
     return matchesSearch && matchesLevel && matchesStatus && matchesModality;
   }).sort((a, b) => a.name.localeCompare(b.name, 'pt-BR'));
 
   return (
-    <div className="min-h-screen bg-background">
-      <Header />
-
-      <main className="container py-6 md:py-8 space-y-6">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div>
-            <h1 className="section-title text-2xl md:text-3xl">Meus {labels.studentLabel}</h1>
-            <p className="text-muted-foreground mt-1">
-              Gerencie sua base de {labels.studentLabel.toLowerCase()} e acompanhe o status de cada um
-            </p>
-          </div>
+    <AppPage>
+      <PageHeader
+        title={`Meus ${labels.studentLabel}`}
+        description={`Gerencie sua base de ${labels.studentLabel.toLowerCase()} e acompanhe o status de cada um`}
+        icon={Users}
+        actions={
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
-            <Button variant="outline" className="gap-2 bg-background hover:bg-muted" onClick={() => {
+            {canExportStudents && (
+              <Button variant="outline" className="gap-2 bg-background hover:bg-muted" onClick={() => {
               const exportData = students.map(s => {
                 const plan = plans.find(p => p.id === s.planId);
                 const modality = modalities.find(m => m.id === s.modalityId);
@@ -83,12 +92,12 @@ export default function StudentsPage() {
                   'Nome': s.name,
                   'CPF': s.cpf || '',
                   'Status': s.active ? 'Ativo' : 'Inativo',
-                  'Experimental': s.isTrial ? 'Sim' : 'Não',
+                  ...(!isArena ? { 'Experimental': s.isTrial ? 'Sim' : 'Não' } : {}),
                   'Telefone': s.phone || '',
                   'Email': s.email || '',
                   [labels.planLabelSingular]: plan?.name || `Sem ${labels.planLabelSingular.toLowerCase()}`,
                   [labels.modalityLabelSingular]: modality?.name || '',
-                  'Nível': s.level || '',
+                  ...(!isArena ? { 'Nível': levelLabels[s.level] || s.level || '' } : {}),
                   [labels.groupLabel]: studentGroups,
                   'Dia Vencimento': s.paymentDueDay || '',
                   'Data de Entrada': s.joinDate ? new Date(s.joinDate).toLocaleDateString('pt-BR') : '',
@@ -97,18 +106,15 @@ export default function StudentsPage() {
               exportToCSV(exportData, `${labels.studentLabel}_Esportiz`);
             }} disabled={loading || students.length === 0}>
               <Download className="h-4 w-4" /> Exportar (CSV)
-            </Button>
-            {isOther && (
-              <Button variant="outline" className="gap-2 bg-background hover:bg-muted border-primary/20 text-primary shrink-0" onClick={copyEnrollmentLink}>
-                <LinkIcon className="h-4 w-4 text-primary" /> Link de Matrícula
               </Button>
             )}
-            <StudentForm />
+            {canCreateStudents && <StudentForm />}
           </div>
-        </div>
+        }
+      />
 
         {/* Summary Stats */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4 animate-fade-up">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4 animate-fade-up mb-6">
           <StatCard 
             title={`Total de ${labels.studentLabel}`} 
             value={loading ? '...' : totalStudents} 
@@ -136,47 +142,35 @@ export default function StudentsPage() {
           />
         </div>
 
-        <div className="card-elevated p-4">
-          <div className="flex flex-col md:flex-row gap-3">
+        <div className="card-elevated p-4 mb-6">
+          <div className="flex flex-col lg:flex-row gap-3">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input placeholder={`Buscar ${labels.studentLabelSingular.toLowerCase()}...`} value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="pl-10" />
             </div>
-            <div className="flex gap-2">
-              <Select value={levelFilter} onValueChange={setLevelFilter}>
-                <SelectTrigger className="w-[140px]"><SelectValue placeholder="Nível" /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Todos os níveis</SelectItem>
-                  {isOther ? (
-                    <>
-                      <SelectItem value="básico 1">Básico 1</SelectItem>
-                      <SelectItem value="básico 2">Básico 2</SelectItem>
-                      <SelectItem value="pré-intermediário">Pré-Intermediário</SelectItem>
-                      <SelectItem value="intermediário">Intermediário</SelectItem>
-                      <SelectItem value="intermediário avançado">Intermediário Avançado</SelectItem>
-                      <SelectItem value="avançado">Avançado</SelectItem>
-                      <SelectItem value="fluente">Fluente / Concluinte</SelectItem>
-                    </>
-                  ) : (
-                    <>
-                      <SelectItem value="iniciante">Iniciante</SelectItem>
-                      <SelectItem value="intermediário">Intermediário</SelectItem>
-                      <SelectItem value="avançado">Avançado</SelectItem>
-                    </>
-                  )}
-                </SelectContent>
-              </Select>
+            <div className={cn('grid grid-cols-1 gap-2 lg:flex lg:w-auto', isArena ? 'sm:grid-cols-2' : 'sm:grid-cols-3')}>
+              {!isArena && (
+                <Select value={levelFilter} onValueChange={setLevelFilter}>
+                  <SelectTrigger className="w-full lg:w-[140px]"><SelectValue placeholder="Nível" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todos os níveis</SelectItem>
+                    {Object.entries(levelLabels).map(([value, label]) => (
+                      <SelectItem key={value} value={value}>{label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
               <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className="w-[120px]"><SelectValue placeholder="Status" /></SelectTrigger>
+                <SelectTrigger className="w-full lg:w-[120px]"><SelectValue placeholder="Status" /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Todos</SelectItem>
                   <SelectItem value="active">Ativos</SelectItem>
                   <SelectItem value="inactive">Inativos</SelectItem>
-                  <SelectItem value="trial">Experimentais</SelectItem>
+                  {!isArena && <SelectItem value="trial">Experimentais</SelectItem>}
                 </SelectContent>
               </Select>
               <Select value={modalityFilter} onValueChange={setModalityFilter}>
-                <SelectTrigger className="w-[140px]"><SelectValue placeholder={labels.modalityLabelSingular} /></SelectTrigger>
+                <SelectTrigger className="w-full lg:w-[140px]"><SelectValue placeholder={labels.modalityLabelSingular} /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Todas as {labels.modalityLabel.toLowerCase()}</SelectItem>
                   {modalities.map((mod) => (
@@ -197,13 +191,15 @@ export default function StudentsPage() {
             ))}
           </div>
         ) : (
-          <div className="card-elevated p-12 text-center">
-            <Users className="h-12 w-12 mx-auto text-muted-foreground/50 mb-3" />
-            <p className="text-lg font-medium text-muted-foreground">Nenhum {labels.studentLabelSingular.toLowerCase()} encontrado</p>
-            <p className="text-sm text-muted-foreground/70 mt-1">Tente ajustar os filtros ou adicione um(a) novo(a) {labels.studentLabelSingular.toLowerCase()}</p>
-          </div>
+          <EmptyState
+            icon={Users}
+            title={`Nenhum ${labels.studentLabelSingular.toLowerCase()} encontrado`}
+            description={canCreateStudents
+              ? `Tente ajustar os filtros ou adicione um(a) novo(a) ${labels.studentLabelSingular.toLowerCase()}`
+              : 'Tente ajustar os filtros para encontrar outro registro.'}
+            className="card-elevated p-12"
+          />
         )}
-      </main>
-    </div>
+    </AppPage>
   );
 }

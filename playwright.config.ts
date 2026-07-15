@@ -1,6 +1,7 @@
 import { defineConfig, devices } from '@playwright/test';
 
 const stagingBaseUrl = process.env.E2E_STAGING_BASE_URL?.trim();
+const stagingStorageState = process.env.E2E_STAGING_STORAGE_STATE?.trim();
 const localBaseUrl = 'http://127.0.0.1:4173';
 
 export default defineConfig({
@@ -14,6 +15,7 @@ export default defineConfig({
   use: {
     baseURL: stagingBaseUrl || localBaseUrl,
     channel: 'chrome',
+    storageState: stagingStorageState || undefined,
     trace: 'retain-on-failure',
     screenshot: 'only-on-failure',
     video: 'retain-on-failure',

@@ -8,3 +8,4 @@ Esportiz deployments follow these release gates:
 - Lint, type checking, unit tests, production build, and relevant E2E journeys must pass before merge.
 - Production is smoke-tested after deployment, with the previous healthy deployment kept available for rollback.
 - Secrets belong in the Vercel and Supabase environment stores and must never be committed.
+- Rollbacks promote the previous healthy deployment; release history is never rewritten.

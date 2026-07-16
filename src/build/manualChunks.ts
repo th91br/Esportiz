@@ -60,6 +60,10 @@ const manualChunkRules: ManualChunkRule[] = [
     packages: ['@vercel/analytics', 'web-vitals'],
   },
   {
+    chunkName: 'vendor-observability',
+    packages: ['@sentry'],
+  },
+  {
     chunkName: 'vendor-forms',
     packages: ['@hookform', 'react-hook-form', 'zod'],
   },

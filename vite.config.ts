@@ -92,9 +92,27 @@ export default defineConfig(({ mode }) => ({
         ]
       },
       workbox: {
-        globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
+        globPatterns: [
+          'index.html',
+          'assets/**/*.{js,css,svg,woff2}',
+        ],
         cleanupOutdatedCaches: true,
-        navigateFallbackDenylist: [/^\/$/]
+        navigateFallbackDenylist: [/^\/$/],
+        runtimeCaching: [
+          {
+            urlPattern: ({ request, url }) => (
+              request.destination === 'image' && url.origin === self.location.origin
+            ),
+            handler: 'StaleWhileRevalidate',
+            options: {
+              cacheName: 'esportiz-images-v1',
+              expiration: {
+                maxEntries: 40,
+                maxAgeSeconds: 60 * 60 * 24 * 30,
+              },
+            },
+          },
+        ],
       }
     })
   ],

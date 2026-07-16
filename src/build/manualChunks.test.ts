@@ -18,6 +18,7 @@ describe('Vite manual chunk strategy', () => {
     ['C:/repo/node_modules/@radix-ui/react-dialog/dist/index.js', 'vendor-ui'],
     ['C:/repo/node_modules/date-fns/format.js', 'vendor-date'],
     ['C:/repo/node_modules/@vercel/analytics/dist/react/index.js', 'vendor-analytics'],
+    ['C:/repo/node_modules/@sentry/react/build/esm/index.js', 'vendor-observability'],
     ['C:/repo/node_modules/zod/lib/index.js', 'vendor-forms'],
   ])('places %s in %s', (id, chunkName) => {
     expect(getManualChunk(id)).toBe(chunkName);

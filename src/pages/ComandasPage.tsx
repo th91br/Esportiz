@@ -444,7 +444,7 @@ export default function ComandasPage() {
                     <ShoppingBag className="h-5 w-5" />
                   </div>
                   <div className="min-w-0">
-                    <h2 className="font-display font-bold text-lg md:text-xl text-foreground flex flex-wrap items-center gap-2">
+                    <DialogTitle className="font-display font-bold text-lg md:text-xl text-foreground flex flex-wrap items-center gap-2">
                       <span className="min-w-0 truncate">{selectedComanda.name}</span>
                       {selectedComanda.status === 'open' ? (
                         <span className="text-[10px] bg-success/10 text-success border border-success/20 px-2.5 py-1 rounded-full font-extrabold uppercase tracking-wider">
@@ -455,7 +455,10 @@ export default function ComandasPage() {
                           Fechada
                         </span>
                       )}
-                    </h2>
+                    </DialogTitle>
+                    <DialogDescription className="sr-only">
+                      Gerencie os itens, o consumo e o pagamento desta comanda.
+                    </DialogDescription>
                     <p className="text-xs text-muted-foreground flex items-center gap-1.5 mt-0.5">
                       <Clock className="h-3.5 w-3.5" />
                       <span>{getOpenedDuration(selectedComanda.createdAt)}</span>

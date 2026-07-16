@@ -21,7 +21,8 @@ const DESTRUCTIVE_PATTERNS = [
 ];
 
 export function hashMigration(content) {
-  return createHash('sha256').update(content).digest('hex');
+  const normalizedContent = content.replace(/\r\n?/g, '\n');
+  return createHash('sha256').update(normalizedContent).digest('hex');
 }
 
 export function createMigrationManifest(files) {

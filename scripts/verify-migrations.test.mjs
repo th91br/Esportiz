@@ -15,6 +15,13 @@ function migration(name, content) {
   };
 }
 
+test('hashes CRLF and LF migration content identically', () => {
+  const lf = "create table profiles(id uuid);\ncomment on table profiles is 'test';\n";
+  const crlf = lf.replaceAll('\n', '\r\n');
+
+  assert.equal(hashMigration(lf), hashMigration(crlf));
+});
+
 test('accepts immutable, ordered migration files', () => {
   const files = [
     migration('20260101000000_create_profiles.sql', 'create table profiles(id uuid);'),

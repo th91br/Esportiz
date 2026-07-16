@@ -36,7 +36,8 @@ jobs:
         with:
           version: 2.109.1
 
-      - name: Start disposable database
+      - id: start-db
+        name: Start disposable database
         run: supabase db start
 
       - name: Replay every migration from a clean database
@@ -46,5 +47,5 @@ jobs:
         run: supabase db lint --local --level error
 
       - name: Stop disposable database
-        if: always()
+        if: always() && steps.start-db.outcome == 'success'
         run: supabase stop --no-backup

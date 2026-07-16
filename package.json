@@ -19,7 +19,9 @@
     "test:watch": "vitest",
     "test:e2e": "playwright test",
     "test:e2e:desktop": "playwright test --project=desktop-chrome",
-    "test:e2e:staging": "playwright test e2e/staging-authenticated-flows.spec.ts --project=desktop-chrome"
+    "test:e2e:staging": "playwright test e2e/staging-authenticated-flows.spec.ts --project=desktop-chrome",
+    "check:production": "node scripts/verify-production.mjs",
+    "test:production-monitor": "node scripts/verify-production.test.mjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",

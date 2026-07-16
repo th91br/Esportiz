@@ -37,6 +37,9 @@ jobs:
       - name: Audit dependencies
         run: npm audit --audit-level=moderate
 
+      - name: Test production monitor contract
+        run: npm run test:production-monitor
+
       - name: Run regression gate
         run: npm run check:regression
 

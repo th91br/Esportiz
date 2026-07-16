@@ -792,7 +792,7 @@ CONCORDÂNCIA E ASSINATURA: O contratante declara ter lido, compreendido e aceit
             <div className="mx-auto w-12 h-12 bg-destructive/10 text-destructive rounded-full flex items-center justify-center mb-2">
               <ShieldAlert className="h-6 w-6" />
             </div>
-            <CardTitle className="text-xl font-bold font-display text-foreground">Link inválido</CardTitle>
+            <h1 className="text-xl font-bold font-display text-foreground">Link inválido</h1>
             <CardDescription className="text-sm">
               Este link do portal possui uma identificação inválida. Solicite um novo link para a secretaria.
             </CardDescription>

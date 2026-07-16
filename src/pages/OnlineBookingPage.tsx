@@ -293,7 +293,7 @@ export default function OnlineBookingPage() {
             <div className="mx-auto w-12 h-12 bg-destructive/10 text-destructive rounded-full flex items-center justify-center mb-2">
               <Landmark className="h-6 w-6" />
             </div>
-            <CardTitle className="text-xl font-bold font-display text-foreground">Link Inválido</CardTitle>
+            <h1 className="text-xl font-bold font-display text-foreground">Link Inválido</h1>
             <CardDescription className="text-sm">
               Este link de agendamento online não possui o identificador da Arena Esportiva parceira. Solicite o link correto de agendamento na recepção.
             </CardDescription>

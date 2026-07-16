@@ -1,6 +1,8 @@
 import process from "node:process";
 import { pathToFileURL } from "node:url";
 
+import { assertRequiredSecurityHeaders } from "./verify-security-headers.mjs";
+
 const DEFAULT_BASE_URL = "https://www.esportiz.com.br";
 const DEFAULT_TIMEOUT_MS = 15_000;
 const PUBLIC_PATHS = [
@@ -84,6 +86,9 @@ export async function verifyProduction({
     const url = new URL(path, origin);
     const response = await fetchChecked(url, timeoutMs);
     const body = await response.text();
+    assertRequiredSecurityHeaders(response.headers, {
+      context: "Production " + path,
+    });
 
     if (path === "/") {
       rootHtml = body;

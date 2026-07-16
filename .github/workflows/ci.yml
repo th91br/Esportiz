@@ -44,6 +44,12 @@ jobs:
       - name: Test production monitor contract
         run: npm run test:production-monitor
 
+      - name: Test security header contract
+        run: npm run test:security-headers
+
+      - name: Test performance budget contract
+        run: npm run test:performance-budget
+
       - name: Run regression gate
         run: npm run check:regression
 
